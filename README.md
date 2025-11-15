@@ -91,7 +91,6 @@ These are templates. They **_will not function_** without modification.
   "hosts": [
     {
       "display_name": "Display Name",
-      "host_type": "ROMM",
       "root_uri": "https://domain.tld",
       "port": 445,
       "username": "GUEST",
@@ -136,7 +135,6 @@ These are templates. They **_will not function_** without modification.
 
 #### Host Configuration
 
-- **host_type**: Valid Choices: `ROMM` | `MEGATHREAD`
 - **root_uri**: This can be the start of a URL with protocol (e.g. https://), a host name or an IP Address
 - **port**: Optional otherwise unless using non-standard ports
 - **username**: Used by RomM

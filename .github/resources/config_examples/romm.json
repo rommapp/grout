@@ -2,7 +2,6 @@
   "hosts": [
     {
       "display_name": "RomM",
-      "host_type": "ROMM",
       "root_uri": "",
       "port": 1550,
       "username": "",

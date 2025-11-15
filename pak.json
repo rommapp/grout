@@ -1,29 +1,12 @@
 {
-  "name": "Mortar",
+  "name": "Grout",
   "version": "v3.0.0",
   "type": "TOOL",
-  "description": "ROM Downloader for RomM and Megathread",
+  "description": " Download client for NextUI and muOS",
   "author": "K-Wall",
-  "repo_url": "https://github.com/UncleJunVIP/Mortar",
-  "release_filename": "Mortar.pak.zip",
-  "banners": {
-    "BRICK": ".github/resources/banner.png"
-  },
-  "changelog": {
-    "v3.0.0": "Mortar now has a configuration editor! Go to the Settings menu and select 'Launch Configuration API' and scan the QR code. Additionally, Mortar now uses JSON for the config file instead of YAML. It will be automatically migrated for you.",
-    "v2.9.0": "Housekeeping release to keep dependencies up to date.",
-    "v2.8.0": "Finally addressed logging and made it more robust. Plus small and uninteresting fixes behind the scenes.",
-    "v2.7.0": "Fix for incorrect arcade box art naming.",
-    "v2.6.2": "Added new platform configuration options. 'is_arcade' to use an internal mapping file for arcade filenames, 'skip_inclusive_filters' to include all ROMs in the displayed games list and 'skip_exclusive_filters' to not exclude any ROMs from the displayed games list.",
-    "v2.5.0": "Mortar now recognizes tagless ROM directories (e.g. /mnt/SDCARD/Roms/GBA). Small update to system mapping for finding Libretro Artwork.",
-    "v2.4.2": "Small fix in UI library for artifacts that appeared when no bg.png is present.",
-    "v2.4.1": "Just keeping dependencies up to date. I make enough technical debt myself... don't need to add to it.",
-    "v2.4.0": "New settings to automagically group multi-disc games and BIN/CUE games. <3",
-    "v2.3.1": "Added a setting to unzip ROM archive after download.",
-    "v2.2.1": "Fix for a small bug in the fixed ROM folder discovery code.",
-    "v2.2.0": "A quick fix that should address the weird ROM folder discovery issue. Fingers crossed!",
-    "v2.1.1": "Upgraded the UI Library Dependency which brings system theme consistency and a new parallel download manager."
-  },
+  "repo_url": "https://github.com/rommapp/grout",
+  "release_filename": "Grout.pak.zip",
+  "changelog": {},
   "screenshots": [
     ".github/resources/screenshots/main_menu.jpg",
     ".github/resources/screenshots/settings.jpg",
