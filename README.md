@@ -1,18 +1,20 @@
+<!-- trunk-ignore-all(markdownlint/MD033) -->
+<!-- trunk-ignore(markdownlint/MD041) -->
 <div align="center">
 
-<img src=".github/resources/isotipo.png" width="auto" alt="Grout wordmark">
-<h3 style="font-size: 25px; padding-top: 0; margin-top: 0;">
-    Download client for NextUI and muOS 
-</h3>
+  <img src=".github/resources/isotipo.png" height="180px" width="auto" alt="romm-muos logo">
+    <h3 style="font-size: 25px;">
+      Download client for NextUI and muOS by @BrandonKowalski
+  </h3>
 
-![GitHub License](https://img.shields.io/github/license/UncleJunVip/Grout?style=for-the-badge&color=007C77)
-![GitHub Release](https://img.shields.io/github/v/release/rommapp/grout?sort=semver&style=for-the-badge&color=007C77)
-![GitHub Repo stars](https://img.shields.io/github/stars/UncleJunVip/Grout?style=for-the-badge&color=007C77)
-![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/rommapp/grout/total?style=for-the-badge&label=Total%20Downloads&color=007C77)
+<br>
 
+[![license-badge-img]][license-badge]
+[![release-badge-img]][release-badge]
+[![discord-badge-img]][discord-badge]
+
+  </div>
 </div>
-
----
 
 ## How do I setup Grout?
 
@@ -28,8 +30,6 @@
     - For manual downloads, extract the release zip and place the `Grout.pak` directory into `SD_ROOT/Tools/tg5040`.
 4. Follow the "How To Configure Grout" section below to complete the setup.
 5. Launch `Grout` from the `Tools` menu and enjoy!
-
----
 
 ### muOS Setup
 
@@ -55,8 +55,6 @@ Please help by verifying if it works on other devices!
 
 **Note:** Grout does not support downloading art on muOS. This will be added in a future release.
 
----
-
 ### How To Configure Grout
 
 1. Connect your handheld to a Wi-Fi network.
@@ -64,8 +62,6 @@ Please help by verifying if it works on other devices!
 3. On first launch, Grout will display a QR Code that leads to a configuration editor.
     - For the editor to function, the editing device (phone, laptop, etc.) must be connected to the same Wi-Fi network as your handheld.
 4. Follow the Configuration Reference section below.
-
----
 
 ## Configuration Reference
 
@@ -78,8 +74,6 @@ Please edit one of the templates [found here](/.github/resources/config_examples
 `config.json`.
 
 These are templates. They **_will not function_** without modification.
-
----
 
 ```json
 {
@@ -169,8 +163,6 @@ Sample configuration files can be [found here](/.github/resources/config_example
 
 **Note:** The old YAML format will automatically migrate to the new JSON format. No more fighting indentation!
 
----
-
 ## Enjoying Grout And Use NextUI?
 
 You might be interested in my other Paks!
@@ -180,8 +172,6 @@ community right on your device
 
 [Game Manager](https://github.com/UncleJunVIP/nextui-game-manager) - manage your ROM library right on your device
 
----
-
 ## Feeling Inspired?
 
 Want to build your own application like Grout?
@@ -190,8 +180,6 @@ Check out [gabagool](https://github.com/UncleJunVIP/gabagool), an SDL 2 UI Libra
 
 It comes with a bunch of useful components so you can focus on the fun stuff.
 
----
-
 ## Be a friend, tell a friend something nice; it might change their life!
 
 I've spent a good chunk of time building Grout.
@@ -199,3 +187,19 @@ I've spent a good chunk of time building Grout.
 If you feel inclined to pay it forward, go do something nice for someone! ❤️
 
 ✌🏻
+
+<!-- Badges -->
+
+[license-badge-img]: https://img.shields.io/github/license/rommapp/grout?style=for-the-badge&color=a32d2a
+[license-badge]: LICENSE
+[release-badge-img]: https://img.shields.io/github/v/release/rommapp/grout?style=for-the-badge
+[release-badge]: https://github.com/rommapp/grout/releases
+[discord-badge-img]: https://img.shields.io/badge/discord-7289da?style=for-the-badge
+[discord-badge]: https://discord.gg/P5HtHnhUDH
+
+<!-- Links -->
+
+[discord-invite]: https://invidget.switchblade.xyz/P5HtHnhUDH
+[discord-invite-url]: https://discord.gg/P5HtHnhUDH
+[oc-donate-img]: https://opencollective.com/romm/donate/button.png?color=blue
+[oc-donate]: https://opencollective.com/romm
