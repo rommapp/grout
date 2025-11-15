@@ -521,81 +521,30 @@ func FindArt(platform models.Platform, game shared.Item, downloadType sum.Int[sh
 
 	host := platform.Host
 
-	if host.HostType == shared.HostTypes.ROMM {
-		// Skip all this silliness and grab the art from RoMM
-		client, err := clients.BuildClient(host)
-		if err != nil {
-			return ""
-		}
-
-		rommClient := client.(*clients.RomMClient)
-
-		if game.ArtURL == "" {
-			return ""
-		}
-
-		slashIdx := strings.LastIndex(game.ArtURL, "/")
-		artSubdirectory, artFilename := game.ArtURL[:slashIdx], game.ArtURL[slashIdx+1:]
-
-		artFilename = strings.Split(artFilename, "?")[0] // For the query string caching stuff
-
-		LastSavedArtPath, err := rommClient.DownloadArt(artSubdirectory,
-			artDirectory, artFilename, game.Filename)
-
-		if err != nil {
-			return ""
-		}
-
-		return LastSavedArtPath
-	}
-
-	client := common.NewThumbnailClient(downloadType)
-	section := client.BuildThumbnailSection(platform.SystemTag)
-
-	artList, err := client.ListDirectory(section.HostSubdirectory)
-
+	client, err := clients.BuildClient(host)
 	if err != nil {
-		logger.Debug("Unable to fetch artlist", "error", err)
 		return ""
 	}
 
-	// toastd's trick for Libretro Thumbnail Naming
-	cleanedName := strings.ReplaceAll(game.DisplayName, "&", "_")
+	rommClient := client.(*clients.RomMClient)
 
-	var matched shared.Item
-
-	// naive search first
-	for _, art := range artList {
-		if strings.Contains(strings.ToLower(art.Filename), strings.ToLower(cleanedName)) {
-			matched = art
-			break
-		}
+	if game.ArtURL == "" {
+		return ""
 	}
 
-	if matched.Filename != "" {
-		lastSavedArtPath, err := client.DownloadArt(section.HostSubdirectory, artDirectory, matched.Filename, game.Filename)
-		if err != nil {
-			return ""
-		}
+	slashIdx := strings.LastIndex(game.ArtURL, "/")
+	artSubdirectory, artFilename := game.ArtURL[:slashIdx], game.ArtURL[slashIdx+1:]
 
-		src, err := imaging.Open(lastSavedArtPath)
-		if err != nil {
-			logger.Error("Unable to open last saved art", "error", err)
-			return ""
-		}
+	artFilename = strings.Split(artFilename, "?")[0] // For the query string caching stuff
 
-		dst := imaging.Resize(src, 500, 0, imaging.Lanczos)
+	LastSavedArtPath, err := rommClient.DownloadArt(artSubdirectory,
+		artDirectory, artFilename, game.Filename)
 
-		err = imaging.Save(dst, lastSavedArtPath)
-		if err != nil {
-			logger.Error("Unable to save resized last saved art", "error", err)
-			return ""
-		}
-
-		return lastSavedArtPath
+	if err != nil {
+		return ""
 	}
 
-	return ""
+	return LastSavedArtPath
 }
 
 func MapTagsToDirectories(items shared.Items) map[string]string {

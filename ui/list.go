@@ -33,16 +33,7 @@ func FetchListStateless(platform models.Platform) (shared.Items, error) {
 		}
 	}(client)
 
-	subdirectory := ""
-
-	switch platform.Host.HostType {
-	case shared.HostTypes.ROMM:
-		subdirectory = platform.RomMPlatformID
-	default:
-		subdirectory = platform.HostSubdirectory
-	}
-
-	items, err := client.ListDirectory(subdirectory)
+	items, err := client.ListDirectory(platform.RomMPlatformID)
 	if err != nil {
 		return nil, err
 	}
@@ -57,27 +48,8 @@ func FetchListStateless(platform models.Platform) (shared.Items, error) {
 			filtered = append(filtered, item)
 		}
 	}
-	items = filtered
 
-	if platform.Host.HostType == shared.HostTypes.MEGATHREAD {
-		jsonData, err := json.Marshal(items)
-		if err != nil {
-			logger.Debug("Unable to get marshal JSON for Megathread", "error", err)
-
-			cwd, err := os.Getwd()
-			if err != nil {
-				logger.Debug("Unable to get current working directory for caching Megathread", "error", err)
-			}
-
-			filePath := path.Join(cwd, ".cache", utils.CachedMegaThreadJsonFilename("", ""))
-			err = os.WriteFile(filePath, jsonData, 0644)
-			if err != nil {
-				logger.Debug("Unable to write JSON to file for Megathread", "error", err)
-			}
-		}
-	}
-
-	return items, nil
+	return filtered, nil
 }
 
 func filterList(itemList []shared.Item, filters models.Filters) []shared.Item {

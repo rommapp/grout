@@ -8,25 +8,10 @@ import (
 )
 
 func BuildClient(host models.Host) (shared.Client, error) {
-	switch host.HostType {
-	case shared.HostTypes.MEGATHREAD:
-		return common.NewHttpTableClient(
-			host.RootURI,
-			host.HostType,
-			host.TableColumns,
-			host.SourceReplacements,
-			nil,
-		), nil
-	case shared.HostTypes.ROMM:
-		{
-			return NewRomMClient(
-				host.RootURI,
-				host.Port,
-				host.Username,
-				host.Password,
-			), nil
-		}
-	}
-
-	return nil, nil
+	return NewRomMClient(
+		host.RootURI,
+		host.Port,
+		host.Username,
+		host.Password,
+	), nil
 }

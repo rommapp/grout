@@ -1,19 +1,14 @@
 <div align="center">
 
-<img src=".github/resources/grout_logo.png" width="auto" alt="Grout wordmark">
+<img src=".github/resources/isotipo.png" width="auto" alt="Grout wordmark">
 <h3 style="font-size: 25px; padding-top: 0; margin-top: 0;">
-    A ROM download client that supports RomM and Megathread.
+    Download client for NextUI and muOS 
 </h3>
 
-<h4 style="font-size: 18px; padding-top: 0; margin-top: 0;">
-
-Art Downloads powered by the _[Libretro Thumbnail Project](https://github.com/libretro-thumbnails/libretro-thumbnails)_
-</h4>
-
 ![GitHub License](https://img.shields.io/github/license/UncleJunVip/Grout?style=for-the-badge&color=007C77)
-![GitHub Release](https://img.shields.io/github/v/release/UncleJunVIP/Grout?sort=semver&style=for-the-badge&color=007C77)
+![GitHub Release](https://img.shields.io/github/v/release/rommapp/grout?sort=semver&style=for-the-badge&color=007C77)
 ![GitHub Repo stars](https://img.shields.io/github/stars/UncleJunVip/Grout?style=for-the-badge&color=007C77)
-![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/UncleJunVIP/Grout/total?style=for-the-badge&label=Total%20Downloads&color=007C77)
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/rommapp/grout/total?style=for-the-badge&label=Total%20Downloads&color=007C77)
 
 </div>
 
@@ -27,7 +22,7 @@ Art Downloads powered by the _[Libretro Thumbnail Project](https://github.com/li
 2. Connect your device to a Wi-Fi network.
 3. The preferred Grout installation method is to use the NextUI Pak Store. You can find the Pak Store in the
    `Tools` menu. Once in the Pak Store, Grout can be found under the `ROM Management` category.
-    - Alternatively, download the [latest Grout release](https://github.com/UncleJunVIP/Grout/releases/latest) for
+    - Alternatively, download the [latest Grout release](https://github.com/rommapp/grout/releases/latest) for
       NextUI (look for
       `Grout.pak.zip`)
     - For manual downloads, extract the release zip and place the `Grout.pak` directory into `SD_ROOT/Tools/tg5040`.
@@ -43,7 +38,7 @@ Grout has only been tested on muOS 2508.1 Canada Goose on an Anbernic RG35XXSP.
 Please help by verifying if it works on other devices!
 
 1. Own a supported device running muOS.
-2. Download the [latest Grout release](https://github.com/UncleJunVIP/Grout/releases/latest) for muOS (look for
+2. Download the [latest Grout release](https://github.com/rommapp/grout/releases/latest) for muOS (look for
    `Grout.muxapp`).
 3. Transfer the `Grout.muxapp` file to SD1 `(mmc)/ARCHIVE` on your device.
 4. Go to Applications and launch Archive Manager.
@@ -52,7 +47,7 @@ Please help by verifying if it works on other devices!
 7. Follow the "How To Configure Grout" section below to complete the setup.
 8. Find an [input mapping config](/.github/resources/input_mappings) for your device.
     - If one does not exist, please try one for a different device.
-    - If that does not work, please [create an issue](https://github.com/UncleJunVIP/Grout/issues/new).
+    - If that does not work, please [create an issue](https://github.com/rommapp/grout/issues/new).
     - A first launch setup process is in the works but is not ready for prime-time.
 9. Save the input mapping JSON file as `input_mapping.json` and transfer it to SD1 `(mmc)/Applications/Grout` on your
    device.

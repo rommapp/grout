@@ -11,7 +11,6 @@
 /grout
 /grout.log
 /resources/fonts
-/setup-qr.png
 /config.*
 /.env
 /*-config.yml
