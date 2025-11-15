@@ -2,8 +2,8 @@ package ui
 
 import (
 	"fmt"
-	"mortar/models"
-	"mortar/utils"
+	"grout/models"
+	"grout/utils"
 	"time"
 
 	"github.com/UncleJunVIP/gabagool/pkg/gabagool"

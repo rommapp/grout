@@ -1,4 +1,4 @@
-name: Package Mortar
+name: Package Grout
 
 on:
   release:
@@ -27,16 +27,16 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Mortar.pak
-          path: build/Mortar.pak
+          name: Grout.pak
+          path: build/Grout.pak
           if-no-files-found: error
           retention-days: 3
           overwrite: true
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Mortar
-          path: build/muOS/Mortar
+          name: Grout
+          path: build/muOS/Grout
           if-no-files-found: error
           retention-days: 3
           overwrite: true

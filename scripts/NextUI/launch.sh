@@ -4,4 +4,4 @@ cd "$PAK_DIR" || exit 1
 
 export LD_LIBRARY_PATH=/usr/trimui/lib:$PAK_DIR/resources/lib
 
-./mortar
+./grout

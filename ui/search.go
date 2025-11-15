@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"mortar/models"
+	"grout/models"
 
 	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	"qlova.tech/sum"

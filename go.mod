@@ -1,4 +1,4 @@
-module mortar
+module grout
 
 go 1.24.1
 

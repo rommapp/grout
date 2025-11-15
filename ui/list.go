@@ -2,9 +2,9 @@ package ui
 
 import (
 	"encoding/json"
-	"mortar/clients"
-	"mortar/models"
-	"mortar/utils"
+	"grout/clients"
+	"grout/models"
+	"grout/utils"
 	"os"
 	"path"
 	"path/filepath"

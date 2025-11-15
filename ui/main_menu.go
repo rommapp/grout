@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"mortar/models"
+	"grout/models"
 
 	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	"qlova.tech/sum"
@@ -39,7 +39,7 @@ func (m MainMenu) Draw() (host interface{}, exitCode int, e error) {
 		})
 	}
 
-	options := gaba.DefaultListOptions("Mortar", menuItems)
+	options := gaba.DefaultListOptions("Grout", menuItems)
 	options.EnableAction = true
 	options.FooterHelpItems = []gaba.FooterHelpItem{
 		{ButtonName: "B", HelpText: "Quit"},

@@ -204,7 +204,7 @@ RUN echo "=== Verifying SDL2 Installation ===" && \
 
 # Build for Miyoo Mini Plus
 RUN echo "=== Building for Miyoo Mini Plus ===" && \
-    GOWORK=off go build -gcflags="all=-N -l" -v -o /build/bin/mortar-miyoo
+    GOWORK=off go build -gcflags="all=-N -l" -v -o /build/bin/grout-miyoo
 
 # Copy the ARM SDL2 libraries
 RUN echo "=== Copying ARM SDL2 libraries ===" && \
@@ -228,7 +228,7 @@ RUN echo "=== Miyoo Mini Plus Build Complete ===" && \
     ls -la /app/bin/ && \
     file /app/bin/* && \
     echo "=== Dependency Analysis ===" && \
-    readelf -d /app/bin/mortar-miyoo | grep NEEDED && \
+    readelf -d /app/bin/grout-miyoo | grep NEEDED && \
     echo "=== Available SDL2 Libraries ===" && \
     ls -la /app/lib/miyoo/ && \
     echo "=== Toolchain Info ===" && \

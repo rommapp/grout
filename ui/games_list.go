@@ -3,9 +3,9 @@ package ui
 import (
 	"encoding/json"
 	"fmt"
-	"mortar/models"
-	"mortar/state"
-	"mortar/utils"
+	"grout/models"
+	"grout/state"
+	"grout/utils"
 	"os"
 	"path"
 	"path/filepath"
@@ -62,16 +62,12 @@ func (gl GameList) Draw() (game interface{}, exitCode int, e error) {
 	itemList := gl.Games
 
 	for idx, _ := range itemList {
-		if gl.Platform.IsArcade {
-			itemList[idx].DisplayName = utils.ArcadeMapping[itemList[idx].Filename]
-		}
-
-		if !gl.Platform.IsArcade || itemList[idx].DisplayName == "" {
+		if itemList[idx].DisplayName == "" {
 			itemList[idx].DisplayName = strings.ReplaceAll(itemList[idx].Filename, filepath.Ext(itemList[idx].Filename), "")
 		}
 	}
 
-	if !gl.Platform.IsArcade && len(host.Filters.InclusiveFilters) > 0 || len(host.Filters.ExclusiveFilters) > 0 {
+	if len(host.Filters.InclusiveFilters) > 0 || len(host.Filters.ExclusiveFilters) > 0 {
 		filters := host.Filters
 
 		if gl.Platform.SkipExclusiveFilters {

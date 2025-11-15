@@ -21,49 +21,49 @@ tasks:
       - mkdir -p build/lib
       - docker rm extract || true
       - docker create --name extract retro-console-arm64
-      - docker cp extract:/build/mortar build/mortar
+      - docker cp extract:/build/grout build/grout
       - docker cp extract:/usr/lib/aarch64-linux-gnu/libSDL2_gfx-1.0.so.0.0.2 build/lib/libSDL2_gfx-1.0.so.0
     silent: true
 
   package-next:
     cmds:
-      - rm -rf build/Mortar.pak || true
-      - mkdir -p build/Mortar.pak
-      - mkdir -p build/Mortar.pak/resources/lib
-      - cp build/mortar scripts/NextUI/launch.sh README.md LICENSE pak.json build/Mortar.pak
-      - cp -R build/lib build/Mortar.pak/resources
-      - cp -R resources build/Mortar.pak/
+      - rm -rf build/Grout.pak || true
+      - mkdir -p build/Grout.pak
+      - mkdir -p build/Grout.pak/resources/lib
+      - cp build/grout scripts/NextUI/launch.sh README.md LICENSE pak.json build/Grout.pak
+      - cp -R build/lib build/Grout.pak/resources
+      - cp -R resources build/Grout.pak/
     silent: true
 
   package-muos:
     cmds:
       - rm -rf build/muOS || true
-      - mkdir -p build/muOS/Mortar
-      - mkdir -p build/muOS/Mortar/resources/lib
-      - cp build/mortar scripts/muOS/mux_launch.sh README.md LICENSE build/muOS/Mortar
-      - cp -R build/lib build/muOS/Mortar/resources
-      - cp -R resources build/muOS/Mortar/
-      - cp -R fonts build/muOS/Mortar/resources
-      - cp .github/resources/input_mappings/rg35xxsp_mapping.json build/muOS/Mortar/input_mapping.json
+      - mkdir -p build/muOS/Grout
+      - mkdir -p build/muOS/Grout/resources/lib
+      - cp build/grout scripts/muOS/mux_launch.sh README.md LICENSE build/muOS/Grout
+      - cp -R build/lib build/muOS/Grout/resources
+      - cp -R resources build/muOS/Grout/
+      - cp -R fonts build/muOS/Grout/resources
+      - cp .github/resources/input_mappings/rg35xxsp_mapping.json build/muOS/Grout/input_mapping.json
     silent: true
 
   adb:
     cmds:
-      - adb shell rm -rf /mnt/SDCARD/Tools/tg5040/Mortar.pak || true
-      - adb push build/Mortar.pak /mnt/SDCARD/Tools/tg5040
-      - adb push config.json /mnt/SDCARD/Tools/tg5040/Mortar.pak
-      - say Finished deploying Mortar!
+      - adb shell rm -rf /mnt/SDCARD/Tools/tg5040/Grout.pak || true
+      - adb push build/Grout.pak /mnt/SDCARD/Tools/tg5040
+      - adb push config.json /mnt/SDCARD/Tools/tg5040/Grout.pak
+      - say Finished deploying Grout!
     silent: true
 
   kill:
     cmds:
       - sshpass -p 'tina' ssh root@192.168.1.210 "kill  \$(pidof dlv)" > /dev/null 2>&1 || true
-      - sshpass -p 'tina' ssh root@192.168.1.210 "kill  \$(pidof mortar)" > /dev/null 2>&1 || true
+      - sshpass -p 'tina' ssh root@192.168.1.210 "kill  \$(pidof grout)" > /dev/null 2>&1 || true
     silent: true
 
   debug:
     cmds:
-      - sshpass -p 'tina' ssh root@192.168.1.210 "sh -c '/mnt/SDCARD/Developer/bin/dlv attach --headless --listen=:2345 --api-version=2 --accept-multiclient \$(pidof mortar)'" > /dev/null &
+      - sshpass -p 'tina' ssh root@192.168.1.210 "sh -c '/mnt/SDCARD/Developer/bin/dlv attach --headless --listen=:2345 --api-version=2 --accept-multiclient \$(pidof grout)'" > /dev/null &
       - printf "Press any key to quit debugging...\n"
       - read
       - task: kill

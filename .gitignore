@@ -8,10 +8,12 @@
 /certs/*
 /logs/*
 /gabagool/
-/mortar
-/mortar.log
+/grout
+/grout.log
 /resources/fonts
 /setup-qr.png
 /config.*
 /.env
 /*-config.yml
+
+resources/web/assets

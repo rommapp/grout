@@ -1,7 +1,7 @@
 version: '3'
 
 vars:
-  IMAGE_NAME: mortar-miyoo-builder
+  IMAGE_NAME: grout-miyoo-builder
   BUILD_DIR: ./build/miyoo
   DOCKERFILE: miyoo.Dockerfile
 
@@ -36,23 +36,23 @@ tasks:
     cmds:
       - echo "Creating temporary container..."
       - mkdir -p {{.BUILD_DIR}}
-      - docker create --name mortar-extract {{.IMAGE_NAME}} /bin/true
+      - docker create --name grout-extract {{.IMAGE_NAME}} /bin/true
       - echo "Copying Miyoo binary..."
-      - docker cp mortar-extract:/app/bin/mortar-miyoo {{.BUILD_DIR}}/
+      - docker cp grout-extract:/app/bin/grout-miyoo {{.BUILD_DIR}}/
       - echo "Copying configuration files..."
       - echo "Copying Miyoo libraries..."
-      - docker cp mortar-extract:/app/lib/miyoo {{.BUILD_DIR}}/lib/ 2>/dev/null || echo "No libraries to copy"
+      - docker cp grout-extract:/app/lib/miyoo {{.BUILD_DIR}}/lib/ 2>/dev/null || echo "No libraries to copy"
       - echo "Cleaning up container..."
-      - docker rm mortar-extract
+      - docker rm grout-extract
 
   list-output:
     desc: List the Miyoo Mini Plus build output
     cmds:
       - echo "Miyoo Mini Plus build completed! Files in {{.BUILD_DIR}}"
       - echo "=== Binary ==="
-      - ls -la {{.BUILD_DIR}}/mortar-miyoo* || echo "No binary found!"
+      - ls -la {{.BUILD_DIR}}/grout-miyoo* || echo "No binary found!"
       - echo "Binary details:"
-      - file {{.BUILD_DIR}}/mortar-miyoo* 2>/dev/null || echo "Binary not found"
+      - file {{.BUILD_DIR}}/grout-miyoo* 2>/dev/null || echo "Binary not found"
       - echo "=== Configuration Files ==="
       - ls -la {{.BUILD_DIR}}/*.json {{.BUILD_DIR}}/*.yml 2>/dev/null || echo "No config files found"
       - echo "=== Libraries ==="
@@ -62,7 +62,7 @@ tasks:
     desc: Analyze the Miyoo binary dependencies in detail
     cmds:
       - echo "Analyzing Miyoo Mini Plus binary dependencies..."
-      - docker run --rm {{.IMAGE_NAME}} bash -c 'echo "=== Binary Architecture Info ==="; file /app/bin/mortar-miyoo; echo ""; echo "=== Dynamic Dependencies ==="; readelf -d /app/bin/mortar-miyoo | grep NEEDED || echo "No dynamic dependencies found"; echo ""; echo "=== GLIBC Version Requirements ==="; readelf -V /app/bin/mortar-miyoo | grep -E "GLIBC|Version" | head -10 || echo "No version info"; echo ""; echo "=== Available Miyoo Libraries ==="; ls -la /app/lib/miyoo/ 2>/dev/null || echo "No libraries found in container"; echo ""; echo "=== Toolchain Info ==="; arm-linux-gnueabihf-gcc --version | head -1;'
+      - docker run --rm {{.IMAGE_NAME}} bash -c 'echo "=== Binary Architecture Info ==="; file /app/bin/grout-miyoo; echo ""; echo "=== Dynamic Dependencies ==="; readelf -d /app/bin/grout-miyoo | grep NEEDED || echo "No dynamic dependencies found"; echo ""; echo "=== GLIBC Version Requirements ==="; readelf -V /app/bin/grout-miyoo | grep -E "GLIBC|Version" | head -10 || echo "No version info"; echo ""; echo "=== Available Miyoo Libraries ==="; ls -la /app/lib/miyoo/ 2>/dev/null || echo "No libraries found in container"; echo ""; echo "=== Toolchain Info ==="; arm-linux-gnueabihf-gcc --version | head -1;'
 
   clean:
     desc: Clean up Miyoo build artifacts

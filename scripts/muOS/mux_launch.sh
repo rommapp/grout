@@ -1,5 +1,5 @@
 #!/bin/bash
-# HELP: Mortar
+# HELP: Grout
 # ICON: retroarch
 # GRID: RetroArch
 
@@ -18,4 +18,4 @@ export FALLBACK_FONT=$APP_DIR/resources/fonts/font.ttf
 export INPUT_MAPPING_PATH=$APP_DIR/input_mapping.json
 export ROM_DIRECTORY=/mnt/sdcard/ROMS
 
-./mortar
+./grout

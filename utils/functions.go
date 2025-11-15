@@ -2,14 +2,13 @@ package utils
 
 import (
 	"archive/zip"
-	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"image/color"
 	"io"
-	"mortar/clients"
-	"mortar/models"
+	"grout/clients"
+	"grout/models"
 	"net"
 	"os"
 	"path/filepath"
@@ -27,13 +26,7 @@ import (
 	"qlova.tech/sum"
 )
 
-const arcadeMappingFile = "resources/arcade_mapping.txt"
-
-var ArcadeMapping map[string]string
-
-func init() {
-	ArcadeMapping, _ = LoadArcadeMapping(arcadeMappingFile)
-}
+func init() {}
 
 func IsDev() bool {
 	return os.Getenv("ENVIRONMENT") == "DEV"
@@ -653,38 +646,6 @@ func DeleteCache() error {
 
 	logger.Debug("Cache deleted")
 	return nil
-}
-
-func LoadArcadeMapping(filePath string) (map[string]string, error) {
-	mapping := make(map[string]string)
-
-	file, err := os.Open(filePath)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-
-		if line == "" {
-			continue
-		}
-
-		parts := strings.Split(line, "\t")
-		if len(parts) >= 2 {
-			romFile := strings.TrimSpace(parts[0])
-			displayName := strings.TrimSpace(parts[1])
-			mapping[romFile] = displayName
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-
-	return mapping, nil
 }
 
 func AllPlatformsHaveLocalFolders(config *models.Config) []string {

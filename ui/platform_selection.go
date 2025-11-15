@@ -2,7 +2,7 @@ package ui
 
 import (
 	"fmt"
-	"mortar/models"
+	"grout/models"
 
 	"github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	"qlova.tech/sum"
@@ -58,7 +58,7 @@ func (ps PlatformSelection) Draw() (p interface{}, exitCode int, e error) {
 	title := ps.Host.DisplayName
 
 	if ps.QuitOnBack {
-		title = fmt.Sprintf("Mortar | %s", ps.Host.DisplayName)
+		title = fmt.Sprintf("Grout | %s", ps.Host.DisplayName)
 	}
 
 	options := gabagool.DefaultListOptions(title, menuItems)

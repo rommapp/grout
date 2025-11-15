@@ -9,7 +9,6 @@ type Platform struct {
 
 	SkipExclusiveFilters bool `yaml:"skip_exclusive_filters,omitempty" json:"skip_exclusive_filters,omitempty"`
 	SkipInclusiveFilters bool `yaml:"skip_inclusive_filters,omitempty" json:"skip_inclusive_filters,omitempty"`
-	IsArcade             bool `yaml:"is_arcade,omitempty" json:"is_arcade,omitempty"`
 
 	Host Host `yaml:"-" json:"-"`
 }

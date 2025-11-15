@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"mortar/models"
+	"grout/models"
 
 	"qlova.tech/sum"
 )

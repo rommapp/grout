@@ -2,10 +2,10 @@ package ui
 
 import (
 	"fmt"
-	"mortar/models"
-	"mortar/state"
-	"mortar/utils"
-	"mortar/web"
+	"grout/models"
+	"grout/state"
+	"grout/utils"
+	"grout/web"
 
 	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
@@ -167,7 +167,7 @@ func (s SettingsScreen) Draw() (settings interface{}, exitCode int, e error) {
 	}
 
 	result, err := gaba.OptionsList(
-		"Mortar Settings",
+		"Grout Settings",
 		items,
 		footerHelpItems,
 	)

@@ -2,10 +2,10 @@ package ui
 
 import (
 	"encoding/base64"
-	"mortar/clients"
-	"mortar/models"
-	"mortar/state"
-	"mortar/utils"
+	"grout/clients"
+	"grout/models"
+	"grout/state"
+	"grout/utils"
 	"net/url"
 	"path/filepath"
 	"slices"

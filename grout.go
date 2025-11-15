@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"mortar/models"
-	"mortar/state"
-	"mortar/ui"
-	"mortar/utils"
-	"mortar/web"
+	"grout/models"
+	"grout/state"
+	"grout/ui"
+	"grout/utils"
+	"grout/web"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,9 +20,9 @@ import (
 
 func init() {
 	gaba.InitSDL(gaba.Options{
-		WindowTitle:    "Mortar",
+		WindowTitle:    "Grout",
 		ShowBackground: true,
-		LogFilename:    "mortar.log",
+		LogFilename:    "grout.log",
 	})
 
 	common.InitIncludes()
@@ -123,7 +123,7 @@ func main() {
 	logger := gaba.GetLoggerInstance()
 	appState := state.GetAppState()
 
-	logger.Debug("Starting Mortar")
+	logger.Debug("Starting Grout")
 
 	var screen models.Screen
 
@@ -218,7 +218,7 @@ func main() {
 				for _, game := range downloadedGames {
 					isMultiDisc := utils.IsMultiDisc(ds.Platform, game)
 
-					if filepath.Ext(game.Filename) == ".zip" && !screen.(ui.DownloadScreen).Platform.IsArcade {
+					if filepath.Ext(game.Filename) == ".zip" {
 						isBinCue := utils.HasBinCue(ds.Platform, game)
 
 						if isMultiDisc && appState.Config.GroupMultiDisc {
