@@ -1,4 +1,4 @@
-package utils
+package client
 
 import (
 	"encoding/base64"
@@ -19,10 +19,11 @@ import (
 )
 
 type RomMClient struct {
-	Hostname string `yaml:"hostname"`
-	Port     int    `yaml:"port"`
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
+	Hostname   string
+	Port       int
+	Username   string
+	Password   string
+	HttpClient *http.Client
 }
 
 type RomMPlatform struct {
@@ -191,11 +192,13 @@ type RomMRom struct {
 const RomsEndpoint = "/api/roms/"
 
 func NewRomMClient(host models.Host) *RomMClient {
+	client := &http.Client{Timeout: 1750 * time.Millisecond}
 	return &RomMClient{
-		Hostname: host.RootURI,
-		Port:     host.Port,
-		Username: host.Username,
-		Password: host.Password,
+		Hostname:   host.RootURI,
+		Port:       host.Port,
+		Username:   host.Username,
+		Password:   host.Password,
+		HttpClient: client,
 	}
 }
 
@@ -203,86 +206,112 @@ func (c *RomMClient) Close() error {
 	return nil
 }
 
-func (c *RomMClient) buildRootURL() string {
-	if c.Port != 0 {
-		return c.Hostname + ":" + strconv.Itoa(c.Port)
-	}
-
-	return c.Hostname
-}
-
-func (c *RomMClient) GetPlatforms() ([]RomMPlatform, error) {
-	auth := c.Username + ":" + c.Password
-	authHeader := "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
-
+func (c *RomMClient) newRequest(method, endpoint string, params url.Values, auth bool) (*http.Request, error) {
 	u, err := url.Parse(c.buildRootURL())
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse rom endpoint URL for listing: %v", err)
+		return nil, fmt.Errorf("unable to parse URL: %v", err)
 	}
 
-	u = u.JoinPath("/api/platforms/")
-
-	req, err := http.NewRequest("GET", u.String(), nil)
-	if err != nil {
-		return nil, fmt.Errorf("unable to build rom list request: %v", err)
+	u = u.JoinPath(endpoint)
+	if params != nil {
+		u.RawQuery = params.Encode()
 	}
 
-	req.Header.Add("Authorization", authHeader)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	req, err := http.NewRequest(method, u.String(), nil)
 	if err != nil {
-		return nil, fmt.Errorf("unable to call roms list endpoint: %v", err)
+		return nil, fmt.Errorf("unable to build request: %v", err)
+	}
+
+	if auth {
+		authStr := base64.StdEncoding.EncodeToString([]byte(c.Username + ":" + c.Password))
+		req.Header.Set("Authorization", "Basic "+authStr)
+	}
+
+	return req, nil
+}
+
+func (c *RomMClient) fetch(req *http.Request, v interface{}) error {
+	resp, err := c.HttpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("request failed: %v", err)
 	}
 	defer resp.Body.Close()
 
-	var platforms []RomMPlatform
-	err = json.NewDecoder(resp.Body).Decode(&platforms)
+	if err := json.NewDecoder(resp.Body).Decode(v); err != nil {
+		return fmt.Errorf("failed to decode JSON: %w", err)
+	}
+
+	return nil
+}
+
+func (c *RomMClient) buildRootURL() string {
+	if c.Port != 0 {
+		return fmt.Sprintf("%s:%d", c.Hostname, c.Port)
+	}
+	return c.Hostname
+}
+
+func (c *RomMClient) Heartbeat() bool {
+	req, err := c.newRequest("GET", "/api/heartbeat", nil, true)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode roms list JSON: %w", err)
+		return false
+	}
+
+	resp, err := c.HttpClient.Do(req)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+
+	return resp.StatusCode == 200
+}
+
+func (c *RomMClient) Login() bool {
+	req, err := c.newRequest("POST", "/api/login", nil, true)
+	if err != nil {
+		return false
+	}
+
+	resp, err := c.HttpClient.Do(req)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+
+	return resp.StatusCode == 200
+}
+
+func (c *RomMClient) GetPlatforms() ([]RomMPlatform, error) {
+	req, err := c.newRequest("GET", "/api/platforms/", nil, true)
+	if err != nil {
+		return nil, err
+	}
+
+	var platforms []RomMPlatform
+	if err := c.fetch(req, &platforms); err != nil {
+		return nil, err
 	}
 
 	return platforms, nil
 }
 
 func (c *RomMClient) ListDirectory(platformID string) (shared.Items, error) {
-	auth := c.Username + ":" + c.Password
-	authHeader := "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
-
-	u, err := url.Parse(c.buildRootURL())
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse rom endpoint URL for listing: %v", err)
+	params := url.Values{
+		"platform_id": {platformID},
+		"limit":       {"10000"},
 	}
 
-	u = u.JoinPath(RomsEndpoint)
-
-	params := url.Values{}
-	params.Add("platform_id", platformID)
-	params.Add("limit", "10000")
-
-	u.RawQuery = params.Encode()
-
-	req, err := http.NewRequest("GET", u.String(), nil)
+	req, err := c.newRequest("GET", RomsEndpoint, params, true)
 	if err != nil {
-		return nil, fmt.Errorf("unable to build rom list request: %v", err)
+		return nil, err
 	}
-
-	req.Header.Add("Authorization", authHeader)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("unable to call roms list endpoint: %v", err)
-	}
-	defer resp.Body.Close()
 
 	var rawItemsList RomMList
-	err = json.NewDecoder(resp.Body).Decode(&rawItemsList)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode roms list JSON: %w", err)
+	if err := c.fetch(req, &rawItemsList); err != nil {
+		return nil, err
 	}
 
-	var items []shared.Item
+	items := make([]shared.Item, 0, len(rawItemsList.Items))
 	for _, rawItem := range rawItemsList.Items {
 		items = append(items, shared.Item{
 			DisplayName:  rawItem.FsNameNoTags,
@@ -302,13 +331,11 @@ func (c *RomMClient) BuildDownloadURL(remotePath, filename string) (string, erro
 }
 
 func (c *RomMClient) BuildDownloadHeaders() map[string]string {
-	headers := make(map[string]string)
-	return headers
+	return make(map[string]string)
 }
 
-func (c *RomMClient) DownloadArt(remotePath, localPath, filename, rename string) (savedPath string, error error) {
+func (c *RomMClient) DownloadArt(remotePath, localPath, filename, rename string) (string, error) {
 	logger := gaba.GetLoggerInstance()
-
 	logger.Debug("Downloading file...",
 		"remotePath", remotePath,
 		"localPath", localPath,
@@ -320,39 +347,35 @@ func (c *RomMClient) DownloadArt(remotePath, localPath, filename, rename string)
 		return "", fmt.Errorf("unable to build download url: %w", err)
 	}
 
-	httpClient := &http.Client{
-		Timeout: 60 * time.Second,
-	}
-
+	httpClient := &http.Client{Timeout: 60 * time.Second}
 	resp, err := httpClient.Get(sourceURL)
 	if err != nil {
 		return "", fmt.Errorf("failed to download file: %w", err)
 	}
 	defer resp.Body.Close()
 
-	err = os.MkdirAll(localPath, os.ModePerm)
-	if err != nil {
+	if err := os.MkdirAll(localPath, os.ModePerm); err != nil {
 		return "", fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	fn := filename
-
+	// Determine final filename
+	finalName := filename
 	if rename != "" {
-		imageExt := filepath.Ext(filename)
-		fn = strings.ReplaceAll(rename, filepath.Ext(rename), "")
-		fn = fn + imageExt
+		ext := filepath.Ext(filename)
+		base := strings.TrimSuffix(rename, filepath.Ext(rename))
+		finalName = base + ext
 	}
 
-	f, err := os.Create(filepath.Join(localPath, fn))
+	fullPath := filepath.Join(localPath, finalName)
+	f, err := os.Create(fullPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to create file: %w", err)
 	}
 	defer f.Close()
 
-	_, err = io.Copy(f, resp.Body)
-	if err != nil {
+	if _, err := io.Copy(f, resp.Body); err != nil {
 		return "", fmt.Errorf("failed to save file: %w", err)
 	}
 
-	return filepath.Join(localPath, fn), nil
+	return fullPath, nil
 }

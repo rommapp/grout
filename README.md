@@ -2,7 +2,9 @@
 <!-- trunk-ignore(markdownlint/MD041) -->
 <div align="center">
 
-  <img src=".github/resources/isotipo.png" height="180px" width="auto" alt="romm-muos logo">
+  <img src=".github/resources/isotipo.png" height="180px" width="auto" alt="romm-grout logo">
+  <br />
+  <img src=".github/resources/logotipo.png" height="45px" width="auto" alt="romm grout logotype">
     <h3 style="font-size: 25px;">
       A Download client for NextUI and muOS
   </h3>
@@ -28,8 +30,10 @@
       NextUI (look for
       `Grout.pak.zip`)
     - For manual downloads, extract the release zip and place the `Grout.pak` directory into `SD_ROOT/Tools/tg5040`.
-4. Follow the "How To Configure Grout" section below to complete the setup.
-5. Launch `Grout` from the `Tools` menu and enjoy!
+4. Launch `Grout` from the `Tools` menu and enjoy!
+
+**Note:** NextUI is only currently supported on the TrimUI Smart Pro and TrimUI Brick. These systems will have controls
+automatically mapped.
 
 ### muOS Setup
 
@@ -44,14 +48,13 @@ Please help by verifying if it works on other devices!
 4. Go to Applications and launch Archive Manager.
 5. Select [SD1-APP] Grout from the list and let it extract to your applications directory.
 6. Exit Archive Manager.
-7. Follow the "How To Configure Grout" section below to complete the setup.
-8. Find an [input mapping config](/.github/resources/input_mappings) for your device.
+7. Find an [input mapping config](/.github/resources/input_mappings) for your device.
     - If one does not exist, please try one for a different device.
     - If that does not work, please [create an issue](https://github.com/rommapp/grout/issues/new).
     - A first launch setup process is in the works but is not ready for prime-time.
-9. Save the input mapping JSON file as `input_mapping.json` and transfer it to SD1 `(mmc)/Applications/Grout` on your
+8. Save the input mapping JSON file as `input_mapping.json` and transfer it to SD1 `(mmc)/Applications/Grout` on your
    device.
-10. Select `Apps` on the Main Menu, launch Grout and enjoy!
+9. Select `Apps` on the Main Menu, launch Grout and enjoy!
 
 **Note:** Grout does not support downloading art on muOS. This will be added in a future release.
 

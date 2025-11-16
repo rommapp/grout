@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"grout/client"
 	"grout/models"
 	"io"
 	"net"
@@ -149,14 +150,14 @@ func MapPlatforms(host models.Host, directories shared.Items) []models.Platform 
 		common.LogStandardFatal(fmt.Sprintf("Unsupported CFW: %s", cfw), nil)
 	}
 
-	client := NewRomMClient(host)
+	c := client.NewRomMClient(host)
 
-	rommPlatforms, err := client.GetPlatforms()
+	rommPlatforms, err := c.GetPlatforms()
 	if err != nil {
 		common.LogStandardFatal(fmt.Sprintf("Failed to get platforms from RomM: %s", err), nil)
 	}
 
-	slugToRomMPlatform := make(map[string]RomMPlatform)
+	slugToRomMPlatform := make(map[string]client.RomMPlatform)
 	for _, platform := range rommPlatforms {
 		slugToRomMPlatform[platform.Slug] = platform
 	}
@@ -567,7 +568,7 @@ func FindArt(platform models.Platform, game shared.Item) string {
 		artDirectory = filepath.Join(platform.LocalDirectory, ".media")
 	}
 
-	client := NewRomMClient(platform.Host)
+	c := client.NewRomMClient(platform.Host)
 
 	if game.ArtURL == "" {
 		return ""
@@ -578,7 +579,7 @@ func FindArt(platform models.Platform, game shared.Item) string {
 
 	artFilename = strings.Split(artFilename, "?")[0] // For the query string caching stuff
 
-	LastSavedArtPath, err := client.DownloadArt(artSubdirectory,
+	LastSavedArtPath, err := c.DownloadArt(artSubdirectory,
 		artDirectory, artFilename, game.Filename)
 
 	if err != nil {

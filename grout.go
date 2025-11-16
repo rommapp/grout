@@ -32,24 +32,18 @@ func init() {
 		common.LogStandardFatal("No Internet Connection", err)
 	}
 
+	gaba.ProcessMessage("", gaba.ProcessMessageOptions{
+		Image:       "resources/splash.png",
+		ImageWidth:  1024,
+		ImageHeight: 720,
+	}, func() (interface{}, error) {
+		time.Sleep(750 * time.Millisecond)
+		return nil, nil
+	})
+
 	config, err := utils.LoadConfig()
 	if err != nil {
-		config = &models.Config{}
-		login := ui.InitLogin()
-		host, code, err := login.Draw()
-		if err != nil || code == 1 {
-			gaba.ProcessMessage("Something unexpected happened!\nCheck the logs for more info.", gaba.ProcessMessageOptions{}, func() (interface{}, error) {
-				time.Sleep(3 * time.Second)
-				return nil, nil
-			})
-			defer cleanup()
-			common.LogStandardFatal("Unable to get login information", err)
-		} else if code == 2 {
-			os.Exit(1)
-		}
-
-		config.Hosts = append(config.Hosts, host.(models.Host))
-
+		config = ui.HandleLogin(models.Host{})
 		utils.SaveConfig(config)
 	}
 

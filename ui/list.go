@@ -1,8 +1,8 @@
 package ui
 
 import (
+	"grout/client"
 	"grout/models"
-	"grout/utils"
 	"slices"
 	"strings"
 
@@ -16,7 +16,7 @@ func FetchListStateless(platform models.Platform) (shared.Items, error) {
 	logger.Debug("Fetching Item List",
 		"host", platform.Host)
 
-	client := utils.NewRomMClient(platform.Host)
+	client := client.NewRomMClient(platform.Host)
 
 	defer func(client shared.Client) {
 		err := client.Close()
