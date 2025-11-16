@@ -5,10 +5,8 @@ import (
 	"grout/models"
 	"grout/state"
 	"grout/utils"
-	"grout/web"
 
 	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
-	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 	"qlova.tech/sum"
 )
 
@@ -42,31 +40,6 @@ func (s SettingsScreen) Draw() (settings interface{}, exitCode int, e error) {
 					return 0
 				}
 				return 1
-			}(),
-		},
-		{
-			Item: gaba.MenuItem{
-				Text: "Art Type",
-			},
-			Options: []gaba.Option{
-				{DisplayName: "Box Art", Value: "BOX_ART"},
-				{DisplayName: "Title Screen", Value: "TITLE_SCREEN"},
-				{DisplayName: "Logos", Value: "LOGOS"},
-				{DisplayName: "Screenshots", Value: "SCREENSHOTS"},
-			},
-			SelectedOption: func() int {
-				switch appState.Config.ArtDownloadType {
-				case shared.ArtDownloadTypes.BOX_ART:
-					return 0
-				case shared.ArtDownloadTypes.TITLE_SCREEN:
-					return 1
-				case shared.ArtDownloadTypes.LOGOS:
-					return 2
-				case shared.ArtDownloadTypes.SCREENSHOTS:
-					return 3
-				default:
-					return 0
-				}
 			}(),
 		},
 		{
@@ -134,32 +107,6 @@ func (s SettingsScreen) Draw() (settings interface{}, exitCode int, e error) {
 		},
 	}
 
-	if utils.CacheFolderExists() {
-		items = append(items, gaba.ItemWithOptions{
-			Item: gaba.MenuItem{
-				Text: "Empty Cache",
-			},
-			Options: []gaba.Option{
-				{
-					DisplayName: "",
-					Value:       "empty",
-					Type:        gaba.OptionTypeClickable,
-				},
-			},
-		})
-	}
-
-	items = append(items, gaba.ItemWithOptions{
-		Item: gaba.MenuItem{
-			Text: "Launch Configuration API",
-		},
-		Options: []gaba.Option{
-			{
-				Type: gaba.OptionTypeClickable,
-			},
-		},
-	})
-
 	footerHelpItems := []gaba.FooterHelpItem{
 		{ButtonName: "B", HelpText: "Cancel"},
 		{ButtonName: "←→", HelpText: "Cycle"},
@@ -178,43 +125,11 @@ func (s SettingsScreen) Draw() (settings interface{}, exitCode int, e error) {
 	}
 
 	if result.IsSome() {
-		if result.Unwrap().SelectedItem.Item.Text == "Launch Configuration API" {
-			web.QRScreen("Shutdown Configuration API")
-			config, err := utils.LoadConfig()
-			if err == nil {
-				state.SetConfig(config)
-				utils.DeleteCache()
-			}
-			return result, 404, nil
-		}
-
-		if result.Unwrap().SelectedItem.Item.Text == "Empty Cache" {
-			_ = utils.DeleteCache()
-
-			_, _ = gaba.ProcessMessage(fmt.Sprintf("Cache Emptied!"),
-				gaba.ProcessMessageOptions{ShowThemeBackground: true}, func() (interface{}, error) {
-					return nil, nil
-				})
-			return result, 404, nil
-		}
-
 		newSettingOptions := result.Unwrap().Items
 
 		for _, option := range newSettingOptions {
 			if option.Item.Text == "Download Art" {
 				appState.Config.DownloadArt = option.SelectedOption == 0
-			} else if option.Item.Text == "Art Type" {
-				artTypeValue := option.Options[option.SelectedOption].Value.(string)
-				switch artTypeValue {
-				case "BOX_ART":
-					appState.Config.ArtDownloadType = shared.ArtDownloadTypes.BOX_ART
-				case "TITLE_SCREEN":
-					appState.Config.ArtDownloadType = shared.ArtDownloadTypes.TITLE_SCREEN
-				case "LOGOS":
-					appState.Config.ArtDownloadType = shared.ArtDownloadTypes.LOGOS
-				case "SCREENSHOTS":
-					appState.Config.ArtDownloadType = shared.ArtDownloadTypes.SCREENSHOTS
-				}
 			} else if option.Item.Text == "Unzip Downloads" {
 				appState.Config.UnzipDownloads = option.SelectedOption == 0
 			} else if option.Item.Text == "Group BIN / CUE" {

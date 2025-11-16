@@ -1,13 +1,8 @@
 package ui
 
 import (
-	"encoding/json"
-	"grout/clients"
 	"grout/models"
 	"grout/utils"
-	"os"
-	"path"
-	"path/filepath"
 	"slices"
 	"strings"
 
@@ -21,10 +16,7 @@ func FetchListStateless(platform models.Platform) (shared.Items, error) {
 	logger.Debug("Fetching Item List",
 		"host", platform.Host)
 
-	client, err := clients.BuildClient(platform.Host)
-	if err != nil {
-		return nil, err
-	}
+	client := utils.NewRomMClient(platform.Host.RootURI, platform.Host.Port, platform.Host.Username, platform.Host.Password)
 
 	defer func(client shared.Client) {
 		err := client.Close()
@@ -38,10 +30,6 @@ func FetchListStateless(platform models.Platform) (shared.Items, error) {
 		return nil, err
 	}
 
-	for i, item := range items {
-		items[i].DisplayName = strings.ReplaceAll(item.Filename, filepath.Ext(item.Filename), "")
-	}
-
 	filtered := make([]shared.Item, 0, len(items))
 	for _, item := range items {
 		if !strings.HasPrefix(item.Filename, ".") {
@@ -52,36 +40,13 @@ func FetchListStateless(platform models.Platform) (shared.Items, error) {
 	return filtered, nil
 }
 
-func filterList(itemList []shared.Item, filters models.Filters) []shared.Item {
-	result := itemList
+func filterList(itemList []shared.Item, filter string) []shared.Item {
+	var result []shared.Item
 
-	if len(filters.InclusiveFilters) > 0 {
-		result = nil
-		for _, item := range itemList {
-			for _, filter := range filters.InclusiveFilters {
-				if strings.Contains(strings.ToLower(item.DisplayName), strings.ToLower(filter)) {
-					result = append(result, item)
-					break
-				}
-			}
+	for _, item := range itemList {
+		if strings.Contains(strings.ToLower(item.DisplayName), strings.ToLower(filter)) {
+			result = append(result, item)
 		}
-	}
-
-	if len(filters.ExclusiveFilters) > 0 {
-		filtered := make([]shared.Item, 0, len(result))
-		for _, item := range result {
-			excluded := false
-			for _, filter := range filters.ExclusiveFilters {
-				if strings.Contains(strings.ToLower(item.DisplayName), strings.ToLower(filter)) {
-					excluded = true
-					break
-				}
-			}
-			if !excluded {
-				filtered = append(filtered, item)
-			}
-		}
-		result = filtered
 	}
 
 	slices.SortFunc(result, func(a, b shared.Item) int {

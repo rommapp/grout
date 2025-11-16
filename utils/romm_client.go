@@ -1,4 +1,4 @@
-package clients
+package utils
 
 import (
 	"encoding/base64"
@@ -250,6 +250,7 @@ func (c *RomMClient) ListDirectory(platformID string) (shared.Items, error) {
 	var items []shared.Item
 	for _, rawItem := range rawItemsList.Items {
 		items = append(items, shared.Item{
+			DisplayName:  rawItem.FsNameNoTags,
 			Filename:     rawItem.FsName,
 			FileSize:     strconv.Itoa(rawItem.FsSizeBytes),
 			LastModified: rawItem.UpdatedAt.String(),

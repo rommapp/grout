@@ -5,10 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"image/color"
-	"io"
-	"grout/clients"
 	"grout/models"
+	"io"
 	"net"
 	"os"
 	"path/filepath"
@@ -19,11 +17,8 @@ import (
 	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
-	"github.com/disintegration/imaging"
-	"github.com/skip2/go-qrcode"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
-	"qlova.tech/sum"
 )
 
 func init() {}
@@ -115,7 +110,6 @@ func SaveConfig(config *models.Config) error {
 
 	viper.Set("hosts", config.Hosts)
 	viper.Set("download_art", config.DownloadArt)
-	viper.Set("art_download_type", config.ArtDownloadType)
 	viper.Set("unzip_downloads", config.UnzipDownloads)
 	viper.Set("group_bin_cue", config.GroupBinCue)
 	viper.Set("group_multi_disc", config.GroupMultiDisc)
@@ -507,9 +501,7 @@ func GroupMultiDisk(platform models.Platform, game shared.Item) error {
 	return err
 }
 
-func FindArt(platform models.Platform, game shared.Item, downloadType sum.Int[shared.ArtDownloadType]) string {
-	logger := gaba.GetLoggerInstance()
-
+func FindArt(platform models.Platform, game shared.Item) string {
 	artDirectory := ""
 
 	if IsDev() {
@@ -519,14 +511,7 @@ func FindArt(platform models.Platform, game shared.Item, downloadType sum.Int[sh
 		artDirectory = filepath.Join(platform.LocalDirectory, ".media")
 	}
 
-	host := platform.Host
-
-	client, err := clients.BuildClient(host)
-	if err != nil {
-		return ""
-	}
-
-	rommClient := client.(*clients.RomMClient)
+	client := NewRomMClient(platform.Host.RootURI, platform.Host.Port, platform.Host.Username, platform.Host.Password)
 
 	if game.ArtURL == "" {
 		return ""
@@ -537,7 +522,7 @@ func FindArt(platform models.Platform, game shared.Item, downloadType sum.Int[sh
 
 	artFilename = strings.Split(artFilename, "?")[0] // For the query string caching stuff
 
-	LastSavedArtPath, err := rommClient.DownloadArt(artSubdirectory,
+	LastSavedArtPath, err := client.DownloadArt(artSubdirectory,
 		artDirectory, artFilename, game.Filename)
 
 	if err != nil {
@@ -562,41 +547,6 @@ func MapTagsToDirectories(items shared.Items) map[string]string {
 	return mapping
 }
 
-func CachedMegaThreadJsonFilename(hostName, platformName string) string {
-	return strings.ReplaceAll(fmt.Sprintf("%s_%s_%s.json",
-		hostName, platformName, "megathread"), " ", "")
-}
-
-func CacheFolderExists() bool {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return false
-	}
-
-	cachePath := filepath.Join(cwd, ".cache")
-	if _, err := os.Stat(cachePath); os.IsNotExist(err) {
-		return false
-	}
-
-	return true
-}
-
-func DeleteCache() error {
-	logger := gaba.GetLoggerInstance()
-	cwd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	err = os.RemoveAll(filepath.Join(cwd, ".cache"))
-	if err != nil {
-		logger.Error("Unable to delete cache", "error", err)
-		return err
-	}
-
-	logger.Debug("Cache deleted")
-	return nil
-}
-
 func AllPlatformsHaveLocalFolders(config *models.Config) []string {
 	var missingPlatforms []string
 
@@ -615,77 +565,4 @@ func IsConnectedToInternet() bool {
 	timeout := 5 * time.Second
 	_, err := net.DialTimeout("tcp", "8.8.8.8:53", timeout)
 	return err == nil
-}
-
-func GetLocalIP() (string, error) {
-	interfaces, err := net.Interfaces()
-	if err != nil {
-		return "", fmt.Errorf("failed to get network interfaces: %w", err)
-	}
-
-	for _, iface := range interfaces {
-		if iface.Flags&net.FlagLoopback != 0 || iface.Flags&net.FlagUp == 0 {
-			continue
-		}
-
-		addrs, err := iface.Addrs()
-		if err != nil {
-			continue
-		}
-
-		for _, addr := range addrs {
-			if ipNet, ok := addr.(*net.IPNet); ok {
-				ip := ipNet.IP
-				if ip.To4() != nil && !ip.IsLoopback() {
-					if isPrivateIP(ip) {
-						return ip.String(), nil
-					}
-				}
-			}
-		}
-	}
-
-	return "", fmt.Errorf("no suitable local IP address found")
-}
-
-func isPrivateIP(ip net.IP) bool {
-	privateRanges := []string{
-		"10.0.0.0/8",
-		"172.16.0.0/12",
-		"192.168.0.0/16",
-	}
-
-	for _, rangeStr := range privateRanges {
-		_, network, err := net.ParseCIDR(rangeStr)
-		if err != nil {
-			continue
-		}
-		if network.Contains(ip) {
-			return true
-		}
-	}
-	return false
-}
-
-func CreateTempQRCode(content string, size int) (string, error) {
-	qr, err := qrcode.New(content, qrcode.Medium)
-
-	if err != nil {
-		return "", err
-	}
-
-	qr.BackgroundColor = color.Black
-	qr.ForegroundColor = color.White
-	qr.DisableBorder = true
-
-	tempFile, err := os.CreateTemp("", "qrcode-*")
-
-	err = qr.Write(size, tempFile)
-
-	if err != nil {
-		return "", err
-	}
-	defer tempFile.Close()
-
-	return tempFile.Name(), err
 }

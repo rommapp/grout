@@ -1,13 +1,9 @@
 package ui
 
 import (
-	"encoding/json"
 	"fmt"
 	"grout/models"
 	"grout/state"
-	"grout/utils"
-	"os"
-	"path"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -56,7 +52,6 @@ func (gl GameList) Name() sum.Int[models.ScreenName] {
 }
 
 func (gl GameList) Draw() (game interface{}, exitCode int, e error) {
-	host := gl.Platform.Host
 	title := gl.Platform.Name
 
 	itemList := gl.Games
@@ -67,23 +62,9 @@ func (gl GameList) Draw() (game interface{}, exitCode int, e error) {
 		}
 	}
 
-	if len(host.Filters.InclusiveFilters) > 0 || len(host.Filters.ExclusiveFilters) > 0 {
-		filters := host.Filters
-
-		if gl.Platform.SkipExclusiveFilters {
-			filters.ExclusiveFilters = []string{}
-		}
-
-		if gl.Platform.SkipInclusiveFilters {
-			filters.InclusiveFilters = []string{}
-		}
-
-		itemList = filterList(gl.Games, filters)
-	}
-
 	if gl.SearchFilter != "" {
 		title = "[Search: \"" + gl.SearchFilter + "\"]"
-		itemList = filterList(itemList, models.Filters{InclusiveFilters: []string{gl.SearchFilter}})
+		itemList = filterList(itemList, gl.SearchFilter)
 	}
 
 	if len(itemList) == 0 {

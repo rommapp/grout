@@ -55,11 +55,7 @@ func (ps PlatformSelection) Draw() (p interface{}, exitCode int, e error) {
 		}
 	}
 
-	title := ps.Host.DisplayName
-
-	if ps.QuitOnBack {
-		title = fmt.Sprintf("Grout | %s", ps.Host.DisplayName)
-	}
+	title := fmt.Sprintf("Grout | %s", ps.Host.DisplayName)
 
 	options := gabagool.DefaultListOptions(title, menuItems)
 	options.EnableAction = ps.QuitOnBack

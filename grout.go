@@ -6,7 +6,6 @@ import (
 	"grout/state"
 	"grout/ui"
 	"grout/utils"
-	"grout/web"
 	"os"
 	"path/filepath"
 	"strings"
@@ -25,8 +24,6 @@ func init() {
 		LogFilename:    "grout.log",
 	})
 
-	common.InitIncludes()
-
 	if !utils.IsConnectedToInternet() {
 		_, err := gaba.ConfirmationMessage("No Internet Connection!\nMake sure you are connected to Wi-Fi.", []gaba.FooterHelpItem{
 			{ButtonName: "B", HelpText: "Quit"},
@@ -37,18 +34,8 @@ func init() {
 
 	config, err := utils.LoadConfig()
 	if err != nil {
-		web.QRScreen("Continue")
-
-		config, err = utils.LoadConfig()
-
-		if err != nil {
-			_, _ = gaba.ConfirmationMessage("Setup Incomplete!\nScan the QR Code for Instructions", []gaba.FooterHelpItem{
-				{ButtonName: "B", HelpText: "Quit"},
-			}, gaba.MessageOptions{ImagePath: "resources/setup-qr.png"})
-			defer cleanup()
-			common.LogStandardFatal("Setup Incomplete", err)
-			return
-		}
+		// TODO launch setup screen
+		os.Exit(1)
 	}
 
 	if config.LogLevel != "" {
@@ -58,17 +45,6 @@ func init() {
 	logger := gaba.GetLoggerInstance()
 
 	logger.Debug("Configuration Loaded!", "config", config)
-
-	if config.RawArtDownloadType == "" {
-		config.RawArtDownloadType = "BOX_ART"
-	}
-
-	if val, ok := shared.ArtDownloadTypeFromString[config.RawArtDownloadType]; ok {
-		config.ArtDownloadType = val
-	} else {
-		logger.Debug("Invalid art download type provided... defaulting to BOX_ART")
-		config.ArtDownloadType = shared.ArtDownloadTypes.BOX_ART
-	}
 
 	fb := filebrowser.NewFileBrowser(logger)
 	err = fb.CWD(utils.GetRomDirectory(), false)
@@ -266,7 +242,7 @@ func main() {
 						}
 					}
 
-					screen = ui.InitDownloadArtScreen(ds.Platform, prunedGamesForArt, appState.Config.ArtDownloadType, ds.SearchFilter)
+					screen = ui.InitDownloadArtScreen(ds.Platform, prunedGamesForArt, ds.SearchFilter)
 				} else {
 					screen = ui.InitGamesList(ds.Platform, state.GetAppState().CurrentFullGamesList, ds.SearchFilter)
 				}

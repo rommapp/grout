@@ -2,11 +2,9 @@ package ui
 
 import (
 	"encoding/base64"
-	"grout/clients"
 	"grout/models"
 	"grout/state"
 	"grout/utils"
-	"net/url"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -110,7 +108,7 @@ func BuildDownload(platform models.Platform, games shared.Items) []gaba.Download
 
 		var sourceURL string
 
-		client := clients.NewRomMClient(platform.Host.RootURI, platform.Host.Port, platform.Host.Username, platform.Host.Password)
+		client := utils.NewRomMClient(platform.Host.RootURI, platform.Host.Port, platform.Host.Username, platform.Host.Password)
 		sourceURL, _ = client.BuildDownloadURL(g.RomID, g.Filename)
 
 		downloads = append(downloads, gaba.Download{

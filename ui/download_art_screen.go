@@ -15,15 +15,13 @@ import (
 type DownloadArtScreen struct {
 	Platform     models.Platform
 	Games        shared.Items
-	DownloadType sum.Int[shared.ArtDownloadType]
 	SearchFilter string
 }
 
-func InitDownloadArtScreen(platform models.Platform, games shared.Items, downloadType sum.Int[shared.ArtDownloadType], searchFilter string) models.Screen {
+func InitDownloadArtScreen(platform models.Platform, games shared.Items, searchFilter string) models.Screen {
 	return DownloadArtScreen{
 		Platform:     platform,
 		Games:        games,
-		DownloadType: downloadType,
 		SearchFilter: searchFilter,
 	}
 }
@@ -38,7 +36,7 @@ func (a DownloadArtScreen) Draw() (value interface{}, exitCode int, e error) {
 	gabagool.ProcessMessage("Downloading art...",
 		gabagool.ProcessMessageOptions{ShowThemeBackground: true}, func() (interface{}, error) {
 			for _, game := range a.Games {
-				artPath := utils.FindArt(a.Platform, game, a.DownloadType)
+				artPath := utils.FindArt(a.Platform, game)
 
 				if artPath != "" {
 					artPaths = append(artPaths, artPath)
