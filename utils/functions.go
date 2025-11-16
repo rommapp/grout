@@ -10,7 +10,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -134,6 +134,62 @@ func SaveConfig(config *models.Config) error {
 	_ = os.Remove("config.yml")
 
 	return nil
+}
+
+func MapPlatforms(host models.Host, directories shared.Items) []models.Platform {
+	cfw := os.Getenv("CFW")
+	var mapping map[string][]string
+
+	switch strings.ToLower(cfw) {
+	case "muos":
+		mapping = muOSPlatforms
+	case "nextui":
+		mapping = NextUIPlatforms
+	default:
+		common.LogStandardFatal(fmt.Sprintf("Unsupported CFW: %s", cfw), nil)
+	}
+
+	client := NewRomMClient(host)
+
+	rommPlatforms, err := client.GetPlatforms()
+	if err != nil {
+		common.LogStandardFatal(fmt.Sprintf("Failed to get platforms from RomM: %s", err), nil)
+	}
+
+	slugToRomMPlatform := make(map[string]RomMPlatform)
+	for _, platform := range rommPlatforms {
+		slugToRomMPlatform[platform.Slug] = platform
+	}
+
+	var platforms models.Platforms
+
+	for _, directory := range directories {
+		var key string
+
+		switch strings.ToLower(cfw) {
+		case "muos":
+			key = directory.Filename
+		case "nextui":
+			key = directory.Tag
+		}
+
+		slugs, ok := mapping[key]
+		if ok {
+			for _, slug := range slugs {
+				rommPlatform, ok := slugToRomMPlatform[slug]
+				if ok {
+					platforms = append(platforms, models.Platform{
+						Name:           rommPlatform.DisplayName,
+						LocalDirectory: directory.Path,
+						RomMPlatformID: strconv.Itoa(rommPlatform.ID),
+						Host:           host,
+					})
+				}
+			}
+		}
+	}
+
+	return platforms
 }
 
 func UnzipGame(platform models.Platform, game shared.Item) ([]string, error) {
@@ -511,7 +567,7 @@ func FindArt(platform models.Platform, game shared.Item) string {
 		artDirectory = filepath.Join(platform.LocalDirectory, ".media")
 	}
 
-	client := NewRomMClient(platform.Host.RootURI, platform.Host.Port, platform.Host.Username, platform.Host.Password)
+	client := NewRomMClient(platform.Host)
 
 	if game.ArtURL == "" {
 		return ""
@@ -530,35 +586,6 @@ func FindArt(platform models.Platform, game shared.Item) string {
 	}
 
 	return LastSavedArtPath
-}
-
-func MapTagsToDirectories(items shared.Items) map[string]string {
-	mapping := make(map[string]string)
-
-	for _, entry := range items {
-		if entry.IsDirectory {
-			tag := strings.ReplaceAll(entry.Tag, "(", "")
-			tag = strings.ReplaceAll(tag, ")", "")
-			path := filepath.Join(common.RomDirectory, entry.Filename)
-			mapping[tag] = path
-		}
-	}
-
-	return mapping
-}
-
-func AllPlatformsHaveLocalFolders(config *models.Config) []string {
-	var missingPlatforms []string
-
-	for _, h := range config.Hosts {
-		for _, p := range h.Platforms {
-			if p.LocalDirectory == "" && !slices.Contains(missingPlatforms, p.Name) {
-				missingPlatforms = append(missingPlatforms, p.Name)
-			}
-		}
-	}
-
-	return missingPlatforms
 }
 
 func IsConnectedToInternet() bool {

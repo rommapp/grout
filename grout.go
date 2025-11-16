@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"grout/models"
 	"grout/state"
 	"grout/ui"
@@ -9,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	_ "github.com/UncleJunVIP/certifiable"
 	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
@@ -34,8 +34,23 @@ func init() {
 
 	config, err := utils.LoadConfig()
 	if err != nil {
-		// TODO launch setup screen
-		os.Exit(1)
+		config = &models.Config{}
+		login := ui.InitLogin()
+		host, code, err := login.Draw()
+		if err != nil || code == 1 {
+			gaba.ProcessMessage("Something unexpected happened!\nCheck the logs for more info.", gaba.ProcessMessageOptions{}, func() (interface{}, error) {
+				time.Sleep(3 * time.Second)
+				return nil, nil
+			})
+			defer cleanup()
+			common.LogStandardFatal("Unable to get login information", err)
+		} else if code == 2 {
+			os.Exit(1)
+		}
+
+		config.Hosts = append(config.Hosts, host.(models.Host))
+
+		utils.SaveConfig(config)
 	}
 
 	if config.LogLevel != "" {
@@ -53,38 +68,11 @@ func init() {
 		logger.Error("Error loading fetching ROM directories", "error", err)
 	}
 
-	romDirectories := utils.MapTagsToDirectories(fb.Items)
+	for idx, host := range config.Hosts {
+		mapped := utils.MapPlatforms(host, fb.Items)
 
-	logger.Debug(fmt.Sprintf("Discovered %d ROM Directories",
-		len(romDirectories)))
-
-	for tag, path := range romDirectories {
-		logger.Debug(fmt.Sprintf("Mapped System %s", tag), "tag", tag, "path", path)
+		config.Hosts[idx].Platforms = mapped
 	}
-
-	for hostIdx, host := range config.Hosts {
-		for sectionIdx, section := range host.Platforms {
-			if section.SystemTag != "" {
-				config.Hosts[hostIdx].Platforms[sectionIdx].LocalDirectory = romDirectories[section.SystemTag]
-			}
-		}
-	}
-
-	missingPlatforms := utils.AllPlatformsHaveLocalFolders(config)
-
-	if len(missingPlatforms) > 0 {
-		mps := strings.Join(missingPlatforms, "\n")
-		gaba.ConfirmationMessage(fmt.Sprintf("These platforms are missing local folders:\n%s", mps), []gaba.FooterHelpItem{
-			{ButtonName: "B", HelpText: "Quit"},
-		}, gaba.MessageOptions{})
-		logger.Error("Not all platforms have local folders. Ensure they are correct and try again. "+
-			"If you are using the automation folder detection feature, please make sure a matching system tag exits on a directory in your ROM directory.",
-			"missing_platforms", missingPlatforms)
-
-		os.Exit(1)
-	}
-
-	logger.Debug("Populated ROM Directories by System Tag", "config", config)
 
 	state.SetConfig(config)
 }

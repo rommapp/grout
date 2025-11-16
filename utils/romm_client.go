@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"grout/models"
 	"io"
 	"net/http"
 	"net/url"
@@ -189,12 +190,12 @@ type RomMRom struct {
 
 const RomsEndpoint = "/api/roms/"
 
-func NewRomMClient(hostname string, port int, username string, password string) *RomMClient {
+func NewRomMClient(host models.Host) *RomMClient {
 	return &RomMClient{
-		Hostname: hostname,
-		Port:     port,
-		Username: username,
-		Password: password,
+		Hostname: host.RootURI,
+		Port:     host.Port,
+		Username: host.Username,
+		Password: host.Password,
 	}
 }
 
@@ -208,6 +209,40 @@ func (c *RomMClient) buildRootURL() string {
 	}
 
 	return c.Hostname
+}
+
+func (c *RomMClient) GetPlatforms() ([]RomMPlatform, error) {
+	auth := c.Username + ":" + c.Password
+	authHeader := "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
+
+	u, err := url.Parse(c.buildRootURL())
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse rom endpoint URL for listing: %v", err)
+	}
+
+	u = u.JoinPath("/api/platforms/")
+
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("unable to build rom list request: %v", err)
+	}
+
+	req.Header.Add("Authorization", authHeader)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("unable to call roms list endpoint: %v", err)
+	}
+	defer resp.Body.Close()
+
+	var platforms []RomMPlatform
+	err = json.NewDecoder(resp.Body).Decode(&platforms)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode roms list JSON: %w", err)
+	}
+
+	return platforms, nil
 }
 
 func (c *RomMClient) ListDirectory(platformID string) (shared.Items, error) {

@@ -8,6 +8,6 @@ type Host struct {
 	Username string `yaml:"username,omitempty" json:"username,omitempty"`
 	Password string `yaml:"password,omitempty" json:"password,omitempty"`
 
-	Platforms Platforms `yaml:"platforms,omitempty" json:"platforms,omitempty"`
+	Platforms Platforms `yaml:"-" json:"-"`
 }
 type Hosts []Host

@@ -2,7 +2,7 @@
   "name": "Grout",
   "version": "v3.0.0",
   "type": "TOOL",
-  "description": " Download client for NextUI and muOS",
+  "description": "A RomM client for NextUI and muOS",
   "author": "K-Wall",
   "repo_url": "https://github.com/rommapp/grout",
   "release_filename": "Grout.pak.zip",

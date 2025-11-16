@@ -3,6 +3,7 @@ package models
 import "qlova.tech/sum"
 
 type ScreenName struct {
+	Login,
 	MainMenu,
 	Settings,
 	PlatformSelection,

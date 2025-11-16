@@ -16,7 +16,7 @@ func FetchListStateless(platform models.Platform) (shared.Items, error) {
 	logger.Debug("Fetching Item List",
 		"host", platform.Host)
 
-	client := utils.NewRomMClient(platform.Host.RootURI, platform.Host.Port, platform.Host.Username, platform.Host.Password)
+	client := utils.NewRomMClient(platform.Host)
 
 	defer func(client shared.Client) {
 		err := client.Close()
