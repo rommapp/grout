@@ -126,7 +126,12 @@ func (l Login) Draw() (newHost interface{}, exitCode int, e error) {
 						}
 						return strconv.Itoa(l.Host.Port)
 					}(),
-					Value: l.Host.Port,
+					Value: func() string {
+						if l.Host.Port == 0 {
+							return ""
+						}
+						return strconv.Itoa(l.Host.Port)
+					}(),
 				},
 			},
 		},

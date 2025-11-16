@@ -6,8 +6,9 @@
   <br />
   <img src=".github/resources/logotipo.png" height="45px" width="auto" alt="romm grout logotype">
     <h3 style="font-size: 25px;">
-      A Download client for NextUI and muOS
-  </h3>
+
+A Download Client for [NextUI](https://nextui.loveretro.games) and [muOS](https://muos.dev)
+</h3>
 
 <br>
 
@@ -15,7 +16,6 @@
 [![release-badge-img]][release-badge]
 [![discord-badge-img]][discord-badge]
 
-  </div>
 </div>
 
 ## How do I setup Grout?
@@ -32,8 +32,9 @@
     - For manual downloads, extract the release zip and place the `Grout.pak` directory into `SD_ROOT/Tools/tg5040`.
 4. Launch `Grout` from the `Tools` menu and enjoy!
 
-**Note:** NextUI is only currently supported on the TrimUI Smart Pro and TrimUI Brick. These systems will have controls
-automatically mapped.
+**Note:** NextUI is only currently supported on the TrimUI Smart Pro and TrimUI Brick.
+
+These systems will have controls automatically mapped.
 
 ### muOS Setup
 
