@@ -1,12 +1,14 @@
 {
   "name": "Grout",
-  "version": "v3.0.0",
+  "version": "v1.0.0",
   "type": "TOOL",
   "description": "A RomM client for NextUI and muOS",
   "author": "K-Wall",
   "repo_url": "https://github.com/rommapp/grout",
   "release_filename": "Grout.pak.zip",
-  "changelog": {},
+  "changelog": {
+    "v1.0.0": "Initial release of Grout!"
+  },
   "screenshots": [
     ".github/resources/screenshots/main_menu.jpg",
     ".github/resources/screenshots/settings.jpg",

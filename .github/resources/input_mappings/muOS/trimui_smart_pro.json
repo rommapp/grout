@@ -1,0 +1,25 @@
+{
+  "keyboard_map": {},
+  "controller_button_map": {},
+  "controller_hat_map": {},
+  "joystick_axis_map": {},
+  "joystick_button_map": {
+    "0": 5,
+    "1": 6,
+    "2": 7,
+    "3": 8,
+    "4": 9,
+    "6": 10,
+    "5": 11,
+    "7": 12,
+    "9": 13,
+    "8": 14,
+    "10": 15
+  },
+  "joystick_hat_map": {
+    "1": 1,
+    "4": 2,
+    "8": 3,
+    "2": 4
+  }
+}

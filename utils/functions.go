@@ -28,12 +28,37 @@ func IsDev() bool {
 	return os.Getenv("ENVIRONMENT") == "DEV"
 }
 
+func GetCFW() models.CFW {
+	cfw := strings.ToLower(os.Getenv("CFW"))
+	switch cfw {
+	case "muos":
+		return models.MUOS
+	case "nextui":
+		return models.NEXTUI
+	default:
+		common.LogStandardFatal(fmt.Sprintf("Unsupported CFW: %s", cfw), nil)
+	}
+	return ""
+}
+
 func GetRomDirectory() string {
-	if IsDev() || os.Getenv("ROM_DIRECTORY") != "" {
+	if os.Getenv("ROM_DIRECTORY") != "" {
 		return os.Getenv("ROM_DIRECTORY")
 	}
 
-	return common.RomDirectory
+	cfw := GetCFW()
+
+	switch cfw {
+	case models.MUOS:
+		if FolderExists(muOSRomsFolderSD) {
+			return muOSRomsFolderSD
+		}
+		return muOSRomsFolderMMC
+	case models.NEXTUI:
+		return nextUIRomsFolder
+	}
+
+	return ""
 }
 
 func LoadConfig() (*models.Config, error) {
@@ -138,13 +163,13 @@ func SaveConfig(config *models.Config) error {
 }
 
 func MapPlatforms(host models.Host, directories shared.Items) []models.Platform {
-	cfw := os.Getenv("CFW")
-	var mapping map[string][]string
+	cfw := GetCFW()
 
-	switch strings.ToLower(cfw) {
-	case "muos":
+	mapping := map[string][]string{}
+	switch cfw {
+	case models.MUOS:
 		mapping = muOSPlatforms
-	case "nextui":
+	case models.NEXTUI:
 		mapping = NextUIPlatforms
 	default:
 		common.LogStandardFatal(fmt.Sprintf("Unsupported CFW: %s", cfw), nil)
@@ -167,10 +192,10 @@ func MapPlatforms(host models.Host, directories shared.Items) []models.Platform 
 	for _, directory := range directories {
 		var key string
 
-		switch strings.ToLower(cfw) {
-		case "muos":
+		switch cfw {
+		case models.MUOS:
 			key = directory.Filename
-		case "nextui":
+		case models.NEXTUI:
 			key = directory.Tag
 		}
 
@@ -587,6 +612,11 @@ func FindArt(platform models.Platform, game shared.Item) string {
 	}
 
 	return LastSavedArtPath
+}
+
+func FolderExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil || os.IsExist(err)
 }
 
 func IsConnectedToInternet() bool {

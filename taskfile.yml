@@ -44,7 +44,6 @@ tasks:
       - cp -R build/lib build/muOS/Grout/resources
       - cp -R resources build/muOS/Grout/
       - cp -R fonts build/muOS/Grout/resources
-      - cp .github/resources/input_mappings/rg35xxsp_mapping.json build/muOS/Grout/input_mapping.json
     silent: true
 
   adb:

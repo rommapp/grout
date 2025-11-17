@@ -64,9 +64,10 @@ func init() {
 
 	for idx, host := range config.Hosts {
 		mapped := utils.MapPlatforms(host, fb.Items)
-
 		config.Hosts[idx].Platforms = mapped
 	}
+
+	logger.Debug("Platforms mapped!", "config", config)
 
 	state.SetConfig(config)
 }

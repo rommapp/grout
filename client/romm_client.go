@@ -307,6 +307,7 @@ func (c *RomMClient) ListDirectory(platformID string) (shared.Items, error) {
 	}
 
 	var rawItemsList RomMList
+	c.HttpClient.Timeout = 15 * time.Second
 	if err := c.fetch(req, &rawItemsList); err != nil {
 		return nil, err
 	}

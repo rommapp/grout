@@ -1,7 +1,11 @@
 package utils
 
-// The following maps take a RomM Slug and return a list of folder names / system tags that can be used to map platforms
+const muOSRomsFolderMMC = "/mnt/mmc/ROMS/"
+const muOSRomsFolderSD = "/mnt/sdcard/ROMS/"
 
+const nextUIRomsFolder = "/mnt/SDCARD/Roms/"
+
+// The following maps take a RomM Slug and return a list of folder names / system tags that can be used to map platforms
 // TODO this will need to be reviewed
 var muOSPlatforms = map[string][]string{
 	"acpc":                               {"cpc", "gx4000"},
