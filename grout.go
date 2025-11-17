@@ -34,8 +34,8 @@ func init() {
 
 	gaba.ProcessMessage("", gaba.ProcessMessageOptions{
 		Image:       "resources/splash.png",
-		ImageWidth:  1024,
-		ImageHeight: 720,
+		ImageWidth:  gaba.GetWindow().GetWidth(),
+		ImageHeight: gaba.GetWindow().GetHeight(),
 	}, func() (interface{}, error) {
 		time.Sleep(750 * time.Millisecond)
 		return nil, nil
