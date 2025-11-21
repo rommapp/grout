@@ -135,7 +135,7 @@ func (gl GameList) Draw() (game interface{}, exitCode int, e error) {
 }
 
 func loadGamesList(platform models.Platform) (games shared.Items, e error) {
-	logger := gaba.GetLoggerInstance()
+	logger := gaba.GetLogger()
 
 	items, err := FetchListStateless(platform)
 	if err != nil {

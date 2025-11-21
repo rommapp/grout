@@ -6,7 +6,7 @@ import (
 	"grout/state"
 	"grout/utils"
 
-	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
+	"github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	"qlova.tech/sum"
 )
 
@@ -22,16 +22,16 @@ func (s SettingsScreen) Name() sum.Int[models.ScreenName] {
 }
 
 func (s SettingsScreen) Draw() (settings interface{}, exitCode int, e error) {
-	logger := gaba.GetLoggerInstance()
+	logger := gabagool.GetLogger()
 
 	appState := state.GetAppState()
 
-	items := []gaba.ItemWithOptions{
+	items := []gabagool.ItemWithOptions{
 		{
-			Item: gaba.MenuItem{
+			Item: gabagool.MenuItem{
 				Text: "Download Art",
 			},
-			Options: []gaba.Option{
+			Options: []gabagool.Option{
 				{DisplayName: "True", Value: true},
 				{DisplayName: "False", Value: false},
 			},
@@ -43,10 +43,10 @@ func (s SettingsScreen) Draw() (settings interface{}, exitCode int, e error) {
 			}(),
 		},
 		{
-			Item: gaba.MenuItem{
+			Item: gabagool.MenuItem{
 				Text: "Unzip Downloads",
 			},
-			Options: []gaba.Option{
+			Options: []gabagool.Option{
 				{DisplayName: "True", Value: true},
 				{DisplayName: "False", Value: false},
 			},
@@ -58,10 +58,10 @@ func (s SettingsScreen) Draw() (settings interface{}, exitCode int, e error) {
 			}(),
 		},
 		{
-			Item: gaba.MenuItem{
+			Item: gabagool.MenuItem{
 				Text: "Group BIN / CUE",
 			},
-			Options: []gaba.Option{
+			Options: []gabagool.Option{
 				{DisplayName: "True", Value: true},
 				{DisplayName: "False", Value: false},
 			},
@@ -73,10 +73,10 @@ func (s SettingsScreen) Draw() (settings interface{}, exitCode int, e error) {
 			}(),
 		},
 		{
-			Item: gaba.MenuItem{
+			Item: gabagool.MenuItem{
 				Text: "Group Multi-Disc",
 			},
-			Options: []gaba.Option{
+			Options: []gabagool.Option{
 				{DisplayName: "True", Value: true},
 				{DisplayName: "False", Value: false},
 			},
@@ -88,10 +88,10 @@ func (s SettingsScreen) Draw() (settings interface{}, exitCode int, e error) {
 			}(),
 		},
 		{
-			Item: gaba.MenuItem{
+			Item: gabagool.MenuItem{
 				Text: "Log Level",
 			},
-			Options: []gaba.Option{
+			Options: []gabagool.Option{
 				{DisplayName: "Debug", Value: "DEBUG"},
 				{DisplayName: "Error", Value: "ERROR"},
 			},
@@ -107,13 +107,13 @@ func (s SettingsScreen) Draw() (settings interface{}, exitCode int, e error) {
 		},
 	}
 
-	footerHelpItems := []gaba.FooterHelpItem{
+	footerHelpItems := []gabagool.FooterHelpItem{
 		{ButtonName: "B", HelpText: "Cancel"},
 		{ButtonName: "←→", HelpText: "Cycle"},
 		{ButtonName: "Start", HelpText: "Save"},
 	}
 
-	result, err := gaba.OptionsList(
+	result, err := gabagool.OptionsList(
 		"Grout Settings",
 		items,
 		footerHelpItems,

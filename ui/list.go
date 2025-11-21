@@ -11,7 +11,7 @@ import (
 )
 
 func FetchListStateless(platform models.Platform) (shared.Items, error) {
-	logger := gaba.GetLoggerInstance()
+	logger := gaba.GetLogger()
 
 	logger.Debug("Fetching Item List",
 		"host", platform.Host)

@@ -3,7 +3,7 @@ package ui
 import (
 	"grout/models"
 
-	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
+	"github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	"qlova.tech/sum"
 )
 
@@ -29,9 +29,9 @@ func (m MainMenu) Name() sum.Int[models.ScreenName] {
 }
 
 func (m MainMenu) Draw() (host interface{}, exitCode int, e error) {
-	var menuItems []gaba.MenuItem
+	var menuItems []gabagool.MenuItem
 	for _, host := range m.Hosts {
-		menuItems = append(menuItems, gaba.MenuItem{
+		menuItems = append(menuItems, gabagool.MenuItem{
 			Text:     host.DisplayName,
 			Selected: false,
 			Focused:  false,
@@ -39,15 +39,15 @@ func (m MainMenu) Draw() (host interface{}, exitCode int, e error) {
 		})
 	}
 
-	options := gaba.DefaultListOptions("Grout", menuItems)
+	options := gabagool.DefaultListOptions("Grout", menuItems)
 	options.EnableAction = true
-	options.FooterHelpItems = []gaba.FooterHelpItem{
+	options.FooterHelpItems = []gabagool.FooterHelpItem{
 		{ButtonName: "B", HelpText: "Quit"},
 		{ButtonName: "X", HelpText: "Settings"},
 		{ButtonName: "A", HelpText: "Select"},
 	}
 
-	selection, err := gaba.List(options)
+	selection, err := gabagool.List(options)
 	if err != nil {
 		return models.Host{}, -1, err
 	}

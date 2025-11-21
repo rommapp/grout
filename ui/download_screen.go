@@ -38,7 +38,7 @@ func (d DownloadScreen) Name() sum.Int[models.ScreenName] {
 }
 
 func (d DownloadScreen) Draw() (value interface{}, exitCode int, e error) {
-	logger := gaba.GetLoggerInstance()
+	logger := gaba.GetLogger()
 
 	downloads := BuildDownload(d.Platform, d.SelectedGames)
 

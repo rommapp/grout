@@ -24,7 +24,7 @@ func (s Search) Name() sum.Int[models.ScreenName] {
 }
 
 func (s Search) Draw() (value interface{}, exitCode int, e error) {
-	logger := gaba.GetLoggerInstance()
+	logger := gaba.GetLogger()
 
 	res, err := gaba.Keyboard(s.InitialText)
 	if err != nil {

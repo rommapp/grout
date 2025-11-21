@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
+	"github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 )
 
@@ -336,7 +336,7 @@ func (c *RomMClient) BuildDownloadHeaders() map[string]string {
 }
 
 func (c *RomMClient) DownloadArt(remotePath, localPath, filename, rename string) (string, error) {
-	logger := gaba.GetLoggerInstance()
+	logger := gabagool.GetLogger()
 	logger.Debug("Downloading file...",
 		"remotePath", remotePath,
 		"localPath", localPath,

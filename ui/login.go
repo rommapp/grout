@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
+	"github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
 	"qlova.tech/sum"
 )
@@ -33,7 +33,7 @@ func HandleLogin(existing models.Host) *models.Config {
 	l.Host = existing
 	host, code, err := l.Draw()
 	if err != nil || code == 1 {
-		gaba.ProcessMessage("Something unexpected happened!\nCheck the logs for more info.", gaba.ProcessMessageOptions{}, func() (interface{}, error) {
+		gabagool.ProcessMessage("Something unexpected happened!\nCheck the logs for more info.", gabagool.ProcessMessageOptions{}, func() (interface{}, error) {
 			time.Sleep(3 * time.Second)
 			return nil, nil
 		})
@@ -44,7 +44,7 @@ func HandleLogin(existing models.Host) *models.Config {
 
 	rc := client.NewRomMClient(host.(models.Host))
 
-	loginRe, _ := gaba.ProcessMessage("Logging in...", gaba.ProcessMessageOptions{}, func() (interface{}, error) {
+	loginRe, _ := gabagool.ProcessMessage("Logging in...", gabagool.ProcessMessageOptions{}, func() (interface{}, error) {
 		if !rc.Heartbeat() {
 			return LoginResult{BadHost: true}, nil
 		}
@@ -57,18 +57,18 @@ func HandleLogin(existing models.Host) *models.Config {
 	})
 
 	if loginRe.Result.(LoginResult).BadHost {
-		gaba.ConfirmationMessage("Could not connect to RomM!\nPlease check the hostname and port.",
-			[]gaba.FooterHelpItem{
+		gabagool.ConfirmationMessage("Could not connect to RomM!\nPlease check the hostname and port.",
+			[]gabagool.FooterHelpItem{
 				{ButtonName: "A", HelpText: "Continue"},
 			},
-			gaba.MessageOptions{})
+			gabagool.MessageOptions{})
 		return HandleLogin(host.(models.Host))
 	} else if loginRe.Result.(LoginResult).BadCredentials {
-		gaba.ConfirmationMessage("Invalid Username or Password.",
-			[]gaba.FooterHelpItem{
+		gabagool.ConfirmationMessage("Invalid Username or Password.",
+			[]gabagool.FooterHelpItem{
 				{ButtonName: "A", HelpText: "Continue"},
 			},
-			gaba.MessageOptions{})
+			gabagool.MessageOptions{})
 		return HandleLogin(host.(models.Host))
 	}
 
@@ -78,12 +78,12 @@ func HandleLogin(existing models.Host) *models.Config {
 }
 
 func (l Login) Draw() (newHost interface{}, exitCode int, e error) {
-	items := []gaba.ItemWithOptions{
+	items := []gabagool.ItemWithOptions{
 		{
-			Item: gaba.MenuItem{
+			Item: gabagool.MenuItem{
 				Text: "Protocol",
 			},
-			Options: []gaba.Option{
+			Options: []gabagool.Option{
 				{DisplayName: "HTTP", Value: "http://"},
 				{DisplayName: "HTTPS", Value: "https://"},
 			},
@@ -95,12 +95,12 @@ func (l Login) Draw() (newHost interface{}, exitCode int, e error) {
 			}(),
 		},
 		{
-			Item: gaba.MenuItem{
+			Item: gabagool.MenuItem{
 				Text: "Hostname",
 			},
-			Options: []gaba.Option{
+			Options: []gabagool.Option{
 				{
-					Type:           gaba.OptionTypeKeyboard,
+					Type:           gabagool.OptionTypeKeyboard,
 					DisplayName:    removeScheme(l.Host.RootURI),
 					KeyboardPrompt: removeScheme(l.Host.RootURI),
 					Value:          removeScheme(l.Host.RootURI),
@@ -108,12 +108,12 @@ func (l Login) Draw() (newHost interface{}, exitCode int, e error) {
 			},
 		},
 		{
-			Item: gaba.MenuItem{
+			Item: gabagool.MenuItem{
 				Text: "Port (optional)",
 			},
-			Options: []gaba.Option{
+			Options: []gabagool.Option{
 				{
-					Type: gaba.OptionTypeKeyboard,
+					Type: gabagool.OptionTypeKeyboard,
 					KeyboardPrompt: func() string {
 						if l.Host.Port == 0 {
 							return ""
@@ -136,12 +136,12 @@ func (l Login) Draw() (newHost interface{}, exitCode int, e error) {
 			},
 		},
 		{
-			Item: gaba.MenuItem{
+			Item: gabagool.MenuItem{
 				Text: "Username",
 			},
-			Options: []gaba.Option{
+			Options: []gabagool.Option{
 				{
-					Type:           gaba.OptionTypeKeyboard,
+					Type:           gabagool.OptionTypeKeyboard,
 					DisplayName:    l.Host.Username,
 					KeyboardPrompt: l.Host.Username,
 					Value:          l.Host.Username,
@@ -149,12 +149,12 @@ func (l Login) Draw() (newHost interface{}, exitCode int, e error) {
 			},
 		},
 		{
-			Item: gaba.MenuItem{
+			Item: gabagool.MenuItem{
 				Text: "Password",
 			},
-			Options: []gaba.Option{
+			Options: []gabagool.Option{
 				{
-					Type:           gaba.OptionTypeKeyboard,
+					Type:           gabagool.OptionTypeKeyboard,
 					Masked:         true,
 					DisplayName:    l.Host.Password,
 					KeyboardPrompt: l.Host.Password,
@@ -164,13 +164,13 @@ func (l Login) Draw() (newHost interface{}, exitCode int, e error) {
 		},
 	}
 
-	footerHelpItems := []gaba.FooterHelpItem{
+	footerHelpItems := []gabagool.FooterHelpItem{
 		{ButtonName: "B", HelpText: "Quit"},
 		{ButtonName: "←→", HelpText: "Cycle"},
 		{ButtonName: "Start", HelpText: "Login"},
 	}
 
-	res, err := gaba.OptionsList(
+	res, err := gabagool.OptionsList(
 		"Login to RomM",
 		items,
 		footerHelpItems,

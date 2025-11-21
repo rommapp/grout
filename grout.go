@@ -18,7 +18,7 @@ import (
 )
 
 func init() {
-	gaba.InitSDL(gaba.Options{
+	gaba.Init(gaba.Options{
 		WindowTitle:    "Grout",
 		ShowBackground: true,
 		LogFilename:    "grout.log",
@@ -51,7 +51,7 @@ func init() {
 		gaba.SetRawLogLevel(config.LogLevel)
 	}
 
-	logger := gaba.GetLoggerInstance()
+	logger := gaba.GetLogger()
 
 	logger.Debug("Configuration Loaded!", "config", config)
 
@@ -73,13 +73,13 @@ func init() {
 }
 
 func cleanup() {
-	gaba.CloseSDL()
+	gaba.Close()
 }
 
 func main() {
 	defer cleanup()
 
-	logger := gaba.GetLoggerInstance()
+	logger := gaba.GetLogger()
 	appState := state.GetAppState()
 
 	logger.Debug("Starting Grout")

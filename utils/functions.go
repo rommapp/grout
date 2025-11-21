@@ -98,7 +98,7 @@ func LoadConfig() (*models.Config, error) {
 	}
 
 	if ext == ".yaml" || ext == ".yml" {
-		gaba.GetLoggerInstance().Info("Migrating config to JSON")
+		gaba.GetLogger().Info("Migrating config to JSON")
 		_ = SaveConfig(&config)
 	}
 
@@ -147,13 +147,13 @@ func SaveConfig(config *models.Config) error {
 
 	pretty, err := json.MarshalIndent(newConfig, "", "  ")
 	if err != nil {
-		gaba.GetLoggerInstance().Error("Failed to marshal config to JSON", "error", err)
+		gaba.GetLogger().Error("Failed to marshal config to JSON", "error", err)
 		return err
 	}
 
 	err = os.WriteFile("config.json", pretty, 0644)
 	if err != nil {
-		gaba.GetLoggerInstance().Error("Failed to write config file", "error", err)
+		gaba.GetLogger().Error("Failed to write config file", "error", err)
 		return err
 	}
 
@@ -219,7 +219,7 @@ func MapPlatforms(host models.Host, directories shared.Items) []models.Platform 
 }
 
 func UnzipGame(platform models.Platform, game shared.Item) ([]string, error) {
-	logger := gaba.GetLoggerInstance()
+	logger := gaba.GetLogger()
 
 	zipPath := filepath.Join(platform.LocalDirectory, game.Filename)
 	romDirectory := platform.LocalDirectory
@@ -397,7 +397,7 @@ func IsMultiDisc(platform models.Platform, game shared.Item) bool {
 }
 
 func GroupBinCue(platform models.Platform, game shared.Item) {
-	logger := gaba.GetLoggerInstance()
+	logger := gaba.GetLogger()
 
 	unzipped, err := UnzipGame(platform, game)
 
@@ -460,7 +460,7 @@ func GroupBinCue(platform models.Platform, game shared.Item) {
 }
 
 func GroupMultiDisk(platform models.Platform, game shared.Item) error {
-	logger := gaba.GetLoggerInstance()
+	logger := gaba.GetLogger()
 
 	gameFolderName := game.DisplayName
 	diskIndex := strings.Index(gameFolderName, "(Disk")
