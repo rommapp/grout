@@ -13,7 +13,6 @@ import (
 	_ "github.com/UncleJunVIP/certifiable"
 	gaba "github.com/UncleJunVIP/gabagool/pkg/gabagool"
 	"github.com/UncleJunVIP/nextui-pak-shared-functions/common"
-	"github.com/UncleJunVIP/nextui-pak-shared-functions/filebrowser"
 	shared "github.com/UncleJunVIP/nextui-pak-shared-functions/models"
 )
 
@@ -53,23 +52,22 @@ func init() {
 		gaba.SetRawLogLevel(config.LogLevel)
 	}
 
-	logger := gaba.GetLogger()
+	if len(config.DirectoryMappings) == 0 {
+		pms := ui.InitPlatformMappingScreen(config.Hosts[0], true)
+		mappings, code, err := pms.Draw()
+		if err != nil {
+			return
+		}
 
-	logger.Debug("Configuration Loaded!", "config", config)
-
-	fb := filebrowser.NewFileBrowser(logger)
-	err = fb.CWD(utils.GetRomDirectory(), false)
-	if err != nil {
-		defer cleanup()
-		logger.Error("Error loading fetching ROM directories", "error", err)
+		if code == 0 {
+			config.DirectoryMappings = mappings.(map[string]models.DirectoryMapping)
+			utils.SaveConfig(config)
+		}
 	}
 
-	for idx, host := range config.Hosts {
-		mapped := utils.MapPlatforms(host, fb.Items)
-		config.Hosts[idx].Platforms = mapped
-	}
+	config.Hosts[0].Platforms = utils.GetMappedPlatforms(config.Hosts[0], config.DirectoryMappings)
 
-	logger.Debug("Platforms mapped!", "config", config)
+	gaba.GetLogger().Debug("Configuration Loaded!", "config", config.ToLoggable())
 
 	state.SetConfig(config)
 }
@@ -95,8 +93,6 @@ func main() {
 	} else {
 		screen = ui.InitMainMenu(appState.Config.Hosts)
 	}
-
-	screen = ui.InitPlatformMappingScreen(appState.Config.Hosts[0])
 
 	for {
 		res, code, _ := screen.Draw()

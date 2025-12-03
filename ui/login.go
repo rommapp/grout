@@ -164,16 +164,17 @@ func (l Login) Draw() (newHost interface{}, exitCode int, e error) {
 		},
 	}
 
-	footerHelpItems := []gabagool.FooterHelpItem{
-		{ButtonName: "B", HelpText: "Quit"},
-		{ButtonName: "←→", HelpText: "Cycle"},
-		{ButtonName: "Start", HelpText: "Login"},
-	}
-
 	res, err := gabagool.OptionsList(
 		"Login to RomM",
+		gabagool.OptionListSettings{
+			DisableBackButton: false,
+			FooterHelpItems: []gabagool.FooterHelpItem{
+				{ButtonName: "B", HelpText: "Quit"},
+				{ButtonName: "←→", HelpText: "Cycle"},
+				{ButtonName: "Start", HelpText: "Login"},
+			},
+		},
 		items,
-		footerHelpItems,
 	)
 
 	if err != nil {

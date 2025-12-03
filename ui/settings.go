@@ -42,6 +42,25 @@ func (s SettingsScreen) Draw() (settings interface{}, exitCode int, e error) {
 				return 1
 			}(),
 		},
+
+		// TODO add download timeout
+
+		{
+			Item: gabagool.MenuItem{
+				Text: "Use Title As Filename",
+			},
+			Options: []gabagool.Option{
+				{DisplayName: "True", Value: true},
+				{DisplayName: "False", Value: false},
+			},
+			SelectedOption: func() int {
+				if appState.Config.UseTitleAsFilename {
+					return 0
+				}
+				return 1
+			}(),
+		},
+
 		{
 			Item: gabagool.MenuItem{
 				Text: "Unzip Downloads",
@@ -107,16 +126,14 @@ func (s SettingsScreen) Draw() (settings interface{}, exitCode int, e error) {
 		},
 	}
 
-	footerHelpItems := []gabagool.FooterHelpItem{
-		{ButtonName: "B", HelpText: "Cancel"},
-		{ButtonName: "←→", HelpText: "Cycle"},
-		{ButtonName: "Start", HelpText: "Save"},
-	}
-
 	result, err := gabagool.OptionsList(
 		"Grout Settings",
+		gabagool.OptionListSettings{FooterHelpItems: []gabagool.FooterHelpItem{
+			{ButtonName: "B", HelpText: "Cancel"},
+			{ButtonName: "←→", HelpText: "Cycle"},
+			{ButtonName: "Start", HelpText: "Save"},
+		}},
 		items,
-		footerHelpItems,
 	)
 
 	if err != nil {
@@ -130,6 +147,8 @@ func (s SettingsScreen) Draw() (settings interface{}, exitCode int, e error) {
 		for _, option := range newSettingOptions {
 			if option.Item.Text == "Download Art" {
 				appState.Config.DownloadArt = option.SelectedOption == 0
+			} else if option.Item.Text == "Use Title As Filename" {
+				appState.Config.UseTitleAsFilename = option.SelectedOption == 0
 			} else if option.Item.Text == "Unzip Downloads" {
 				appState.Config.UnzipDownloads = option.SelectedOption == 0
 			} else if option.Item.Text == "Group BIN / CUE" {

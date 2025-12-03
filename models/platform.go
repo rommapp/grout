@@ -2,7 +2,6 @@ package models
 
 type Platform struct {
 	Name             string `yaml:"-" json:"-"`
-	LocalDirectory   string `yaml:"-" json:"-"`
 	RomMPlatformID   string `yaml:"-" json:"-"`
 	RomMPlatformSlug string `yaml:"-" json:"-"`
 

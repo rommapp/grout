@@ -90,16 +90,19 @@ func (d DownloadScreen) Draw() (value interface{}, exitCode int, e error) {
 }
 
 func BuildDownload(platform models.Platform, games shared.Items) []gaba.Download {
+	config := state.GetAppState().Config
+
 	var downloads []gaba.Download
 	for _, g := range games {
 
-		var downloadLocation string
-		if utils.IsDev() {
-			romDirectory := strings.ReplaceAll(platform.LocalDirectory, common.RomDirectory, utils.GetRomDirectory())
-			downloadLocation = filepath.Join(romDirectory, g.Filename)
-		} else {
-			downloadLocation = filepath.Join(platform.LocalDirectory, g.Filename)
+		filename := g.Filename
+
+		if config.UseTitleAsFilename {
+			filename = g.DisplayName + filepath.Ext(g.Filename)
 		}
+
+		romDirectory := utils.GetPlatformRomDirectory(platform)
+		downloadLocation := filepath.Join(romDirectory, filename)
 
 		root := platform.Host.RootURI
 
@@ -109,8 +112,8 @@ func BuildDownload(platform models.Platform, games shared.Items) []gaba.Download
 
 		var sourceURL string
 
-		client := client.NewRomMClient(platform.Host)
-		sourceURL, _ = client.BuildDownloadURL(g.RomID, g.Filename)
+		rc := client.NewRomMClient(platform.Host)
+		sourceURL, _ = rc.BuildDownloadURL(g.RomID, g.Filename)
 
 		downloads = append(downloads, gaba.Download{
 			URL:         sourceURL,

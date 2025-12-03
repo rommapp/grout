@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"grout/client"
 	"grout/models"
+	"grout/state"
 	"io"
 	"net"
 	"os"
@@ -23,10 +24,6 @@ import (
 )
 
 func init() {}
-
-func IsDev() bool {
-	return os.Getenv("ENVIRONMENT") == "DEV"
-}
 
 func GetCFW() models.CFW {
 	cfw := strings.ToLower(os.Getenv("CFW"))
@@ -59,6 +56,11 @@ func GetRomDirectory() string {
 	}
 
 	return ""
+}
+
+func GetPlatformRomDirectory(platform models.Platform) string {
+	config := state.GetAppState().Config
+	return filepath.Join(GetRomDirectory(), config.DirectoryMappings[platform.RomMPlatformSlug].RelativePath)
 }
 
 func LoadConfig() (*models.Config, error) {
@@ -143,7 +145,9 @@ func SaveConfig(config *models.Config) error {
 	viper.AddConfigPath(".")
 
 	viper.Set("hosts", config.Hosts)
+	viper.Set("directory_mappings", config.DirectoryMappings)
 	viper.Set("download_art", config.DownloadArt)
+	viper.Set("use_title_as_filename", config.UseTitleAsFilename)
 	viper.Set("unzip_downloads", config.UnzipDownloads)
 	viper.Set("group_bin_cue", config.GroupBinCue)
 	viper.Set("group_multi_disc", config.GroupMultiDisc)
@@ -170,19 +174,7 @@ func SaveConfig(config *models.Config) error {
 	return nil
 }
 
-func MapPlatforms(host models.Host, directories shared.Items) []models.Platform {
-	cfw := GetCFW()
-
-	mapping := map[string][]string{}
-	switch cfw {
-	case models.MUOS:
-		mapping = muOSPlatforms
-	case models.NEXTUI:
-		mapping = NextUIPlatforms
-	default:
-		common.LogStandardFatal(fmt.Sprintf("Unsupported CFW: %s", cfw), nil)
-	}
-
+func GetMappedPlatforms(host models.Host, mappings map[string]models.DirectoryMapping) []models.Platform {
 	c := client.NewRomMClient(host)
 
 	rommPlatforms, err := c.GetPlatforms()
@@ -190,36 +182,17 @@ func MapPlatforms(host models.Host, directories shared.Items) []models.Platform 
 		common.LogStandardFatal(fmt.Sprintf("Failed to get platforms from RomM: %s", err), nil)
 	}
 
-	slugToRomMPlatform := make(map[string]client.RomMPlatform)
-	for _, platform := range rommPlatforms {
-		slugToRomMPlatform[platform.Slug] = platform
-	}
-
 	var platforms models.Platforms
 
-	for _, directory := range directories {
-		var key string
-
-		switch cfw {
-		case models.MUOS:
-			key = directory.Filename
-		case models.NEXTUI:
-			key = directory.Tag
-		}
-
-		slugs, ok := mapping[key]
-		if ok {
-			for _, slug := range slugs {
-				rommPlatform, ok := slugToRomMPlatform[slug]
-				if ok {
-					platforms = append(platforms, models.Platform{
-						Name:           rommPlatform.DisplayName,
-						LocalDirectory: directory.Path,
-						RomMPlatformID: strconv.Itoa(rommPlatform.ID),
-						Host:           host,
-					})
-				}
-			}
+	for _, platform := range rommPlatforms {
+		_, exists := mappings[platform.Slug]
+		if exists {
+			platforms = append(platforms, models.Platform{
+				Name:             platform.DisplayName,
+				RomMPlatformID:   strconv.Itoa(platform.ID),
+				RomMPlatformSlug: platform.Slug,
+				Host:             host,
+			})
 		}
 	}
 
@@ -237,13 +210,8 @@ func RomMSlugToMuOS(slug string) string {
 func UnzipGame(platform models.Platform, game shared.Item) ([]string, error) {
 	logger := gaba.GetLogger()
 
-	zipPath := filepath.Join(platform.LocalDirectory, game.Filename)
-	romDirectory := platform.LocalDirectory
-
-	if IsDev() {
-		romDirectory = strings.ReplaceAll(platform.LocalDirectory, common.RomDirectory, GetRomDirectory())
-		zipPath = filepath.Join(romDirectory, game.Filename)
-	}
+	zipPath := filepath.Join(GetPlatformRomDirectory(platform), game.Filename)
+	romDirectory := GetPlatformRomDirectory(platform)
 
 	extractedFiles, err := gaba.ProcessMessage(fmt.Sprintf("%s %s...", "Unzipping", game.DisplayName), gaba.ProcessMessageOptions{}, func() (interface{}, error) {
 		extractedFiles, err := Unzip(zipPath, romDirectory)
@@ -356,13 +324,7 @@ func Unzip(src, dest string) ([]string, error) {
 }
 
 func ListZipContents(platform models.Platform, game shared.Item) ([]string, error) {
-	zipPath := filepath.Join(platform.LocalDirectory, game.Filename)
-	romDirectory := platform.LocalDirectory
-
-	if IsDev() {
-		romDirectory = strings.ReplaceAll(platform.LocalDirectory, common.RomDirectory, GetRomDirectory())
-		zipPath = filepath.Join(romDirectory, game.Filename)
-	}
+	zipPath := filepath.Join(GetPlatformRomDirectory(platform), game.Filename)
 
 	reader, err := zip.OpenReader(zipPath)
 	if err != nil {
@@ -496,12 +458,7 @@ func GroupMultiDisk(platform models.Platform, game shared.Item) error {
 	}
 
 	gameFolderName = strings.TrimSpace(gameFolderName)
-	gameFolderPath := filepath.Join(platform.LocalDirectory, gameFolderName)
-
-	if IsDev() {
-		romDirectory := strings.ReplaceAll(platform.LocalDirectory, common.RomDirectory, GetRomDirectory())
-		gameFolderPath = filepath.Join(romDirectory, gameFolderName)
-	}
+	gameFolderPath := filepath.Join(GetPlatformRomDirectory(platform), gameFolderName)
 
 	if _, err := os.Stat(gameFolderPath); os.IsNotExist(err) {
 		err := os.MkdirAll(gameFolderPath, 0755)
@@ -524,11 +481,7 @@ func GroupMultiDisk(platform models.Platform, game shared.Item) error {
 			return err
 		}
 	} else {
-		romDirectory := platform.LocalDirectory
-
-		if IsDev() {
-			romDirectory = strings.ReplaceAll(platform.LocalDirectory, common.RomDirectory, GetRomDirectory())
-		}
+		romDirectory := GetPlatformRomDirectory(platform)
 
 		extractedFiles = append(extractedFiles, filepath.Join(romDirectory, game.Filename))
 	}
@@ -600,14 +553,7 @@ func GroupMultiDisk(platform models.Platform, game shared.Item) error {
 }
 
 func FindArt(platform models.Platform, game shared.Item) string {
-	artDirectory := ""
-
-	if IsDev() {
-		romDirectory := strings.ReplaceAll(platform.LocalDirectory, common.RomDirectory, GetRomDirectory())
-		artDirectory = filepath.Join(romDirectory, ".media")
-	} else {
-		artDirectory = filepath.Join(platform.LocalDirectory, ".media")
-	}
+	artDirectory := filepath.Join(GetPlatformRomDirectory(platform), ".media")
 
 	c := client.NewRomMClient(platform.Host)
 

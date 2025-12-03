@@ -62,6 +62,10 @@ func (gl GameList) Draw() (game interface{}, exitCode int, e error) {
 		}
 	}
 
+	slices.SortFunc(itemList, func(a, b shared.Item) int {
+		return strings.Compare(strings.ToLower(a.DisplayName), strings.ToLower(b.DisplayName))
+	})
+
 	if gl.SearchFilter != "" {
 		title = "[Search: \"" + gl.SearchFilter + "\"]"
 		itemList = filterList(itemList, gl.SearchFilter)
