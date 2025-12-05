@@ -61,7 +61,6 @@ func (p PlatformMappingScreen) Draw() (interface{}, int, error) {
 		options := []gaba.Option{unmapped}
 
 		rdi := slices.IndexFunc(fb.Items, func(item models.Item) bool {
-			gaba.GetLogger().Error(fmt.Sprintf("%s | %s", utils.RomMSlugToCFW(platform.Slug), utils.RomFolderBase(item)))
 			switch utils.GetCFW() {
 			case models.NEXTUI:
 				return utils.ParseTag(utils.RomMSlugToCFW(platform.Slug)) == utils.RomFolderBase(item)
