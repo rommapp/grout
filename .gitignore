@@ -15,4 +15,4 @@
 /.env
 /*-config.yml
 
-resources/web/assets
+/config-platformless.json

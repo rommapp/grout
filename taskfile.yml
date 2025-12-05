@@ -42,7 +42,7 @@ tasks:
     cmds:
       - adb shell rm -rf /mnt/SDCARD/Tools/tg5040/Grout.pak || true
       - adb push build/Grout.pak /mnt/SDCARD/Tools/tg5040
-      - adb push config.json /mnt/SDCARD/Tools/tg5040/Grout.pak
+      - adb push config-platformless.json /mnt/SDCARD/Tools/tg5040/Grout.pak/config.json
       - say Finished deploying Grout!
     silent: true
 
@@ -50,7 +50,7 @@ tasks:
     cmds:
       - adb shell rm -rf /mnt/sdcard/MUOS/application/Grout || true
       - adb push build/muOS/Grout /mnt/sdcard/MUOS/application
-      - adb push config.json /mnt/sdcard/MUOS/application/Grout
+      - adb push config-platformless.json /mnt/sdcard/MUOS/application/Grout/config.json
       - adb push .github/resources/input_mappings/muOS/anbernic_mapping.json /mnt/sdcard/MUOS/application/Grout/input_mapping.json
       - say Finished deploying Grout!
     silent: true
