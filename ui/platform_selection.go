@@ -9,13 +9,17 @@ import (
 
 // PlatformSelectionInput contains data needed to render the platform selection screen
 type PlatformSelectionInput struct {
-	Platforms  []romm.Platform
-	QuitOnBack bool // If true, back button quits the app; if false, it navigates back
+	Platforms            []romm.Platform
+	QuitOnBack           bool // If true, back button quits the app; if false, it navigates back
+	LastSelectedIndex    int
+	LastSelectedPosition int
 }
 
 // PlatformSelectionOutput contains the result of the platform selection screen
 type PlatformSelectionOutput struct {
-	SelectedPlatform romm.Platform
+	SelectedPlatform     romm.Platform
+	LastSelectedIndex    int
+	LastSelectedPosition int
 }
 
 // PlatformSelectionScreen displays a list of platforms to choose from
@@ -26,9 +30,14 @@ func NewPlatformSelectionScreen() *PlatformSelectionScreen {
 }
 
 func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (gaba.ScreenResult[PlatformSelectionOutput], error) {
+	output := PlatformSelectionOutput{
+		LastSelectedIndex:    input.LastSelectedIndex,
+		LastSelectedPosition: input.LastSelectedPosition,
+	}
+
 	// Handle empty platforms
 	if len(input.Platforms) == 0 {
-		return gaba.WithCode(PlatformSelectionOutput{}, gaba.ExitCode(404)), nil
+		return gaba.WithCode(output, gaba.ExitCode(404)), nil
 	}
 
 	// Build menu items
@@ -61,27 +70,32 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (gaba.Scree
 	options := gaba.DefaultListOptions("Grout", menuItems)
 	options.EnableAction = input.QuitOnBack
 	options.FooterHelpItems = footerItems
+	options.SelectedIndex = input.LastSelectedIndex
+	options.VisibleStartIndex = max(0, input.LastSelectedIndex-input.LastSelectedPosition)
 
 	sel, err := gaba.List(options)
 	if err != nil {
 		if errors.Is(err, gaba.ErrCancelled) {
-			return gaba.Back(PlatformSelectionOutput{}), nil
+			return gaba.Back(output), nil
 		}
-		return gaba.WithCode(PlatformSelectionOutput{}, gaba.ExitCodeError), err
+		return gaba.WithCode(output, gaba.ExitCodeError), err
 	}
 
 	switch sel.Action {
 	case gaba.ListActionSelected:
 		platform := sel.Items[sel.Selected[0]].Metadata.(romm.Platform)
-		return gaba.Success(PlatformSelectionOutput{SelectedPlatform: platform}), nil
+		output.SelectedPlatform = platform
+		output.LastSelectedIndex = sel.Selected[0]
+		output.LastSelectedPosition = sel.VisiblePosition
+		return gaba.Success(output), nil
 
 	case gaba.ListActionTriggered:
 		// Settings action (X button) - only available when QuitOnBack is true
 		if input.QuitOnBack {
-			return gaba.WithCode(PlatformSelectionOutput{}, gaba.ExitCodeSettings), nil
+			return gaba.WithCode(output, gaba.ExitCodeSettings), nil
 		}
 	}
 
 	// Back/cancel
-	return gaba.WithCode(PlatformSelectionOutput{}, gaba.ExitCodeBack), nil
+	return gaba.WithCode(output, gaba.ExitCodeBack), nil
 }

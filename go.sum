@@ -1,18 +1,9 @@
 github.com/UncleJunVIP/certifiable v1.0.0 h1:g8SMZrGW74qLvli9j0CYO5BvpVcGhqxfvAUnTeSjyfc=
 github.com/UncleJunVIP/certifiable v1.0.0/go.mod h1:paPhCSE8DKzYvBcFcr5NVAYJmmvADq8e5fvkvs95np4=
-github.com/UncleJunVIP/gabagool v0.2.1/go.mod h1:P015j8yPDVV1Bf+vlYuxrvspB8nVr+8m5Hzu144WQWc=
-github.com/UncleJunVIP/gabagool/v2 v2.0.0 h1:d8x9sBC6Ql3Lwo062PC8Lx/nOfMmA4tyS0P+OII79vw=
-github.com/UncleJunVIP/gabagool/v2 v2.0.0/go.mod h1:FgQc2sMVQLBA/A6nE1nfcluMJp9Rn+rP9qWQ1k8UJsA=
-github.com/UncleJunVIP/gabagool/v2 v2.0.1 h1:t9MivQwbg6AdZ185HGi8wwTuDm9Is/9tMHZ8119Epk8=
-github.com/UncleJunVIP/gabagool/v2 v2.0.1/go.mod h1:FgQc2sMVQLBA/A6nE1nfcluMJp9Rn+rP9qWQ1k8UJsA=
-github.com/UncleJunVIP/gabagool/v2 v2.0.2 h1:fVuiAYEYmGKdYpjMyLvaLJKKwKBX9I4QzvI0ID8aMMg=
-github.com/UncleJunVIP/gabagool/v2 v2.0.2/go.mod h1:FgQc2sMVQLBA/A6nE1nfcluMJp9Rn+rP9qWQ1k8UJsA=
-github.com/UncleJunVIP/gabagool/v2 v2.0.3 h1:SsP6n4mC714+HBpHH7kRtQX1BZgbh6Vo5ZdYvNBxA5A=
-github.com/UncleJunVIP/gabagool/v2 v2.0.3/go.mod h1:FgQc2sMVQLBA/A6nE1nfcluMJp9Rn+rP9qWQ1k8UJsA=
-github.com/UncleJunVIP/gabagool/v2 v2.0.4 h1:s0KU3BciWpGWbm7nVRlRN7W33aUTpy6wJ8O5HbNQUWc=
-github.com/UncleJunVIP/gabagool/v2 v2.0.4/go.mod h1:FgQc2sMVQLBA/A6nE1nfcluMJp9Rn+rP9qWQ1k8UJsA=
 github.com/UncleJunVIP/gabagool/v2 v2.0.5 h1:CBgfEkkOacOCS8sPd2+QRn9EApxKzLZfMzQMYDaPhhU=
 github.com/UncleJunVIP/gabagool/v2 v2.0.5/go.mod h1:FgQc2sMVQLBA/A6nE1nfcluMJp9Rn+rP9qWQ1k8UJsA=
+github.com/brandonkowalski/go-romm v0.0.0-20251207051807-e214cf4aaede h1:aCGT4CJnACZrGv46Btw9/97fqOpRQc/hDFhWw9kdiVg=
+github.com/brandonkowalski/go-romm v0.0.0-20251207051807-e214cf4aaede/go.mod h1:cN1bwrUwUZWtL86yRrFuowMMeruFuL6StYpsRJokuUc=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHkI4W8=
@@ -67,5 +58,3 @@ gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c h1:Hei/4ADfdWqJk1ZMxUNpqntN
 gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c/go.mod h1:JHkPIbrfpd72SG/EVd6muEfDQjcINNoR0C8j2r3qZ4Q=
 gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
 gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
-qlova.tech v0.1.1 h1:6M4Eybb3taUTYfceUmBDnV4E9upyrdQMIjjo+namyrI=
-qlova.tech v0.1.1/go.mod h1:OTsg7MNcQl+eR/6zDIyrNoCRjjCXdRvfmrcDaKnHAFk=

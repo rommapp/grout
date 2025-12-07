@@ -101,6 +101,9 @@ func (s *PlatformMappingScreen) fetchPlatforms(input PlatformMappingInput) ([]ro
 func (s *PlatformMappingScreen) getRomDirectories(romDir string) ([]os.DirEntry, error) {
 	entries, err := os.ReadDir(romDir)
 	if err != nil {
+		gaba.ConfirmationMessage("ROM Directory Could Not Be Found!", []gaba.FooterHelpItem{
+			{ButtonName: "B", HelpText: "Quit"},
+		}, gaba.MessageOptions{})
 		return nil, fmt.Errorf("failed to read ROM directory: %w", err)
 	}
 

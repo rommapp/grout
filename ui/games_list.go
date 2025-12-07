@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"grout/models"
-	"grout/state"
+	"grout/utils"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -16,18 +16,23 @@ import (
 
 // GameListInput contains data needed to render the game list screen
 type GameListInput struct {
-	Host         models.Host
-	Platform     romm.Platform
-	Games        []romm.SimpleRom // Pre-loaded games (optional, will fetch if empty)
-	SearchFilter string
+	Config               *models.Config
+	Host                 models.Host
+	Platform             romm.Platform
+	Games                []romm.DetailedRom // Pre-loaded games (optional, will fetch if empty)
+	SearchFilter         string
+	LastSelectedIndex    int
+	LastSelectedPosition int
 }
 
 // GameListOutput contains the result of the game list screen
 type GameListOutput struct {
-	SelectedGames []romm.SimpleRom
-	Platform      romm.Platform
-	SearchFilter  string
-	AllGames      []romm.SimpleRom // Full list for navigation back
+	SelectedGames        []romm.DetailedRom
+	Platform             romm.Platform
+	SearchFilter         string
+	AllGames             []romm.DetailedRom // Full list for navigation back
+	LastSelectedIndex    int
+	LastSelectedPosition int
 }
 
 // GameListScreen displays a list of games for a platform
@@ -41,19 +46,19 @@ func (s *GameListScreen) Draw(input GameListInput) (gaba.ScreenResult[GameListOu
 	games := input.Games
 
 	if len(games) == 0 {
-		loaded, err := s.loadGames(input.Host, input.Platform)
+		loaded, err := s.loadGames(input.Config, input.Host, input.Platform)
 		if err != nil {
 			return gaba.ScreenResult[GameListOutput]{ExitCode: gaba.ExitCodeError}, err
 		}
 		games = loaded
 	}
 
-	state.SetCurrentFullGamesList(games)
-
 	output := GameListOutput{
-		Platform:     input.Platform,
-		SearchFilter: input.SearchFilter,
-		AllGames:     games,
+		Platform:             input.Platform,
+		SearchFilter:         input.SearchFilter,
+		AllGames:             games,
+		LastSelectedIndex:    input.LastSelectedIndex,
+		LastSelectedPosition: input.LastSelectedPosition,
 	}
 
 	displayGames := s.prepareDisplayList(games)
@@ -91,13 +96,18 @@ func (s *GameListScreen) Draw(input GameListInput) (gaba.ScreenResult[GameListOu
 		{ButtonName: "A", HelpText: "Select"},
 	}
 
-	appState := state.GetAppState()
-	options.SelectedIndex = appState.LastSelectedIndex
-	options.VisibleStartIndex = max(0, appState.LastSelectedIndex-appState.LastSelectedPosition)
+	options.SelectedIndex = input.LastSelectedIndex
+	options.VisibleStartIndex = max(0, input.LastSelectedIndex-input.LastSelectedPosition)
 
 	res, err := gaba.List(options)
 	if err != nil {
 		if errors.Is(err, gaba.ErrCancelled) {
+			if input.SearchFilter != "" {
+				output.SearchFilter = ""
+				output.LastSelectedIndex = 0
+				output.LastSelectedPosition = 0
+				return gaba.WithCode(output, utils.ExitCodeClearSearch), nil
+			}
 			return gaba.Back(output), nil
 		}
 		return gaba.WithCode(output, gaba.ExitCodeError), err
@@ -105,11 +115,12 @@ func (s *GameListScreen) Draw(input GameListInput) (gaba.ScreenResult[GameListOu
 
 	switch res.Action {
 	case gaba.ListActionSelected:
-		selectedGames := make([]romm.SimpleRom, 0, len(res.Selected))
+		selectedGames := make([]romm.DetailedRom, 0, len(res.Selected))
 		for _, idx := range res.Selected {
-			selectedGames = append(selectedGames, res.Items[idx].Metadata.(romm.SimpleRom))
+			selectedGames = append(selectedGames, res.Items[idx].Metadata.(romm.DetailedRom))
 		}
-		state.SetLastSelectedPosition(res.Selected[0], res.VisiblePosition)
+		output.LastSelectedIndex = res.Selected[0]
+		output.LastSelectedPosition = res.VisiblePosition
 		output.SelectedGames = selectedGames
 		return gaba.Success(output), nil
 
@@ -120,17 +131,17 @@ func (s *GameListScreen) Draw(input GameListInput) (gaba.ScreenResult[GameListOu
 	return gaba.Back(output), nil
 }
 
-func (s *GameListScreen) loadGames(host models.Host, platform romm.Platform) ([]romm.SimpleRom, error) {
+func (s *GameListScreen) loadGames(config *models.Config, host models.Host, platform romm.Platform) ([]romm.DetailedRom, error) {
 	logger := gaba.GetLogger()
 
-	var games []romm.SimpleRom
+	var games []romm.DetailedRom
 	var loadErr error
 
 	_, err := gaba.ProcessMessage(
 		fmt.Sprintf("Loading %s...", platform.Name),
 		gaba.ProcessMessageOptions{ShowThemeBackground: true},
 		func() (interface{}, error) {
-			roms, err := fetchList(host, platform)
+			roms, err := fetchList(config, host, platform)
 			if err != nil {
 				logger.Error("Error downloading game list", "error", err)
 				loadErr = err
@@ -148,14 +159,14 @@ func (s *GameListScreen) loadGames(host models.Host, platform romm.Platform) ([]
 	return games, nil
 }
 
-func (s *GameListScreen) prepareDisplayList(games []romm.SimpleRom) []romm.SimpleRom {
+func (s *GameListScreen) prepareDisplayList(games []romm.DetailedRom) []romm.DetailedRom {
 	for i := range games {
 		if games[i].Name == "" {
 			games[i].Name = strings.ReplaceAll(games[i].FileName, filepath.Ext(games[i].FileName), "")
 		}
 	}
 
-	slices.SortFunc(games, func(a, b romm.SimpleRom) int {
+	slices.SortFunc(games, func(a, b romm.DetailedRom) int {
 		return strings.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
 	})
 
@@ -180,9 +191,8 @@ func (s *GameListScreen) showEmptyMessage(platformName, searchFilter string) {
 	)
 }
 
-func fetchList(host models.Host, platform romm.Platform) ([]romm.SimpleRom, error) {
+func fetchList(config *models.Config, host models.Host, platform romm.Platform) ([]romm.DetailedRom, error) {
 	logger := gaba.GetLogger()
-	config := state.GetAppState().Config
 
 	logger.Debug("Fetching Item List",
 		"host", host.ToLoggable())
@@ -191,7 +201,7 @@ func fetchList(host models.Host, platform romm.Platform) ([]romm.SimpleRom, erro
 		romm.WithBasicAuth(host.Username, host.Password),
 		romm.WithTimeout(config.ApiTimeout))
 
-	res, err := rc.GetRoms(&romm.GetRomsOptions{
+	res, err := rc.GetDetailedRoms(&romm.GetRomsOptions{
 		Size:       10000,
 		PlatformID: &platform.ID,
 	})
@@ -199,7 +209,7 @@ func fetchList(host models.Host, platform romm.Platform) ([]romm.SimpleRom, erro
 		return nil, err
 	}
 
-	filtered := make([]romm.SimpleRom, 0, res.Size)
+	filtered := make([]romm.DetailedRom, 0, res.Size)
 	for _, rom := range res.Items {
 		if !strings.HasPrefix(rom.FileName, ".") {
 			filtered = append(filtered, rom)
@@ -209,8 +219,8 @@ func fetchList(host models.Host, platform romm.Platform) ([]romm.SimpleRom, erro
 	return filtered, nil
 }
 
-func filterList(itemList []romm.SimpleRom, filter string) []romm.SimpleRom {
-	var result []romm.SimpleRom
+func filterList(itemList []romm.DetailedRom, filter string) []romm.DetailedRom {
+	var result []romm.DetailedRom
 
 	for _, item := range itemList {
 		if strings.Contains(strings.ToLower(item.Name), strings.ToLower(filter)) {
@@ -218,7 +228,7 @@ func filterList(itemList []romm.SimpleRom, filter string) []romm.SimpleRom {
 		}
 	}
 
-	slices.SortFunc(result, func(a, b romm.SimpleRom) int {
+	slices.SortFunc(result, func(a, b romm.DetailedRom) int {
 		return strings.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
 	})
 

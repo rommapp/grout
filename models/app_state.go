@@ -6,7 +6,7 @@ type AppState struct {
 	Config      *Config
 	HostIndices map[string]int
 
-	CurrentFullGamesList []romm.SimpleRom
+	CurrentFullGamesList []romm.DetailedRom
 	LastSelectedIndex    int
 	LastSelectedPosition int
 }

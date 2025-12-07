@@ -1,6 +1,16 @@
 package utils
 
-import "regexp"
+import (
+	"regexp"
+
+	gaba "github.com/UncleJunVIP/gabagool/v2/pkg/gabagool"
+)
+
+const (
+	ExitCodeEditMappings gaba.ExitCode = 100
+	ExitCodeClearSearch  gaba.ExitCode = 101
+	ExitCodeNoResults    gaba.ExitCode = 404
+)
 
 const muOSRomsFolderUnion = "/mnt/union/ROMS"
 const nextUIRomsFolder = "/mnt/SDCARD/Roms/"
