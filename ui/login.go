@@ -134,7 +134,7 @@ func (s *LoginScreen) Draw(input LoginInput) (gabagool.ScreenResult[LoginOutput]
 
 	// User pressed back/quit
 	if err != nil {
-		return gabagool.WithCode(LoginOutput{}, gabagool.ExitCode(res.Selected)), nil
+		return gabagool.WithCode(LoginOutput{}, gabagool.ExitCodeCancel), nil
 	}
 
 	loginSettings := res.Items
