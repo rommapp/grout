@@ -171,7 +171,7 @@ func (s *PlatformMappingScreen) buildPlatformOptions(
 	for _, romDir := range romDirectories {
 		dirName := romDir.Name()
 		displayName := dirName
-		if input.CFW == constants.NEXTUI {
+		if input.CFW == constants.NextUI {
 			displayName = utils.ParseTag(dirName)
 		}
 
@@ -216,7 +216,7 @@ func (s *PlatformMappingScreen) directoryMatchesPlatform(
 	romFolderBase := utils.RomFolderBase(dirName)
 
 	switch cfw {
-	case constants.NEXTUI:
+	case constants.NextUI:
 		return utils.ParseTag(cfwSlug) == romFolderBase
 	default:
 		return cfwSlug == romFolderBase
@@ -225,7 +225,7 @@ func (s *PlatformMappingScreen) directoryMatchesPlatform(
 
 func (s *PlatformMappingScreen) getCreateDisplayName(slug string, cfw constants.CFW) string {
 	displayName := utils.RomMSlugToCFW(slug)
-	if cfw == constants.NEXTUI {
+	if cfw == constants.NextUI {
 		displayName = utils.ParseTag(displayName)
 	}
 	return displayName

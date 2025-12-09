@@ -15,9 +15,9 @@ func GetCFW() constants.CFW {
 	cfw := strings.ToLower(os.Getenv("CFW"))
 	switch cfw {
 	case "muos":
-		return constants.MUOS
+		return constants.MuOS
 	case "nextui":
-		return constants.NEXTUI
+		return constants.NextUI
 	default:
 		LogStandardFatal(fmt.Sprintf("Unsupported CFW: %s", cfw), nil)
 	}
@@ -32,29 +32,25 @@ func GetRomDirectory() string {
 	cfw := GetCFW()
 
 	switch cfw {
-	case constants.MUOS:
+	case constants.MuOS:
 		return constants.MuOSRomsFolderUnion
-	case constants.NEXTUI:
+	case constants.NextUI:
 		return constants.NextUIRomsFolder
 	}
 
 	return ""
 }
 
-// GetMuOSInfoDirectory returns the muOS info directory
-// Checks MUOS_INFO_DIR environment variable first for development/testing
-// Then checks if SD2 path exists, falls back to SD1 if not
 func GetMuOSInfoDirectory() string {
 	if os.Getenv("MUOS_INFO_DIR") != "" {
 		return os.Getenv("MUOS_INFO_DIR")
 	}
 
-	sd2Path := filepath.Join(constants.MuOSSD2, "MUOS", "info")
-	if _, err := os.Stat(sd2Path); err == nil {
-		return sd2Path
+	if _, err := os.Stat(constants.MuOSSD2); err == nil {
+		return filepath.Join(constants.MuOSSD2, "MuOS", "info")
 	}
 
-	return filepath.Join(constants.MuOSSD1, "MUOS", "info")
+	return filepath.Join(constants.MuOSSD1, "MuOS", "info")
 }
 
 func GetPlatformRomDirectory(config models.Config, platform romm.Platform) string {
@@ -71,9 +67,9 @@ func RomMSlugToCFW(slug string) string {
 	var cfwPlatformMap map[string][]string
 
 	switch GetCFW() {
-	case constants.MUOS:
+	case constants.MuOS:
 		cfwPlatformMap = constants.MuOSPlatforms
-	case constants.NEXTUI:
+	case constants.NextUI:
 		cfwPlatformMap = constants.NextUIPlatforms
 	}
 
@@ -90,9 +86,9 @@ func RomMSlugToCFW(slug string) string {
 
 func RomFolderBase(path string) string {
 	switch GetCFW() {
-	case constants.MUOS:
+	case constants.MuOS:
 		return path
-	case constants.NEXTUI:
+	case constants.NextUI:
 		_, tag := NameCleaner(path, true)
 		return tag
 	default:
@@ -102,13 +98,13 @@ func RomFolderBase(path string) string {
 
 // GetArtDirectory returns the directory where box art should be saved for a given platform
 // For NextUI: {rom_directory}/.media
-// For muOS: {MUOS_INFO_DIR or /mnt/mmc/MUOS/info}/catalogue/{System}/box
+// For muOS: {MUOS_INFO_DIR or /mnt/mmc/MuOS/info}/catalogue/{System}/box
 func GetArtDirectory(config models.Config, platform romm.Platform) string {
 	switch GetCFW() {
-	case constants.NEXTUI:
+	case constants.NextUI:
 		romDir := GetPlatformRomDirectory(config, platform)
 		return filepath.Join(romDir, ".media")
-	case constants.MUOS:
+	case constants.MuOS:
 		systemName, exists := constants.MuOSArtDirectory[platform.Slug]
 		if !exists {
 			// Fallback to platform display name if not in map

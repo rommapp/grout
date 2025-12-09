@@ -70,13 +70,11 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 
 	displayGames := utils.PrepareRomNames(games)
 
-	// Use collection name if viewing a collection, otherwise use platform name
 	displayName := input.Platform.Name
 	allGamesFilteredOut := false
 	if input.Collection.ID != 0 {
 		displayName = input.Collection.Name
 		originalCount := len(displayGames)
-		// Filter out games without platform mappings
 		filteredGames := make([]romm.Rom, 0, len(displayGames))
 		for _, game := range displayGames {
 			if _, hasMapping := input.Config.DirectoryMappings[game.PlatformSlug]; hasMapping {
@@ -85,12 +83,16 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 		}
 		displayGames = filteredGames
 
-		// Track if all games were filtered out due to platform mappings
 		allGamesFilteredOut = originalCount > 0 && len(displayGames) == 0
 
-		// Add platform slug to each game name when viewing a collection
-		for i := range displayGames {
-			displayGames[i].Name = fmt.Sprintf("[%s] %s", displayGames[i].PlatformSlug, displayGames[i].Name)
+		// Only add platform prefix if we're viewing multiple platforms (no specific platform selected)
+		if input.Platform.ID == 0 {
+			for i := range displayGames {
+				displayGames[i].ListName = fmt.Sprintf("[%s] %s", displayGames[i].PlatformSlug, displayGames[i].DisplayName)
+			}
+		} else {
+			// Viewing a specific platform within collection, show platform name
+			displayName = fmt.Sprintf("%s - %s", input.Collection.Name, input.Platform.Name)
 		}
 	}
 
@@ -106,11 +108,12 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 		} else {
 			s.showEmptyMessage(displayName, input.SearchFilter)
 		}
-		// Only trigger search if there was an active search query
 		if input.SearchFilter != "" {
 			return WithCode(output, constants.ExitCodeNoResults), nil
 		}
-		// Otherwise, go back
+		if input.Collection.ID != 0 && input.Platform.ID != 0 {
+			return WithCode(output, constants.ExitCodeBackToCollectionPlatform), nil
+		}
 		if input.Collection.ID != 0 {
 			return WithCode(output, constants.ExitCodeBackToCollection), nil
 		}
@@ -120,7 +123,7 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 	menuItems := make([]gaba.MenuItem, len(displayGames))
 	for i, game := range displayGames {
 		menuItems[i] = gaba.MenuItem{
-			Text:     game.Name,
+			Text:     game.ListName,
 			Selected: false,
 			Focused:  false,
 			Metadata: game,
@@ -151,6 +154,9 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 				return WithCode(output, constants.ExitCodeClearSearch), nil
 			}
 			// Return different exit code based on whether viewing collection or platform
+			if input.Collection.ID != 0 && input.Platform.ID != 0 {
+				return WithCode(output, constants.ExitCodeBackToCollectionPlatform), nil
+			}
 			if input.Collection.ID != 0 {
 				return WithCode(output, constants.ExitCodeBackToCollection), nil
 			}
@@ -174,7 +180,9 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 		return WithCode(output, constants.ExitCodeSearch), nil
 	}
 
-	// Return different exit code based on whether viewing collection or platform
+	if input.Collection.ID != 0 && input.Platform.ID != 0 {
+		return WithCode(output, constants.ExitCodeBackToCollectionPlatform), nil
+	}
 	if input.Collection.ID != 0 {
 		return WithCode(output, constants.ExitCodeBackToCollection), nil
 	}

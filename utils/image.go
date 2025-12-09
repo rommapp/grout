@@ -3,79 +3,105 @@ package utils
 import (
 	"fmt"
 	"image"
+	"image/color"
 	"image/png"
 	"os"
 
+	gaba "github.com/UncleJunVIP/gabagool/v2/pkg/gabagool"
+	"github.com/skip2/go-qrcode"
 	"golang.org/x/image/draw"
 )
 
-// CalculateResizeHeight calculates the new height for an image when resizing to a target width
-// while maintaining the original aspect ratio. Returns the new height and any error encountered.
-func CalculateResizeHeight(imagePath string, targetWidth int) (int, error) {
-	file, err := os.Open(imagePath)
-	if err != nil {
-		return 0, fmt.Errorf("failed to open image: %w", err)
-	}
-	defer file.Close()
+func ProcessArtImage(inputPath string) error {
+	logger := gaba.GetLogger()
 
-	img, err := png.Decode(file)
-	if err != nil {
-		return 0, fmt.Errorf("failed to decode PNG: %w", err)
-	}
-
-	bounds := img.Bounds()
-	originalWidth := bounds.Dx()
-	originalHeight := bounds.Dy()
-
-	if originalWidth == 0 {
-		return 0, fmt.Errorf("image has zero width")
-	}
-
-	aspectRatio := float64(originalHeight) / float64(originalWidth)
-	newHeight := int(float64(targetWidth) * aspectRatio)
-
-	return newHeight, nil
-}
-
-// ResizePNG resizes a PNG image to the specified width while maintaining aspect ratio.
-// It reads from inputPath and writes the resized image to outputPath.
-func ResizePNG(inputPath, outputPath string, targetWidth int) error {
 	inputFile, err := os.Open(inputPath)
 	if err != nil {
-		return fmt.Errorf("failed to open input image: %w", err)
+		return fmt.Errorf("failed to open image: %w", err)
 	}
 	defer inputFile.Close()
 
-	srcImg, err := png.Decode(inputFile)
+	img, format, err := image.Decode(inputFile)
 	if err != nil {
-		return fmt.Errorf("failed to decode PNG: %w", err)
+		return fmt.Errorf("failed to decode image: %w", err)
+	}
+	inputFile.Close()
+
+	logger.Debug("Detected image format", "format", format, "path", inputPath)
+
+	windowWidth := int(gaba.GetWindow().GetWidth()) / 2
+	windowHeight := int(gaba.GetWindow().GetHeight()) / 2
+
+	bounds := img.Bounds()
+	imgWidth := bounds.Dx()
+	imgHeight := bounds.Dy()
+
+	var newWidth, newHeight int
+	imgAspect := float64(imgWidth) / float64(imgHeight)
+	windowAspect := float64(windowWidth) / float64(windowHeight)
+
+	if imgAspect > windowAspect {
+		// Image is wider than window, fit to width
+		newWidth = windowWidth
+		newHeight = int(float64(windowWidth) / imgAspect)
+	} else {
+		// Image is taller than window, fit to height
+		newHeight = windowHeight
+		newWidth = int(float64(windowHeight) * imgAspect)
 	}
 
-	// Calculate new dimensions
-	bounds := srcImg.Bounds()
-	originalWidth := bounds.Dx()
-	originalHeight := bounds.Dy()
+	// Only resize if dimensions changed
+	var processedImg image.Image = img
+	if newWidth != imgWidth || newHeight != imgHeight {
+		logger.Debug("Resizing image", "from", fmt.Sprintf("%dx%d", imgWidth, imgHeight), "to", fmt.Sprintf("%dx%d", newWidth, newHeight))
 
-	if originalWidth == 0 {
-		return fmt.Errorf("image has zero width")
+		// Create a new image with the target dimensions
+		dst := image.NewRGBA(image.Rect(0, 0, newWidth, newHeight))
+
+		// Use high-quality bilinear scaling
+		draw.BiLinear.Scale(dst, dst.Bounds(), img, img.Bounds(), draw.Over, nil)
+		processedImg = dst
 	}
 
-	aspectRatio := float64(originalHeight) / float64(originalWidth)
-	newHeight := int(float64(targetWidth) * aspectRatio)
+	// If the original format is not PNG, or if we resized, save as PNG
+	if format != "png" || processedImg != img {
+		logger.Debug("Converting/saving image as PNG", "original_format", format)
 
-	dstImg := image.NewRGBA(image.Rect(0, 0, targetWidth, newHeight))
+		// Create output file
+		outputFile, err := os.Create(inputPath)
+		if err != nil {
+			return fmt.Errorf("failed to create output file: %w", err)
+		}
+		defer outputFile.Close()
 
-	draw.CatmullRom.Scale(dstImg, dstImg.Bounds(), srcImg, bounds, draw.Over, nil)
-
-	outputFile, err := os.Create(outputPath)
-	if err != nil {
-		return fmt.Errorf("failed to create output file: %w", err)
-	}
-	defer outputFile.Close()
-
-	if err := png.Encode(outputFile, dstImg); err != nil {
-		return fmt.Errorf("failed to encode PNG: %w", err)
+		// Encode as PNG
+		if err := png.Encode(outputFile, processedImg); err != nil {
+			return fmt.Errorf("failed to encode PNG: %w", err)
+		}
 	}
 
 	return nil
+}
+
+func CreateTempQRCode(content string, size int) (string, error) {
+	qr, err := qrcode.New(content, qrcode.Medium)
+
+	if err != nil {
+		return "", err
+	}
+
+	qr.BackgroundColor = color.Black
+	qr.ForegroundColor = color.White
+	qr.DisableBorder = true
+
+	tempFile, err := os.CreateTemp("", "qrcode-*")
+
+	err = qr.Write(size, tempFile)
+
+	if err != nil {
+		return "", err
+	}
+	defer tempFile.Close()
+
+	return tempFile.Name(), err
 }

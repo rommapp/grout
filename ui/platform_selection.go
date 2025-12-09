@@ -88,16 +88,16 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (ScreenResu
 
 	switch sel.Action {
 	case gaba.ListActionSelected:
-
 		platform := sel.Items[sel.Selected[0]].Metadata.(romm.Platform)
+
+		output.SelectedPlatform = platform
+		output.LastSelectedIndex = sel.Selected[0]
+		output.LastSelectedPosition = sel.VisiblePosition
 
 		if platform.Slug == "collections" {
 			return WithCode(output, constants.ExitCodeCollections), nil
 		}
 
-		output.SelectedPlatform = platform
-		output.LastSelectedIndex = sel.Selected[0]
-		output.LastSelectedPosition = sel.VisiblePosition
 		return Success(output), nil
 
 	case gaba.ListActionTriggered:

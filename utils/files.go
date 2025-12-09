@@ -6,9 +6,19 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	gaba "github.com/UncleJunVIP/gabagool/v2/pkg/gabagool"
 )
+
+func TempDir() string {
+	wd, err := os.Getwd()
+	if err != nil {
+		return os.TempDir()
+	}
+
+	return filepath.Join(wd, ".tmp")
+}
 
 func DeleteFile(path string) bool {
 	logger := gaba.GetLogger()
@@ -25,39 +35,33 @@ func DeleteFile(path string) bool {
 	}
 }
 
-// ExtractZip extracts a zip file to a destination directory
-func ExtractZip(zipData []byte, destDir string) error {
+func Unzip(zipPath string, destDir string) error {
 	logger := gaba.GetLogger()
 
-	// Create a reader from the zip data
-	reader, err := zip.NewReader(&bytesReaderAt{zipData}, int64(len(zipData)))
+	reader, err := zip.OpenReader(zipPath)
 	if err != nil {
-		return fmt.Errorf("failed to read zip data: %w", err)
+		return fmt.Errorf("failed to open zip file: %w", err)
 	}
+	defer reader.Close()
 
-	// Create the destination directory
 	if err := os.MkdirAll(destDir, 0755); err != nil {
 		return fmt.Errorf("failed to create destination directory: %w", err)
 	}
 
-	// Extract each file
 	for _, file := range reader.File {
 		filePath := filepath.Join(destDir, file.Name)
 
 		if file.FileInfo().IsDir() {
-			// Create directory
 			if err := os.MkdirAll(filePath, file.Mode()); err != nil {
 				return fmt.Errorf("failed to create directory %s: %w", filePath, err)
 			}
 			continue
 		}
 
-		// Create parent directory if it doesn't exist
 		if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
 			return fmt.Errorf("failed to create parent directory for %s: %w", filePath, err)
 		}
 
-		// Extract file
 		if err := extractFile(file, filePath); err != nil {
 			return fmt.Errorf("failed to extract file %s: %w", file.Name, err)
 		}
@@ -68,7 +72,6 @@ func ExtractZip(zipData []byte, destDir string) error {
 	return nil
 }
 
-// extractFile extracts a single file from a zip archive
 func extractFile(file *zip.File, destPath string) error {
 	srcFile, err := file.Open()
 	if err != nil {
@@ -86,18 +89,72 @@ func extractFile(file *zip.File, destPath string) error {
 	return err
 }
 
-// bytesReaderAt implements io.ReaderAt for a byte slice
-type bytesReaderAt struct {
-	data []byte
-}
+// OrganizeMultiFileRomForMuOS reorganizes extracted multi-file ROM contents for muOS
+// muOS expects: .m3u file in platform dir, disc files in _{gameName}/ subdirectory
+func OrganizeMultiFileRomForMuOS(extractDir, romDirectory, gameName string) error {
+	logger := gaba.GetLogger()
 
-func (r *bytesReaderAt) ReadAt(p []byte, off int64) (n int, err error) {
-	if off < 0 || off >= int64(len(r.data)) {
-		return 0, io.EOF
+	// Find the .m3u file in the extracted directory
+	var m3uFile string
+	entries, err := os.ReadDir(extractDir)
+	if err != nil {
+		return fmt.Errorf("failed to read extracted directory: %w", err)
 	}
-	n = copy(p, r.data[off:])
-	if n < len(p) {
-		err = io.EOF
+
+	for _, entry := range entries {
+		if !entry.IsDir() && filepath.Ext(entry.Name()) == ".m3u" {
+			m3uFile = filepath.Join(extractDir, entry.Name())
+			break
+		}
 	}
-	return
+
+	if m3uFile == "" {
+		// No .m3u file found, this might not be a multi-disc game
+		// Just rename the directory with underscore prefix
+		underscoreDir := filepath.Join(romDirectory, "_"+gameName)
+		if err := os.Rename(extractDir, underscoreDir); err != nil {
+			return fmt.Errorf("failed to rename directory to %s: %w", underscoreDir, err)
+		}
+		logger.Debug("No .m3u file found, renamed directory", "from", extractDir, "to", underscoreDir)
+		return nil
+	}
+
+	// Read the .m3u file contents
+	m3uContent, err := os.ReadFile(m3uFile)
+	if err != nil {
+		return fmt.Errorf("failed to read .m3u file: %w", err)
+	}
+
+	// Update the .m3u file contents to reference _{gameName}/ subdirectory
+	lines := strings.Split(string(m3uContent), "\n")
+	for i, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		// Prepend _{gameName}/ to the file reference
+		lines[i] = filepath.Join("_"+gameName, line)
+	}
+	updatedM3U := strings.Join(lines, "\n")
+
+	// Write the updated .m3u file to the platform directory
+	m3uDestPath := filepath.Join(romDirectory, filepath.Base(m3uFile))
+	if err := os.WriteFile(m3uDestPath, []byte(updatedM3U), 0644); err != nil {
+		return fmt.Errorf("failed to write updated .m3u file: %w", err)
+	}
+	logger.Debug("Moved and updated .m3u file", "from", m3uFile, "to", m3uDestPath)
+
+	// Remove the original .m3u file from the extracted directory
+	if err := os.Remove(m3uFile); err != nil {
+		logger.Warn("Failed to remove original .m3u file", "path", m3uFile, "error", err)
+	}
+
+	// Rename the extracted directory to have underscore prefix
+	underscoreDir := filepath.Join(romDirectory, "_"+gameName)
+	if err := os.Rename(extractDir, underscoreDir); err != nil {
+		return fmt.Errorf("failed to rename directory to %s: %w", underscoreDir, err)
+	}
+	logger.Debug("Renamed directory for muOS", "from", extractDir, "to", underscoreDir)
+
+	return nil
 }

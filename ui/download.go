@@ -3,8 +3,11 @@ package ui
 import (
 	"encoding/base64"
 	"fmt"
+	"grout/constants"
 	"grout/models"
 	"grout/utils"
+	_ "image/gif"
+	_ "image/jpeg"
 	"io"
 	"net/http"
 	"net/url"
@@ -151,7 +154,7 @@ func (s *DownloadScreen) Draw(input DownloadInput) (ScreenResult[DownloadOutput]
 		}
 
 		// Extract the multi-file ROM with a progress message
-		tmpZipPath := filepath.Join(os.TempDir(), fmt.Sprintf("grout_multirom_%d.zip", g.ID))
+		tmpZipPath := filepath.Join(utils.TempDir(), fmt.Sprintf("grout_multirom_%d.zip", g.ID))
 		romDirectory := utils.GetPlatformRomDirectory(input.Config, gamePlatform)
 		extractDir := filepath.Join(romDirectory, g.Name)
 
@@ -159,21 +162,25 @@ func (s *DownloadScreen) Draw(input DownloadInput) (ScreenResult[DownloadOutput]
 			fmt.Sprintf("Extracting %s...", g.Name),
 			gaba.ProcessMessageOptions{ShowThemeBackground: true},
 			func() (interface{}, error) {
-				// Read the downloaded zip file
-				zipData, err := os.ReadFile(tmpZipPath)
-				if err != nil {
-					logger.Error("Failed to read multi-file ROM zip", "game", g.Name, "error", err)
-					return nil, err
-				}
-
 				logger.Debug("Extracting multi-file ROM", "game", g.Name, "dest", extractDir)
 
-				// Extract the zip
-				if err := utils.ExtractZip(zipData, extractDir); err != nil {
+				// Extract the zip directly from disk (low memory usage)
+				if err := utils.Unzip(tmpZipPath, extractDir); err != nil {
 					logger.Error("Failed to extract multi-file ROM", "game", g.Name, "error", err)
 					// Clean up the temp zip file even on error
 					os.Remove(tmpZipPath)
 					return nil, err
+				}
+
+				// muOS requires special folder structure for multi-file ROMs
+				if utils.GetCFW() == constants.MuOS {
+					if err := utils.OrganizeMultiFileRomForMuOS(extractDir, romDirectory, g.Name); err != nil {
+						logger.Error("Failed to organize multi-file ROM for muOS", "game", g.Name, "error", err)
+						// Clean up on error
+						os.Remove(tmpZipPath)
+						os.RemoveAll(extractDir)
+						return nil, err
+					}
 				}
 
 				// Clean up the temp zip file
@@ -188,6 +195,68 @@ func (s *DownloadScreen) Draw(input DownloadInput) (ScreenResult[DownloadOutput]
 
 		if err != nil {
 			continue
+		}
+	}
+
+	// Process single-file ROM downloads: extract zips if enabled
+	if input.Config.UnzipDownloads {
+		for _, g := range input.SelectedGames {
+			if g.Multi {
+				continue
+			}
+
+			// Check if this single-file ROM was successfully downloaded
+			completed := slices.ContainsFunc(res.Completed, func(d gaba.Download) bool {
+				return d.DisplayName == g.Name
+			})
+			if !completed {
+				continue
+			}
+
+			// Get the platform for this game
+			gamePlatform := input.Platform
+			if input.Platform.ID == 0 && g.PlatformID != 0 {
+				gamePlatform = romm.Platform{
+					ID:   g.PlatformID,
+					Slug: g.PlatformSlug,
+					Name: g.PlatformDisplayName,
+				}
+			}
+
+			// Check if the downloaded file is a zip
+			if len(g.Files) > 0 && strings.ToLower(filepath.Ext(g.Files[0].FileName)) == ".zip" {
+				romDirectory := utils.GetPlatformRomDirectory(input.Config, gamePlatform)
+				zipPath := filepath.Join(romDirectory, g.Files[0].FileName)
+
+				_, err := gaba.ProcessMessage(
+					fmt.Sprintf("Extracting %s...", g.Name),
+					gaba.ProcessMessageOptions{ShowThemeBackground: true},
+					func() (interface{}, error) {
+						logger.Debug("Extracting single-file ROM", "game", g.Name, "file", zipPath)
+
+						// Extract the zip to the platform directory
+						if err := utils.Unzip(zipPath, romDirectory); err != nil {
+							logger.Error("Failed to extract single-file ROM", "game", g.Name, "error", err)
+							return nil, err
+						}
+
+						// Remove the zip file after successful extraction
+						if err := os.Remove(zipPath); err != nil {
+							logger.Warn("Failed to remove zip file after extraction", "path", zipPath, "error", err)
+						} else {
+							logger.Debug("Removed zip file after extraction", "path", zipPath)
+						}
+
+						logger.Debug("Successfully extracted single-file ROM", "game", g.Name)
+						return nil, nil
+					},
+				)
+
+				if err != nil {
+					logger.Warn("Failed to extract ROM, keeping zip file", "game", g.Name)
+					continue
+				}
+			}
 		}
 	}
 
@@ -236,7 +305,7 @@ func (s *DownloadScreen) buildDownloads(config models.Config, host models.Host, 
 		if g.Multi {
 			// For multi-file ROMs, download as zip to temp location
 			// The zip will be extracted to a folder named after the game
-			tmpDir := os.TempDir()
+			tmpDir := utils.TempDir()
 			downloadLocation = filepath.Join(tmpDir, fmt.Sprintf("grout_multirom_%d.zip", g.ID))
 			sourceURL, _ = url.JoinPath(host.URL(), "/api/roms/", strconv.Itoa(g.ID), "content", g.Name)
 		} else {
@@ -252,14 +321,14 @@ func (s *DownloadScreen) buildDownloads(config models.Config, host models.Host, 
 		})
 
 		// Add art download if enabled and art is available
-		if config.DownloadArt && (g.PathCoverLarge != "" || g.URLCover != "") {
+		if config.DownloadArt && (g.PathCoverSmall != "" || g.URLCover != "") {
 			artDir := utils.GetArtDirectory(config, gamePlatform)
 			artFileName := g.FsNameNoExt + ".png"
 			artLocation := filepath.Join(artDir, artFileName)
 
 			var coverPath string
 			if g.PathCoverLarge != "" {
-				coverPath = g.PathCoverLarge
+				coverPath = g.PathCoverSmall
 			} else if g.URLCover != "" {
 				coverPath = g.URLCover
 			}
@@ -335,7 +404,6 @@ func (s *DownloadScreen) downloadArtInBackground(artDownloads []artDownload, dow
 			continue
 		}
 
-		// Save the art file
 		outFile, err := os.Create(art.Location)
 		if err != nil {
 			logger.Warn("Failed to create art file", "game", art.GameName, "location", art.Location, "error", err)
@@ -354,6 +422,16 @@ func (s *DownloadScreen) downloadArtInBackground(artDownloads []artDownload, dow
 		}
 
 		logger.Debug("Art downloaded successfully", "game", art.GameName, "location", art.Location)
+
+		// Process the art image (convert to PNG if needed and resize)
+		if err := utils.ProcessArtImage(art.Location); err != nil {
+			logger.Warn("Failed to process art image", "game", art.GameName, "location", art.Location, "error", err)
+			os.Remove(art.Location) // Clean up if processing failed
+			failCount++
+			continue
+		}
+
+		logger.Debug("Art processed successfully", "game", art.GameName)
 		successCount++
 	}
 

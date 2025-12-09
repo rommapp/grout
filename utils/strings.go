@@ -75,10 +75,14 @@ func PrepareRomNames(games []romm.Rom) []romm.Rom {
 		regions := strings.Join(games[i].Regions, ", ")
 
 		cleanedName, _ := NameCleaner(games[i].Name, true)
+		games[i].DisplayName = cleanedName
 
 		if len(regions) > 0 {
-			games[i].Name = fmt.Sprintf("%s (%s)", cleanedName, regions)
+			dn := fmt.Sprintf("%s (%s)", cleanedName, regions)
+			games[i].DisplayName = dn
 		}
+
+		games[i].ListName = games[i].DisplayName
 	}
 
 	slices.SortFunc(games, func(a, b romm.Rom) int {

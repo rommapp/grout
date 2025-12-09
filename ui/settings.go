@@ -109,6 +109,14 @@ func (s *SettingsScreen) buildMenuItems(config *models.Config) []gaba.ItemWithOp
 			SelectedOption: boolToIndex(!config.DownloadArt),
 		},
 		{
+			Item: gaba.MenuItem{Text: "Unzip Downloads"},
+			Options: []gaba.Option{
+				{DisplayName: "True", Value: true},
+				{DisplayName: "False", Value: false},
+			},
+			SelectedOption: boolToIndex(!config.UnzipDownloads),
+		},
+		{
 			Item: gaba.MenuItem{Text: "Show Game Details"},
 			Options: []gaba.Option{
 				{DisplayName: "True", Value: true},
@@ -172,9 +180,9 @@ func (s *SettingsScreen) findDownloadTimeoutIndex(timeout time.Duration) int {
 }
 
 func (s *SettingsScreen) applySettings(config *models.Config, items []gaba.ItemWithOptions, cfw constants.CFW) {
-	// Adjust index offset based on whether MUOS removed the art option
+	// Adjust index offset based on whether MuOS removed the art option
 	offset := 0
-	if cfw == constants.MUOS {
+	if cfw == constants.MuOS {
 		offset = -1
 	}
 
@@ -182,6 +190,8 @@ func (s *SettingsScreen) applySettings(config *models.Config, items []gaba.ItemW
 		switch item.Item.Text {
 		case "Download Art":
 			config.DownloadArt = item.SelectedOption == 0
+		case "Unzip Downloads":
+			config.UnzipDownloads = item.SelectedOption == 0
 		case "Show Game Details":
 			config.ShowGameDetails = item.SelectedOption == 0
 		case "API Timeout":

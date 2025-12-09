@@ -3,8 +3,10 @@ package romm
 import (
 	"bytes"
 	"fmt"
+	"grout/models"
 	"io"
 	"mime/multipart"
+	"net/url"
 	"strconv"
 	"time"
 )
@@ -17,49 +19,67 @@ type PaginatedRoms struct {
 }
 
 type Rom struct {
-	ID                  int         `json:"id,omitempty"`
-	GameListID          any         `json:"gamelist_id,omitempty"`
-	PlatformID          int         `json:"platform_id,omitempty"`
-	PlatformSlug        string      `json:"platform_slug,omitempty"`
-	PlatformCustomName  string      `json:"platform_custom_name,omitempty"`
-	PlatformDisplayName string      `json:"platform_display_name,omitempty"`
-	FsName              string      `json:"fs_name,omitempty"`
-	FsNameNoTags        string      `json:"fs_name_no_tags,omitempty"`
-	FsNameNoExt         string      `json:"fs_name_no_ext,omitempty"`
-	FsExtension         string      `json:"fs_extension,omitempty"`
-	FsPath              string      `json:"fs_path,omitempty"`
-	FsSizeBytes         int         `json:"fs_size_bytes,omitempty"`
-	Name                string      `json:"name,omitempty"`
-	Slug                string      `json:"slug,omitempty"`
-	Summary             string      `json:"summary,omitempty"`
-	AlternativeNames    []string    `json:"alternative_names,omitempty"`
-	Metadatum           RomMetadata `json:"metadatum,omitempty"`
-	PathCoverSmall      string      `json:"path_cover_small,omitempty"`
-	PathCoverLarge      string      `json:"path_cover_large,omitempty"`
-	URLCover            string      `json:"url_cover,omitempty"`
-	HasManual           bool        `json:"has_manual,omitempty"`
-	PathManual          string      `json:"path_manual,omitempty"`
-	URLManual           string      `json:"url_manual,omitempty"`
-	IsIdentifying       bool        `json:"is_identifying,omitempty"`
-	IsUnidentified      bool        `json:"is_unidentified,omitempty"`
-	IsIdentified        bool        `json:"is_identified,omitempty"`
-	Revision            string      `json:"revision,omitempty"`
-	Regions             []string    `json:"regions,omitempty"`
-	Languages           []string    `json:"languages,omitempty"`
-	Tags                []any       `json:"tags,omitempty"`
-	CrcHash             string      `json:"crc_hash,omitempty"`
-	Md5Hash             string      `json:"md5_hash,omitempty"`
-	Sha1Hash            string      `json:"sha1_hash,omitempty"`
-	Multi               bool        `json:"multi,omitempty"`
-	HasSimpleSingleFile bool        `json:"has_simple_single_file,omitempty"`
-	HasNestedSingleFile bool        `json:"has_nested_single_file,omitempty"`
-	HasMultipleFiles    bool        `json:"has_multiple_files,omitempty"`
-	Files               []RomFile   `json:"files,omitempty"`
-	FullPath            string      `json:"full_path,omitempty"`
-	CreatedAt           time.Time   `json:"created_at,omitempty"`
-	UpdatedAt           time.Time   `json:"updated_at,omitempty"`
-	MissingFromFs       bool        `json:"missing_from_fs,omitempty"`
-	Siblings            []any       `json:"siblings,omitempty"`
+	ID                  int    `json:"id,omitempty"`
+	GameListID          any    `json:"gamelist_id,omitempty"`
+	PlatformID          int    `json:"platform_id,omitempty"`
+	PlatformSlug        string `json:"platform_slug,omitempty"`
+	PlatformCustomName  string `json:"platform_custom_name,omitempty"`
+	PlatformDisplayName string `json:"platform_display_name,omitempty"`
+	FsName              string `json:"fs_name,omitempty"`
+	FsNameNoTags        string `json:"fs_name_no_tags,omitempty"`
+	FsNameNoExt         string `json:"fs_name_no_ext,omitempty"`
+	FsExtension         string `json:"fs_extension,omitempty"`
+	FsPath              string `json:"fs_path,omitempty"`
+	FsSizeBytes         int    `json:"fs_size_bytes,omitempty"`
+	Name                string `json:"name,omitempty"`
+	DisplayName         string
+	ListName            string
+	Slug                string       `json:"slug,omitempty"`
+	Summary             string       `json:"summary,omitempty"`
+	AlternativeNames    []string     `json:"alternative_names,omitempty"`
+	Metadatum           RomMetadata  `json:"metadatum,omitempty"`
+	PathCoverSmall      string       `json:"path_cover_small,omitempty"`
+	PathCoverLarge      string       `json:"path_cover_large,omitempty"`
+	URLCover            string       `json:"url_cover,omitempty"`
+	HasManual           bool         `json:"has_manual,omitempty"`
+	PathManual          string       `json:"path_manual,omitempty"`
+	URLManual           string       `json:"url_manual,omitempty"`
+	UserScreenshots     []Screenshot `json:"user_screenshots,omitempty"`
+	MergedScreenshots   []string     `json:"merged_screenshots,omitempty"`
+	IsIdentifying       bool         `json:"is_identifying,omitempty"`
+	IsUnidentified      bool         `json:"is_unidentified,omitempty"`
+	IsIdentified        bool         `json:"is_identified,omitempty"`
+	Revision            string       `json:"revision,omitempty"`
+	Regions             []string     `json:"regions,omitempty"`
+	Languages           []string     `json:"languages,omitempty"`
+	Tags                []any        `json:"tags,omitempty"`
+	CrcHash             string       `json:"crc_hash,omitempty"`
+	Md5Hash             string       `json:"md5_hash,omitempty"`
+	Sha1Hash            string       `json:"sha1_hash,omitempty"`
+	Multi               bool         `json:"multi,omitempty"`
+	HasSimpleSingleFile bool         `json:"has_simple_single_file,omitempty"`
+	HasNestedSingleFile bool         `json:"has_nested_single_file,omitempty"`
+	HasMultipleFiles    bool         `json:"has_multiple_files,omitempty"`
+	Files               []RomFile    `json:"files,omitempty"`
+	FullPath            string       `json:"full_path,omitempty"`
+	CreatedAt           time.Time    `json:"created_at,omitempty"`
+	UpdatedAt           time.Time    `json:"updated_at,omitempty"`
+	MissingFromFs       bool         `json:"missing_from_fs,omitempty"`
+	Siblings            []any        `json:"siblings,omitempty"`
+}
+
+func (r Rom) GetGamePage(host models.Host) string {
+	u, _ := url.JoinPath(host.URL(), "rom", strconv.Itoa(r.ID))
+	return u
+}
+
+type Screenshot struct {
+	ID       int    `json:"id,omitempty"`
+	RomID    int    `json:"rom_id,omitempty"`
+	FileName string `json:"file_name,omitempty"`
+	FilePath string `json:"file_path,omitempty"`
+	URLPath  string `json:"url_path,omitempty"`
+	Order    int    `json:"order,omitempty"`
 }
 
 type RomMetadata struct {
