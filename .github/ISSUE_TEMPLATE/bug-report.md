@@ -1,5 +1,5 @@
 ---
-name: Bug report
+name: Bug Report
 about: Found an issue with Grout? Help us fix it!
 title: ''
 labels: bug
