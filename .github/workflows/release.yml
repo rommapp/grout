@@ -72,8 +72,8 @@ jobs:
 
       - name: Create NextUI distribution
         run: |
-          cd build
-          zip -r Grout.pak.zip Grout.pak
+          cd build/Grout.pak
+          zip -r ../Grout.pak.zip .
 
       - name: Create muOS distribution
         run: |
