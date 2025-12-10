@@ -203,8 +203,7 @@ func (s *GameDetailsScreen) fetchCoverImage(host romm.Host, game romm.Rom) []byt
 		coverPath = game.PathCoverLarge
 	} else if game.PathCoverSmall != "" {
 		coverPath = game.PathCoverSmall
-	}
-	if game.URLCover != "" {
+	} else if game.URLCover != "" {
 		coverPath = game.URLCover
 	} else {
 		return nil
