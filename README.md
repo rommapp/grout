@@ -24,7 +24,7 @@ A RomM Client for [NextUI](https://nextui.loveretro.games) and [muOS](https://mu
 
 ## Features
 
-- Download ROM Files
+- Download Games Wirelessly From Your RomM Instance
 - Download Box Art
 - Multi-file games with automatic M3U file creation
 - Select multiple games at once

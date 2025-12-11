@@ -2,12 +2,38 @@ version: '3'
 
 tasks:
   build:
+    desc: Build for ARM64 using remote gabagool
     cmds:
       - rm -rf build
       - docker buildx build --platform=linux/arm64 -t retro-console-arm64 -f Dockerfile .
     silent: true
 
+  build-local:
+    desc: Build for ARM64 using local gabagool workspace
+    cmds:
+      - rm -rf build
+      - echo "Building with local gabagool workspace..."
+      - cd .. && docker buildx build --platform=linux/arm64 --build-arg USE_LOCAL_GABAGOOL=true -f grout/Dockerfile -t retro-console-arm64 .
+    silent: true
+
+  all:
+    desc: Build and package for all platforms
+    cmds:
+      - task: build
+      - task: extract
+      - task: package-next
+      - task: package-muos
+
+  all-local:
+    desc: Build (with local gabagool via go work) and package for all platforms
+    cmds:
+      - task: build-local
+      - task: extract
+      - task: package-next
+      - task: package-muos
+
   extract:
+    desc: Extract binary and libraries from Docker image
     cmds:
       - mkdir -p build
       - mkdir -p build/lib
@@ -18,6 +44,7 @@ tasks:
     silent: true
 
   package-next:
+    desc: Package for NextUI
     cmds:
       - rm -rf build/Grout.pak || true
       - mkdir -p build/Grout.pak
@@ -28,6 +55,7 @@ tasks:
     silent: true
 
   package-muos:
+    desc: Package for muOS
     cmds:
       - rm -rf build/muOS || true
       - mkdir -p build/muOS/Grout
@@ -39,32 +67,18 @@ tasks:
     silent: true
 
   adb-next:
+    desc: Deploy to NextUI device via ADB
     cmds:
       - adb shell rm -rf /mnt/SDCARD/Tools/tg5040/Grout.pak || true
       - adb push build/Grout.pak /mnt/SDCARD/Tools/tg5040
       - adb push config-platformless.json /mnt/SDCARD/Tools/tg5040/Grout.pak/config.json
-      - say Finished deploying Grout!
     silent: true
 
   adb-muos:
+    desc: Deploy to muOS device via ADB
     cmds:
       - adb shell rm -rf /mnt/sdcard/MUOS/application/Grout || true
       - adb push build/muOS/Grout /mnt/sdcard/MUOS/application
       - adb push config-platformless.json /mnt/sdcard/MUOS/application/Grout/config.json
       - adb push .github/resources/input_mappings/muOS/anbernic_mapping.json /mnt/sdcard/MUOS/application/Grout/input_mapping.json
-      - say Finished deploying Grout!
-    silent: true
-
-  kill:
-    cmds:
-      - sshpass -p 'tina' ssh root@192.168.1.210 "kill  \$(pidof dlv)" > /dev/null 2>&1 || true
-      - sshpass -p 'tina' ssh root@192.168.1.210 "kill  \$(pidof grout)" > /dev/null 2>&1 || true
-    silent: true
-
-  debug:
-    cmds:
-      - sshpass -p 'tina' ssh root@192.168.1.210 "sh -c '/mnt/SDCARD/Developer/bin/dlv attach --headless --listen=:2345 --api-version=2 --accept-multiclient \$(pidof grout)'" > /dev/null &
-      - printf "Press any key to quit debugging...\n"
-      - read
-      - task: kill
     silent: true
