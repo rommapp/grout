@@ -187,10 +187,18 @@ func (s *SaveSync) upload(host romm.Host) (string, error) {
 	if ext != "" && !strings.HasPrefix(ext, ".") {
 		ext = "." + ext
 	}
-	filename := s.GameBase + ext
+
+	fileInfo, err := os.Stat(s.Local.Path)
+	if err != nil {
+		return "", fmt.Errorf("failed to get file info: %w", err)
+	}
+	modTime := fileInfo.ModTime()
+	timestamp := modTime.Format("[2006-01-02 15-04-05-000]")
+
+	filename := s.GameBase + " " + timestamp + ext
 	tmp := filepath.Join(TempDir(), "uploads", filename)
 
-	err := copyFile(s.Local.Path, tmp)
+	err = copyFile(s.Local.Path, tmp)
 	if err != nil {
 		return "", err
 	}
