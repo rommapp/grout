@@ -418,6 +418,7 @@ Grout has been tested on the following devices running Knulli Gladiator II:
 
 > [!IMPORTANT]
 > Grout requires a setting to be toggled in Knulli to enable art downloading.
+> 
 > On the main Knulli menu, press start, 'System Settings', `Frontend Developer Options` (at the very bottom), and turn
 `Search For Local Art` on.
 
