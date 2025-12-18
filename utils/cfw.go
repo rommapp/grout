@@ -76,16 +76,34 @@ func GetArtDirectory(config Config, platform romm.Platform) string {
 	}
 }
 
-func RomMSlugToCFW(slug string) string {
-	var cfwPlatformMap map[string][]string
-
-	switch GetCFW() {
+func GetPlatformMap(cfw constants.CFW) map[string][]string {
+	switch cfw {
 	case constants.MuOS:
-		cfwPlatformMap = constants.MuOSPlatforms
+		return constants.MuOSPlatforms
 	case constants.NextUI:
-		cfwPlatformMap = constants.NextUIPlatforms
+		return constants.NextUIPlatforms
 	case constants.Knulli:
-		cfwPlatformMap = constants.KnulliPlatforms
+		return constants.KnulliPlatforms
+	default:
+		return nil
+	}
+}
+
+func GetSaveDirectoriesMap(cfw constants.CFW) map[string][]string {
+	switch cfw {
+	case constants.MuOS:
+		return constants.MuOSSaveDirectories
+	case constants.NextUI:
+		return constants.NextUISaves
+	default:
+		return nil
+	}
+}
+
+func RomMSlugToCFW(slug string) string {
+	cfwPlatformMap := GetPlatformMap(GetCFW())
+	if cfwPlatformMap == nil {
+		return strings.ToLower(slug)
 	}
 
 	if value, ok := cfwPlatformMap[slug]; ok {

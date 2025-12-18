@@ -92,13 +92,8 @@ func scanRoms() map[string][]localRomFile {
 	result := make(map[string][]localRomFile)
 	cfw := GetCFW()
 
-	var platformMap map[string][]string
-	switch cfw {
-	case constants.MuOS:
-		platformMap = constants.MuOSPlatforms
-	case constants.NextUI:
-		platformMap = constants.NextUIPlatforms
-	default:
+	platformMap := GetPlatformMap(cfw)
+	if platformMap == nil {
 		logger.Warn("Unknown CFW, cannot scan ROMs")
 		return result
 	}
@@ -285,7 +280,7 @@ func getRomDirectoriesForSlug(slug string) ([]string, error) {
 	}
 
 	if cfw == constants.NextUI {
-		platformMap := constants.NextUIPlatforms
+		platformMap := GetPlatformMap(cfw)
 		if cfwDirs, ok := platformMap[slug]; ok {
 			entries, err := os.ReadDir(baseRomDir)
 			if err != nil {

@@ -229,28 +229,19 @@ func (s *PlatformMappingScreen) directoryMatchesPlatform(
 }
 
 func (s *PlatformMappingScreen) getCFWDirectoriesForPlatform(slug string, cfw constants.CFW) []string {
-	switch cfw {
-	case constants.MuOS:
-		return constants.MuOSPlatforms[slug]
-	case constants.NextUI:
-		return constants.NextUIPlatforms[slug]
-	case constants.Knulli:
-		return constants.KnulliPlatforms[slug]
-
-	default:
+	platformMap := utils.GetPlatformMap(cfw)
+	if platformMap == nil {
 		return []string{}
 	}
+	return platformMap[slug]
 }
 
 func (s *PlatformMappingScreen) getSaveDirectoriesForPlatform(slug string, cfw constants.CFW) []string {
-	switch cfw {
-	case constants.MuOS:
-		return constants.MuOSSaveDirectories[slug]
-	case constants.NextUI:
-		return constants.NextUISaves[slug]
-	default:
+	saveMap := utils.GetSaveDirectoriesMap(cfw)
+	if saveMap == nil {
 		return []string{}
 	}
+	return saveMap[slug]
 }
 
 func (s *PlatformMappingScreen) directoriesMatch(dir1, dir2 string, cfw constants.CFW) bool {
