@@ -35,6 +35,9 @@ func GetRomDirectory() string {
 		return constants.MuOSRomsFolderUnion
 	case constants.NextUI:
 		return filepath.Join(getNextUIBasePath(), "Roms")
+	case constants.Knulli:
+		return filepath.Join(getKnulliBasePath(), "roms")
+
 	}
 
 	return ""
@@ -75,6 +78,8 @@ func RomMSlugToCFW(slug string) string {
 		cfwPlatformMap = constants.MuOSPlatforms
 	case constants.NextUI:
 		cfwPlatformMap = constants.NextUIPlatforms
+	case constants.Knulli:
+		cfwPlatformMap = constants.KnulliPlatforms
 	}
 
 	if value, ok := cfwPlatformMap[slug]; ok {
@@ -90,7 +95,7 @@ func RomMSlugToCFW(slug string) string {
 
 func RomFolderBase(path string) string {
 	switch GetCFW() {
-	case constants.MuOS:
+	case constants.MuOS, constants.Knulli:
 		return path
 	case constants.NextUI:
 		return ParseTag(path)
@@ -125,13 +130,22 @@ func getNextUIBasePath() string {
 	return "/mnt/SDCARD"
 }
 
+func getKnulliBasePath() string {
+	if os.Getenv("KNULLI_BASE_PATH") != "" {
+		return os.Getenv("KNULLI_BASE_PATH")
+	}
+
+	return "/userdata"
+}
+
 func getSaveDirectory() string {
 	switch GetCFW() {
 	case constants.MuOS:
 		return filepath.Join(getMuOSBasePath(), "MUOS", "save", "file")
-
 	case constants.NextUI:
 		return filepath.Join(getNextUIBasePath(), "Saves")
+	case constants.Knulli:
+		return filepath.Join(getKnulliBasePath(), "saves")
 	}
 
 	return ""

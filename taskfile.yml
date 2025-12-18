@@ -63,7 +63,6 @@ tasks:
       - cp build/grout scripts/muOS/mux_launch.sh README.md LICENSE build/muOS/Grout
       - cp -R build/lib build/muOS/Grout/resources
       - cp -R resources build/muOS/Grout/
-      - cp -R fonts build/muOS/Grout/resources
     silent: true
 
   adb-next:
@@ -86,12 +85,12 @@ tasks:
   i18n-extract:
     desc: Extract new translation template for a language (e.g., task i18n-extract -- es)
     cmds:
-      - cd locales && go run github.com/nicksnyder/go-i18n/v2/goi18n@latest extract -format toml
-      - cd locales && go run github.com/nicksnyder/go-i18n/v2/goi18n@latest merge active.en.toml translate.{{.CLI_ARGS}}.toml
+      - cd resources/locales && go run github.com/nicksnyder/go-i18n/v2/goi18n@latest extract -format toml
+      - cd resources/locales && go run github.com/nicksnyder/go-i18n/v2/goi18n@latest merge active.en.toml translate.{{.CLI_ARGS}}.toml
     silent: false
 
   i18n-merge:
     desc: Merge translated file to create active translation (e.g., task i18n-merge -- es)
     cmds:
-      - cd locales && go run github.com/nicksnyder/go-i18n/v2/goi18n@latest merge active.en.toml translate.{{.CLI_ARGS}}.toml
+      - cd resources/locales && go run github.com/nicksnyder/go-i18n/v2/goi18n@latest merge active.en.toml translate.{{.CLI_ARGS}}.toml
     silent: false
