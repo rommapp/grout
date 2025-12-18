@@ -278,6 +278,9 @@ connection or are a completionist with a heavily loaded server, increase this. O
 **Download Timeout** – How long Grout waits for a single ROM to download before giving up. Useful for large files or
 slow connections. Options range from 15 to 120 minutes.
 
+**Language** -- Grout is localized! If you notice an issue with a translation or want to help by translating please let
+us know!
+
 **Log Level** – Set to Debug if you're troubleshooting issues and want detailed logs. Otherwise, Error is fine.
 
 Use left/right to cycle through options. Press Start to save your changes, or B to cancel.
