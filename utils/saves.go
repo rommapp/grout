@@ -50,8 +50,10 @@ func getSaveDirectoryForSlug(slug string, emulator string) (string, error) {
 	switch GetCFW() {
 	case constants.MuOS:
 		saveFolders = constants.MuOSSaveDirectories[slug]
+	case constants.Knulli:
+		saveFolders = constants.KnulliSaveDirectories[slug]
 	case constants.NextUI:
-		saveFolders = constants.NextUISaves[slug]
+		saveFolders = constants.NextUISaveDirectories[slug]
 	}
 
 	if len(saveFolders) == 0 {
@@ -103,7 +105,7 @@ func findSaveFiles(slug string) []localSave {
 	case constants.MuOS:
 		saveFolders = constants.MuOSSaveDirectories[slug]
 	case constants.NextUI:
-		saveFolders = constants.NextUISaves[slug]
+		saveFolders = constants.NextUISaveDirectories[slug]
 	}
 
 	if len(saveFolders) == 0 {
@@ -163,7 +165,7 @@ func GetEmulatorDirectoriesWithStatus(slug string) []EmulatorDirectoryInfo {
 	case constants.MuOS:
 		saveFolders = constants.MuOSSaveDirectories[slug]
 	case constants.NextUI:
-		saveFolders = constants.NextUISaves[slug]
+		saveFolders = constants.NextUISaveDirectories[slug]
 	}
 
 	if len(saveFolders) == 0 {

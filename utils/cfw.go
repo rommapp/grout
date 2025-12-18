@@ -94,7 +94,7 @@ func GetSaveDirectoriesMap(cfw constants.CFW) map[string][]string {
 	case constants.MuOS:
 		return constants.MuOSSaveDirectories
 	case constants.NextUI:
-		return constants.NextUISaves
+		return constants.NextUISaveDirectories
 	default:
 		return nil
 	}
