@@ -19,8 +19,8 @@ description = "Bouton continuer"
 other = "Continuer"
 
 [button_cycle]
-description = "Cycle button" # TODO: Translate
-other = "Cycle" # TODO: Translate
+description = "Bouton de défilement"
+other = "Défiler"
 
 [button_download]
 description = "Bouton télécharger"
