@@ -292,68 +292,72 @@ Use left/right to cycle through options. Press Start to save your changes, or B 
 > [!IMPORTANT]
 > This feature requires RomM v4.5.0 as it relies on an endpoint released in this version.
 
-Save Sync is one of Grout's standout features. It lets you keep your game saves synchronized between your RomM server
-and your handheld device.
+Save Sync keeps your game saves synchronized between your RomM server and your handheld device.
 
-Access it by going to Settings and selecting "Sync Saves."
+**Access:** Settings > "Sync Saves"
 
-**How It Works:**
+#### How It Works
 
-Grout scans your device's save directories and compares them to the saves stored in RomM (associated with your RomM user
-account). For each save file it finds, it checks:
+When you run Save Sync, Grout:
 
-1. Does a corresponding ROM exist in RomM?
-2. Is there a save file in RomM for this game?
-3. Which file is newer – local or remote?
+1. Scans your device for games and their save files
+2. Matches them with corresponding ROMs in RomM
+3. Compares local and remote save files
+4. Syncs saves based on which version is newer
 
-Based on this comparison, Grout decides what to do:
+#### Sync Logic
 
-**Downloading Saves:**
+For each save file found on your device, Grout determines what action to take:
 
-- If RomM has a save, but you don't have one locally, it downloads the save.
-- If both your device and RomM have a save, and RomM's is newer, Grout backs up your local save (to a hidden `.backup`
-  folder
-  with a timestamp) and downloads the newer one.
+**When RomM has no save:**
 
-**Uploading Saves:**
+- Your local save is uploaded to RomM (with timestamp appended to filename)
 
-- If you have a save locally but RomM doesn't, it uploads your save.
-- If both you and RomM have a save, and yours is newer, it uploads your save to RomM.
+**When you have no local save:**
 
-In both cases the last modified timestamp is appended to the end of the uploaded save's filename.
+- RomM's save is downloaded to your device
 
-**Emulator Selection:**
+**When both exist:**
 
-Some platforms (like Game Boy Advance on muOS) have multiple emulator options, each with its own save directory.
+- The newer save (based on last modified time) determines the action
+- If the local save is newer, it is uploaded to RomM with the last modified timestamp appended to the filename
+- If the RomM save is newer
+    - The current local save is backed up to `.backup/` within the platform's save directory
+    - The RomM save is downloaded to your device
 
-If Grout detects that there is ambiguity, it'll ask you which emulator's saves you want to sync.
+**When there's no matching ROM in RomM:**
+
+- The save file is reported as "unmatched" in the sync results
+
+#### Emulator Selection
+
+Some platforms (like Game Boy Advance on muOS) support multiple emulators, each with its own save directory.
+
+If Grout detects multiple possible save locations, it will prompt you to select which emulator you're using:
 
 ![Grout preview, emulator selection](.github/resources/user_guide/emulator_selection.png "Grout preview, emulator selection")
 
-Choose the emulator you're actually using, and Grout will sync saves from that directory.
+Choose your active emulator to ensure the correct saves are synced.
 
-**Sync Results:**
+#### Sync Results
 
 ![Grout preview, sync summary](.github/resources/user_guide/sync_summary.png "Grout preview, sync summary")
 
-When the sync completes, you'll see a summary showing:
+After syncing, you'll see a summary showing:
 
-- Games that had saves downloaded
-- Games that had saves uploaded
-- Any unmatched save files (local saves that don't correspond to any game in RomM)
+- Downloaded saves (from RomM to device)
+- Uploaded saves (from device to RomM)
+- Unmatched saves (local saves without corresponding ROMs in RomM)
 - Any errors that occurred
 
-**Important Notes:**
+#### Important Notes
 
-- Save Sync works with save files (.sav, .srm, etc.) but NOT save states.
-
-- If you use save states with autoload enabled, you might need to disable autoload or delete the state after downloading
-  a save file, otherwise the emulator will load the state instead of the save.
-
-- Saves are tied to your RomM user account. If you're sharing a RomM account with someone, be aware that syncing might
-  overwrite each other's saves.
-
-- Backups of overwritten saves are kept in `saves/.backup/` with timestamps, so you can recover them if needed.
+- **Save files only:** This works with save files, **NOT** save states
+- **Save states conflict:** If you use save states with autoload enabled, disable autoload or delete the state after
+  downloading a save, otherwise the emulator will load the state instead
+- **User-specific:** Saves are tied to your RomM user account – keep this in mind if you share your RomM account
+- **Backup protection:** When a save is downloaded from RomM, the current save is backed up with a timestamp appended to
+  the filename to aid in recovery
 
 ---
 

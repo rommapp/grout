@@ -2,6 +2,8 @@ package ui
 
 import (
 	"errors"
+	"fmt"
+	"grout/constants"
 	"grout/romm"
 	"grout/utils"
 	"slices"
@@ -14,12 +16,14 @@ import (
 type CollectionSelectionInput struct {
 	Config               *utils.Config
 	Host                 romm.Host
+	SearchFilter         string
 	LastSelectedIndex    int
 	LastSelectedPosition int
 }
 
 type CollectionSelectionOutput struct {
 	SelectedCollection   romm.Collection
+	SearchFilter         string
 	LastSelectedIndex    int
 	LastSelectedPosition int
 }
@@ -32,6 +36,7 @@ func NewCollectionSelectionScreen() *CollectionSelectionScreen {
 
 func (s *CollectionSelectionScreen) Draw(input CollectionSelectionInput) (ScreenResult[CollectionSelectionOutput], error) {
 	output := CollectionSelectionOutput{
+		SearchFilter:         input.SearchFilter,
 		LastSelectedIndex:    input.LastSelectedIndex,
 		LastSelectedPosition: input.LastSelectedPosition,
 	}
@@ -68,12 +73,24 @@ func (s *CollectionSelectionScreen) Draw(input CollectionSelectionInput) (Screen
 		return strings.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
 	})
 
-	if len(collections) == 0 {
+	// Apply search filter
+	displayCollections := collections
+	if input.SearchFilter != "" {
+		filteredCollections := make([]romm.Collection, 0)
+		for _, collection := range collections {
+			if strings.Contains(strings.ToLower(collection.Name), strings.ToLower(input.SearchFilter)) {
+				filteredCollections = append(filteredCollections, collection)
+			}
+		}
+		displayCollections = filteredCollections
+	}
+
+	if len(displayCollections) == 0 {
 		return withCode(output, gaba.ExitCode(404)), nil
 	}
 
 	var menuItems []gaba.MenuItem
-	for _, collection := range collections {
+	for _, collection := range displayCollections {
 		menuItems = append(menuItems, gaba.MenuItem{
 			Text:     collection.Name,
 			Selected: false,
@@ -84,10 +101,17 @@ func (s *CollectionSelectionScreen) Draw(input CollectionSelectionInput) (Screen
 
 	footerItems := []gaba.FooterHelpItem{
 		{ButtonName: "B", HelpText: i18n.GetString("button_back")},
+		{ButtonName: "X", HelpText: i18n.GetString("button_search")},
 		{ButtonName: "A", HelpText: i18n.GetString("button_select")},
 	}
 
-	options := gaba.DefaultListOptions("Collections", menuItems)
+	title := "Collections"
+	if input.SearchFilter != "" {
+		title = fmt.Sprintf("[Search: \"%s\"] | Collections", input.SearchFilter)
+	}
+
+	options := gaba.DefaultListOptions(title, menuItems)
+	options.EnableAction = true
 	options.FooterHelpItems = footerItems
 	options.SelectedIndex = input.LastSelectedIndex
 	options.VisibleStartIndex = max(0, input.LastSelectedIndex-input.LastSelectedPosition)
@@ -95,6 +119,12 @@ func (s *CollectionSelectionScreen) Draw(input CollectionSelectionInput) (Screen
 	sel, err := gaba.List(options)
 	if err != nil {
 		if errors.Is(err, gaba.ErrCancelled) {
+			if input.SearchFilter != "" {
+				output.SearchFilter = ""
+				output.LastSelectedIndex = 0
+				output.LastSelectedPosition = 0
+				return withCode(output, constants.ExitCodeClearSearch), nil
+			}
 			return back(output), nil
 		}
 		return withCode(output, gaba.ExitCodeError), err
@@ -108,6 +138,9 @@ func (s *CollectionSelectionScreen) Draw(input CollectionSelectionInput) (Screen
 		output.LastSelectedIndex = sel.Selected[0]
 		output.LastSelectedPosition = sel.VisiblePosition
 		return success(output), nil
+
+	case gaba.ListActionTriggered:
+		return withCode(output, constants.ExitCodeSearch), nil
 
 	default:
 		return withCode(output, gaba.ExitCodeBack), nil

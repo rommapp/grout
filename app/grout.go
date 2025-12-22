@@ -22,16 +22,18 @@ const (
 	collectionList                             = "collection_list"
 	collectionPlatformSelection                = "collection_platform_selection"
 	search                                     = "search"
+	collectionSearch                           = "collection_search"
 	settings                                   = "settings"
 	settingsPlatformMapping                    = "platform_mapping"
 	saveSync                                   = "save_sync"
 )
 
 type (
-	currentGamesList   []romm.Rom
-	fullGamesList      []romm.Rom
-	searchFilterString string
-	quitOnBackBool     bool
+	currentGamesList       []romm.Rom
+	fullGamesList          []romm.Rom
+	searchFilterString     string
+	collectionSearchFilter string
+	quitOnBackBool         bool
 
 	showCollectionsBool bool
 
@@ -88,15 +90,21 @@ func setup() *utils.Config {
 		return nil, nil
 	})
 
+	gaba.GetLogger().Debug("Loading configuration from config.json")
 	config, err := utils.LoadConfig()
 	if err != nil {
-		gaba.GetLogger().Debug("No RomM Host Configured")
+		gaba.GetLogger().Debug("No RomM Host Configured", "error", err)
+		gaba.GetLogger().Debug("Starting login flow for initial setup")
 		loginConfig, loginErr := ui.LoginFlow(romm.Host{})
 		if loginErr != nil {
+			gaba.GetLogger().Error("Login flow failed", "error", loginErr)
 			utils.LogStandardFatal("Login failed", loginErr)
 		}
+		gaba.GetLogger().Debug("Login successful, saving configuration")
 		config = loginConfig
 		utils.SaveConfig(config)
+	} else {
+		gaba.GetLogger().Debug("Configuration loaded successfully", "host_count", len(config.Hosts))
 	}
 
 	if config.LogLevel != "" {
@@ -225,11 +233,13 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		config, _ := gaba.Get[*utils.Config](ctx)
 		host, _ := gaba.Get[romm.Host](ctx)
 		colPos, _ := gaba.Get[collectionListPosition](ctx)
+		searchFilter, _ := gaba.Get[collectionSearchFilter](ctx)
 
 		screen := ui.NewCollectionSelectionScreen()
 		result, err := screen.Draw(ui.CollectionSelectionInput{
 			Config:               config,
 			Host:                 host,
+			SearchFilter:         string(searchFilter),
 			LastSelectedIndex:    colPos.Index,
 			LastSelectedPosition: colPos.Pos,
 		})
@@ -242,6 +252,7 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 			Index: result.Value.LastSelectedIndex,
 			Pos:   result.Value.LastSelectedPosition,
 		})
+		gaba.Set(ctx, collectionSearchFilter(result.Value.SearchFilter))
 
 		return result.Value, result.ExitCode
 	}).
@@ -252,6 +263,12 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 			gaba.Set(ctx, collectionPlatformListPosition{Index: 0, Pos: 0})
 			gaba.Set(ctx, cachedCollectionGames(nil))
 			gaba.Set(ctx, ui.PlatformSelectionOutput{})
+			return nil
+		}).
+		On(constants.ExitCodeSearch, collectionSearch).
+		OnWithHook(constants.ExitCodeClearSearch, collectionList, func(ctx *gaba.Context) error {
+			gaba.Set(ctx, collectionSearchFilter(""))
+			gaba.Set(ctx, collectionListPosition{Index: 0, Pos: 0})
 			return nil
 		}).
 		On(gaba.ExitCodeBack, platformSelection)
@@ -443,6 +460,31 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 			gaba.Set(ctx, searchFilterString(""))
 			fullGames, _ := gaba.Get[fullGamesList](ctx)
 			gaba.Set(ctx, currentGamesList(fullGames))
+			return nil
+		})
+
+	gaba.AddState(fsm, collectionSearch, func(ctx *gaba.Context) (ui.SearchOutput, gaba.ExitCode) {
+		filter, _ := gaba.Get[collectionSearchFilter](ctx)
+
+		screen := ui.NewSearchScreen()
+		result, err := screen.Draw(ui.SearchInput{
+			InitialText: string(filter),
+		})
+
+		if err != nil {
+			return ui.SearchOutput{}, gaba.ExitCodeError
+		}
+
+		return result.Value, result.ExitCode
+	}).
+		OnWithHook(gaba.ExitCodeSuccess, collectionList, func(ctx *gaba.Context) error {
+			output, _ := gaba.Get[ui.SearchOutput](ctx)
+			gaba.Set(ctx, collectionSearchFilter(output.Query))
+			gaba.Set(ctx, collectionListPosition{Index: 0, Pos: 0})
+			return nil
+		}).
+		OnWithHook(gaba.ExitCodeBack, collectionList, func(ctx *gaba.Context) error {
+			gaba.Set(ctx, collectionSearchFilter(""))
 			return nil
 		})
 
