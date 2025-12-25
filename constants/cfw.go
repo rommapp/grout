@@ -24,5 +24,4 @@ var MuOSArtDirectory = mustLoadJSONMap[string, string]("cfw/muos/art_directories
 
 var KnulliPlatforms = mustLoadJSONMap[string, []string]("cfw/knulli/platforms.json")
 
-// TODO make sure this is actually correct
 var KnulliSaveDirectories = KnulliPlatforms

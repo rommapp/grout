@@ -2,6 +2,7 @@ package main
 
 import (
 	"grout/constants"
+	"grout/constants/cfw/muos"
 	"grout/resources"
 	"grout/ui"
 	"grout/utils"
@@ -83,7 +84,7 @@ func setup() *utils.Config {
 				os.Setenv("INPUT_MAPPING_PATH", cwdMappingPath)
 			} else {
 				// Use embedded mapping with auto-detection
-				if mappingBytes, err := resources.GetMuOSInputMappingBytes(); err == nil {
+				if mappingBytes, err := muos.GetInputMappingBytes(); err == nil {
 					gaba.SetInputMappingBytes(mappingBytes)
 				}
 			}
@@ -115,8 +116,8 @@ func setup() *utils.Config {
 
 	gaba.ProcessMessage("", gaba.ProcessMessageOptions{
 		ImageBytes:  splashBytes,
-		ImageWidth:  870,
-		ImageHeight: 612,
+		ImageWidth:  768,
+		ImageHeight: 540,
 	}, func() (interface{}, error) {
 		time.Sleep(750 * time.Millisecond)
 		return nil, nil
