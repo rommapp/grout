@@ -336,8 +336,13 @@ func (s *SettingsScreen) buildMenuItem(settingType SettingType, config *utils.Co
 			Item: gaba.MenuItem{Text: i18n.GetString("settings_language")},
 			Options: []gaba.Option{
 				{DisplayName: i18n.GetString("settings_language_english"), Value: "en"},
+				{DisplayName: i18n.GetString("settings_language_german"), Value: "de"},
 				{DisplayName: i18n.GetString("settings_language_spanish"), Value: "es"},
 				{DisplayName: i18n.GetString("settings_language_french"), Value: "fr"},
+				{DisplayName: i18n.GetString("settings_language_italian"), Value: "it"},
+				{DisplayName: i18n.GetString("settings_language_portuguese"), Value: "pt"},
+				{DisplayName: i18n.GetString("settings_language_russian"), Value: "ru"},
+				{DisplayName: i18n.GetString("settings_language_japanese"), Value: "ja"},
 			},
 			SelectedOption: languageToIndex(config.Language),
 		}
@@ -485,10 +490,20 @@ func languageToIndex(lang string) int {
 	switch lang {
 	case "en":
 		return 0
-	case "es":
+	case "de":
 		return 1
-	case "fr":
+	case "es":
 		return 2
+	case "fr":
+		return 3
+	case "it":
+		return 4
+	case "pt":
+		return 5
+	case "ru":
+		return 6
+	case "ja":
+		return 7
 	default:
 		return 0
 	}
