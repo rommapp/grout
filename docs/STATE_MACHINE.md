@@ -2,166 +2,162 @@
 
 This document shows the navigation flow between screens in Grout.
 
-## Overview
+## Main Flow
 
 ```mermaid
-flowchart TB
-    subgraph Main["Main Navigation"]
-        PS[Platform Selection]
-        GL[Game List]
-        GD[Game Details]
-        GO[Game Options]
-    end
+flowchart TD
+    PS[Platform Selection]
+    GL[Game List]
+    GD[Game Details]
 
-    subgraph Collections["Collections"]
-        CL[Collection List]
-        CPS[Collection Platform Selection]
-        CS[Collection Search]
-    end
-
-    subgraph Search["Search"]
-        S[Search]
-    end
-
-    subgraph Settings["Settings"]
-        SET[Settings]
-        CSET[Collections Settings]
-        ASET[Advanced Settings]
-        SSSET[Save Sync Settings]
-        PM[Platform Mapping]
-        CC[Clear Cache]
-        INFO[Info]
-        LOGOUT[Logout Confirmation]
-    end
-
-    subgraph Actions["Actions"]
-        SS[Save Sync]
-        BIOS[BIOS Download]
-        ART[Artwork Sync]
-    end
-
-    %% Main Navigation Flow
     PS -->|"Select Platform"| GL
-    PS -->|"Collections"| CL
-    PS -->|"Settings (X)"| SET
-    PS -->|"Save Sync (Y)"| SS
+    PS -->|"Collections"| COLL[["Collections Flow"]]
+    PS -->|"Settings"| SETT[["Settings Flow"]]
+    PS -->|"Save Sync"| SS[Save Sync]
     PS -->|"Quit"| EXIT((Exit))
 
     GL -->|"Select Game"| GD
-    GL -->|"Search (X)"| S
-    GL -->|"BIOS (Y)"| BIOS
+    GL -->|"Search"| S[Search]
+    GL -->|"BIOS"| BIOS[BIOS Download]
     GL -->|"Back"| PS
 
     GD -->|"Download"| GL
-    GD -->|"Options (X)"| GO
+    GD -->|"Options"| GO[Game Options]
     GD -->|"Back"| GL
 
-    GO -->|"Save/Back"| GD
+    GO --> GD
+    S --> GL
+    SS --> PS
+    BIOS --> GL
+```
 
-    S -->|"Submit/Cancel"| GL
+## Collections Flow
 
-    BIOS -->|"Done"| GL
+```mermaid
+flowchart TD
+    PS[Platform Selection]
+    CL[Collection List]
+    CPS[Collection Platform Selection]
+    GL[Game List]
+    CS[Collection Search]
 
-    %% Collections Flow
-    CL -->|"Select Collection"| CPS
-    CL -->|"Search (X)"| CS
+    PS -->|"Collections"| CL
+    CL -->|"Select"| CPS
+    CL -->|"Search"| CS
     CL -->|"Back"| PS
 
     CPS -->|"Select Platform"| GL
     CPS -->|"Back"| CL
 
-    CS -->|"Submit/Cancel"| CL
+    CS --> CL
 
-    %% Collection Game List returns
-    GL -.->|"Back (from collection)"| CPS
-    GL -.->|"Back (unified collection)"| CL
+    GL -->|"Back"| CPS
+    GL -.->|"Back (unified)"| CL
+```
 
-    %% Settings Flow
+## Settings Flow
+
+```mermaid
+flowchart TD
+    PS[Platform Selection]
+    SET[Settings]
+    CSET[Collections Settings]
+    SSSET[Save Sync Settings]
+    ASET[Advanced Settings]
+
+    PS -->|"Settings"| SET
     SET -->|"Save/Back"| PS
-    SET -->|"Collections Settings"| CSET
-    SET -->|"Advanced Settings"| ASET
-    SET -->|"Save Sync Settings"| SSSET
-    SET -->|"Info"| INFO
+    SET --> CSET
+    SET --> SSSET
+    SET --> ASET
 
-    CSET -->|"Save/Back"| SET
-    SSSET -->|"Save/Back"| SET
+    CSET --> SET
+    SSSET --> SET
+    ASET --> SET
+```
 
-    ASET -->|"Save/Back"| SET
-    ASET -->|"Directory Mappings"| PM
-    ASET -->|"Clear Cache"| CC
-    ASET -->|"Cache Artwork"| ART
-    ASET -->|"Info"| INFO
+## Advanced Settings Flow
 
-    PM -->|"Save/Back"| ASET
-    CC -->|"Confirm/Cancel"| ASET
-    ART -->|"Done"| ASET
+```mermaid
+flowchart TD
+    SET[Settings]
+    ASET[Advanced Settings]
+    PM[Platform Mapping]
+    CC[Clear Cache]
+    ART[Artwork Sync]
+    INFO[Info]
+    LOGOUT[Logout Confirm]
+    PS[Platform Selection]
+
+    SET --> ASET
+    ASET -->|"Back"| SET
+    ASET --> PM
+    ASET --> CC
+    ASET --> ART
+    ASET --> INFO
+
+    PM --> ASET
+    CC --> ASET
+    ART --> ASET
 
     INFO -->|"Back"| SET
-    INFO -.->|"Back (from advanced)"| ASET
-    INFO -->|"Logout"| LOGOUT
+    INFO -.->|"Back (from adv)"| ASET
+    INFO --> LOGOUT
 
     LOGOUT -->|"Cancel"| INFO
     LOGOUT -->|"Confirm"| PS
-
-    SS -->|"Done"| PS
 ```
 
 ## State Descriptions
 
 | State | Description |
 |-------|-------------|
-| Platform Selection | Main menu showing available platforms and collections |
+| Platform Selection | Main menu showing platforms and collections |
 | Game List | List of games for selected platform/collection |
-| Game Details | Detailed view of a single game with metadata |
-| Game Options | Per-game settings (e.g., save directory) |
+| Game Details | Detailed view with metadata and download |
+| Game Options | Per-game settings (save directory) |
+| Search | On-screen keyboard for game search |
 | Collection List | List of available collections |
 | Collection Platform Selection | Platform filter within a collection |
-| Search | On-screen keyboard for searching games |
-| Collection Search | On-screen keyboard for searching collections |
+| Collection Search | On-screen keyboard for collection search |
 | Settings | Main settings menu |
 | Collections Settings | Collection display options |
-| Advanced Settings | Advanced options (timeouts, cache, mappings) |
-| Save Sync Settings | Per-platform save directory configuration |
+| Save Sync Settings | Per-platform save directory config |
+| Advanced Settings | Timeouts, cache, mappings |
 | Platform Mapping | Configure ROM directory mappings |
 | Clear Cache | Confirm cache clearing |
+| Artwork Sync | Pre-cache artwork for all games |
 | Info | App info and logout option |
 | Logout Confirmation | Confirm logout action |
 | Save Sync | Manual save synchronization |
-| BIOS Download | Download BIOS files for a platform |
-| Artwork Sync | Pre-cache artwork for all games |
+| BIOS Download | Download BIOS files |
 
-## Navigation State (`NavState`)
+## Navigation State
 
-The FSM maintains navigation state in a single struct:
+The FSM maintains state in a single `NavState` struct:
 
 ```go
 type NavState struct {
     // Game browsing
-    CurrentGames []romm.Rom
-    FullGames    []romm.Rom
-    SearchFilter string
-    HasBIOS      bool
-    GameListPos  ListPosition
+    CurrentGames, FullGames []romm.Rom
+    SearchFilter            string
+    HasBIOS                 bool
+    GameListPos             ListPosition
 
     // Collections
-    CollectionSearchFilter string
-    CollectionGames        []romm.Rom
-    CollectionListPos      ListPosition
-    CollectionPlatformPos  ListPosition
+    CollectionSearchFilter  string
+    CollectionGames         []romm.Rom
+    CollectionListPos       ListPosition
+    CollectionPlatformPos   ListPosition
 
-    // Platforms
-    PlatformListPos ListPosition
+    // List positions
+    PlatformListPos         ListPosition
+    SettingsPos             ListPosition
+    CollectionsSettingsPos  ListPosition
+    AdvancedSettingsPos     ListPosition
 
-    // Settings
-    SettingsPos            ListPosition
-    CollectionsSettingsPos ListPosition
-    AdvancedSettingsPos    ListPosition
-
-    // Navigation flags
-    QuitOnBack        bool
-    ShowCollections   bool
-    InfoPreviousState gaba.StateName
+    // Flags
+    QuitOnBack, ShowCollections bool
+    InfoPreviousState           gaba.StateName
 }
 ```
-
-This struct is stored in the FSM context and accessed via `gaba.Get[*NavState](ctx)`.
