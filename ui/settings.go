@@ -14,6 +14,7 @@ import (
 
 type settingsVisibility struct {
 	saveSyncSettings atomic.Bool
+	checkUpdates     atomic.Bool
 }
 
 type SettingsInput struct {
@@ -31,6 +32,7 @@ type SettingsOutput struct {
 	CollectionsSettingsClicked bool
 	AdvancedSettingsClicked    bool
 	SaveSyncSettingsClicked    bool
+	CheckUpdatesClicked        bool
 	LastSelectedIndex          int
 	LastVisibleStartIndex      int
 }
@@ -50,6 +52,7 @@ const (
 	SettingSaveSyncSettings    SettingType = "save_sync_settings"
 	SettingAdvancedSettings    SettingType = "advanced_settings"
 	SettingInfo                SettingType = "info"
+	SettingCheckUpdates        SettingType = "check_updates"
 )
 
 var settingsOrder = []SettingType{
@@ -59,6 +62,7 @@ var settingsOrder = []SettingType{
 	SettingSaveSyncSettings,
 	SettingAdvancedSettings,
 	SettingInfo,
+	SettingCheckUpdates,
 }
 
 func (s *SettingsScreen) Draw(input SettingsInput) (ScreenResult[SettingsOutput], error) {
@@ -67,6 +71,7 @@ func (s *SettingsScreen) Draw(input SettingsInput) (ScreenResult[SettingsOutput]
 
 	visibility := &settingsVisibility{}
 	visibility.saveSyncSettings.Store(config.SaveSyncMode != "off")
+	visibility.checkUpdates.Store(input.CFW != constants.NextUI)
 
 	items := s.buildMenuItems(config, visibility)
 
@@ -121,6 +126,11 @@ func (s *SettingsScreen) Draw(input SettingsInput) (ScreenResult[SettingsOutput]
 		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_save_sync_settings", Other: "Save Sync Settings"}, nil) {
 			output.SaveSyncSettingsClicked = true
 			return withCode(output, constants.ExitCodeSaveSyncSettings), nil
+		}
+
+		if selectedText == i18n.Localize(&goi18n.Message{ID: "update_check_for_updates", Other: "Check for Updates"}, nil) {
+			output.CheckUpdatesClicked = true
+			return withCode(output, constants.ExitCodeCheckUpdate), nil
 		}
 	}
 
@@ -184,6 +194,13 @@ func (s *SettingsScreen) buildMenuItem(settingType SettingType, config *utils.Co
 		return gaba.ItemWithOptions{
 			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_info", Other: "Grout Info"}, nil)},
 			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
+		}
+
+	case SettingCheckUpdates:
+		return gaba.ItemWithOptions{
+			Item:        gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "update_check_for_updates", Other: "Check for Updates"}, nil)},
+			Options:     []gaba.Option{{Type: gaba.OptionTypeClickable}},
+			VisibleWhen: &visibility.checkUpdates,
 		}
 
 	default:

@@ -71,7 +71,6 @@ func (s *InfoScreen) buildSections(input InfoInput) []gaba.Section {
 	}
 	sections = append(sections, gaba.NewInfoSection("Grout", versionMetadata))
 
-	// RomM server metadata
 	metadata := []gaba.MetadataItem{
 		{
 			Label: i18n.Localize(&goi18n.Message{ID: "info_server", Other: "Server"}, nil),

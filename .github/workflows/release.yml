@@ -112,5 +112,6 @@ jobs:
             build/Grout.pak.zip
             build/Grout.muxapp
             build/Grout-Knulli.zip
+            build/grout
           draft: false
           prerelease: ${{ inputs.beta }}

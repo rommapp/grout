@@ -13,8 +13,10 @@ import (
 )
 
 var (
-	autoSync     *utils.AutoSync
-	autoSyncOnce sync.Once
+	autoSync       *utils.AutoSync
+	autoSyncOnce   sync.Once
+	autoUpdate     *utils.AutoUpdate
+	autoUpdateOnce sync.Once
 )
 
 const (
@@ -38,6 +40,7 @@ const (
 	saveSync                                   = "save_sync"
 	biosDownload                               = "bios_download"
 	artworkSync                                = "artwork_sync"
+	updateCheck                                = "update_check"
 )
 
 type ListPosition struct {
@@ -96,12 +99,16 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 	gaba.Set(fsm.Context(), platforms)
 	gaba.Set(fsm.Context(), nav)
 
+	// Start background cache refresh immediately
+	utils.InitCacheRefresh(config.Hosts[0], config, platforms)
+
 	gaba.AddState(fsm, platformSelection, func(ctx *gaba.Context) (ui.PlatformSelectionOutput, gaba.ExitCode) {
 		platforms, _ := gaba.Get[[]romm.Platform](ctx)
 		nav, _ := gaba.Get[*NavState](ctx)
 
 		screen := ui.NewPlatformSelectionScreen()
 		config, _ := gaba.Get[*utils.Config](ctx)
+		cfw, _ := gaba.Get[constants.CFW](ctx)
 
 		// Start auto-sync on first platform menu view
 		if config.SaveSyncMode == "automatic" {
@@ -110,6 +117,14 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 				autoSync = utils.NewAutoSync(host, config)
 				utils.AddIcon(autoSync.Icon())
 				autoSync.Start()
+			})
+		}
+
+		// Start auto-update check on first platform menu view
+		if cfw != constants.NextUI {
+			autoUpdateOnce.Do(func() {
+				autoUpdate = utils.NewAutoUpdate(cfw)
+				autoUpdate.Start()
 			})
 		}
 
@@ -518,6 +533,7 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		On(constants.ExitCodeAdvancedSettings, advancedSettings).
 		On(constants.ExitCodeSaveSyncSettings, saveSyncSettings).
 		On(constants.ExitCodeInfo, info).
+		On(constants.ExitCodeCheckUpdate, updateCheck).
 		OnWithHook(gaba.ExitCodeBack, platformSelection, func(ctx *gaba.Context) error {
 			nav, _ := gaba.Get[*NavState](ctx)
 			nav.SettingsPos = ListPosition{}
@@ -829,6 +845,23 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		return output, gaba.ExitCodeBack
 	}).
 		On(gaba.ExitCodeBack, advancedSettings)
+
+	gaba.AddState(fsm, updateCheck, func(ctx *gaba.Context) (ui.UpdateOutput, gaba.ExitCode) {
+		cfw, _ := gaba.Get[constants.CFW](ctx)
+
+		screen := ui.NewUpdateScreen()
+		result, err := screen.Draw(ui.UpdateInput{
+			CFW: cfw,
+		})
+
+		if err != nil {
+			return ui.UpdateOutput{}, gaba.ExitCodeError
+		}
+
+		return result.Value, result.ExitCode
+	}).
+		On(gaba.ExitCodeBack, settings).
+		On(gaba.ExitCodeSuccess, settings)
 
 	return fsm.Start(platformSelection)
 }

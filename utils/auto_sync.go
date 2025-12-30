@@ -24,7 +24,7 @@ func NewAutoSync(host romm.Host, config *Config) *AutoSync {
 	return &AutoSync{
 		host:   host,
 		config: config,
-		icon:   gaba.NewDynamicStatusBarIcon(""),
+		icon:   gaba.NewDynamicStatusBarIcon(icons.CloudRefresh),
 		done:   make(chan struct{}),
 	}
 }
@@ -75,12 +75,12 @@ func (a *AutoSync) run() {
 		return
 	}
 
-	logger.Debug("AutoSync: Found syncs", "count", len(syncs))
-
 	if len(syncs) == 0 {
 		a.icon.SetText(icons.CloudCheck)
 		logger.Debug("AutoSync: No syncs needed")
 		return
+	} else {
+		logger.Debug("AutoSync: Found syncs", "count", len(syncs))
 	}
 
 	hadError := false

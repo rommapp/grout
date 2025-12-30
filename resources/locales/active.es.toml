@@ -673,6 +673,39 @@ other = "¡Tiempo de conexión agotado!\nPor favor, verifique su conexión de re
 hash = "sha1-b886665184599b10c9b185f86d5749418b473435"
 other = "¡Error de protocolo!\nVerifique la configuración de su servidor."
 
+[update_available]
+other = "Actualización disponible: {{.Version}}"
+
+[update_check_for_updates]
+other = "Buscar Actualizaciones"
+
+[update_checking]
+other = "Buscando actualizaciones..."
+
+[update_complete]
+other = "¡Actualización completada! Por favor reinicie Grout."
+
+[update_current_version]
+other = "Actual: {{.Version}}"
+
+[update_download]
+other = "Descargar y Actualizar"
+
+[update_downloading]
+other = "Descargando actualización..."
+
+[update_failed]
+other = "Actualización fallida: {{.Error}}"
+
+[update_new_version]
+other = "Nueva: {{.Version}}"
+
+[update_size]
+other = "Tamaño: {{.Size}}"
+
+[update_up_to_date]
+other = "Tiene la última versión ({{.Version}})"
+
 [time_105_minutes]
 hash = "sha1-18bf92f611e5f677d486ce65e647fada44f076ae"
 other = "105 Minutos"

@@ -64,15 +64,40 @@ func (s *CollectionPlatformSelectionScreen) Draw(input CollectionPlatformSelecti
 			opt.CollectionID = input.Collection.ID
 		}
 
-		// Check if cache is fresh (skip loading screen if so)
+		// Check if a prefetch is in progress for this collection
 		loadedFromCache := false
-		isFresh, _ := utils.CheckCacheFreshness(input.Host, input.Config, cacheKey, opt)
-		if isFresh {
-			cached, err := utils.LoadCachedGames(cacheKey)
-			if err == nil {
-				logger.Debug("Loaded collection games from cache (no loading screen)", "key", cacheKey, "count", len(cached))
-				allGames = cached
-				loadedFromCache = true
+		if cr := utils.GetCacheRefresh(); cr != nil {
+			if cr.IsPrefetchInProgress(cacheKey) {
+				logger.Debug("Waiting for collection prefetch to complete", "key", cacheKey)
+				// Show a loading message while waiting
+				gaba.ProcessMessage(
+					i18n.Localize(&goi18n.Message{ID: "games_list_loading", Other: "Loading {{.Name}}..."}, map[string]interface{}{"Name": input.Collection.Name}),
+					gaba.ProcessMessageOptions{ShowThemeBackground: true},
+					func() (interface{}, error) {
+						cr.WaitForPrefetch(cacheKey)
+						return nil, nil
+					},
+				)
+				// After prefetch completes, load from cache
+				cached, err := utils.LoadCachedGames(cacheKey)
+				if err == nil {
+					logger.Debug("Loaded collection from prefetch cache", "key", cacheKey, "count", len(cached))
+					allGames = cached
+					loadedFromCache = true
+				}
+			}
+		}
+
+		// Check if cache is fresh (skip loading screen if so)
+		if !loadedFromCache {
+			isFresh, _ := utils.CheckCacheFreshness(input.Host, input.Config, cacheKey, opt)
+			if isFresh {
+				cached, err := utils.LoadCachedGames(cacheKey)
+				if err == nil {
+					logger.Debug("Loaded collection games from cache (no loading screen)", "key", cacheKey, "count", len(cached))
+					allGames = cached
+					loadedFromCache = true
+				}
 			}
 		}
 

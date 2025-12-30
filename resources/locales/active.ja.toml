@@ -673,6 +673,39 @@ other = "接続がタイムアウトしました！\nサーバーが応答しま
 hash = "sha1-b886665184599b10c9b185f86d5749418b473435"
 other = "プロトコルエラー！\nサーバーはhttpsの代わりにhttpを必要としているかもしれません（またはその逆）。"
 
+[update_available]
+other = "アップデートあり: {{.Version}}"
+
+[update_check_for_updates]
+other = "アップデートを確認"
+
+[update_checking]
+other = "アップデートを確認中..."
+
+[update_complete]
+other = "アップデート完了！Groutを再起動してください。"
+
+[update_current_version]
+other = "現在: {{.Version}}"
+
+[update_download]
+other = "ダウンロードして更新"
+
+[update_downloading]
+other = "アップデートをダウンロード中..."
+
+[update_failed]
+other = "アップデート失敗: {{.Error}}"
+
+[update_new_version]
+other = "最新: {{.Version}}"
+
+[update_size]
+other = "サイズ: {{.Size}}"
+
+[update_up_to_date]
+other = "最新バージョンです ({{.Version}})"
+
 [time_105_minutes]
 hash = "sha1-18bf92f611e5f677d486ce65e647fada44f076ae"
 other = "105分"

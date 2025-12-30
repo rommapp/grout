@@ -673,6 +673,39 @@ other = "Tempo de conexão esgotado!\nO servidor não está respondendo. Verifiq
 hash = "sha1-b886665184599b10c9b185f86d5749418b473435"
 other = "Erro de protocolo!\nO servidor pode exigir http em vez de https (ou vice-versa)."
 
+[update_available]
+other = "Atualização disponível: {{.Version}}"
+
+[update_check_for_updates]
+other = "Verificar Atualizações"
+
+[update_checking]
+other = "Verificando atualizações..."
+
+[update_complete]
+other = "Atualização concluída! Por favor reinicie o Grout."
+
+[update_current_version]
+other = "Atual: {{.Version}}"
+
+[update_download]
+other = "Baixar e Atualizar"
+
+[update_downloading]
+other = "Baixando atualização..."
+
+[update_failed]
+other = "Atualização falhou: {{.Error}}"
+
+[update_new_version]
+other = "Nova: {{.Version}}"
+
+[update_size]
+other = "Tamanho: {{.Size}}"
+
+[update_up_to_date]
+other = "Você tem a versão mais recente ({{.Version}})"
+
 [time_105_minutes]
 hash = "sha1-18bf92f611e5f677d486ce65e647fada44f076ae"
 other = "105 Minutos"

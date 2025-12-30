@@ -3,8 +3,10 @@ package ui
 import (
 	"errors"
 	"grout/utils"
+	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
+	icons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
 	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
@@ -62,8 +64,7 @@ func (s *ClearCacheScreen) Draw() (ScreenResult[ClearCacheOutput], error) {
 	)
 	options.FooterHelpItems = []gaba.FooterHelpItem{
 		FooterCancel(),
-		FooterSelect(),
-		FooterStartConfirm(),
+		{ButtonName: icons.Start, HelpText: i18n.Localize(&goi18n.Message{ID: "button_confirm", Other: "Confirm"}, nil), IsConfirmButton: true},
 	}
 	options.StartInMultiSelectMode = true
 	options.StatusBar = utils.StatusBar()
@@ -88,6 +89,17 @@ func (s *ClearCacheScreen) Draw() (ScreenResult[ClearCacheOutput], error) {
 				gaba.GetLogger().Info("Cleared cache", "cache", cache.name)
 			}
 		}
+	}
+
+	if output.ClearedCount > 0 {
+		gaba.ProcessMessage(
+			i18n.Localize(&goi18n.Message{ID: "cache_cleared", Other: "Cache cleared!"}, nil),
+			gaba.ProcessMessageOptions{},
+			func() (interface{}, error) {
+				time.Sleep(time.Second * 1)
+				return nil, nil
+			},
+		)
 	}
 
 	return success(output), nil

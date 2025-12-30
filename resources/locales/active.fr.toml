@@ -673,6 +673,39 @@ other = "Délai de connexion dépassé!\nLe serveur ne répond pas. Vérifiez vo
 hash = "sha1-b886665184599b10c9b185f86d5749418b473435"
 other = "Incompatibilité de protocole!\nLe serveur peut nécessiter http au lieu de https (ou vice versa)."
 
+[update_available]
+other = "Mise à jour disponible : {{.Version}}"
+
+[update_check_for_updates]
+other = "Vérifier les mises à jour"
+
+[update_checking]
+other = "Recherche de mises à jour..."
+
+[update_complete]
+other = "Mise à jour terminée ! Veuillez redémarrer Grout."
+
+[update_current_version]
+other = "Actuelle : {{.Version}}"
+
+[update_download]
+other = "Télécharger et Mettre à jour"
+
+[update_downloading]
+other = "Téléchargement de la mise à jour..."
+
+[update_failed]
+other = "Échec de la mise à jour : {{.Error}}"
+
+[update_new_version]
+other = "Nouvelle : {{.Version}}"
+
+[update_size]
+other = "Taille : {{.Size}}"
+
+[update_up_to_date]
+other = "Vous avez la dernière version ({{.Version}})"
+
 [time_105_minutes]
 hash = "sha1-18bf92f611e5f677d486ce65e647fada44f076ae"
 other = "105 Minutes"

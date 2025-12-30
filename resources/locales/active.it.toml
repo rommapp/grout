@@ -673,6 +673,39 @@ other = "Timeout connessione!\nIl server non risponde. Verifica la tua connessio
 hash = "sha1-b886665184599b10c9b185f86d5749418b473435"
 other = "Errore di protocollo!\nIl server potrebbe richiedere http invece di https (o viceversa)."
 
+[update_available]
+other = "Aggiornamento disponibile: {{.Version}}"
+
+[update_check_for_updates]
+other = "Verifica Aggiornamenti"
+
+[update_checking]
+other = "Ricerca aggiornamenti..."
+
+[update_complete]
+other = "Aggiornamento completato! Riavvia Grout."
+
+[update_current_version]
+other = "Attuale: {{.Version}}"
+
+[update_download]
+other = "Scarica e Aggiorna"
+
+[update_downloading]
+other = "Download aggiornamento..."
+
+[update_failed]
+other = "Aggiornamento fallito: {{.Error}}"
+
+[update_new_version]
+other = "Nuova: {{.Version}}"
+
+[update_size]
+other = "Dimensione: {{.Size}}"
+
+[update_up_to_date]
+other = "Hai l'ultima versione ({{.Version}})"
+
 [time_105_minutes]
 hash = "sha1-18bf92f611e5f677d486ce65e647fada44f076ae"
 other = "105 Minuti"

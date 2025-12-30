@@ -11,18 +11,15 @@ import (
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
 
-// CacheMetadata stores the last_updated_at timestamp for each cached platform/collection
 type CacheMetadata struct {
 	Entries map[string]CacheEntry `json:"entries"`
 }
 
-// CacheEntry represents a single cache entry's metadata
 type CacheEntry struct {
 	LastUpdatedAt time.Time `json:"last_updated_at"`
 	CachedAt      time.Time `json:"cached_at"`
 }
 
-// CacheType represents the type of cache entry
 type CacheType string
 
 const (
@@ -32,7 +29,6 @@ const (
 	CacheTypeVirtualCollection CacheType = "virtual_collection"
 )
 
-// GetGamesCacheDir returns the path to the games cache directory
 func GetGamesCacheDir() string {
 	wd, err := os.Getwd()
 	if err != nil {
@@ -41,17 +37,14 @@ func GetGamesCacheDir() string {
 	return filepath.Join(wd, ".cache", "games")
 }
 
-// GetCacheKey generates a cache key for a platform or collection
 func GetCacheKey(cacheType CacheType, id string) string {
-	return string(cacheType) + ":" + id
+	return string(cacheType) + "_" + id
 }
 
-// GetPlatformCacheKey generates a cache key for a platform
 func GetPlatformCacheKey(platformID int) string {
 	return GetCacheKey(CacheTypePlatform, strconv.Itoa(platformID))
 }
 
-// GetCollectionCacheKey generates a cache key for a collection based on its type
 func GetCollectionCacheKey(collection romm.Collection) string {
 	if collection.IsVirtual {
 		return GetCacheKey(CacheTypeVirtualCollection, collection.VirtualID)
@@ -62,16 +55,8 @@ func GetCollectionCacheKey(collection romm.Collection) string {
 	return GetCacheKey(CacheTypeCollection, strconv.Itoa(collection.ID))
 }
 
-// getCacheFilePath returns the file path for a cache key
 func getCacheFilePath(cacheKey string) string {
-	// Replace ":" with "_" for file system compatibility
-	filename := cacheKey + ".json"
-	for i, c := range filename {
-		if c == ':' {
-			filename = filename[:i] + "_" + filename[i+1:]
-		}
-	}
-	return filepath.Join(GetGamesCacheDir(), filename)
+	return filepath.Join(GetGamesCacheDir(), cacheKey+".json")
 }
 
 // getMetadataPath returns the path to the metadata file
@@ -118,7 +103,24 @@ func saveMetadata(metadata CacheMetadata) error {
 
 // CheckCacheFreshness checks if the cache for a given key is still fresh
 // Returns true if cache is fresh (can use cached data), false if stale (need to refetch)
+// This function first checks the pre-validated state from startup, avoiding network calls during navigation
 func CheckCacheFreshness(host romm.Host, config *Config, cacheKey string, query romm.GetRomsQuery) (bool, error) {
+	logger := gaba.GetLogger()
+
+	// First, check if we have a pre-validated result from startup
+	if cr := GetCacheRefresh(); cr != nil {
+		if isFresh, wasValidated := cr.IsCacheFresh(cacheKey); wasValidated {
+			logger.Debug("Using pre-validated cache freshness", "key", cacheKey, "fresh", isFresh)
+			return isFresh, nil
+		}
+	}
+
+	// Fall back to network check if not pre-validated
+	return checkCacheFreshnessInternal(host, config, cacheKey, query)
+}
+
+// checkCacheFreshnessInternal performs the actual network check for cache freshness
+func checkCacheFreshnessInternal(host romm.Host, config *Config, cacheKey string, query romm.GetRomsQuery) (bool, error) {
 	logger := gaba.GetLogger()
 
 	// Load metadata to get the stored last_updated_at
@@ -246,7 +248,57 @@ func SaveGamesToCache(cacheKey string, games []romm.Rom) error {
 		return err
 	}
 
+	// Mark the cache as fresh in the refresh cache
+	if cr := GetCacheRefresh(); cr != nil {
+		cr.MarkCacheFresh(cacheKey)
+	}
+
 	logger.Debug("Saved games to cache", "key", cacheKey, "count", len(games), "latestUpdatedAt", latestUpdatedAt)
+	return nil
+}
+
+// saveCollectionToCache saves games to cache using a specific timestamp (collection's UpdatedAt)
+func saveCollectionToCache(cacheKey string, games []romm.Rom, updatedAt time.Time) error {
+	logger := gaba.GetLogger()
+
+	if err := os.MkdirAll(GetGamesCacheDir(), 0755); err != nil {
+		return err
+	}
+
+	// Save the games to the cache file
+	cachePath := getCacheFilePath(cacheKey)
+	data, err := json.Marshal(games)
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(cachePath, data, 0644); err != nil {
+		return err
+	}
+
+	// Update metadata with the collection's UpdatedAt
+	metadata, err := loadMetadata()
+	if err != nil {
+		logger.Debug("Failed to load metadata for update", "error", err)
+		metadata = CacheMetadata{Entries: make(map[string]CacheEntry)}
+	}
+
+	metadata.Entries[cacheKey] = CacheEntry{
+		LastUpdatedAt: updatedAt,
+		CachedAt:      time.Now(),
+	}
+
+	if err := saveMetadata(metadata); err != nil {
+		logger.Debug("Failed to save metadata", "error", err)
+		return err
+	}
+
+	// Mark the cache as fresh in the refresh cache
+	if cr := GetCacheRefresh(); cr != nil {
+		cr.MarkCacheFresh(cacheKey)
+	}
+
+	logger.Debug("Saved collection to cache", "key", cacheKey, "count", len(games), "updatedAt", updatedAt)
 	return nil
 }
 

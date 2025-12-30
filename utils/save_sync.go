@@ -190,6 +190,12 @@ func (s *SaveSync) upload(host romm.Host) (string, error) {
 func lookupRomID(romFile *localRomFile, rc *romm.Client) (int, string, error) {
 	logger := gaba.GetLogger()
 
+	// Check cache first
+	if romID, romName, found := GetCachedRomID(romFile.Slug, romFile.SHA1); found {
+		logger.Debug("ROM lookup from cache", "slug", romFile.Slug, "sha1", romFile.SHA1[:8], "romID", romID, "name", romName)
+		return romID, romName, nil
+	}
+
 	logger.Debug("Looking up ROM by hash", "slug", romFile.Slug, "sha1", romFile.SHA1[:8])
 	rom, err := rc.GetRomByHash(romm.GetRomByHashQuery{
 		Sha1Hash: romFile.SHA1,
@@ -199,6 +205,9 @@ func lookupRomID(romFile *localRomFile, rc *romm.Client) (int, string, error) {
 		logger.Debug("No remote ROM found for hash", "sha1", romFile.SHA1[:8], "error", err)
 		return 0, "", nil
 	}
+
+	// Cache the result for next time
+	CacheRomID(romFile.Slug, romFile.SHA1, rom.ID, rom.Name)
 
 	logger.Debug("ROM lookup successful", "slug", romFile.Slug, "sha1", romFile.SHA1[:8], "romID", rom.ID, "name", rom.Name)
 	return rom.ID, rom.Name, nil

@@ -100,7 +100,6 @@ func setup() SetupResult {
 		utils.LogStandardFatal("Failed to initialize i18n", err)
 	}
 
-	logger.Debug("Loading configuration from config.json")
 	config, err := utils.LoadConfig()
 	isFirstLaunch := err != nil || (len(config.Hosts) == 0 && config.Language == "")
 
@@ -110,7 +109,6 @@ func setup() SetupResult {
 		selectedLanguage, langErr := languageScreen.Draw()
 		if langErr != nil {
 			logger.Error("Language selection failed", "error", langErr)
-			// Default to English if selection fails
 			selectedLanguage = "en"
 		}
 		logger.Debug("Language selected", "language", selectedLanguage)
@@ -120,7 +118,6 @@ func setup() SetupResult {
 			logger.Error("Failed to set language", "error", err, "language", selectedLanguage)
 		}
 
-		// Update config with selected language
 		if config == nil {
 			config = &utils.Config{
 				ShowCollections: true,
@@ -140,8 +137,6 @@ func setup() SetupResult {
 		logger.Debug("Login successful, saving configuration")
 		config.Hosts = loginConfig.Hosts
 		utils.SaveConfig(config)
-	} else {
-		logger.Debug("Configuration loaded successfully", "host_count", len(config.Hosts))
 	}
 
 	if config.LogLevel != "" {
@@ -199,7 +194,6 @@ func setup() SetupResult {
 			break
 		}
 
-		// Show error and ask to retry
 		logger.Error("Failed to load platforms", "error", loadErr)
 		errorMessage := classifyStartupError(loadErr)
 		errorMsg := i18n.Localize(errorMessage, nil)

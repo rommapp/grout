@@ -168,7 +168,7 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 	for i, game := range displayGames {
 		imageFilename := ""
 		if input.Config.ShowBoxArt {
-			imageFilename = utils.GetCachedArtworkForRom(game)
+			imageFilename = utils.GetArtworkCachePath(game.PlatformSlug, game.ID)
 		}
 		menuItems[i] = gaba.MenuItem{
 			Text:          game.DisplayName,
@@ -286,6 +286,37 @@ func (s *GameListScreen) loadGames(input GameListInput) (loadGamesResult, error)
 	cacheKey := getCacheKeyForFetch(id, ft)
 	query := getQueryForFetch(id, ft)
 
+	// Check if a prefetch is in progress for this platform
+	if cr := utils.GetCacheRefresh(); cr != nil {
+		if cr.IsPrefetchInProgress(cacheKey) {
+			logger.Debug("Waiting for prefetch to complete", "key", cacheKey)
+			// Show a loading message while waiting
+			gaba.ProcessMessage(
+				i18n.Localize(&goi18n.Message{ID: "games_list_loading", Other: "Loading {{.Name}}..."}, map[string]interface{}{"Name": displayName}),
+				gaba.ProcessMessageOptions{ShowThemeBackground: true},
+				func() (interface{}, error) {
+					cr.WaitForPrefetch(cacheKey)
+					return nil, nil
+				},
+			)
+			// After prefetch completes, load from cache
+			cached, err := utils.LoadCachedGames(cacheKey)
+			if err == nil {
+				logger.Debug("Loaded games from prefetch cache", "key", cacheKey, "count", len(cached))
+				result.games = cached
+
+				// Check BIOS availability from pre-cached data
+				if platform.ID != 0 && !isCollectionSet(collection) {
+					if hasBIOS, wasFetched := cr.HasBIOS(platform.ID); wasFetched {
+						result.hasBIOS = hasBIOS
+					}
+				}
+
+				return result, nil
+			}
+		}
+	}
+
 	isFresh, _ := utils.CheckCacheFreshness(host, config, cacheKey, query)
 	if isFresh {
 		cached, err := utils.LoadCachedGames(cacheKey)
@@ -293,12 +324,12 @@ func (s *GameListScreen) loadGames(input GameListInput) (loadGamesResult, error)
 			logger.Debug("Loaded games from cache (no loading screen)", "key", cacheKey, "count", len(cached))
 			result.games = cached
 
-			// Check BIOS availability
+			// Check BIOS availability from pre-cached data
 			if platform.ID != 0 && !isCollectionSet(collection) {
-				rc := utils.GetRommClient(host, config.ApiTimeout)
-				firmware, err := rc.GetFirmware(platform.ID)
-				if err == nil && len(firmware) > 0 {
-					result.hasBIOS = true
+				if cr := utils.GetCacheRefresh(); cr != nil {
+					if hasBIOS, wasFetched := cr.HasBIOS(platform.ID); wasFetched {
+						result.hasBIOS = hasBIOS
+					}
 				}
 			}
 
@@ -333,14 +364,32 @@ func (s *GameListScreen) loadGames(input GameListInput) (loadGamesResult, error)
 
 			// Check BIOS availability (only for platforms, not collections)
 			if platform.ID != 0 && !isCollectionSet(collection) {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					firmware, err := rc.GetFirmware(platform.ID)
-					if err == nil && len(firmware) > 0 {
-						result.hasBIOS = true
+				// First check pre-cached BIOS info
+				if cr := utils.GetCacheRefresh(); cr != nil {
+					if hasBIOS, wasFetched := cr.HasBIOS(platform.ID); wasFetched {
+						result.hasBIOS = hasBIOS
+					} else {
+						// Fall back to network fetch if not pre-cached
+						wg.Add(1)
+						go func() {
+							defer wg.Done()
+							firmware, err := rc.GetFirmware(platform.ID)
+							if err == nil && len(firmware) > 0 {
+								result.hasBIOS = true
+							}
+						}()
 					}
-				}()
+				} else {
+					// No cache refresh instance, do network fetch
+					wg.Add(1)
+					go func() {
+						defer wg.Done()
+						firmware, err := rc.GetFirmware(platform.ID)
+						if err == nil && len(firmware) > 0 {
+							result.hasBIOS = true
+						}
+					}()
+				}
 			}
 
 			wg.Wait()

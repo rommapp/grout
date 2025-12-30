@@ -673,6 +673,39 @@ other = "Verbindungszeitüberschreitung!\nDer Server antwortet nicht. Überprüf
 hash = "sha1-b886665184599b10c9b185f86d5749418b473435"
 other = "Protokollfehler!\nDer Server benötigt möglicherweise http statt https (oder umgekehrt)."
 
+[update_available]
+other = "Update verfügbar: {{.Version}}"
+
+[update_check_for_updates]
+other = "Nach Updates suchen"
+
+[update_checking]
+other = "Suche nach Updates..."
+
+[update_complete]
+other = "Update abgeschlossen! Bitte starten Sie Grout neu."
+
+[update_current_version]
+other = "Aktuell: {{.Version}}"
+
+[update_download]
+other = "Herunterladen & Aktualisieren"
+
+[update_downloading]
+other = "Update wird heruntergeladen..."
+
+[update_failed]
+other = "Update fehlgeschlagen: {{.Error}}"
+
+[update_new_version]
+other = "Neu: {{.Version}}"
+
+[update_size]
+other = "Größe: {{.Size}}"
+
+[update_up_to_date]
+other = "Sie haben die neueste Version ({{.Version}})"
+
 [time_105_minutes]
 hash = "sha1-18bf92f611e5f677d486ce65e647fada44f076ae"
 other = "105 Minuten"
