@@ -1,179 +1,746 @@
-artwork_sync_complete = "%d images d'illustration téléchargées avec succès."
-artwork_sync_confirm = "Télécharger les illustrations pour %d jeux ?"
-artwork_sync_failed = "Échec du téléchargement de %d images d'illustration."
-artwork_sync_no_platforms = "Aucune plateforme avec des associations de dossiers trouvée."
-artwork_sync_processing = "Traitement des illustrations..."
-artwork_sync_scanning = "Analyse de la plateforme %d/%d : %s..."
-artwork_sync_up_to_date = "Toutes les illustrations sont déjà en cache !"
-bios_download_complete = "%d fichier(s) BIOS téléchargé(s) avec succès."
-bios_download_complete_with_warnings = "%d fichier(s) BIOS téléchargé(s) avec %d avertissement(s) de hash. Les fichiers peuvent ne pas être la bonne version."
-bios_download_failed = "Échec du téléchargement de %d fichier(s) BIOS."
-bios_no_files_required = "Cette plateforme ne nécessite aucun fichier BIOS."
-bios_status_not_installed = "Non Installé"
-bios_status_ready = "Prêt"
-bios_status_unverified = "Installé (Non Vérifié)"
-bios_status_wrong_version = "Mauvaise Version"
-button_back = "Retour"
-button_bios = "BIOS"
-button_cancel = "Annuler"
-button_close = "Fermer"
-button_confirm = "Confirmer"
-button_continue = "Continuer"
-button_cycle = "Défiler"
-button_download = "Télécharger"
-button_help = "Aide"
-button_login = "Connexion"
-button_logout = "Déconnexion"
-button_menu = "Menu"
-button_quit = "Quitter"
-button_save = "Sauvegarder"
-button_save_sync = "Synchroniser"
-button_search = "Rechercher"
-button_select = "Sélectionner"
-button_settings = "Paramètres"
-clear_cache_confirm_message = "Vider tout le cache des illustrations ?"
-collection_platform_no_mapped = "Aucune plateforme ne possède de jeux associés dans in\n{{.Name}}"
-collection_platform_title = "{{.Name}} - Platformes"
-collection_view_platform = "Plateforme"
-collection_view_unified = "Unifiée"
-common_false = "Faux"
-common_hide = "Masquer"
-common_show = "Afficher"
-common_skip = "Passer"
-common_true = "Vrai"
-download_artwork = "Téléchargement de l'illustration..."
-download_extracting = "Extraction de {{.Name}}..."
-downloaded_games_do_nothing = "Ne Rien Faire"
-downloaded_games_filter = "Filtrer"
-downloaded_games_mark = "Marquer"
-emulator_default = " (Défaut)"
-emulator_saves_count = " ({{.Count}} sauvegardes)"
-emulator_selection_title = "Sélection de l'émulateur {{.Platform}}"
-error_loading_platforms = "Erreur lors du chargement des plateformes depuis RomM.\nVeuillez vérifier la connexion."
-game_details_average_rating = "Note Moyenne"
-game_details_companies = "Entreprises"
-game_details_file_size = "Taille du Fichier"
-game_details_game = "Jeu"
-game_details_game_modes = "Modes de Jeu"
-game_details_genres = "Genres"
-game_details_languages = "Langues"
-game_details_multi_file_rom = "ROM Multi-Fichiers"
-game_details_platform = "Plateforme"
-game_details_qr_section = "Lien du jeu sur RomM"
-game_details_regions = "Régions"
-game_details_release_date = "Date de Sortie"
-game_details_type = "Type"
-games_list_filtered_out = "Aucun jeu dans {{.Name}} ne correspond à vos plateformes"
-games_list_help_body = "A - Sélectionner un jeu\nB - Retourner à l'écran précédent\nX - Rechercher des jeux par nom\nSelect - Activer/désactiver le mode sélection multiple\n    En mode sélection multiple :\n    - Utilisez la croix directionnelle pour naviguer\n    - Appuyez sur A pour activer/désactiver la sélection\n    - Appuyez sur Start pour confirmer les sélections\nMenu - Afficher cet écran d'aide\nCroix directionnelle - Naviguer dans la liste des jeux"
-games_list_help_title = "Aide - Liste des Jeux"
-games_list_loading = "Chargement de {{.Name}}..."
-games_list_no_games = "Aucun jeu trouvé dans {{.Name}}"
-games_list_no_results = "Aucun jeu trouvé pour \"{{.Query}}\""
-games_list_search_prefix = "Recherche: {{.Query}}"
-help_exit_text = "Appuyez sur n'importe quel bouton pour fermer l'aide"
-info_build_date = "Date de compilation"
-info_commit = "Commit"
-info_repository = "Dépôt GitHub"
-info_server = "Serveur"
-info_title = "Informations sur Grout"
-info_user = "Utilisateur"
-info_version = "Version"
-log_level_debug = "Debug"
-log_level_error = "Erreur"
-login_error_connection_refused = "Impossible de se connecter à l'hôte!\nVeuillez vérifier que le nom de domaine et le port sont corrects."
-login_error_credentials = "Nom de compte ou mot de passe incorrect."
-login_error_forbidden = "Accès interdit!\nVérifiez votre nom de compte/mot de passe et essayez de basculer entre http et https."
-login_error_invalid_hostname = "Impossible de résoudre le nom de domaine!\nVeuillez vérifier que le nom de domaine est correct."
-login_error_server = "Erreur du serveur RomM!\nVeuillez vérifier les journaux du serveur RomM."
-login_error_timeout = "Délai de connexion dépassé!\nVeuillez vérifier votre connexion réseau et que l'hôte est accessible."
-login_error_unexpected = "Erreur inattendue.\nRegardez les logs pour plus d'informations."
-login_error_use_http = "Incompatibilité de protocole!\nVeuillez utiliser HTTP au lieu de HTTPS."
-login_error_use_https = "Incompatibilité de protocole!\nVeuillez utiliser HTTPS au lieu de HTTP."
-login_error_wrong_protocol = "Incompatibilité de protocole!\nEssayez de basculer entre http et https."
-login_hostname = "Nom de Domaine"
-login_password = "Mot de Passe"
-login_port = "Port (optionnel)"
-login_protocol = "Protocole"
-login_protocol_http = "HTTP"
-login_protocol_https = "HTTPS"
-login_title = "Connexion à RomM"
-login_username = "Nom de compte"
-login_validating = "Validation de la connexion..."
-logout_confirm_message = "Êtes-vous sûr de vouloir vous déconnecter ?"
-platform_mapping_create = "Créer '{{.Name}}'"
-platform_mapping_directory_not_found = "Dossier de ROM introuvable!"
-platform_mapping_path_prefix = "/{{.Name}}"
-platform_mapping_title = "Association des Dossiers de ROM"
-platform_selection_collections = "Collections"
-save_sync_downloaded = "Téléchargé"
-save_sync_failed = "Échoué"
-save_sync_mode_manual = "Manuel"
-save_sync_mode_off = "Désactivé"
-save_sync_rom_not_found = "{{.Name}} (ROM introuvable dans RomM)"
-save_sync_scanning = "Analyse des fichiers de sauvegarde..."
-save_sync_skipped = "Ignoré"
-save_sync_summary = "Résumé de la synchro des sauvegardes"
-save_sync_summary_section = "Résumé"
-save_sync_total_processed = "Total traité"
-save_sync_unknown_error = "Erreur inconnue"
-save_sync_unmatched_saves = "Sauvegardes sans correspondance"
-save_sync_up_to_date = "Tout est à jour!\nPlace au jeu!"
-save_sync_uploaded = "Téléversé"
-settings_advanced = "Avancé"
-settings_api_timeout = "Délai d'attente de l'API"
-settings_auto_sync_saves = "Synchronisation auto des sauvegardes"
-settings_box_art = "Illustrations"
-settings_clear_cache = "Vider le Cache"
-settings_collection_view = "Vue de Collection"
-settings_collections = "Paramètres de Collections"
-settings_download_art = "Télécharger les illustrations"
-settings_download_timeout = "Délai d'attente de téléchargement"
-settings_downloaded_games = "Jeux téléchargés"
-settings_edit_mappings = "Les associations de dossiers"
-settings_info = "Informations sur Grout"
-settings_language = "Langue"
-settings_language_english = "English"
-settings_language_french = "Français"
-settings_language_german = "Deutsch"
-settings_language_italian = "Italiano"
-settings_language_japanese = "日本語"
-settings_language_portuguese = "Português"
-settings_language_russian = "Русский"
-settings_language_spanish = "Español"
-settings_log_level = "Niveau de log"
-settings_save_sync = "Synchronisation des Sauvegardes"
-settings_show_bios = "Menu BIOS"
-settings_show_collections = "Collections"
-settings_show_game_details = "Détails du jeu"
-settings_show_smart_collections = "Collections Intelligentes"
-settings_show_virtual_collections = "Collections Virtuelles"
-settings_sync_artwork = "Mettre en cache"
-settings_title = "Paramètres"
-settings_unzip_downloads = "Extraire les téléchargements"
-startup_error_action_exit = "Quitter"
-startup_error_action_retry = "Réessayer la Connexion"
-startup_error_connection_refused = "Impossible de se connecter au serveur!\nLe serveur est peut-être hors ligne ou le port est incorrect."
-startup_error_credentials = "Échec de l'authentification!\nVotre nom d'utilisateur ou mot de passe a peut-être changé sur le serveur."
-startup_error_forbidden = "Accès interdit!\nVos identifiants ont peut-être changé, ou le serveur peut nécessiter un protocole différent (http vs https)."
-startup_error_invalid_hostname = "Impossible de résoudre le nom de domaine!\nL'adresse du serveur configurée est introuvable."
-startup_error_server = "Erreur du serveur RomM!\nLe serveur rencontre des problèmes. Vérifiez les journaux du serveur."
-startup_error_timeout = "Délai de connexion dépassé!\nLe serveur ne répond pas. Vérifiez votre connexion réseau."
-startup_error_wrong_protocol = "Incompatibilité de protocole!\nLe serveur peut nécessiter http au lieu de https (ou vice versa)."
-time_105_minutes = "105 Minutes"
-time_120_minutes = "120 Minutes"
-time_120_seconds = "120 Seconds"
-time_15_minutes = "15 Minutes"
-time_15_seconds = "15 Secondes"
-time_180_seconds = "180 Secondes"
-time_240_seconds = "240 Secondes"
-time_300_seconds = "300 Secondes"
-time_30_minutes = "30 Minutes"
-time_30_seconds = "30 Secondes"
-time_45_minutes = "45 Minutes"
-time_45_seconds = "45 Secondes"
-time_60_minutes = "60 Minutes"
-time_60_seconds = "60 Secondes"
-time_75_minutes = "75 Minutes"
-time_75_seconds = "75 Secondes"
-time_90_minutes = "90 Minutes"
-time_90_seconds = "90 Secondes"
+[artwork_sync_complete]
+hash = "sha1-cde437c528224c2a08f0719f3e8b923a17642295"
+other = "%d images d'illustration téléchargées avec succès."
+
+[artwork_sync_confirm]
+hash = "sha1-19bd664135df62cf7f839f7fa5810b40f6e3e007"
+other = "Télécharger les illustrations pour %d jeux ?"
+
+[artwork_sync_failed]
+hash = "sha1-869ec904d8bde854dcf9489791abb3eef66818f9"
+other = "Échec du téléchargement de %d images d'illustration."
+
+[artwork_sync_no_platforms]
+hash = "sha1-b9b27ff510e8ba88853b517993776a9b867c1e40"
+other = "Aucune plateforme avec des associations de dossiers trouvée."
+
+[artwork_sync_processing]
+hash = "sha1-005be85329c5856533c8c19e448dc1870e3b033d"
+other = "Traitement des illustrations..."
+
+[artwork_sync_scanning]
+hash = "sha1-b6223550ccbdc62d88de558bd9d49c7c1da8e3bc"
+other = "Analyse de la plateforme %d/%d : %s..."
+
+[artwork_sync_up_to_date]
+hash = "sha1-ef880c0f2577f0a9fb8ca21f2ed3710e5aef1376"
+other = "Toutes les illustrations sont déjà en cache !"
+
+[auto_sync_waiting]
+hash = "sha1-c005f14e70da37982e2152d3af9d29a58ea8f01c"
+other = "En attente de la fin de la synchronisation..."
+
+[bios_download_complete]
+hash = "sha1-344ccb404588981250e2016ac355ac798d0b7e31"
+other = "%d fichier(s) BIOS téléchargé(s) avec succès."
+
+[bios_download_complete_with_warnings]
+hash = "sha1-aebdf53b01e8b0931fcbddce77db5b1477cc151f"
+other = "%d fichier(s) BIOS téléchargé(s) avec %d avertissement(s) de hash. Les fichiers peuvent ne pas être la bonne version."
+
+[bios_download_failed]
+hash = "sha1-f8f2757f474c368063876856535dc676c1281ff3"
+other = "Échec du téléchargement de %d fichier(s) BIOS."
+
+[bios_no_files_required]
+hash = "sha1-eedf22da12a12dcd80d934cd25b3ce5c6f6952bc"
+other = "Cette plateforme ne nécessite aucun fichier BIOS."
+
+[bios_status_not_installed]
+hash = "sha1-5cc41c2d9eefe7c246cac37b27f70b3ebc24575e"
+other = "Non Installé"
+
+[bios_status_ready]
+hash = "sha1-20c7c5522fc28c5817550dd82bc3272eb6a991c7"
+other = "Prêt"
+
+[bios_status_unverified]
+hash = "sha1-9a7ab23357427e1471442fad2feebd70186bc882"
+other = "Installé (Non Vérifié)"
+
+[bios_status_wrong_version]
+hash = "sha1-4b3acf8ba6563daaf56aa48ac9ecc7661ba7fdcf"
+other = "Mauvaise Version"
+
+[button_back]
+hash = "sha1-b52b36b7269fbfc58ec24bb724691951a3decbe8"
+other = "Retour"
+
+[button_bios]
+hash = "sha1-a7d7da6d80c497ad76b722c980dcc6f58e786281"
+other = "BIOS"
+
+[button_cancel]
+hash = "sha1-77dfd2135f4db726c47299bb55be26f7f4525a46"
+other = "Annuler"
+
+[button_close]
+hash = "sha1-bbfa773e5a63a5ea58c9b6207e608ca0120e592a"
+other = "Fermer"
+
+[button_confirm]
+hash = "sha1-04a212215ef9fbf686d280802eb81ee7a6e681cd"
+other = "Confirmer"
+
+[button_continue]
+hash = "sha1-2e02623966f9391facf6eaefc8b079ed5b630bee"
+other = "Continuer"
+
+[button_cycle]
+hash = "sha1-f5eda1b11afa0fcfb39f3eb94274b23a7d669749"
+other = "Défiler"
+
+[button_download]
+hash = "sha1-a479c9c34e878d07b4d67a73a48f432ad7dc53c8"
+other = "Télécharger"
+
+[button_help]
+hash = "sha1-c47ae15370cfe1ed2781eedc1dc2547d12d9e972"
+other = "Aide"
+
+[button_login]
+hash = "sha1-4e5a2893bdcc7d239c1db72e4c4ffbe4bea73174"
+other = "Connexion"
+
+[button_logout]
+hash = "sha1-e43d612e11f1568f2373e719d4c4b08dcecdc7cc"
+other = "Déconnexion"
+
+[button_menu]
+hash = "sha1-57f5f5efbc5990f5230aa95359042338b856707b"
+other = "Menu"
+
+[button_options]
+hash = "sha1-6bf5da9c080bee3a8142586c412aa39971137eee"
+other = "Options"
+
+[button_quit]
+hash = "sha1-1a2285d8881f226e13430515a9dd2b9fb6294200"
+other = "Quitter"
+
+[button_save]
+hash = "sha1-efc007a393f66cdb14d57d385822a3d9e36ef873"
+other = "Sauvegarder"
+
+[button_save_sync]
+hash = "sha1-905f63092ff26517a7aa8083857b3c8af9707002"
+other = "Synchroniser"
+
+[button_search]
+hash = "sha1-bce06414177f72ab70e6387b6af9f8ceef0d6049"
+other = "Rechercher"
+
+[button_select]
+hash = "sha1-8598222918d3c6e513d63060cf55e2971ded729a"
+other = "Sélectionner"
+
+[button_settings]
+hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
+other = "Paramètres"
+
+[cache_artwork]
+hash = "sha1-1cb834b429143507648837792190c647a34f64ab"
+other = "Cache des Artworks"
+
+[cache_games]
+hash = "sha1-1e7dbd606b8bad53986d06fd58c9d73dcad67d64"
+other = "Cache des Jeux"
+
+[clear_cache_title]
+hash = "sha1-522175083f0bf50b4584d1dd8dbed60ae22535be"
+other = "Vider le Cache"
+
+[collection_platform_no_mapped]
+hash = "sha1-423fa43d1088dbfa790bd41466ee1193947902cd"
+other = "Aucune plateforme ne possède de jeux associés dans in\n{{.Name}}"
+
+[collection_platform_title]
+hash = "sha1-25fc1e1fe85a7d0bdd754ac216606e704ee2dd9a"
+other = "{{.Name}} - Platformes"
+
+[collection_view_platform]
+hash = "sha1-123a7f2fcc9ae7cbbbd7c7627a483853a9708dab"
+other = "Plateforme"
+
+[collection_view_unified]
+hash = "sha1-287fda8114f4bf0b9263ae57f270e9f31f24c3b2"
+other = "Unifiée"
+
+[common_default]
+hash = "sha1-808d7dca8a74d84af27a2d6602c3d786de45fe1e"
+other = "Par défaut"
+
+[common_false]
+hash = "sha1-97cdbdc7feff827efb082a6b6dd2727237cd49fd"
+other = "Faux"
+
+[common_hide]
+hash = "sha1-34d8b60fe25332f7b98585e82e753eaf502c3e50"
+other = "Masquer"
+
+[common_show]
+hash = "sha1-d97d1ee339e4eeaba8cac91dca37c8b4ec8f5501"
+other = "Afficher"
+
+[common_skip]
+hash = "sha1-3da474537ac378c616d6b301acc1674bc348cecd"
+other = "Passer"
+
+[common_true]
+hash = "sha1-88b33e4e12f75ac8bf792aebde41f1a090f3a612"
+other = "Vrai"
+
+[download_artwork]
+hash = "sha1-e4c568fc0f2c433d2144101b3b3eab991134eb4f"
+other = "Téléchargement de l'illustration..."
+
+[download_extracting]
+hash = "sha1-fe683f14e2c654a5e5099c7d43a50a266905f918"
+other = "Extraction de {{.Name}}..."
+
+[downloaded_games_do_nothing]
+hash = "sha1-57e2785737374cab8197fe64ac4c90da88045788"
+other = "Ne Rien Faire"
+
+[downloaded_games_filter]
+hash = "sha1-d7decf1aa22b02ae8abf9a96849ee423eee838e4"
+other = "Filtrer"
+
+[downloaded_games_mark]
+hash = "sha1-31e9697d43a1a66f2e45db652019fb9a6216df22"
+other = "Marquer"
+
+[emulator_saves_count]
+hash = "sha1-588062d748a22784bedf745d64cc7bb440aca1ec"
+other = " ({{.Count}} sauvegardes)"
+
+[emulator_selection_title]
+hash = "sha1-aab54f8a5ad80b3bc4ea366c6795ff53b769f785"
+other = "Sélection de l'émulateur {{.Platform}}"
+
+[error_loading_platforms]
+hash = "sha1-696ffca4ce38ce525995b5980fc4dab24fb3985c"
+other = "Erreur lors du chargement des plateformes depuis RomM.\nVeuillez vérifier la connexion."
+
+[game_details_average_rating]
+hash = "sha1-3843a4b5750d289e79e106bd3df7540a1a04a1fc"
+other = "Note Moyenne"
+
+[game_details_companies]
+hash = "sha1-9dba7ad7c5bdb2aa80495855ae01b2cbb94d11c9"
+other = "Entreprises"
+
+[game_details_file_size]
+hash = "sha1-0fce4167b52045abc782cbeb524a9ba741979663"
+other = "Taille du Fichier"
+
+[game_details_game]
+hash = "sha1-e3e82846c32567811615378f30240185871e08e5"
+other = "Jeu"
+
+[game_details_game_modes]
+hash = "sha1-1d2d93910b83ba8ebd3f8edf11adb55262dfdb2f"
+other = "Modes de Jeu"
+
+[game_details_genres]
+hash = "sha1-96817ade02e758261256fdfcf062e850b699b8a6"
+other = "Genres"
+
+[game_details_languages]
+hash = "sha1-db07be184479f34078cd4fc76d248dc0975720e9"
+other = "Langues"
+
+[game_details_multi_file_rom]
+hash = "sha1-8cbbf13782924ad2683777c84dfeefd5d696b649"
+other = "ROM Multi-Fichiers"
+
+[game_details_platform]
+hash = "sha1-123a7f2fcc9ae7cbbbd7c7627a483853a9708dab"
+other = "Plateforme"
+
+[game_details_qr_section]
+hash = "sha1-8e5845c85bba45dafe635ffd01f4299d6211451e"
+other = "Lien du jeu sur RomM"
+
+[game_details_regions]
+hash = "sha1-039711232507cd9753ddba093da2350b27e67dca"
+other = "Régions"
+
+[game_details_release_date]
+hash = "sha1-645195f37d32ea7fe9317bf06c42c243e882a8c7"
+other = "Date de Sortie"
+
+[game_details_type]
+hash = "sha1-3deb7456519697ecf4eefc455516c969a3681bae"
+other = "Type"
+
+[game_options_save_directory]
+hash = "sha1-fc8701ec896ff0a049c9b2e9028122c196123bcc"
+other = "Dossier de sauvegarde"
+
+[game_options_title]
+hash = "sha1-7ce298bd6c51841a35d3983c23dae2d00f50b6af"
+other = "Options du jeu"
+
+[games_list_filtered_out]
+hash = "sha1-211fbb3fb7df0619367d403f5cef6534484992d2"
+other = "Aucun jeu dans {{.Name}} ne correspond à vos plateformes"
+
+[games_list_help_body]
+hash = "sha1-8d39456a7cb78ea5968d93177012f4eb1b328ef6"
+other = "A - Sélectionner un jeu\nB - Retourner à l'écran précédent\nX - Rechercher des jeux par nom\nSelect - Activer/désactiver le mode sélection multiple\n    En mode sélection multiple :\n    - Utilisez la croix directionnelle pour naviguer\n    - Appuyez sur A pour activer/désactiver la sélection\n    - Appuyez sur Start pour confirmer les sélections\nMenu - Afficher cet écran d'aide\nCroix directionnelle - Naviguer dans la liste des jeux"
+
+[games_list_help_title]
+hash = "sha1-77fdd51f105473d648b8c22b6897d0f12d0dd360"
+other = "Aide - Liste des Jeux"
+
+[games_list_loading]
+hash = "sha1-e7222980840d29aac1ef616e64615c6f2128cd83"
+other = "Chargement de {{.Name}}..."
+
+[games_list_no_games]
+hash = "sha1-0fa32da01f61aa6d55050e2fbc69fdda1a5188a4"
+other = "Aucun jeu trouvé dans {{.Name}}"
+
+[games_list_no_results]
+hash = "sha1-d6b79dc27aeaf5f940fa1af5834113549f8a19c8"
+other = "Aucun jeu trouvé pour \"{{.Query}}\""
+
+[games_list_search_prefix]
+hash = "sha1-047722fea7e6f35823db2619de64d92643fd69f0"
+other = "Recherche: {{.Query}}"
+
+[help_exit_text]
+hash = "sha1-6c7101d1d5e96a75d98b2687dc566c3b30e036fb"
+other = "Appuyez sur n'importe quel bouton pour fermer l'aide"
+
+[info_build_date]
+hash = "sha1-d3cb9f9582eb7f5e392ef4fbc853ceb81a5a5d03"
+other = "Date de compilation"
+
+[info_commit]
+hash = "sha1-1a1873ab51c74e8b39327ee42dade7a407e5a22d"
+other = "Commit"
+
+[info_repository]
+hash = "sha1-e5531adae3c84603f2287c4a3d32bcf612b2962c"
+other = "Dépôt GitHub"
+
+[info_server]
+hash = "sha1-cb0cb170d106f8e8d5af1e05bbdbd3a96a7de197"
+other = "Serveur"
+
+[info_user]
+hash = "sha1-9f8a2389a20ca0752aa9e95093515517e90e194c"
+other = "Utilisateur"
+
+[info_version]
+hash = "sha1-2da600bf9404843107a9531694f654e5662959e0"
+other = "Version"
+
+[log_level_debug]
+hash = "sha1-bd604d99e75e45d38bc7ac8fc714cde0097d901f"
+other = "Debug"
+
+[log_level_error]
+hash = "sha1-7f2f6a15cf8da2b27e5a4af47b58e7ad71c0b3d9"
+other = "Erreur"
+
+[login_error_connection_refused]
+hash = "sha1-90890854b1679ae152ec1b4316cde81c1c7bdcff"
+other = "Impossible de se connecter à l'hôte!\nVeuillez vérifier que le nom de domaine et le port sont corrects."
+
+[login_error_credentials]
+hash = "sha1-78649d0d74c900b26a3b9057e39001b900888517"
+other = "Nom de compte ou mot de passe incorrect."
+
+[login_error_forbidden]
+hash = "sha1-350737ac082a81d55a32ac76b2c7d62d0a1aec7a"
+other = "Accès interdit!\nVérifiez votre nom de compte/mot de passe et essayez de basculer entre http et https."
+
+[login_error_invalid_hostname]
+hash = "sha1-c9523f842eedab0b7e1673a73443a7cb706658b5"
+other = "Impossible de résoudre le nom de domaine!\nVeuillez vérifier que le nom de domaine est correct."
+
+[login_error_server]
+hash = "sha1-5dcef0d13da2f4113b8d5daba708b5721974bd1c"
+other = "Erreur du serveur RomM!\nVeuillez vérifier les journaux du serveur RomM."
+
+[login_error_timeout]
+hash = "sha1-0b717f8ef1f390d2512a9c78d370477dc50ea685"
+other = "Délai de connexion dépassé!\nVeuillez vérifier votre connexion réseau et que l'hôte est accessible."
+
+[login_error_unexpected]
+hash = "sha1-756cd066bad10bfb2e3bd18b325ab4d5f88557ea"
+other = "Erreur inattendue.\nRegardez les logs pour plus d'informations."
+
+[login_error_use_http]
+hash = "sha1-4df7d0721bbfb8140817549c5368fae43071717e"
+other = "Incompatibilité de protocole!\nVeuillez utiliser HTTP au lieu de HTTPS."
+
+[login_error_use_https]
+hash = "sha1-3a409069c869572d6ebf56926347c99bae65f535"
+other = "Incompatibilité de protocole!\nVeuillez utiliser HTTPS au lieu de HTTP."
+
+[login_error_wrong_protocol]
+hash = "sha1-3ed933261b35ac3c855bec1f442251ff28f1c140"
+other = "Incompatibilité de protocole!\nEssayez de basculer entre http et https."
+
+[login_hostname]
+hash = "sha1-c983a1551dcbdb6f0ce43637e89a8726577d4f4b"
+other = "Nom de Domaine"
+
+[login_password]
+hash = "sha1-8be3c943b1609fffbfc51aad666d0a04adf83c9d"
+other = "Mot de Passe"
+
+[login_port]
+hash = "sha1-84fc9f53e5a2f676d4e0e9195f43f31a18156495"
+other = "Port (optionnel)"
+
+[login_protocol]
+hash = "sha1-1ed77c3f7ffc41a33eadccef5727dc7c97079235"
+other = "Protocole"
+
+[login_protocol_http]
+hash = "sha1-f40b27d6b8b9a4fc3827264c1da16a04ecf4d094"
+other = "HTTP"
+
+[login_protocol_https]
+hash = "sha1-f52698c28f0d2036450e02a85451ee4f5be02442"
+other = "HTTPS"
+
+[login_title]
+hash = "sha1-5fa984fa2afc3712f99f20f5947ada0de5d3044f"
+other = "Connexion à RomM"
+
+[login_username]
+hash = "sha1-84c29015de33e5d22422382a372caba5c58f8c01"
+other = "Nom de compte"
+
+[login_validating]
+hash = "sha1-cd2c8fff39519159039f7640f974edc2db8b6ce3"
+other = "Validation de la connexion..."
+
+[logout_confirm_message]
+hash = "sha1-fc8c20806e08254d4bddd38e5e7d60c1bd01e564"
+other = "Êtes-vous sûr de vouloir vous déconnecter ?"
+
+[platform_mapping_create]
+hash = "sha1-d4f6486d8141fda18c9d6fc9d7c7680c3c385efa"
+other = "Créer '{{.Name}}'"
+
+[platform_mapping_directory_not_found]
+hash = "sha1-3bd6a65131dbb1c33d58f84bca777b8a9c971c85"
+other = "Dossier de ROM introuvable!"
+
+[platform_mapping_path_prefix]
+hash = "sha1-e1669c1a1800156492c8ec6c49452639e670a181"
+other = "/{{.Name}}"
+
+[platform_mapping_title]
+hash = "sha1-27761c84224f90ea5d0d32483004c023b61f1ab1"
+other = "Association des Dossiers de ROM"
+
+[platform_selection_collections]
+hash = "sha1-4bbb632f02fd69807705c0179999c17d35c93b0f"
+other = "Collections"
+
+[save_sync_downloaded]
+hash = "sha1-c6197029254600e042230dbe5880e70c4b842e07"
+other = "Téléchargé"
+
+[save_sync_failed]
+hash = "sha1-09fef5d8d9a3c86b2523fef60d512606e7fe0003"
+other = "Échoué"
+
+[save_sync_mode_automatic]
+hash = "sha1-ac9041e76816a34aba228a736ec30da6984c5777"
+other = "Automatique"
+
+[save_sync_mode_manual]
+hash = "sha1-4e836fdc2572ab23d5dc8c36bd613ac6b0f82d63"
+other = "Manuel"
+
+[save_sync_mode_off]
+hash = "sha1-e3de5ab0ca4c69dbf00e86d2558843e8d806bb49"
+other = "Désactivé"
+
+[save_sync_rom_not_found]
+hash = "sha1-521ae5ed1a41ca10426f850f1c029b77ba1e075d"
+other = "{{.Name}} (ROM introuvable dans RomM)"
+
+[save_sync_scanning]
+hash = "sha1-6e0e349d1314bd7909fa32d8c46698b412601d19"
+other = "Analyse des fichiers de sauvegarde..."
+
+[save_sync_settings_title]
+hash = "sha1-d3cc05947f3967eb75f60603d7fe6d6d88dbcf7f"
+other = "Mappages de Synchronisation"
+
+[save_sync_skipped]
+hash = "sha1-5a000ad7bd1b8f7f50a72ac16d1da0d16e542d91"
+other = "Ignoré"
+
+[save_sync_summary]
+hash = "sha1-6c70cf70e1245ab2eb0281a73e2febfbc34cb996"
+other = "Résumé de la synchro des sauvegardes"
+
+[save_sync_summary_section]
+hash = "sha1-12b71c3e0fe5f7c0b8d17cc03186e281412da4a8"
+other = "Résumé"
+
+[save_sync_total_processed]
+hash = "sha1-d5593d165ab03cc17bbadfc9f9d9ed9a93198cb5"
+other = "Total traité"
+
+[save_sync_unknown_error]
+hash = "sha1-e5fd9aa24c9417e7332e6f25936ae2a6ec8f1524"
+other = "Erreur inconnue"
+
+[save_sync_unmatched_saves]
+hash = "sha1-11ffd636fd7a3bf88d84e08f65c2a6cd05cfc2b2"
+other = "Sauvegardes sans correspondance"
+
+[save_sync_up_to_date]
+hash = "sha1-73e9f0f39987b22aebf571b4f039ecde681e9434"
+other = "Tout est à jour!\nPlace au jeu!"
+
+[save_sync_uploaded]
+hash = "sha1-80c494898ac90610a67c95502d2a56b4af4963f1"
+other = "Téléversé"
+
+[settings_advanced]
+hash = "sha1-4d064726954a17487f94e931f5b157b733ec22ed"
+other = "Avancé"
+
+[settings_api_timeout]
+hash = "sha1-67ba381b90f60059ae907b74f799ca7459c8a22d"
+other = "Délai d'attente de l'API"
+
+[settings_box_art]
+hash = "sha1-0eb3d5ab393c2db23feb4e143d5c1987ff52685a"
+other = "Illustrations"
+
+[settings_clear_cache]
+hash = "sha1-522175083f0bf50b4584d1dd8dbed60ae22535be"
+other = "Vider le Cache"
+
+[settings_collection_view]
+hash = "sha1-b5c401da5ed3ead09ad836091786ea351f1a4218"
+other = "Vue de Collection"
+
+[settings_collections]
+hash = "sha1-2b9dc92af51847dda7770b3092771ac0f411e9b5"
+other = "Collections"
+
+[settings_download_art]
+hash = "sha1-8b7f3d97b75d86dad90186e811d3b01b05894107"
+other = "Télécharger les illustrations"
+
+[settings_download_timeout]
+hash = "sha1-86406d85cd2216df4f871ce0119581019810fd67"
+other = "Délai d'attente de téléchargement"
+
+[settings_downloaded_games]
+hash = "sha1-4911bf6acc5b26453bbefd027288ef703cd1c11a"
+other = "Jeux téléchargés"
+
+[settings_edit_mappings]
+hash = "sha1-b03742e94a46dd9476e23dd8a3486b38dda3ae3c"
+other = "Les associations de dossiers"
+
+[settings_general]
+other = "Général"
+
+[settings_info]
+hash = "sha1-539fd998d1d49832e77eec5bf350485f054da400"
+other = "Informations sur Grout"
+
+[settings_language]
+hash = "sha1-89b86ab0e66f527166d98df92ddbcf5416ed58f6"
+other = "Langue"
+
+[settings_language_english]
+hash = "sha1-649df08a448ee3fa90f3746baaf6b0907df42c91"
+other = "English"
+
+[settings_language_french]
+hash = "sha1-2ca514ebd7c3a61fe53823a0785c326287c4ede8"
+other = "Français"
+
+[settings_language_german]
+hash = "sha1-a6a7709266d3a74cd8c4657eb32a56d5727b91eb"
+other = "Deutsch"
+
+[settings_language_italian]
+hash = "sha1-21df73947a06d77d2ad5fe166c8ddfcdc53a6fdb"
+other = "Italiano"
+
+[settings_language_japanese]
+hash = "sha1-c12140a0ffb4e56481b4fe0a7a25040c2eafa9ca"
+other = "日本語"
+
+[settings_language_portuguese]
+hash = "sha1-053aa1d851d84866a6ba3bcdfa6baca8a8c71411"
+other = "Português"
+
+[settings_language_russian]
+hash = "sha1-5537fc8e69d7e9830f739eb94071c2212b4027ad"
+other = "Русский"
+
+[settings_language_spanish]
+hash = "sha1-2001ca082b2d2742765d8ac9182678bfe0374fbf"
+other = "Español"
+
+[settings_log_level]
+hash = "sha1-3831d4e3e5ace348ba6c68e683f7605e4e030a9f"
+other = "Niveau de log"
+
+[settings_save_sync]
+hash = "sha1-3caa02c76bc2b97f136e706433de562fd060f48d"
+other = "Synchronisation des Sauvegardes"
+
+[settings_save_sync_settings]
+hash = "sha1-d3cc05947f3967eb75f60603d7fe6d6d88dbcf7f"
+other = "Mappages de Synchronisation"
+
+[settings_show_collections]
+hash = "sha1-4bbb632f02fd69807705c0179999c17d35c93b0f"
+other = "Collections"
+
+[settings_show_smart_collections]
+hash = "sha1-e37398ce8c34b7f163601346b58a028a895fd048"
+other = "Collections Intelligentes"
+
+[settings_show_virtual_collections]
+hash = "sha1-e952af5b20cf922ecfcf9ce0ab42095e44133b65"
+other = "Collections Virtuelles"
+
+[settings_sync_artwork]
+hash = "sha1-447a12c1a94ffbcefafc528ff6de40d16b247a7d"
+other = "Mettre en cache"
+
+[settings_title]
+hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
+other = "Paramètres"
+
+[settings_compressed_downloads]
+hash = "sha1-03440dd031cbd7f822d6eea266c2d490f553f261"
+other = "Téléchargements ZIP"
+
+[settings_compressed_downloads_do_nothing]
+hash = "sha1-03440dd031cbd7f822d6eea266c2d490f553f261"
+other = "Ne Rien Faire"
+
+[settings_compressed_downloads_uncompress]
+hash = "sha1-03440dd031cbd7f822d6eea266c2d490f553f261"
+other = "Décompresser"
+
+[startup_error_action_exit]
+hash = "sha1-f83b6fe3aebf13744e866019556d9129cd7a55be"
+other = "Quitter"
+
+[startup_error_action_retry]
+hash = "sha1-27717695aebe5b809cebefc71a9e38b334c78dfe"
+other = "Réessayer la Connexion"
+
+[startup_error_connection_refused]
+hash = "sha1-8b1147d5973a9174cd6bf1f04f773d59b82488c8"
+other = "Impossible de se connecter au serveur!\nLe serveur est peut-être hors ligne ou le port est incorrect."
+
+[startup_error_credentials]
+hash = "sha1-290a896ba5652c3ed7283a0f5a47c0bb95029e48"
+other = "Échec de l'authentification!\nVotre nom d'utilisateur ou mot de passe a peut-être changé sur le serveur."
+
+[startup_error_forbidden]
+hash = "sha1-18fffabcfc272ab2426603159eac34f272da52ae"
+other = "Accès interdit!\nVos identifiants ont peut-être changé, ou le serveur peut nécessiter un protocole différent (http vs https)."
+
+[startup_error_invalid_hostname]
+hash = "sha1-888a1bad67fbd3f52415762c23fe0fbe53dcfe9e"
+other = "Impossible de résoudre le nom de domaine!\nL'adresse du serveur configurée est introuvable."
+
+[startup_error_server]
+hash = "sha1-5dcef0d13da2f4113b8d5daba708b5721974bd1c"
+other = "Erreur du serveur RomM!\nLe serveur rencontre des problèmes. Vérifiez les journaux du serveur."
+
+[startup_error_timeout]
+hash = "sha1-e1f05aece6a0cfd92f1ecd8388f5b8edb248e08a"
+other = "Délai de connexion dépassé!\nLe serveur ne répond pas. Vérifiez votre connexion réseau."
+
+[startup_error_wrong_protocol]
+hash = "sha1-b886665184599b10c9b185f86d5749418b473435"
+other = "Incompatibilité de protocole!\nLe serveur peut nécessiter http au lieu de https (ou vice versa)."
+
+[time_105_minutes]
+hash = "sha1-18bf92f611e5f677d486ce65e647fada44f076ae"
+other = "105 Minutes"
+
+[time_120_minutes]
+hash = "sha1-6a64307410af40ab78bd86e54d30e14df0d12c57"
+other = "120 Minutes"
+
+[time_120_seconds]
+hash = "sha1-aa6c784ecac7fdd329bb52fe621f8a87e0183ac3"
+other = "120 Seconds"
+
+[time_15_minutes]
+hash = "sha1-ebceb1713a2921c2249eb726bdc454d046ac98ef"
+other = "15 Minutes"
+
+[time_15_seconds]
+hash = "sha1-2045d6f6dc828c5bf2d1c0a3e33fffb2ad4b0d73"
+other = "15 Secondes"
+
+[time_180_seconds]
+hash = "sha1-fed010e9d942a4069ccbe7da3d8830fb1f128aa9"
+other = "180 Secondes"
+
+[time_240_seconds]
+hash = "sha1-df9c666732305363d51ed546af164749de94605b"
+other = "240 Secondes"
+
+[time_300_seconds]
+hash = "sha1-e110b1de61d53b892ef05f8f91aa065146f35c41"
+other = "300 Secondes"
+
+[time_30_minutes]
+hash = "sha1-f2dc47e50dd1dacee8ba5593b433c7eb9c32f67b"
+other = "30 Minutes"
+
+[time_30_seconds]
+hash = "sha1-343d60b7640288df282bf08c03a3e82df0ca9d85"
+other = "30 Secondes"
+
+[time_45_minutes]
+hash = "sha1-8c2cfc3c1276ee72e7f31eaadaaaeeeeb526fcae"
+other = "45 Minutes"
+
+[time_45_seconds]
+hash = "sha1-ec268dceadaade2f85a3d05c165bd157540b7c9c"
+other = "45 Secondes"
+
+[time_60_minutes]
+hash = "sha1-89d0ac2e039e1847bcf114a7fdc4d07c048ee091"
+other = "60 Minutes"
+
+[time_60_seconds]
+hash = "sha1-52529cc1b61450a933730ba9883128573a6e4e1e"
+other = "60 Secondes"
+
+[time_75_minutes]
+hash = "sha1-8bcd4c4f1c051066e3130f92519cf5fdbcf1a872"
+other = "75 Minutes"
+
+[time_75_seconds]
+hash = "sha1-a6d85c8bb1a1da389aa7c82beef707e39dd58a31"
+other = "75 Secondes"
+
+[time_90_minutes]
+hash = "sha1-7610c28e61baff6b27b29d1cfa98cc74a6823ec3"
+other = "90 Minutes"
+
+[time_90_seconds]
+hash = "sha1-f7ed27e9fabe0615c1cc86f2b93d6b03a38d742e"
+other = "90 Secondes"

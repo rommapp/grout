@@ -5,49 +5,90 @@ import (
 	"grout/utils"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
-	buttons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
 	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-type ClearCacheConfirmationOutput struct {
-	Confirmed bool
+type ClearCacheOutput struct {
+	ClearedCount int
 }
 
-type ClearCacheConfirmationScreen struct{}
+type ClearCacheScreen struct{}
 
-func NewClearCacheConfirmationScreen() *ClearCacheConfirmationScreen {
-	return &ClearCacheConfirmationScreen{}
+func NewClearCacheScreen() *ClearCacheScreen {
+	return &ClearCacheScreen{}
 }
 
-func (s *ClearCacheConfirmationScreen) Draw() (ScreenResult[ClearCacheConfirmationOutput], error) {
-	output := ClearCacheConfirmationOutput{}
+type cacheItem struct {
+	name     string
+	hasCache bool
+	clear    func() error
+}
 
-	_, err := gaba.ConfirmationMessage(
-		i18n.Localize(&goi18n.Message{ID: "clear_cache_confirm_message", Other: "Clear all cached artwork?"}, nil),
-		[]gaba.FooterHelpItem{
-			{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_cancel", Other: "Cancel"}, nil)},
-			{ButtonName: "X", HelpText: i18n.Localize(&goi18n.Message{ID: "button_confirm", Other: "Confirm"}, nil)},
+func (s *ClearCacheScreen) Draw() (ScreenResult[ClearCacheOutput], error) {
+	output := ClearCacheOutput{}
+
+	caches := []cacheItem{
+		{
+			name:     i18n.Localize(&goi18n.Message{ID: "cache_artwork", Other: "Artwork Cache"}, nil),
+			hasCache: utils.HasArtworkCache(),
+			clear:    utils.ClearArtworkCache,
 		},
-		gaba.MessageOptions{
-			ConfirmButton: buttons.VirtualButtonX,
+		{
+			name:     i18n.Localize(&goi18n.Message{ID: "cache_games", Other: "Games Cache"}, nil),
+			hasCache: utils.HasGamesCache(),
+			clear:    utils.ClearGamesCache,
 		},
+	}
+
+	// Build menu items for caches that exist
+	items := make([]gaba.MenuItem, 0)
+	availableCaches := make([]cacheItem, 0)
+	for _, cache := range caches {
+		if cache.hasCache {
+			items = append(items, gaba.MenuItem{Text: cache.name})
+			availableCaches = append(availableCaches, cache)
+		}
+	}
+
+	if len(items) == 0 {
+		// No caches to clear
+		return back(output), nil
+	}
+
+	options := gaba.DefaultListOptions(
+		i18n.Localize(&goi18n.Message{ID: "clear_cache_title", Other: "Clear Cache"}, nil),
+		items,
 	)
+	options.FooterHelpItems = []gaba.FooterHelpItem{
+		FooterCancel(),
+		FooterSelect(),
+		FooterStartConfirm(),
+	}
+	options.StartInMultiSelectMode = true
+	options.StatusBar = utils.StatusBar()
+	options.SmallTitle = true
+
+	result, err := gaba.List(options)
 
 	if err != nil {
 		if errors.Is(err, gaba.ErrCancelled) {
-			return back(output), nil // B button - cancel
+			return back(output), nil
 		}
 		return withCode(output, gaba.ExitCodeError), err
 	}
 
-	// Y button pressed - clear cache
-	err = utils.ClearArtworkCache()
-	if err != nil {
-		gaba.GetLogger().Error("Failed to clear cache", "error", err)
-		return withCode(output, gaba.ExitCodeError), err
+	for _, idx := range result.Selected {
+		if idx >= 0 && idx < len(availableCaches) {
+			cache := availableCaches[idx]
+			if err := cache.clear(); err != nil {
+				gaba.GetLogger().Error("Failed to clear cache", "cache", cache.name, "error", err)
+			} else {
+				output.ClearedCount++
+				gaba.GetLogger().Info("Cleared cache", "cache", cache.name)
+			}
+		}
 	}
 
-	output.Confirmed = true
 	return success(output), nil
 }

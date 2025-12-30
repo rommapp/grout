@@ -1,4 +1,4 @@
-# Override Files
+Act# Override Files
 
 Grout allows you to override embedded JSON configuration files with local copies. This is useful for testing, customization, or adding support for new platforms/devices without recompiling the application.
 

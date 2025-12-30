@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-const Downloaded = "↓"
+const Downloaded = "\U000F01DA"
 
 func ParseTag(input string) string {
 	cleaned := filepath.Clean(input)

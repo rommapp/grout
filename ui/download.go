@@ -91,8 +91,6 @@ func (s *DownloadScreen) draw(input downloadInput) (ScreenResult[downloadOutput]
 	headers := make(map[string]string)
 	headers["Authorization"] = input.Host.BasicAuthHeader()
 
-	logger.Debug("RomM Auth Header", "header", headers["Authorization"])
-
 	slices.SortFunc(downloads, func(a, b gaba.Download) int {
 		return strings.Compare(strings.ToLower(a.DisplayName), strings.ToLower(b.DisplayName))
 	})
@@ -183,7 +181,6 @@ func (s *DownloadScreen) draw(input downloadInput) (ScreenResult[downloadOutput]
 					logger.Warn("Failed to remove temp zip file", "path", tmpZipPath, "error", err)
 				}
 
-				logger.Debug("Successfully extracted multi-file ROM", "game", g.Name, "dest", extractDir)
 				return nil, nil
 			},
 		)
@@ -237,11 +234,8 @@ func (s *DownloadScreen) draw(input downloadInput) (ScreenResult[downloadOutput]
 
 						if err := os.Remove(zipPath); err != nil {
 							logger.Warn("Failed to remove zip file after extraction", "path", zipPath, "error", err)
-						} else {
-							logger.Debug("Removed zip file after extraction", "path", zipPath)
 						}
 
-						logger.Debug("Successfully extracted single-file ROM", "game", g.Name)
 						return nil, nil
 					},
 				)
@@ -260,7 +254,6 @@ func (s *DownloadScreen) draw(input downloadInput) (ScreenResult[downloadOutput]
 			return d.DisplayName == g.Name
 		}) {
 			downloadedGames = append(downloadedGames, g)
-			logger.Debug("Game marked as downloaded", "game", g.Name)
 		}
 	}
 
@@ -453,8 +446,6 @@ func (s *DownloadScreen) downloadArt(artDownloads []artDownload, downloadedGames
 			continue
 		}
 
-		logger.Debug("Art downloaded successfully", "game", art.GameName, "location", art.Location)
-
 		if err := utils.ProcessArtImage(art.Location); err != nil {
 			logger.Warn("Failed to process art image", "game", art.GameName, "location", art.Location, "error", err)
 			os.Remove(art.Location)
@@ -466,7 +457,6 @@ func (s *DownloadScreen) downloadArt(artDownloads []artDownload, downloadedGames
 			continue
 		}
 
-		logger.Debug("Art processed successfully", "game", art.GameName)
 		successCount++
 
 		processedCount++
@@ -475,7 +465,4 @@ func (s *DownloadScreen) downloadArt(artDownloads []artDownload, downloadedGames
 		}
 	}
 
-	if successCount > 0 || failCount > 0 {
-		logger.Debug("Background art download complete", "successful", successCount, "failed", failCount)
-	}
 }

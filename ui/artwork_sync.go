@@ -44,7 +44,7 @@ func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 		logger.Error("Failed to fetch platforms", "error", err)
 		gaba.ConfirmationMessage(
 			fmt.Sprintf("Failed to fetch platforms: %v", err),
-			[]gaba.FooterHelpItem{{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_continue", Other: "Continue"}, nil)}},
+			ContinueFooter(),
 			gaba.MessageOptions{},
 		)
 		return
@@ -61,7 +61,7 @@ func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 	if len(mappedPlatforms) == 0 {
 		gaba.ConfirmationMessage(
 			i18n.Localize(&goi18n.Message{ID: "artwork_sync_no_platforms", Other: "No platforms with directory mappings found."}, nil),
-			[]gaba.FooterHelpItem{{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_continue", Other: "Continue"}, nil)}},
+			ContinueFooter(),
 			gaba.MessageOptions{},
 		)
 		return
@@ -101,7 +101,7 @@ func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 	if len(allNeedingArtwork) == 0 {
 		gaba.ConfirmationMessage(
 			i18n.Localize(&goi18n.Message{ID: "artwork_sync_up_to_date", Other: "All artwork is already cached!"}, nil),
-			[]gaba.FooterHelpItem{{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_continue", Other: "Continue"}, nil)}},
+			ContinueFooter(),
 			gaba.MessageOptions{},
 		)
 		return
@@ -135,7 +135,7 @@ func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 	if len(downloads) == 0 {
 		gaba.ConfirmationMessage(
 			i18n.Localize(&goi18n.Message{ID: "artwork_sync_up_to_date", Other: "All artwork is already cached!"}, nil),
-			[]gaba.FooterHelpItem{{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_continue", Other: "Continue"}, nil)}},
+			ContinueFooter(),
 			gaba.MessageOptions{},
 		)
 		return
@@ -145,8 +145,8 @@ func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 	_, err = gaba.ConfirmationMessage(
 		fmt.Sprintf(i18n.Localize(&goi18n.Message{ID: "artwork_sync_confirm", Other: "Download artwork for %d games?"}, nil), len(downloads)),
 		[]gaba.FooterHelpItem{
-			{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_cancel", Other: "Cancel"}, nil)},
-			{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_download", Other: "Download"}, nil)},
+			FooterCancel(),
+			FooterDownload(),
 		},
 		gaba.MessageOptions{},
 	)
@@ -166,7 +166,7 @@ func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 		logger.Error("Artwork download failed", "error", err)
 		gaba.ConfirmationMessage(
 			fmt.Sprintf("Download failed: %v", err),
-			[]gaba.FooterHelpItem{{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_continue", Other: "Continue"}, nil)}},
+			ContinueFooter(),
 			gaba.MessageOptions{},
 		)
 		return
@@ -215,13 +215,13 @@ func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 	if finalCount > 0 {
 		gaba.ConfirmationMessage(
 			fmt.Sprintf(i18n.Localize(&goi18n.Message{ID: "artwork_sync_complete", Other: "Successfully downloaded %d artwork images."}, nil), finalCount),
-			[]gaba.FooterHelpItem{{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_continue", Other: "Continue"}, nil)}},
+			ContinueFooter(),
 			gaba.MessageOptions{},
 		)
 	} else if len(res.Failed) > 0 {
 		gaba.ConfirmationMessage(
 			fmt.Sprintf(i18n.Localize(&goi18n.Message{ID: "artwork_sync_failed", Other: "Failed to download %d artwork images."}, nil), len(res.Failed)),
-			[]gaba.FooterHelpItem{{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_continue", Other: "Continue"}, nil)}},
+			ContinueFooter(),
 			gaba.MessageOptions{},
 		)
 	}

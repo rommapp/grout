@@ -1,13 +1,14 @@
 package main
 
 import (
-	"fmt"
 	"grout/utils"
 	"os"
 	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
+	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
 	_ "github.com/UncleJunVIP/certifiable"
+	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 func main() {
@@ -25,9 +26,7 @@ func main() {
 	quitOnBack := len(config.Hosts) == 1
 	showCollections := utils.ShowCollections(config, config.Hosts[0])
 
-	fsmStart := time.Now()
 	fsm := buildFSM(config, cfw, platforms, quitOnBack, showCollections, appStart)
-	logger.Debug("FSM built", "seconds", fmt.Sprintf("%.2f", time.Since(fsmStart).Seconds()))
 
 	logger.Info("Starting FSM.Run()")
 	if err := fsm.Run(); err != nil {
@@ -36,6 +35,19 @@ func main() {
 }
 
 func cleanup() {
+	// Wait for auto-sync to complete before exiting
+	if autoSync != nil && autoSync.IsRunning() {
+		gaba.GetLogger().Info("Waiting for auto-sync to complete before exiting...")
+		gaba.ProcessMessage(
+			i18n.Localize(&goi18n.Message{ID: "auto_sync_waiting", Other: "Waiting for save sync to complete..."}, nil),
+			gaba.ProcessMessageOptions{},
+			func() (interface{}, error) {
+				autoSync.Wait()
+				return nil, nil
+			},
+		)
+	}
+
 	if err := os.RemoveAll(".tmp"); err != nil {
 		gaba.GetLogger().Error("Failed to clean .tmp directory", "error", err)
 	}

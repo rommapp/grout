@@ -14,8 +14,7 @@ import (
 )
 
 type InfoInput struct {
-	Host         romm.Host
-	FromAdvanced bool
+	Host romm.Host
 }
 
 type InfoOutput struct {
@@ -40,16 +39,13 @@ func (s *InfoScreen) Draw(input InfoInput) (ScreenResult[InfoOutput], error) {
 	options.ActionButton = buttons.VirtualButtonX
 	options.EnableAction = true
 
-	result, err := gaba.DetailScreen(i18n.Localize(&goi18n.Message{ID: "info_title", Other: "Grout Info"}, nil), options, []gaba.FooterHelpItem{
+	result, err := gaba.DetailScreen("", options, []gaba.FooterHelpItem{
 		{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_back", Other: "Back"}, nil)},
 		{ButtonName: "X", HelpText: i18n.Localize(&goi18n.Message{ID: "button_logout", Other: "Logout"}, nil)},
 	})
 
 	if err != nil {
 		if errors.Is(err, gaba.ErrCancelled) {
-			if input.FromAdvanced {
-				return withCode(output, constants.ExitCodeBackToAdvanced), nil
-			}
 			return back(output), nil
 		}
 		gaba.GetLogger().Error("Info screen error", "error", err)
@@ -61,9 +57,6 @@ func (s *InfoScreen) Draw(input InfoInput) (ScreenResult[InfoOutput], error) {
 		return withCode(output, constants.ExitCodeLogoutConfirm), nil
 	}
 
-	if input.FromAdvanced {
-		return withCode(output, constants.ExitCodeBackToAdvanced), nil
-	}
 	return back(output), nil
 }
 

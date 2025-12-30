@@ -26,26 +26,13 @@ type localRomFile struct {
 }
 
 func (lrf localRomFile) syncAction() SyncAction {
-	logger := gaba.GetLogger()
-
-	hasLocalSave := lrf.SaveFile != nil
-	remoteCount := len(lrf.RemoteSaves)
-
-	logger.Debug("Determining sync action",
-		"rom", lrf.FileName,
-		"hasLocalSave", hasLocalSave,
-		"remoteCount", remoteCount)
-
 	if lrf.SaveFile == nil && len(lrf.RemoteSaves) == 0 {
-		logger.Debug("Action: SKIP (no local, no remote)")
 		return Skip
 	}
 	if lrf.SaveFile != nil && len(lrf.RemoteSaves) == 0 {
-		logger.Debug("Action: UPLOAD (has local, no remote)")
 		return Upload
 	}
 	if lrf.SaveFile == nil && len(lrf.RemoteSaves) > 0 {
-		logger.Debug("Action: DOWNLOAD (no local, has remote)")
 		return Download
 	}
 
@@ -56,20 +43,12 @@ func (lrf localRomFile) syncAction() SyncAction {
 	localTime := lrf.SaveFile.LastModified.Truncate(time.Second)
 	remoteTime := lastRemote.UpdatedAt.Truncate(time.Second)
 
-	logger.Debug("Comparing save times",
-		"rom", lrf.FileName,
-		"localTime", localTime,
-		"remoteTime", remoteTime)
-
 	switch localTime.Compare(remoteTime) {
 	case -1:
-		logger.Debug("Action: DOWNLOAD (local older than remote)")
 		return Download
 	case 0:
-		logger.Debug("Action: SKIP")
 		return Skip
 	case 1:
-		logger.Debug("Action: UPLOAD (local newer than remote)")
 		return Upload
 	default:
 		return Skip

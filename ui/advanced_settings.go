@@ -8,7 +8,6 @@ import (
 	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
-	icons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
 	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
@@ -21,9 +20,9 @@ type AdvancedSettingsInput struct {
 }
 
 type AdvancedSettingsOutput struct {
-	InfoClicked           bool
 	EditMappingsClicked   bool
 	ClearCacheClicked     bool
+	SyncArtworkClicked    bool
 	LastSelectedIndex     int
 	LastVisibleStartIndex int
 }
@@ -44,13 +43,14 @@ func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (ScreenResult
 		i18n.Localize(&goi18n.Message{ID: "settings_advanced", Other: "Advanced"}, nil),
 		gaba.OptionListSettings{
 			FooterHelpItems: []gaba.FooterHelpItem{
-				{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_back", Other: "Back"}, nil)},
-				{ButtonName: icons.LeftRight, HelpText: i18n.Localize(&goi18n.Message{ID: "button_cycle", Other: "Cycle"}, nil)},
-				{ButtonName: icons.Start, HelpText: i18n.Localize(&goi18n.Message{ID: "button_save", Other: "Save"}, nil)},
+				FooterBack(),
+				FooterCycle(),
+				FooterSave(),
 			},
 			InitialSelectedIndex: input.LastSelectedIndex,
 			VisibleStartIndex:    input.LastVisibleStartIndex,
 			StatusBar:            utils.StatusBar(),
+			SmallTitle:           true,
 		},
 		items,
 	)
@@ -71,11 +71,6 @@ func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (ScreenResult
 	if result.Action == gaba.ListActionSelected {
 		selectedText := items[result.Selected].Item.Text
 
-		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_info", Other: "Grout Info"}, nil) {
-			output.InfoClicked = true
-			return withCode(output, constants.ExitCodeInfo), nil
-		}
-
 		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_edit_mappings", Other: "Directory Mappings"}, nil) {
 			output.EditMappingsClicked = true
 			return withCode(output, constants.ExitCodeEditMappings), nil
@@ -84,6 +79,11 @@ func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (ScreenResult
 		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_clear_cache", Other: "Clear Cache"}, nil) {
 			output.ClearCacheClicked = true
 			return withCode(output, constants.ExitCodeClearCache), nil
+		}
+
+		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_sync_artwork", Other: "Cache Artwork"}, nil) {
+			output.SyncArtworkClicked = true
+			return withCode(output, constants.ExitCodeSyncArtwork), nil
 		}
 	}
 
@@ -103,6 +103,17 @@ func (s *AdvancedSettingsScreen) buildMenuItems(config *utils.Config) []gaba.Ite
 		{
 			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_edit_mappings", Other: "Directory Mappings"}, nil)},
 			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
+		},
+		{
+			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_sync_artwork", Other: "Cache Artwork"}, nil)},
+			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
+		},
+		{
+			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_clear_cache", Other: "Clear Cache"}, nil)},
+			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
+			Visible: func() bool {
+				return utils.HasArtworkCache() || utils.HasGamesCache()
+			},
 		},
 		{
 			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_timeout", Other: "Download Timeout"}, nil)},
@@ -141,14 +152,6 @@ func (s *AdvancedSettingsScreen) buildMenuItems(config *utils.Config) []gaba.Ite
 				{DisplayName: i18n.Localize(&goi18n.Message{ID: "log_level_error", Other: "Error"}, nil), Value: "ERROR"},
 			},
 			SelectedOption: logLevelToIndex(config.LogLevel),
-		},
-		{
-			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_clear_cache", Other: "Clear Cache"}, nil)},
-			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
-		},
-		{
-			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_info", Other: "Grout Info"}, nil)},
-			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
 		},
 	}
 }

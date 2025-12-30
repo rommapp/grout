@@ -61,7 +61,7 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 		logger.Error("Failed to fetch firmware from RomM", "error", err, "platform_id", input.Platform.ID)
 		gaba.ConfirmationMessage(
 			fmt.Sprintf("Failed to fetch BIOS files from RomM: %v", err),
-			[]gaba.FooterHelpItem{{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_continue", Other: "Continue"}, nil)}},
+			ContinueFooter(),
 			gaba.MessageOptions{},
 		)
 		return back(output), nil
@@ -71,7 +71,7 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 		logger.Info("No BIOS files available in RomM for platform", "platform", input.Platform.Name)
 		gaba.ConfirmationMessage(
 			i18n.Localize(&goi18n.Message{ID: "bios_no_files_required", Other: "This platform doesn't require any BIOS files."}, nil),
-			[]gaba.FooterHelpItem{{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_continue", Other: "Continue"}, nil)}},
+			ContinueFooter(),
 			gaba.MessageOptions{},
 		)
 		return back(output), nil
@@ -191,11 +191,11 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 		})
 	}
 
-	options := gaba.DefaultListOptions(fmt.Sprintf("%s - BIOS Files", input.Platform.Name), menuItems)
+	options := gaba.DefaultListOptions(fmt.Sprintf("%s - BIOS", input.Platform.Name), menuItems)
 	options.SmallTitle = true
 	options.StartInMultiSelectMode = true
 	options.FooterHelpItems = []gaba.FooterHelpItem{
-		{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_back", Other: "Back"}, nil)},
+		FooterBack(),
 		{ButtonName: icons.Start, HelpText: i18n.Localize(&goi18n.Message{ID: "button_download", Other: "Download"}, nil), IsConfirmButton: true},
 	}
 	options.StatusBar = utils.StatusBar()
@@ -291,7 +291,6 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 				logger.Error("Failed to save BIOS file", "file", info.metadata.FileName, "error", err)
 				continue
 			}
-			logger.Debug("Successfully saved BIOS file", "file", info.metadata.FileName, "paths", utils.GetBIOSFilePaths(*info.metadata, input.Platform.Slug))
 		} else {
 			// No metadata - use firmware FilePath from RomM (preserves subdirectories)
 			biosDir := utils.GetBIOSDirectory()
@@ -311,7 +310,6 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 				logger.Error("Failed to save BIOS file", "file", info.firmware.FileName, "error", err)
 				continue
 			}
-			logger.Debug("Successfully saved BIOS file", "file", info.firmware.FileName, "path", filePath)
 		}
 
 		os.Remove(download.Location)
@@ -323,7 +321,7 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 		logger.Info("BIOS download complete", "success", successCount)
 		gaba.ConfirmationMessage(
 			fmt.Sprintf(i18n.Localize(&goi18n.Message{ID: "bios_download_complete", Other: "Successfully downloaded %d BIOS file(s)."}, nil), successCount),
-			[]gaba.FooterHelpItem{{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_continue", Other: "Continue"}, nil)}},
+			ContinueFooter(),
 			gaba.MessageOptions{},
 		)
 	} else if successCount > 0 && warningCount > 0 {
@@ -332,14 +330,14 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 			"warnings", warningCount)
 		gaba.ConfirmationMessage(
 			fmt.Sprintf(i18n.Localize(&goi18n.Message{ID: "bios_download_complete_with_warnings", Other: "Downloaded %d BIOS file(s) with %d hash warning(s). Files may not be the correct version."}, nil), successCount, warningCount),
-			[]gaba.FooterHelpItem{{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_continue", Other: "Continue"}, nil)}},
+			ContinueFooter(),
 			gaba.MessageOptions{},
 		)
 	} else if len(res.Failed) > 0 {
 		logger.Error("BIOS download failed", "failed", len(res.Failed))
 		gaba.ConfirmationMessage(
 			fmt.Sprintf(i18n.Localize(&goi18n.Message{ID: "bios_download_failed", Other: "Failed to download %d BIOS file(s)."}, nil), len(res.Failed)),
-			[]gaba.FooterHelpItem{{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_continue", Other: "Continue"}, nil)}},
+			ContinueFooter(),
 			gaba.MessageOptions{},
 		)
 	}

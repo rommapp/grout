@@ -78,15 +78,11 @@ func DeleteFile(path string) bool {
 			"path", path,
 			"error", err)
 		return false
-	} else {
-		logger.Debug("Removed file", "path", path)
-		return true
 	}
+	return true
 }
 
 func Unzip(zipPath string, destDir string, progress *atomic.Float64) error {
-	logger := gaba.GetLogger()
-
 	reader, err := zip.OpenReader(zipPath)
 	if err != nil {
 		return fmt.Errorf("failed to open zip file: %w", err)
@@ -135,8 +131,6 @@ func Unzip(zipPath string, destDir string, progress *atomic.Float64) error {
 		if err := extractFile(file, filePath, buffer, totalBytes, &extractedBytes, progress); err != nil {
 			return fmt.Errorf("failed to extract file %s: %w", file.Name, err)
 		}
-
-		logger.Debug("Extracted file", "file", file.Name, "dest", filePath)
 	}
 
 	return nil

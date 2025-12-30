@@ -28,9 +28,10 @@ type GameDetailsInput struct {
 }
 
 type GameDetailsOutput struct {
-	DownloadRequested bool
-	Game              romm.Rom
-	Platform          romm.Platform
+	DownloadRequested  bool
+	GameOptionsClicked bool
+	Game               romm.Rom
+	Platform           romm.Platform
 }
 
 type GameDetailsScreen struct{}
@@ -52,9 +53,12 @@ func (s *GameDetailsScreen) Draw(input GameDetailsInput) (ScreenResult[GameDetai
 	options.Sections = sections
 	options.ShowThemeBackground = false
 	options.ShowScrollbar = true
+	options.ActionButton = constants.VirtualButtonX
+	options.EnableAction = true
 
 	result, err := gaba.DetailScreen(input.Game.Name, options, []gaba.FooterHelpItem{
 		{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_back", Other: "Back"}, nil)},
+		{ButtonName: "X", HelpText: i18n.Localize(&goi18n.Message{ID: "button_options", Other: "Options"}, nil)},
 		{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_download", Other: "Download"}, nil)},
 	})
 
@@ -69,6 +73,11 @@ func (s *GameDetailsScreen) Draw(input GameDetailsInput) (ScreenResult[GameDetai
 	if result.Action == gaba.DetailActionConfirmed {
 		output.DownloadRequested = true
 		return success(output), nil
+	}
+
+	if result.Action == gaba.DetailActionTriggered {
+		output.GameOptionsClicked = true
+		return withCode(output, groutConstants.ExitCodeGameOptions), nil
 	}
 
 	return back(output), nil
@@ -235,7 +244,6 @@ func (s *GameDetailsScreen) fetchCoverImage(host romm.Host, game romm.Rom) []byt
 			cachePath := utils.GetArtworkCachePath(game.PlatformSlug, game.ID)
 			if err := os.WriteFile(cachePath, imageData, 0644); err == nil {
 				utils.ProcessArtImage(cachePath)
-				logger.Debug("Cached artwork from game details", "game", game.Name)
 			}
 		}
 	}

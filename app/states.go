@@ -1,35 +1,37 @@
 package main
 
 import (
-	"fmt"
 	"grout/constants"
 	"grout/romm"
 	"grout/ui"
 	"grout/utils"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
 
-type appStartTime struct {
-	time.Time
-	logged bool
-	mu     sync.Mutex
-}
+var (
+	autoSync     *utils.AutoSync
+	autoSyncOnce sync.Once
+)
 
 const (
 	platformSelection           gaba.StateName = "platform_selection"
 	gameList                                   = "game_list"
 	gameDetails                                = "game_details"
+	gameOptions                                = "game_options"
 	collectionList                             = "collection_list"
 	collectionPlatformSelection                = "collection_platform_selection"
 	search                                     = "search"
 	collectionSearch                           = "collection_search"
 	settings                                   = "settings"
+	generalSettings                            = "general_settings"
 	collectionsSettings                        = "collections_settings"
 	advancedSettings                           = "advanced_settings"
 	settingsPlatformMapping                    = "platform_mapping"
+	saveSyncSettings                           = "save_sync_settings"
 	info                                       = "info"
 	logoutConfirmation                         = "logout_confirmation"
 	clearCacheConfirmation                     = "clear_cache_confirmation"
@@ -38,101 +40,109 @@ const (
 	artworkSync                                = "artwork_sync"
 )
 
-type (
-	currentGamesList       []romm.Rom
-	fullGamesList          []romm.Rom
-	searchFilterString     string
-	collectionSearchFilter string
-	quitOnBackBool         bool
+type ListPosition struct {
+	Index             int
+	VisibleStartIndex int
+}
 
-	showCollectionsBool bool
+type NavState struct {
+	CurrentGames []romm.Rom
+	FullGames    []romm.Rom
+	SearchFilter string
+	HasBIOS      bool
+	GameListPos  ListPosition
 
-	gameListPosition struct {
-		Index int
-		Pos   int
-	}
+	CollectionSearchFilter string
+	CollectionGames        []romm.Rom
+	CollectionListPos      ListPosition
+	CollectionPlatformPos  ListPosition
 
-	platformListPosition struct {
-		Index int
-		Pos   int
-	}
+	PlatformListPos ListPosition
 
-	collectionListPosition struct {
-		Index int
-		Pos   int
-	}
+	SettingsPos            ListPosition
+	CollectionsSettingsPos ListPosition
+	AdvancedSettingsPos    ListPosition
 
-	collectionPlatformListPosition struct {
-		Index int
-		Pos   int
-	}
+	QuitOnBack      bool
+	ShowCollections bool
+}
 
-	settingsPosition struct {
-		Index             int
-		VisibleStartIndex int
-	}
+func (s *NavState) ResetGameList() {
+	s.CurrentGames = nil
+	s.FullGames = nil
+	s.SearchFilter = ""
+	s.HasBIOS = false
+	s.GameListPos = ListPosition{}
+}
 
-	collectionsSettingsPosition struct {
-		Index int
-	}
-
-	advancedSettingsPosition struct {
-		Index             int
-		VisibleStartIndex int
-	}
-
-	infoPreviousState gaba.StateName
-
-	cachedCollectionGames []romm.Rom
-)
+func (s *NavState) ResetCollections() {
+	s.CollectionGames = nil
+	s.CollectionSearchFilter = ""
+	s.CollectionListPos = ListPosition{}
+	s.CollectionPlatformPos = ListPosition{}
+}
 
 func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform, quitOnBack bool, showCollections bool, appStart time.Time) *gaba.FSM {
 	fsm := gaba.NewFSM()
+
+	nav := &NavState{
+		QuitOnBack:      quitOnBack,
+		ShowCollections: showCollections,
+	}
 
 	gaba.Set(fsm.Context(), config)
 	gaba.Set(fsm.Context(), cfw)
 	gaba.Set(fsm.Context(), config.Hosts[0])
 	gaba.Set(fsm.Context(), platforms)
-	gaba.Set(fsm.Context(), quitOnBackBool(quitOnBack))
-	gaba.Set(fsm.Context(), showCollectionsBool(showCollections))
-	gaba.Set(fsm.Context(), searchFilterString(""))
-	gaba.Set(fsm.Context(), &appStartTime{Time: appStart})
+	gaba.Set(fsm.Context(), nav)
 
 	gaba.AddState(fsm, platformSelection, func(ctx *gaba.Context) (ui.PlatformSelectionOutput, gaba.ExitCode) {
 		platforms, _ := gaba.Get[[]romm.Platform](ctx)
-		quitOnBack, _ := gaba.Get[quitOnBackBool](ctx)
-		showCollections, _ := gaba.Get[showCollectionsBool](ctx)
-		platPos, _ := gaba.Get[platformListPosition](ctx)
-
-		// Log time to first platform menu draw (only once)
-		if startTime, ok := gaba.Get[*appStartTime](ctx); ok && startTime != nil {
-			startTime.mu.Lock()
-			if !startTime.logged {
-				gaba.GetLogger().Info("Time to platform menu", "seconds", fmt.Sprintf("%.2f", time.Since(startTime.Time).Seconds()))
-				startTime.logged = true
-			}
-			startTime.mu.Unlock()
-		}
+		nav, _ := gaba.Get[*NavState](ctx)
 
 		screen := ui.NewPlatformSelectionScreen()
 		config, _ := gaba.Get[*utils.Config](ctx)
+
+		// Start auto-sync on first platform menu view
+		if config.SaveSyncMode == "automatic" {
+			autoSyncOnce.Do(func() {
+				host, _ := gaba.Get[romm.Host](ctx)
+				autoSync = utils.NewAutoSync(host, config)
+				utils.AddIcon(autoSync.Icon())
+				autoSync.Start()
+			})
+		}
+
+		// Determine the sync button visibility control
+		// - "off": nil (never show)
+		// - "manual": always true, shows "Sync" button
+		// - "automatic": controlled by auto-sync
+		var showSaveSync *atomic.Bool
+		switch config.SaveSyncMode {
+		case "manual":
+			showSaveSync = &atomic.Bool{}
+			showSaveSync.Store(true)
+		case "automatic":
+			if autoSync != nil {
+				showSaveSync = autoSync.ShowButton()
+			}
+		}
+
 		result, err := screen.Draw(ui.PlatformSelectionInput{
 			Platforms:            platforms,
-			QuitOnBack:           bool(quitOnBack),
-			ShowCollections:      bool(showCollections),
-			ShowSaveSync:         config.SaveSyncMode != "off",
-			LastSelectedIndex:    platPos.Index,
-			LastSelectedPosition: platPos.Pos,
+			QuitOnBack:           nav.QuitOnBack,
+			ShowCollections:      nav.ShowCollections,
+			ShowSaveSync:         showSaveSync,
+			LastSelectedIndex:    nav.PlatformListPos.Index,
+			LastSelectedPosition: nav.PlatformListPos.VisibleStartIndex,
 		})
 
 		if err != nil {
 			return ui.PlatformSelectionOutput{}, gaba.ExitCodeError
 		}
 
-		gaba.Set(ctx, platformListPosition{
-			Index: result.Value.LastSelectedIndex,
-			Pos:   result.Value.LastSelectedPosition,
-		})
+		nav.PlatformListPos.Index = result.Value.LastSelectedIndex
+		nav.PlatformListPos.VisibleStartIndex = result.Value.LastSelectedPosition
 
 		if len(result.Value.ReorderedPlatforms) > 0 {
 			config, _ := gaba.Get[*utils.Config](ctx)
@@ -158,17 +168,14 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		return result.Value, result.ExitCode
 	}).
 		OnWithHook(gaba.ExitCodeSuccess, gameList, func(ctx *gaba.Context) error {
-			gaba.Set(ctx, searchFilterString(""))
-			gaba.Set(ctx, currentGamesList(nil))
-			gaba.Set(ctx, gameListPosition{Index: 0, Pos: 0})
+			nav, _ := gaba.Get[*NavState](ctx)
+			nav.ResetGameList()
 			gaba.Set(ctx, ui.CollectionSelectionOutput{})
 			return nil
 		}).
 		OnWithHook(constants.ExitCodeCollections, collectionList, func(ctx *gaba.Context) error {
-			gaba.Set(ctx, collectionListPosition{
-				Index: 0,
-				Pos:   0,
-			})
+			nav, _ := gaba.Get[*NavState](ctx)
+			nav.CollectionListPos = ListPosition{}
 			return nil
 		}).
 		On(gaba.ExitCodeAction, settings).
@@ -178,43 +185,40 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 	gaba.AddState(fsm, collectionList, func(ctx *gaba.Context) (ui.CollectionSelectionOutput, gaba.ExitCode) {
 		config, _ := gaba.Get[*utils.Config](ctx)
 		host, _ := gaba.Get[romm.Host](ctx)
-		colPos, _ := gaba.Get[collectionListPosition](ctx)
-		searchFilter, _ := gaba.Get[collectionSearchFilter](ctx)
+		nav, _ := gaba.Get[*NavState](ctx)
 
 		screen := ui.NewCollectionSelectionScreen()
 		result, err := screen.Draw(ui.CollectionSelectionInput{
 			Config:               config,
 			Host:                 host,
-			SearchFilter:         string(searchFilter),
-			LastSelectedIndex:    colPos.Index,
-			LastSelectedPosition: colPos.Pos,
+			SearchFilter:         nav.CollectionSearchFilter,
+			LastSelectedIndex:    nav.CollectionListPos.Index,
+			LastSelectedPosition: nav.CollectionListPos.VisibleStartIndex,
 		})
 
 		if err != nil {
 			return ui.CollectionSelectionOutput{}, gaba.ExitCodeError
 		}
 
-		gaba.Set(ctx, collectionListPosition{
-			Index: result.Value.LastSelectedIndex,
-			Pos:   result.Value.LastSelectedPosition,
-		})
-		gaba.Set(ctx, collectionSearchFilter(result.Value.SearchFilter))
+		nav.CollectionListPos.Index = result.Value.LastSelectedIndex
+		nav.CollectionListPos.VisibleStartIndex = result.Value.LastSelectedPosition
+		nav.CollectionSearchFilter = result.Value.SearchFilter
 
 		return result.Value, result.ExitCode
 	}).
 		OnWithHook(gaba.ExitCodeSuccess, collectionPlatformSelection, func(ctx *gaba.Context) error {
-			gaba.Set(ctx, searchFilterString(""))
-			gaba.Set(ctx, currentGamesList(nil))
-			gaba.Set(ctx, gameListPosition{Index: 0, Pos: 0})
-			gaba.Set(ctx, collectionPlatformListPosition{Index: 0, Pos: 0})
-			gaba.Set(ctx, cachedCollectionGames(nil))
+			nav, _ := gaba.Get[*NavState](ctx)
+			nav.ResetGameList()
+			nav.CollectionPlatformPos = ListPosition{}
+			nav.CollectionGames = nil
 			gaba.Set(ctx, ui.PlatformSelectionOutput{})
 			return nil
 		}).
 		On(constants.ExitCodeSearch, collectionSearch).
 		OnWithHook(constants.ExitCodeClearSearch, collectionList, func(ctx *gaba.Context) error {
-			gaba.Set(ctx, collectionSearchFilter(""))
-			gaba.Set(ctx, collectionListPosition{Index: 0, Pos: 0})
+			nav, _ := gaba.Get[*NavState](ctx)
+			nav.CollectionSearchFilter = ""
+			nav.CollectionListPos = ListPosition{}
 			return nil
 		}).
 		On(gaba.ExitCodeBack, platformSelection)
@@ -223,35 +227,32 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		config, _ := gaba.Get[*utils.Config](ctx)
 		host, _ := gaba.Get[romm.Host](ctx)
 		collection, _ := gaba.Get[ui.CollectionSelectionOutput](ctx)
-		pos, _ := gaba.Get[collectionPlatformListPosition](ctx)
-		cachedGames, _ := gaba.Get[cachedCollectionGames](ctx)
+		nav, _ := gaba.Get[*NavState](ctx)
 
 		screen := ui.NewCollectionPlatformSelectionScreen()
 		result, err := screen.Draw(ui.CollectionPlatformSelectionInput{
 			Config:               config,
 			Host:                 host,
 			Collection:           collection.SelectedCollection,
-			CachedGames:          cachedGames,
-			LastSelectedIndex:    pos.Index,
-			LastSelectedPosition: pos.Pos,
+			CachedGames:          nav.CollectionGames,
+			LastSelectedIndex:    nav.CollectionPlatformPos.Index,
+			LastSelectedPosition: nav.CollectionPlatformPos.VisibleStartIndex,
 		})
 
 		if err != nil {
 			return ui.CollectionPlatformSelectionOutput{}, gaba.ExitCodeError
 		}
 
-		gaba.Set(ctx, collectionPlatformListPosition{
-			Index: result.Value.LastSelectedIndex,
-			Pos:   result.Value.LastSelectedPosition,
-		})
-
-		gaba.Set(ctx, cachedCollectionGames(result.Value.AllGames))
+		nav.CollectionPlatformPos.Index = result.Value.LastSelectedIndex
+		nav.CollectionPlatformPos.VisibleStartIndex = result.Value.LastSelectedPosition
+		nav.CollectionGames = result.Value.AllGames
 
 		return result.Value, result.ExitCode
 	}).
 		OnWithHook(gaba.ExitCodeSuccess, gameList, func(ctx *gaba.Context) error {
 			output, _ := gaba.Get[ui.CollectionPlatformSelectionOutput](ctx)
 			config, _ := gaba.Get[*utils.Config](ctx)
+			nav, _ := gaba.Get[*NavState](ctx)
 
 			var finalGames []romm.Rom
 
@@ -269,10 +270,10 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 				finalGames = filteredGames
 			}
 
-			gaba.Set(ctx, searchFilterString(""))
-			gaba.Set(ctx, fullGamesList(finalGames))
-			gaba.Set(ctx, currentGamesList(finalGames))
-			gaba.Set(ctx, gameListPosition{Index: 0, Pos: 0})
+			nav.SearchFilter = ""
+			nav.FullGames = finalGames
+			nav.CurrentGames = finalGames
+			nav.GameListPos = ListPosition{}
 			return nil
 		}).
 		On(gaba.ExitCodeBack, collectionList)
@@ -283,9 +284,7 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		platform, _ := gaba.Get[ui.PlatformSelectionOutput](ctx)
 		collection, _ := gaba.Get[ui.CollectionSelectionOutput](ctx)
 		collectionPlatform, _ := gaba.Get[ui.CollectionPlatformSelectionOutput](ctx)
-		games, _ := gaba.Get[currentGamesList](ctx)
-		filter, _ := gaba.Get[searchFilterString](ctx)
-		pos, _ := gaba.Get[gameListPosition](ctx)
+		nav, _ := gaba.Get[*NavState](ctx)
 
 		var selectedPlatform romm.Platform
 		var selectedCollection romm.Collection
@@ -304,23 +303,23 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 			Host:                 host,
 			Platform:             selectedPlatform,
 			Collection:           selectedCollection,
-			Games:                games,
-			SearchFilter:         string(filter),
-			LastSelectedIndex:    pos.Index,
-			LastSelectedPosition: pos.Pos,
+			Games:                nav.CurrentGames,
+			HasBIOS:              nav.HasBIOS,
+			SearchFilter:         nav.SearchFilter,
+			LastSelectedIndex:    nav.GameListPos.Index,
+			LastSelectedPosition: nav.GameListPos.VisibleStartIndex,
 		})
 
 		if err != nil {
 			return ui.GameListOutput{}, gaba.ExitCodeError
 		}
 
-		gaba.Set(ctx, fullGamesList(result.Value.AllGames))
-		gaba.Set(ctx, currentGamesList(result.Value.AllGames))
-		gaba.Set(ctx, gameListPosition{
-			Index: result.Value.LastSelectedIndex,
-			Pos:   result.Value.LastSelectedPosition,
-		})
-		gaba.Set(ctx, searchFilterString(result.Value.SearchFilter))
+		nav.FullGames = result.Value.AllGames
+		nav.CurrentGames = result.Value.AllGames
+		nav.HasBIOS = result.Value.HasBIOS
+		nav.GameListPos.Index = result.Value.LastSelectedIndex
+		nav.GameListPos.VisibleStartIndex = result.Value.LastSelectedPosition
+		nav.SearchFilter = result.Value.SearchFilter
 
 		return result.Value, result.ExitCode
 	}).
@@ -328,19 +327,21 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		On(constants.ExitCodeSearch, search).
 		On(constants.ExitCodeBIOS, biosDownload).
 		OnWithHook(constants.ExitCodeClearSearch, gameList, func(ctx *gaba.Context) error {
-			gaba.Set(ctx, searchFilterString(""))
-			fullGames, _ := gaba.Get[fullGamesList](ctx)
-			gaba.Set(ctx, currentGamesList(fullGames))
-			gaba.Set(ctx, gameListPosition{Index: 0, Pos: 0})
+			nav, _ := gaba.Get[*NavState](ctx)
+			nav.SearchFilter = ""
+			nav.CurrentGames = nav.FullGames
+			nav.GameListPos = ListPosition{}
 			return nil
 		}).
 		OnWithHook(gaba.ExitCodeBack, platformSelection, func(ctx *gaba.Context) error {
-			gaba.Set(ctx, currentGamesList(nil))
+			nav, _ := gaba.Get[*NavState](ctx)
+			nav.CurrentGames = nil
 			return nil
 		}).
 		On(constants.ExitCodeBackToCollectionPlatform, collectionPlatformSelection).
 		OnWithHook(constants.ExitCodeBackToCollection, collectionList, func(ctx *gaba.Context) error {
-			gaba.Set(ctx, currentGamesList(nil))
+			nav, _ := gaba.Get[*NavState](ctx)
+			nav.CurrentGames = nil
 			return nil
 		}).
 		On(constants.ExitCodeNoResults, search)
@@ -349,13 +350,14 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		config, _ := gaba.Get[*utils.Config](ctx)
 		host, _ := gaba.Get[romm.Host](ctx)
 		gameListOutput, _ := gaba.Get[ui.GameListOutput](ctx)
+		nav, _ := gaba.Get[*NavState](ctx)
 
-		if !config.GameDetails || len(gameListOutput.SelectedGames) != 1 {
-			filter, _ := gaba.Get[searchFilterString](ctx)
+		// If multiple games selected, skip details and go straight to download
+		if len(gameListOutput.SelectedGames) != 1 {
 			downloadScreen := ui.NewDownloadScreen()
-			downloadOutput := downloadScreen.Execute(*config, host, gameListOutput.Platform, gameListOutput.SelectedGames, gameListOutput.AllGames, string(filter))
-			gaba.Set(ctx, currentGamesList(downloadOutput.AllGames))
-			gaba.Set(ctx, searchFilterString(downloadOutput.SearchFilter))
+			downloadOutput := downloadScreen.Execute(*config, host, gameListOutput.Platform, gameListOutput.SelectedGames, gameListOutput.AllGames, nav.SearchFilter)
+			nav.CurrentGames = downloadOutput.AllGames
+			nav.SearchFilter = downloadOutput.SearchFilter
 			return ui.GameDetailsOutput{}, gaba.ExitCodeBack
 		}
 
@@ -378,25 +380,54 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 			config, _ := gaba.Get[*utils.Config](ctx)
 			host, _ := gaba.Get[romm.Host](ctx)
 			gameListOutput, _ := gaba.Get[ui.GameListOutput](ctx)
-			filter, _ := gaba.Get[searchFilterString](ctx)
+			nav, _ := gaba.Get[*NavState](ctx)
 
 			if detailsOutput.DownloadRequested {
 				downloadScreen := ui.NewDownloadScreen()
-				downloadOutput := downloadScreen.Execute(*config, host, detailsOutput.Platform, []romm.Rom{detailsOutput.Game}, gameListOutput.AllGames, string(filter))
-				gaba.Set(ctx, currentGamesList(downloadOutput.AllGames))
-				gaba.Set(ctx, searchFilterString(downloadOutput.SearchFilter))
+				downloadOutput := downloadScreen.Execute(*config, host, detailsOutput.Platform, []romm.Rom{detailsOutput.Game}, gameListOutput.AllGames, nav.SearchFilter)
+				nav.CurrentGames = downloadOutput.AllGames
+				nav.SearchFilter = downloadOutput.SearchFilter
 			}
 
 			return nil
 		}).
-		On(gaba.ExitCodeBack, gameList)
+		On(gaba.ExitCodeBack, gameList).
+		On(constants.ExitCodeGameOptions, gameOptions)
+
+	// Game options state
+	gaba.AddState(fsm, gameOptions, func(ctx *gaba.Context) (ui.GameOptionsOutput, gaba.ExitCode) {
+		config, _ := gaba.Get[*utils.Config](ctx)
+		gameListOutput, _ := gaba.Get[ui.GameListOutput](ctx)
+
+		if len(gameListOutput.SelectedGames) != 1 {
+			return ui.GameOptionsOutput{Config: config}, gaba.ExitCodeBack
+		}
+
+		screen := ui.NewGameOptionsScreen()
+		result, err := screen.Draw(ui.GameOptionsInput{
+			Config: config,
+			Game:   gameListOutput.SelectedGames[0],
+		})
+
+		if err != nil {
+			return ui.GameOptionsOutput{Config: config}, gaba.ExitCodeError
+		}
+
+		return result.Value, result.ExitCode
+	}).
+		OnWithHook(gaba.ExitCodeSuccess, gameDetails, func(ctx *gaba.Context) error {
+			output, _ := gaba.Get[ui.GameOptionsOutput](ctx)
+			gaba.Set(ctx, output.Config)
+			return nil
+		}).
+		On(gaba.ExitCodeBack, gameDetails)
 
 	gaba.AddState(fsm, search, func(ctx *gaba.Context) (ui.SearchOutput, gaba.ExitCode) {
-		filter, _ := gaba.Get[searchFilterString](ctx)
+		nav, _ := gaba.Get[*NavState](ctx)
 
 		screen := ui.NewSearchScreen()
 		result, err := screen.Draw(ui.SearchInput{
-			InitialText: string(filter),
+			InitialText: nav.SearchFilter,
 		})
 
 		if err != nil {
@@ -407,25 +438,25 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 	}).
 		OnWithHook(gaba.ExitCodeSuccess, gameList, func(ctx *gaba.Context) error {
 			output, _ := gaba.Get[ui.SearchOutput](ctx)
-			gaba.Set(ctx, searchFilterString(output.Query))
-			fullGames, _ := gaba.Get[fullGamesList](ctx)
-			gaba.Set(ctx, currentGamesList(fullGames))
-			gaba.Set(ctx, gameListPosition{Index: 0, Pos: 0})
+			nav, _ := gaba.Get[*NavState](ctx)
+			nav.SearchFilter = output.Query
+			nav.CurrentGames = nav.FullGames
+			nav.GameListPos = ListPosition{}
 			return nil
 		}).
 		OnWithHook(gaba.ExitCodeBack, gameList, func(ctx *gaba.Context) error {
-			gaba.Set(ctx, searchFilterString(""))
-			fullGames, _ := gaba.Get[fullGamesList](ctx)
-			gaba.Set(ctx, currentGamesList(fullGames))
+			nav, _ := gaba.Get[*NavState](ctx)
+			nav.SearchFilter = ""
+			nav.CurrentGames = nav.FullGames
 			return nil
 		})
 
 	gaba.AddState(fsm, collectionSearch, func(ctx *gaba.Context) (ui.SearchOutput, gaba.ExitCode) {
-		filter, _ := gaba.Get[collectionSearchFilter](ctx)
+		nav, _ := gaba.Get[*NavState](ctx)
 
 		screen := ui.NewSearchScreen()
 		result, err := screen.Draw(ui.SearchInput{
-			InitialText: string(filter),
+			InitialText: nav.CollectionSearchFilter,
 		})
 
 		if err != nil {
@@ -436,12 +467,14 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 	}).
 		OnWithHook(gaba.ExitCodeSuccess, collectionList, func(ctx *gaba.Context) error {
 			output, _ := gaba.Get[ui.SearchOutput](ctx)
-			gaba.Set(ctx, collectionSearchFilter(output.Query))
-			gaba.Set(ctx, collectionListPosition{Index: 0, Pos: 0})
+			nav, _ := gaba.Get[*NavState](ctx)
+			nav.CollectionSearchFilter = output.Query
+			nav.CollectionListPos = ListPosition{}
 			return nil
 		}).
 		OnWithHook(gaba.ExitCodeBack, collectionList, func(ctx *gaba.Context) error {
-			gaba.Set(ctx, collectionSearchFilter(""))
+			nav, _ := gaba.Get[*NavState](ctx)
+			nav.CollectionSearchFilter = ""
 			return nil
 		})
 
@@ -449,55 +482,71 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		config, _ := gaba.Get[*utils.Config](ctx)
 		cfw, _ := gaba.Get[constants.CFW](ctx)
 		host, _ := gaba.Get[romm.Host](ctx)
-		pos, _ := gaba.Get[settingsPosition](ctx)
+		nav, _ := gaba.Get[*NavState](ctx)
 
 		screen := ui.NewSettingsScreen()
 		result, err := screen.Draw(ui.SettingsInput{
 			Config:                config,
 			CFW:                   cfw,
 			Host:                  host,
-			LastSelectedIndex:     pos.Index,
-			LastVisibleStartIndex: pos.VisibleStartIndex,
+			LastSelectedIndex:     nav.SettingsPos.Index,
+			LastVisibleStartIndex: nav.SettingsPos.VisibleStartIndex,
 		})
 
 		if err != nil {
 			return ui.SettingsOutput{}, gaba.ExitCodeError
 		}
 
-		gaba.Set(ctx, settingsPosition{
-			Index:             result.Value.LastSelectedIndex,
-			VisibleStartIndex: result.Value.LastVisibleStartIndex,
-		})
+		nav.SettingsPos.Index = result.Value.LastSelectedIndex
+		nav.SettingsPos.VisibleStartIndex = result.Value.LastVisibleStartIndex
 
 		return result.Value, result.ExitCode
 	}).
 		OnWithHook(gaba.ExitCodeSuccess, platformSelection, func(ctx *gaba.Context) error {
 			output, _ := gaba.Get[ui.SettingsOutput](ctx)
 			host, _ := gaba.Get[romm.Host](ctx)
+			nav, _ := gaba.Get[*NavState](ctx)
 			utils.SaveConfig(output.Config)
 			gaba.Set(ctx, output.Config)
-			gaba.Set(ctx, settingsPosition{Index: 0})
+			nav.SettingsPos = ListPosition{}
 
-			// Update showCollections based on new settings
-			showCollections := utils.ShowCollections(output.Config, host)
-			gaba.Set(ctx, showCollectionsBool(showCollections))
+			nav.ShowCollections = utils.ShowCollections(output.Config, host)
 			return nil
 		}).
+		On(constants.ExitCodeGeneralSettings, generalSettings).
 		On(constants.ExitCodeCollectionsSettings, collectionsSettings).
 		On(constants.ExitCodeAdvancedSettings, advancedSettings).
-		OnWithHook(constants.ExitCodeInfo, info, func(ctx *gaba.Context) error {
-			gaba.Set(ctx, infoPreviousState(settings))
-			return nil
-		}).
-		On(constants.ExitCodeSyncArtwork, artworkSync).
+		On(constants.ExitCodeSaveSyncSettings, saveSyncSettings).
+		On(constants.ExitCodeInfo, info).
 		OnWithHook(gaba.ExitCodeBack, platformSelection, func(ctx *gaba.Context) error {
-			gaba.Set(ctx, settingsPosition{Index: 0})
+			nav, _ := gaba.Get[*NavState](ctx)
+			nav.SettingsPos = ListPosition{}
 			return nil
 		})
 
+	gaba.AddState(fsm, generalSettings, func(ctx *gaba.Context) (ui.GeneralSettingsOutput, gaba.ExitCode) {
+		config, _ := gaba.Get[*utils.Config](ctx)
+
+		screen := ui.NewGeneralSettingsScreen()
+		result, err := screen.Draw(ui.GeneralSettingsInput{
+			Config: config,
+		})
+
+		if err != nil {
+			return ui.GeneralSettingsOutput{Config: config}, gaba.ExitCodeError
+		}
+
+		return result.Value, result.ExitCode
+	}).
+		OnWithHook(gaba.ExitCodeSuccess, settings, func(ctx *gaba.Context) error {
+			output, _ := gaba.Get[ui.GeneralSettingsOutput](ctx)
+			gaba.Set(ctx, output.Config)
+			return nil
+		}).
+		On(gaba.ExitCodeBack, settings)
+
 	gaba.AddState(fsm, collectionsSettings, func(ctx *gaba.Context) (ui.CollectionsSettingsOutput, gaba.ExitCode) {
 		config, _ := gaba.Get[*utils.Config](ctx)
-		pos, _ := gaba.Get[collectionsSettingsPosition](ctx)
 
 		screen := ui.NewCollectionsSettingsScreen()
 		result, err := screen.Draw(ui.CollectionsSettingsInput{
@@ -508,66 +557,84 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 			return ui.CollectionsSettingsOutput{}, gaba.ExitCodeError
 		}
 
-		gaba.Set(ctx, collectionsSettingsPosition{Index: pos.Index})
-
 		return result.Value, result.ExitCode
 	}).
 		OnWithHook(gaba.ExitCodeSuccess, settings, func(ctx *gaba.Context) error {
 			config, _ := gaba.Get[*utils.Config](ctx)
 			host, _ := gaba.Get[romm.Host](ctx)
+			nav, _ := gaba.Get[*NavState](ctx)
 
 			gaba.Set(ctx, config)
-			gaba.Set(ctx, collectionsSettingsPosition{Index: 0})
+			nav.CollectionsSettingsPos = ListPosition{}
 
-			// Update showCollections based on new settings
-			showCollections := utils.ShowCollections(config, host)
-			gaba.Set(ctx, showCollectionsBool(showCollections))
+			nav.ShowCollections = utils.ShowCollections(config, host)
 			return nil
 		}).
 		OnWithHook(gaba.ExitCodeBack, settings, func(ctx *gaba.Context) error {
-			gaba.Set(ctx, collectionsSettingsPosition{Index: 0})
+			nav, _ := gaba.Get[*NavState](ctx)
+			nav.CollectionsSettingsPos = ListPosition{}
 			return nil
 		})
+
+	gaba.AddState(fsm, saveSyncSettings, func(ctx *gaba.Context) (ui.SaveSyncSettingsOutput, gaba.ExitCode) {
+		config, _ := gaba.Get[*utils.Config](ctx)
+		cfw, _ := gaba.Get[constants.CFW](ctx)
+
+		screen := ui.NewSaveSyncSettingsScreen()
+		result, err := screen.Draw(ui.SaveSyncSettingsInput{
+			Config: config,
+			CFW:    cfw,
+		})
+
+		if err != nil {
+			return ui.SaveSyncSettingsOutput{Config: config}, gaba.ExitCodeError
+		}
+
+		return result.Value, result.ExitCode
+	}).
+		OnWithHook(gaba.ExitCodeSuccess, settings, func(ctx *gaba.Context) error {
+			output, _ := gaba.Get[ui.SaveSyncSettingsOutput](ctx)
+			gaba.Set(ctx, output.Config)
+			return nil
+		}).
+		On(gaba.ExitCodeBack, settings)
 
 	gaba.AddState(fsm, advancedSettings, func(ctx *gaba.Context) (ui.AdvancedSettingsOutput, gaba.ExitCode) {
 		config, _ := gaba.Get[*utils.Config](ctx)
 		host, _ := gaba.Get[romm.Host](ctx)
-		pos, _ := gaba.Get[advancedSettingsPosition](ctx)
+		nav, _ := gaba.Get[*NavState](ctx)
 
 		screen := ui.NewAdvancedSettingsScreen()
 		result, err := screen.Draw(ui.AdvancedSettingsInput{
 			Config:                config,
 			Host:                  host,
-			LastSelectedIndex:     pos.Index,
-			LastVisibleStartIndex: pos.VisibleStartIndex,
+			LastSelectedIndex:     nav.AdvancedSettingsPos.Index,
+			LastVisibleStartIndex: nav.AdvancedSettingsPos.VisibleStartIndex,
 		})
 
 		if err != nil {
 			return ui.AdvancedSettingsOutput{}, gaba.ExitCodeError
 		}
 
-		gaba.Set(ctx, advancedSettingsPosition{
-			Index:             result.Value.LastSelectedIndex,
-			VisibleStartIndex: result.Value.LastVisibleStartIndex,
-		})
+		nav.AdvancedSettingsPos.Index = result.Value.LastSelectedIndex
+		nav.AdvancedSettingsPos.VisibleStartIndex = result.Value.LastVisibleStartIndex
 
 		return result.Value, result.ExitCode
 	}).
 		OnWithHook(gaba.ExitCodeSuccess, settings, func(ctx *gaba.Context) error {
 			config, _ := gaba.Get[*utils.Config](ctx)
+			nav, _ := gaba.Get[*NavState](ctx)
 
 			gaba.Set(ctx, config)
-			gaba.Set(ctx, advancedSettingsPosition{Index: 0, VisibleStartIndex: 0})
-			return nil
-		}).
-		OnWithHook(constants.ExitCodeInfo, info, func(ctx *gaba.Context) error {
-			gaba.Set(ctx, infoPreviousState(advancedSettings))
+			nav.AdvancedSettingsPos = ListPosition{}
 			return nil
 		}).
 		On(constants.ExitCodeEditMappings, settingsPlatformMapping).
 		On(constants.ExitCodeClearCache, clearCacheConfirmation).
+		On(constants.ExitCodeSyncArtwork, artworkSync).
 		OnWithHook(gaba.ExitCodeBack, settings, func(ctx *gaba.Context) error {
-			gaba.Set(ctx, advancedSettingsPosition{Index: 0, VisibleStartIndex: 0})
+			nav, _ := gaba.Get[*NavState](ctx)
+			nav.AdvancedSettingsPos = ListPosition{}
 			return nil
 		})
 
@@ -614,12 +681,10 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 
 	gaba.AddState(fsm, info, func(ctx *gaba.Context) (ui.InfoOutput, gaba.ExitCode) {
 		host, _ := gaba.Get[romm.Host](ctx)
-		prevState, _ := gaba.Get[infoPreviousState](ctx)
 
 		screen := ui.NewInfoScreen()
 		result, err := screen.Draw(ui.InfoInput{
-			Host:         host,
-			FromAdvanced: prevState == advancedSettings,
+			Host: host,
 		})
 
 		if err != nil {
@@ -629,7 +694,6 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		return result.Value, result.ExitCode
 	}).
 		On(gaba.ExitCodeBack, settings).
-		On(constants.ExitCodeBackToAdvanced, advancedSettings).
 		On(constants.ExitCodeLogoutConfirm, logoutConfirmation)
 
 	gaba.AddState(fsm, logoutConfirmation, func(ctx *gaba.Context) (ui.LogoutConfirmationOutput, gaba.ExitCode) {
@@ -647,7 +711,6 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 			config, _ := gaba.Get[*utils.Config](ctx)
 			cfw, _ := gaba.Get[constants.CFW](ctx)
 
-			// Clear config and save
 			config.Hosts = nil
 			config.DirectoryMappings = nil
 			config.PlatformOrder = nil
@@ -659,26 +722,21 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 
 			gaba.GetLogger().Info("User logged out successfully")
 
-			// Trigger login flow inline with empty host (no pre-filled values)
 			loginConfig, err := ui.LoginFlow(romm.Host{})
 			if err != nil {
 				gaba.GetLogger().Error("Login flow failed after logout", "error", err)
-				// LoginFlow calls os.Exit(1) on cancel, so this only happens on errors
 				return err
 			}
 
-			// Update config with new login
 			config.Hosts = loginConfig.Hosts
 			if err := utils.SaveConfig(config); err != nil {
 				gaba.GetLogger().Error("Failed to save config after re-login", "error", err)
 				return err
 			}
 
-			// Update context with new config and host
 			gaba.Set(ctx, config)
 			gaba.Set(ctx, config.Hosts[0])
 
-			// Check if platform mappings exist, prompt if needed
 			if len(config.DirectoryMappings) == 0 {
 				screen := ui.NewPlatformMappingScreen()
 				result, err := screen.Draw(ui.PlatformMappingInput{
@@ -696,7 +754,6 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 				}
 			}
 
-			// Load platforms
 			platforms, err := utils.GetMappedPlatforms(config.Hosts[0], config.DirectoryMappings)
 			if err != nil {
 				gaba.GetLogger().Error("Failed to load platforms after re-login", "error", err)
@@ -704,20 +761,19 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 			}
 			gaba.Set(ctx, platforms)
 
-			// Clear state to start fresh
-			gaba.Set(ctx, searchFilterString(""))
-			gaba.Set(ctx, currentGamesList(nil))
-			gaba.Set(ctx, platformListPosition{Index: 0, Pos: 0})
+			nav, _ := gaba.Get[*NavState](ctx)
+			nav.ResetGameList()
+			nav.PlatformListPos = ListPosition{}
 
 			return nil
 		})
 
-	gaba.AddState(fsm, clearCacheConfirmation, func(ctx *gaba.Context) (ui.ClearCacheConfirmationOutput, gaba.ExitCode) {
-		screen := ui.NewClearCacheConfirmationScreen()
+	gaba.AddState(fsm, clearCacheConfirmation, func(ctx *gaba.Context) (ui.ClearCacheOutput, gaba.ExitCode) {
+		screen := ui.NewClearCacheScreen()
 		result, err := screen.Draw()
 
 		if err != nil {
-			return ui.ClearCacheConfirmationOutput{}, gaba.ExitCodeError
+			return ui.ClearCacheOutput{}, gaba.ExitCodeError
 		}
 
 		return result.Value, result.ExitCode
@@ -772,7 +828,7 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 
 		return output, gaba.ExitCodeBack
 	}).
-		On(gaba.ExitCodeBack, settings)
+		On(gaba.ExitCodeBack, advancedSettings)
 
 	return fsm.Start(platformSelection)
 }

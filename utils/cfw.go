@@ -124,7 +124,7 @@ func GetPlatformMap(cfw constants.CFW) map[string][]string {
 	}
 }
 
-func GetSaveDirectoriesMap(cfw constants.CFW) map[string][]string {
+func EmulatorFolderMap(cfw constants.CFW) map[string][]string {
 	switch cfw {
 	case constants.MuOS:
 		return constants.MuOSSaveDirectories
@@ -137,8 +137,8 @@ func GetSaveDirectoriesMap(cfw constants.CFW) map[string][]string {
 	}
 }
 
-func GetSaveDirectoriesForSlug(slug string) []string {
-	saveDirectoriesMap := GetSaveDirectoriesMap(GetCFW())
+func EmulatorFoldersForSlug(slug string) []string {
+	saveDirectoriesMap := EmulatorFolderMap(GetCFW())
 	if saveDirectoriesMap == nil {
 		return nil
 	}
@@ -211,7 +211,7 @@ func getMuOSInfoDirectory() string {
 	return filepath.Join(getBasePath(constants.MuOS), "MUOS", "info")
 }
 
-func getSaveDirectory() string {
+func BaseSavePath() string {
 	cfw := GetCFW()
 	switch cfw {
 	case constants.MuOS:

@@ -34,6 +34,18 @@ func ClearArtworkCache() error {
 	return os.RemoveAll(cacheDir)
 }
 
+// HasArtworkCache returns true if the artwork cache directory exists and has content
+func HasArtworkCache() bool {
+	cacheDir := GetArtworkCacheDir()
+
+	entries, err := os.ReadDir(cacheDir)
+	if err != nil {
+		return false
+	}
+
+	return len(entries) > 0
+}
+
 func GetArtworkCachePath(platformSlug string, romID int) string {
 	return filepath.Join(GetArtworkCacheDir(), platformSlug, strconv.Itoa(romID)+".png")
 }
@@ -210,22 +222,12 @@ func SyncArtworkInBackground(host romm.Host, games []romm.Rom) {
 
 	missing := GetMissingArtwork(games)
 	if len(missing) == 0 {
-		logger.Debug("All artwork already cached")
 		return
 	}
 
-	logger.Debug("Starting background artwork sync", "missing", len(missing))
-
-	successful := 0
-	failed := 0
 	for _, rom := range missing {
 		if err := DownloadAndCacheArtwork(rom, host); err != nil {
 			logger.Debug("Failed to download artwork", "rom", rom.Name, "error", err)
-			failed++
-		} else {
-			successful++
 		}
 	}
-
-	logger.Debug("Background artwork sync complete", "successful", successful, "failed", failed)
 }

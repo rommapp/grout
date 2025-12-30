@@ -37,15 +37,15 @@ A RomM Client for <a href="https://muos.dev">muOS</a>, <a href="https://knulli.o
 
 Choose your platform and follow the installation guide:
 
-- [muOS Installation](INSTALL_MUOS.md)
-- [Knulli Installation](INSTALL_KNULLI.md)
-- [NextUI Installation](INSTALL_NEXTUI.md)
+- [muOS Installation](docs/INSTALL_MUOS.md)
+- [Knulli Installation](docs/INSTALL_KNULLI.md)
+- [NextUI Installation](docs/INSTALL_NEXTUI.md)
 
 ---
 
 ## User Guide
 
-For detailed usage instructions and configuration options, see the [User Guide](USER_GUIDE.md).
+For detailed usage instructions and configuration options, see the [User Guide](docs/USER_GUIDE.md).
 
 ---
 

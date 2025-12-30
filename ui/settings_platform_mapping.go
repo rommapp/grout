@@ -13,7 +13,6 @@ import (
 	"grout/romm"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
-	icons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
 	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
@@ -56,11 +55,11 @@ func (s *PlatformMappingScreen) Draw(input PlatformMappingInput) (ScreenResult[P
 	mappingOptions := s.buildMappingOptions(rommPlatforms, romDirectories, input)
 
 	footerItems := []gaba.FooterHelpItem{
-		{ButtonName: icons.LeftRight, HelpText: i18n.Localize(&goi18n.Message{ID: "button_cycle", Other: "Cycle"}, nil)},
-		{ButtonName: icons.Start, HelpText: i18n.Localize(&goi18n.Message{ID: "button_save", Other: "Save"}, nil)},
+		FooterCycle(),
+		FooterSave(),
 	}
 	if !input.HideBackButton {
-		footerItems = slices.Insert(footerItems, 0, gaba.FooterHelpItem{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_cancel", Other: "Cancel"}, nil)})
+		footerItems = slices.Insert(footerItems, 0, FooterCancel())
 	}
 
 	result, err := gaba.OptionsList(
@@ -99,7 +98,7 @@ func (s *PlatformMappingScreen) getRomDirectories(romDir string) ([]os.DirEntry,
 	entries, err := os.ReadDir(romDir)
 	if err != nil {
 		gaba.ConfirmationMessage(i18n.Localize(&goi18n.Message{ID: "platform_mapping_directory_not_found", Other: "ROM Directory Could Not Be Found!"}, nil), []gaba.FooterHelpItem{
-			{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_quit", Other: "Quit"}, nil)},
+			FooterQuit(),
 		}, gaba.MessageOptions{})
 		return nil, fmt.Errorf("failed to read ROM directory: %w", err)
 	}
@@ -228,7 +227,7 @@ func (s *PlatformMappingScreen) getCFWDirectoriesForPlatform(slug string, cfw co
 }
 
 func (s *PlatformMappingScreen) getSaveDirectoriesForPlatform(slug string, cfw constants.CFW) []string {
-	saveMap := utils.GetSaveDirectoriesMap(cfw)
+	saveMap := utils.EmulatorFolderMap(cfw)
 	if saveMap == nil {
 		return []string{}
 	}

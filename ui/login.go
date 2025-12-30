@@ -177,7 +177,7 @@ func LoginFlow(existingHost romm.Host) (*utils.Config, error) {
 	for {
 		result, err := screen.draw(loginInput{ExistingHost: existingHost})
 		if err != nil {
-			gabagool.ProcessMessage(i18n.Localize(&goi18n.Message{ID: "login_error_unexpected", Other: "Something unexpected happened!\\nCheck the logs for more info."}, nil), gabagool.ProcessMessageOptions{}, func() (interface{}, error) {
+			gabagool.ProcessMessage(i18n.Localize(&goi18n.Message{ID: "login_error_unexpected", Other: "Something unexpected happened!\nCheck the logs for more info."}, nil), gabagool.ProcessMessageOptions{}, func() (interface{}, error) {
 				time.Sleep(3 * time.Second)
 				return nil, nil
 			})
@@ -245,12 +245,12 @@ func classifyLoginError(err error) loginAttemptResult {
 		if protocolErr.CorrectProtocol == "https" {
 			return loginAttemptResult{
 				ErrorType: "protocol",
-				ErrorMsg:  &goi18n.Message{ID: "login_error_use_https", Other: "Protocol mismatch!\\nPlease use HTTPS instead of HTTP."},
+				ErrorMsg:  &goi18n.Message{ID: "login_error_use_https", Other: "Protocol mismatch!\nPlease use HTTPS instead of HTTP."},
 			}
 		}
 		return loginAttemptResult{
 			ErrorType: "protocol",
-			ErrorMsg:  &goi18n.Message{ID: "login_error_use_http", Other: "Protocol mismatch!\\nPlease use HTTP instead of HTTPS."},
+			ErrorMsg:  &goi18n.Message{ID: "login_error_use_http", Other: "Protocol mismatch!\nPlease use HTTP instead of HTTPS."},
 		}
 	}
 
@@ -258,22 +258,22 @@ func classifyLoginError(err error) loginAttemptResult {
 	case errors.Is(err, romm.ErrInvalidHostname):
 		return loginAttemptResult{
 			ErrorType: "dns",
-			ErrorMsg:  &goi18n.Message{ID: "login_error_invalid_hostname", Other: "Could not resolve hostname!\\nPlease check the hostname is correct."},
+			ErrorMsg:  &goi18n.Message{ID: "login_error_invalid_hostname", Other: "Could not resolve hostname!\nPlease check the hostname is correct."},
 		}
 	case errors.Is(err, romm.ErrConnectionRefused):
 		return loginAttemptResult{
 			ErrorType: "connection",
-			ErrorMsg:  &goi18n.Message{ID: "login_error_connection_refused", Other: "Could not connect to host!\\nPlease check the hostname and port are correct."},
+			ErrorMsg:  &goi18n.Message{ID: "login_error_connection_refused", Other: "Could not connect to host!\nPlease check the hostname and port are correct."},
 		}
 	case errors.Is(err, romm.ErrTimeout):
 		return loginAttemptResult{
 			ErrorType: "timeout",
-			ErrorMsg:  &goi18n.Message{ID: "login_error_timeout", Other: "Connection timed out!\\nPlease check your network connection and that the host is reachable."},
+			ErrorMsg:  &goi18n.Message{ID: "login_error_timeout", Other: "Connection timed out!\nPlease check your network connection and that the host is reachable."},
 		}
 	case errors.Is(err, romm.ErrWrongProtocol):
 		return loginAttemptResult{
 			ErrorType: "protocol",
-			ErrorMsg:  &goi18n.Message{ID: "login_error_wrong_protocol", Other: "Protocol mismatch!\\nTry switching between http and https."},
+			ErrorMsg:  &goi18n.Message{ID: "login_error_wrong_protocol", Other: "Protocol mismatch!\nTry switching between http and https."},
 		}
 	case errors.Is(err, romm.ErrUnauthorized):
 		return loginAttemptResult{
@@ -283,18 +283,18 @@ func classifyLoginError(err error) loginAttemptResult {
 	case errors.Is(err, romm.ErrForbidden):
 		return loginAttemptResult{
 			ErrorType: "forbidden",
-			ErrorMsg:  &goi18n.Message{ID: "login_error_forbidden", Other: "Access Forbidden!\\nCheck your username/password and try switching between http and https."},
+			ErrorMsg:  &goi18n.Message{ID: "login_error_forbidden", Other: "Access Forbidden!\nCheck your username/password and try switching between http and https."},
 		}
 	case errors.Is(err, romm.ErrServerError):
 		return loginAttemptResult{
 			ErrorType: "server",
-			ErrorMsg:  &goi18n.Message{ID: "login_error_server", Other: "RomM server error!\\nPlease check the RomM server logs."},
+			ErrorMsg:  &goi18n.Message{ID: "login_error_server", Other: "RomM server error!\nPlease check the RomM server logs."},
 		}
 	default:
 		gabagool.GetLogger().Warn("Unclassified login error", "error", err)
 		return loginAttemptResult{
 			ErrorType: "unknown",
-			ErrorMsg:  &goi18n.Message{ID: "login_error_unexpected", Other: "Something unexpected happened!\\nCheck the logs for more info."},
+			ErrorMsg:  &goi18n.Message{ID: "login_error_unexpected", Other: "Something unexpected happened!\nCheck the logs for more info."},
 		}
 	}
 }

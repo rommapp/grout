@@ -14,8 +14,6 @@ import (
 )
 
 func ProcessArtImage(inputPath string) error {
-	logger := gaba.GetLogger()
-
 	inputFile, err := os.Open(inputPath)
 	if err != nil {
 		return fmt.Errorf("failed to open image: %w", err)
@@ -27,8 +25,6 @@ func ProcessArtImage(inputPath string) error {
 		return fmt.Errorf("failed to decode image: %w", err)
 	}
 	inputFile.Close()
-
-	logger.Debug("Detected image format", "format", format, "path", inputPath)
 
 	windowWidth := int(gaba.GetWindow().GetWidth()) / 2
 	windowHeight := int(gaba.GetWindow().GetHeight()) / 2
@@ -51,8 +47,6 @@ func ProcessArtImage(inputPath string) error {
 
 	var processedImg = img
 	if newWidth != imgWidth || newHeight != imgHeight {
-		logger.Debug("Resizing image", "from", fmt.Sprintf("%dx%d", imgWidth, imgHeight), "to", fmt.Sprintf("%dx%d", newWidth, newHeight))
-
 		dst := image.NewRGBA(image.Rect(0, 0, newWidth, newHeight))
 
 		draw.BiLinear.Scale(dst, dst.Bounds(), img, img.Bounds(), draw.Over, nil)
@@ -60,8 +54,6 @@ func ProcessArtImage(inputPath string) error {
 	}
 
 	if format != "png" || processedImg != img {
-		logger.Debug("Converting/saving image as PNG", "original_format", format)
-
 		outputFile, err := os.Create(inputPath)
 		if err != nil {
 			return fmt.Errorf("failed to create output file: %w", err)

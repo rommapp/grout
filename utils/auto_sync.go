@@ -1,0 +1,120 @@
+package utils
+
+import (
+	"grout/romm"
+	"sync/atomic"
+	"time"
+
+	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
+	icons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
+)
+
+const syncIconDelay = 400 * time.Millisecond
+
+type AutoSync struct {
+	host       romm.Host
+	config     *Config
+	icon       *gaba.DynamicStatusBarIcon
+	running    atomic.Bool
+	done       chan struct{}
+	showButton atomic.Bool
+}
+
+func NewAutoSync(host romm.Host, config *Config) *AutoSync {
+	return &AutoSync{
+		host:   host,
+		config: config,
+		icon:   gaba.NewDynamicStatusBarIcon(""),
+		done:   make(chan struct{}),
+	}
+}
+
+func (a *AutoSync) Icon() gaba.StatusBarIcon {
+	return gaba.StatusBarIcon{
+		Dynamic: a.icon,
+	}
+}
+
+func (a *AutoSync) Start() {
+	a.running.Store(true)
+	a.done = make(chan struct{}) // Reinitialize channel for reuse
+	go a.run()
+}
+
+func (a *AutoSync) IsRunning() bool {
+	return a.running.Load()
+}
+
+func (a *AutoSync) Wait() {
+	<-a.done
+}
+
+func (a *AutoSync) ShowButton() *atomic.Bool {
+	return &a.showButton
+}
+
+func (a *AutoSync) Host() romm.Host {
+	return a.host
+}
+
+func (a *AutoSync) run() {
+	logger := gaba.GetLogger()
+	defer func() {
+		a.running.Store(false)
+		close(a.done)
+	}()
+
+	a.icon.SetText(icons.CloudRefresh)
+	time.Sleep(syncIconDelay)
+	logger.Debug("AutoSync: Starting save sync scan")
+
+	syncs, _, err := FindSaveSyncs(a.host)
+	if err != nil {
+		logger.Error("AutoSync: Failed to find save syncs", "error", err)
+		a.icon.SetText(icons.CloudAlert)
+		return
+	}
+
+	logger.Debug("AutoSync: Found syncs", "count", len(syncs))
+
+	if len(syncs) == 0 {
+		a.icon.SetText(icons.CloudCheck)
+		logger.Debug("AutoSync: No syncs needed")
+		return
+	}
+
+	hadError := false
+
+	for i := range syncs {
+		s := &syncs[i]
+
+		switch s.Action {
+		case Upload:
+			a.icon.SetText(icons.CloudUpload)
+			time.Sleep(syncIconDelay)
+			logger.Debug("AutoSync: Uploading", "game", s.GameBase)
+		case Download:
+			a.icon.SetText(icons.CloudDownload)
+			time.Sleep(syncIconDelay)
+			logger.Debug("AutoSync: Downloading", "game", s.GameBase)
+		case Skip:
+			continue
+		}
+
+		result := s.Execute(a.host, a.config)
+		if !result.Success {
+			logger.Error("AutoSync: Sync failed", "game", s.GameBase, "error", result.Error)
+			hadError = true
+		} else {
+			logger.Debug("AutoSync: Sync successful", "game", s.GameBase, "action", result.Action)
+		}
+	}
+
+	if hadError {
+		a.icon.SetText(icons.CloudAlert)
+		logger.Debug("AutoSync: Completed with errors")
+	} else {
+		a.icon.SetText(icons.CloudCheck)
+		logger.Debug("AutoSync: Completed successfully")
+	}
+}

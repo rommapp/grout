@@ -14,10 +14,9 @@ import (
 type Config struct {
 	Hosts                  []romm.Host                 `json:"hosts,omitempty"`
 	DirectoryMappings      map[string]DirectoryMapping `json:"directory_mappings,omitempty"`
-	GameDetails            bool                        `json:"show_game_details"`
-	AutoSyncSaves          bool                        `json:"auto_sync_saves"`
 	SaveSyncMode           string                      `json:"save_sync_mode"`
-	ShowBIOSDownload       bool                        `json:"show_bios"`
+	SaveDirectoryMappings  map[string]string           `json:"save_directory_mappings,omitempty"`
+	GameSaveOverrides      map[int]string              `json:"game_save_overrides,omitempty"`
 	DownloadArt            bool                        `json:"download_art,omitempty"`
 	ShowBoxArt             bool                        `json:"show_box_art,omitempty"`
 	UnzipDownloads         bool                        `json:"unzip_downloads,omitempty"`
@@ -53,7 +52,8 @@ func (c Config) ToLoggable() any {
 		"unzip_downloads":         c.UnzipDownloads,
 		"download_art":            c.DownloadArt,
 		"show_box_art":            c.ShowBoxArt,
-		"game_details":            c.GameDetails,
+		"save_directory_mappings": c.SaveDirectoryMappings,
+		"game_save_overrides":     c.GameSaveOverrides,
 		"collections":             c.ShowCollections,
 		"smart_collections":       c.ShowSmartCollections,
 		"virtual_collections":     c.ShowVirtualCollections,
