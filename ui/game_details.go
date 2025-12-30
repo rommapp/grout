@@ -157,7 +157,7 @@ func (s *GameDetailsScreen) buildSections(input GameDetailsInput) []gaba.Section
 		})
 	}
 
-	if game.Multi {
+	if game.HasMultipleFiles {
 		metadata = append(metadata, gaba.MetadataItem{
 			Label: i18n.Localize(&goi18n.Message{ID: "game_details_type", Other: "Type"}, nil),
 			Value: i18n.Localize(&goi18n.Message{ID: "game_details_multi_file_rom", Other: "Multi-file ROM"}, nil),

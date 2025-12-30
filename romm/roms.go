@@ -54,7 +54,6 @@ type Rom struct {
 	CrcHash             string       `json:"crc_hash,omitempty"`
 	Md5Hash             string       `json:"md5_hash,omitempty"`
 	Sha1Hash            string       `json:"sha1_hash,omitempty"`
-	Multi               bool         `json:"multi,omitempty"`
 	HasSimpleSingleFile bool         `json:"has_simple_single_file,omitempty"`
 	HasNestedSingleFile bool         `json:"has_nested_single_file,omitempty"`
 	HasMultipleFiles    bool         `json:"has_multiple_files,omitempty"`

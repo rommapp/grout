@@ -104,6 +104,7 @@ func saveMetadata(metadata CacheMetadata) error {
 // CheckCacheFreshness checks if the cache for a given key is still fresh
 // Returns true if cache is fresh (can use cached data), false if stale (need to refetch)
 // This function first checks the pre-validated state from startup, avoiding network calls during navigation
+// If not yet validated, assumes cache is fresh if it exists locally (background refresh will update for next time)
 func CheckCacheFreshness(host romm.Host, config *Config, cacheKey string, query romm.GetRomsQuery) (bool, error) {
 	logger := gaba.GetLogger()
 
@@ -115,8 +116,17 @@ func CheckCacheFreshness(host romm.Host, config *Config, cacheKey string, query 
 		}
 	}
 
-	// Fall back to network check if not pre-validated
-	return checkCacheFreshnessInternal(host, config, cacheKey, query)
+	// Not yet validated - check if cache file exists locally
+	// If it does, assume fresh to avoid blocking; background refresh will update for next time
+	cachePath := getCacheFilePath(cacheKey)
+	if _, err := os.Stat(cachePath); err == nil {
+		logger.Debug("Cache not yet validated but exists locally, assuming fresh", "key", cacheKey)
+		return true, nil
+	}
+
+	// No local cache exists, need to fetch
+	logger.Debug("No local cache found", "key", cacheKey)
+	return false, nil
 }
 
 // checkCacheFreshnessInternal performs the actual network check for cache freshness

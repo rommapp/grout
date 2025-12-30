@@ -94,6 +94,9 @@ other = "Alternar"
 hash = "sha1-a479c9c34e878d07b4d67a73a48f432ad7dc53c8"
 other = "Baixar"
 
+[button_exit]
+other = "Sair"
+
 [button_help]
 hash = "sha1-c47ae15370cfe1ed2781eedc1dc2547d12d9e972"
 other = "Ajuda"
@@ -683,7 +686,7 @@ other = "Verificar Atualizações"
 other = "Verificando atualizações..."
 
 [update_complete]
-other = "Atualização concluída! Por favor reinicie o Grout."
+other = "Atualização concluída! Grout será fechado agora."
 
 [update_current_version]
 other = "Atual: {{.Version}}"

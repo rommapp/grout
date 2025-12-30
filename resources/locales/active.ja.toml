@@ -94,6 +94,9 @@ other = "切替"
 hash = "sha1-a479c9c34e878d07b4d67a73a48f432ad7dc53c8"
 other = "ダウンロード"
 
+[button_exit]
+other = "終了"
+
 [button_help]
 hash = "sha1-c47ae15370cfe1ed2781eedc1dc2547d12d9e972"
 other = "ヘルプ"
@@ -683,7 +686,7 @@ other = "アップデートを確認"
 other = "アップデートを確認中..."
 
 [update_complete]
-other = "アップデート完了！Groutを再起動してください。"
+other = "アップデート完了！Groutを終了します。"
 
 [update_current_version]
 other = "現在: {{.Version}}"

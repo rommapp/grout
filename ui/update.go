@@ -132,13 +132,13 @@ func (s *UpdateScreen) Draw(input UpdateInput) (ScreenResult[UpdateOutput], erro
 	}
 
 	gaba.ConfirmationMessage(
-		i18n.Localize(&goi18n.Message{ID: "update_complete", Other: "Update complete! Please restart Grout."}, nil),
+		i18n.Localize(&goi18n.Message{ID: "update_complete", Other: "Update complete! Grout will now exit."}, nil),
 		[]gaba.FooterHelpItem{
-			{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_close", Other: "Close"}, nil)},
+			{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_exit", Other: "Exit"}, nil)},
 		},
 		gaba.MessageOptions{},
 	)
 
 	output.UpdatePerformed = true
-	return success(output), nil
+	return withCode(output, gaba.ExitCodeSuccess), nil
 }

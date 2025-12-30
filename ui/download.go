@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"fmt"
 	"grout/constants"
 	"grout/utils"
@@ -102,6 +103,14 @@ func (s *DownloadScreen) draw(input downloadInput) (ScreenResult[downloadOutput]
 	})
 	if err != nil {
 		logger.Error("Error downloading", "error", err)
+
+		// Clean up any partial downloads when cancelled
+		if errors.Is(err, gaba.ErrCancelled) {
+			for _, d := range downloads {
+				utils.DeleteFile(d.Location)
+			}
+		}
+
 		return withCode(output, gaba.ExitCodeError), err
 	}
 
@@ -127,7 +136,7 @@ func (s *DownloadScreen) draw(input downloadInput) (ScreenResult[downloadOutput]
 	}
 
 	for _, g := range input.SelectedGames {
-		if !g.Multi {
+		if !g.HasMultipleFiles {
 			continue
 		}
 
@@ -192,7 +201,7 @@ func (s *DownloadScreen) draw(input downloadInput) (ScreenResult[downloadOutput]
 
 	if input.Config.UnzipDownloads {
 		for _, g := range input.SelectedGames {
-			if g.Multi {
+			if g.HasMultipleFiles {
 				continue
 			}
 
@@ -302,7 +311,7 @@ func (s *DownloadScreen) buildDownloads(config utils.Config, host romm.Host, pla
 
 		sourceURL := ""
 
-		if g.Multi {
+		if g.HasMultipleFiles {
 			tmpDir := utils.TempDir()
 			downloadLocation = filepath.Join(tmpDir, fmt.Sprintf("grout_multirom_%d.zip", g.ID))
 			sourceURL, _ = url.JoinPath(host.URL(), "/api/roms/", strconv.Itoa(g.ID), "content", g.DisplayName)

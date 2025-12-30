@@ -107,12 +107,9 @@ func IsGameDownloadedLocally(game romm.Rom, config Config) bool {
 
 	romDirectory := GetPlatformRomDirectory(config, platform)
 
-	if game.Multi {
-		// For multi-file ROMs, check if the directory exists
-		// Use the display name (before we added the checkmark)
-		cleanedName, _ := nameCleaner(game.Name, true)
-		multiDir := filepath.Join(romDirectory, cleanedName)
-		if _, err := os.Stat(multiDir); err == nil {
+	if game.HasMultipleFiles {
+		m3uPath := filepath.Join(romDirectory, game.DisplayName+".m3u")
+		if _, err := os.Stat(m3uPath); err == nil {
 			return true
 		}
 	} else if len(game.Files) > 0 {

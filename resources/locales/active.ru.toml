@@ -94,6 +94,9 @@ other = "Переключить"
 hash = "sha1-a479c9c34e878d07b4d67a73a48f432ad7dc53c8"
 other = "Скачать"
 
+[button_exit]
+other = "Выход"
+
 [button_help]
 hash = "sha1-c47ae15370cfe1ed2781eedc1dc2547d12d9e972"
 other = "Справка"
@@ -683,7 +686,7 @@ other = "Проверить обновления"
 other = "Проверка обновлений..."
 
 [update_complete]
-other = "Обновление завершено! Пожалуйста, перезапустите Grout."
+other = "Обновление завершено! Grout будет закрыт."
 
 [update_current_version]
 other = "Текущая: {{.Version}}"

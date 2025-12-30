@@ -94,6 +94,9 @@ other = "Défiler"
 hash = "sha1-a479c9c34e878d07b4d67a73a48f432ad7dc53c8"
 other = "Télécharger"
 
+[button_exit]
+other = "Quitter"
+
 [button_help]
 hash = "sha1-c47ae15370cfe1ed2781eedc1dc2547d12d9e972"
 other = "Aide"
@@ -683,7 +686,7 @@ other = "Vérifier les mises à jour"
 other = "Recherche de mises à jour..."
 
 [update_complete]
-other = "Mise à jour terminée ! Veuillez redémarrer Grout."
+other = "Mise à jour terminée ! Grout va maintenant se fermer."
 
 [update_current_version]
 other = "Actuelle : {{.Version}}"

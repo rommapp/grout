@@ -4,6 +4,8 @@ github.com/BrandonKowalski/gabagool/v2 v2.3.10 h1:IlmHZApOX0ZIJrO3pplEgdMzSX5F4w
 github.com/BrandonKowalski/gabagool/v2 v2.3.10/go.mod h1:GMra4TXqVze081BlRc4PYCwEk+kP7vh3h9X5PHOAjPg=
 github.com/BrandonKowalski/gabagool/v2 v2.3.11 h1:L9/me+QsinmMmjtX30JkGDON6KGQ7tpa7cHyYN6ln94=
 github.com/BrandonKowalski/gabagool/v2 v2.3.11/go.mod h1:GMra4TXqVze081BlRc4PYCwEk+kP7vh3h9X5PHOAjPg=
+github.com/BrandonKowalski/gabagool/v2 v2.3.12 h1:0zUMGvgFpgTWLtm7WV8QD9BriaIhb307WE9JX9/oFLM=
+github.com/BrandonKowalski/gabagool/v2 v2.3.12/go.mod h1:GMra4TXqVze081BlRc4PYCwEk+kP7vh3h9X5PHOAjPg=
 github.com/BurntSushi/toml v1.6.0 h1:dRaEfpa2VI55EwlIW72hMRHdWouJeRF7TPYhI+AUQjk=
 github.com/BurntSushi/toml v1.6.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/UncleJunVIP/certifiable v1.2.0 h1:xGqpc7U9FafWPqJ/sQreOQRPj8fv0Y4x9EBdfa2ic3Q=
