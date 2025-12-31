@@ -19,8 +19,7 @@
     "v1.3.3": "Added auto updater function for muOS and Knulli plus a number of performance / organizational fixes.",
     "v1.3.4": "Fixed regression with multi-disk downloads.",
     "v1.3.5": "Fix auto save sync from hashing files unnecessarily ",
-    "v1.3.6": "App didn't exit on update.",
-    "v1.3.7": "Switch to new gabagool default font for expanded icon and glyph support."
+    "v1.3.6": "App didn't exit on update."
   },
   "screenshots": [],
   "platforms": [
