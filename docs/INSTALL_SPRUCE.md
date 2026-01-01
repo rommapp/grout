@@ -6,13 +6,14 @@ This guide will help you install Grout on TrimUI devices running Spruce.
 
 Grout has been tested on the following devices running Spruce:
 
-| Manufacturer | Device    |
-|--------------|-----------|
-| Miyoo        | Flip V2   |
+| Manufacturer | Device  | Compatibility |
+|--------------|---------|---------------|
+| Miyoo        | Flip V2 | Yes           |
+| Miyoo        | A30     | No            |
 
 ## Prerequisites
 
-- Miyoo device with Spruce installed on an SD card
+- Miyoo device with Spruce (v4/nightlies) installed on an SD card
 - Device connected to a Wi-Fi network
 
 ## Installation Steps
