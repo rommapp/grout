@@ -68,10 +68,19 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (ScreenResu
 
 	var footerItems []gaba.FooterHelpItem
 	if input.QuitOnBack {
-		footerItems = []gaba.FooterHelpItem{
-			{ButtonName: "X", HelpText: i18n.Localize(&goi18n.Message{ID: "button_settings", Other: "Settings"}, nil)},
+		footerItems = []gaba.FooterHelpItem{}
+		if !utils.IsKidModeEnabled() {
+			footerItems = append(footerItems, gaba.FooterHelpItem{
+				ButtonName: "X",
+				HelpText:   i18n.Localize(&goi18n.Message{ID: "button_settings", Other: "Settings"}, nil),
+			})
+		} else {
+			footerItems = append(footerItems, gaba.FooterHelpItem{
+				ButtonName: "B",
+				HelpText:   i18n.Localize(&goi18n.Message{ID: "button_quit", Other: "Quit"}, nil),
+			})
 		}
-		if input.ShowSaveSync != nil {
+		if input.ShowSaveSync != nil && !utils.IsKidModeEnabled() {
 			footerItems = append(footerItems, gaba.FooterHelpItem{
 				ButtonName: "Y",
 				HelpText:   i18n.Localize(&goi18n.Message{ID: "button_save_sync", Other: "Sync"}, nil),
@@ -87,7 +96,9 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (ScreenResu
 	}
 
 	options := gaba.DefaultListOptions("Grout", menuItems)
-	options.ActionButton = buttons.VirtualButtonX
+	if !utils.IsKidModeEnabled() {
+		options.ActionButton = buttons.VirtualButtonX
+	}
 	if input.ShowSaveSync != nil {
 		options.SecondaryActionButton = buttons.VirtualButtonY
 	}

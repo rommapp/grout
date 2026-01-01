@@ -11,8 +11,10 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
+	buttons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
 	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
@@ -67,8 +69,11 @@ func setup() SetupResult {
 			if _, err := os.Stat(cwdMappingPath); err == nil {
 				os.Setenv("INPUT_MAPPING_PATH", cwdMappingPath)
 			} else {
-				if mappingBytes, err := muos.GetInputMappingBytes(); err == nil {
+				mappingBytes, err := muos.GetInputMappingBytes()
+				if err == nil {
 					gaba.SetInputMappingBytes(mappingBytes)
+				} else {
+					slog.Error("Unable to read input mapping file", "error", err)
 				}
 			}
 		}
@@ -80,6 +85,20 @@ func setup() SetupResult {
 		ShowBackground:       true,
 		IsNextUI:             cfw == constants.NextUI,
 		LogFilename:          "grout.log",
+	})
+
+	gaba.RegisterChord("unlock-kid-mode", []buttons.VirtualButton{
+		buttons.VirtualButtonL1,
+		buttons.VirtualButtonR1,
+		buttons.VirtualButtonMenu,
+	}, gaba.ChordOptions{
+		Window: time.Millisecond * 1500,
+		OnTrigger: func() {
+			if utils.IsKidModeEnabled() {
+				utils.SetKidMode(false)
+				gaba.GetLogger().Info("Kid Mode unlocked for this session")
+			}
+		},
 	})
 
 	gaba.SetLogLevel(slog.LevelDebug)
@@ -140,6 +159,28 @@ func setup() SetupResult {
 			logger.Error("Failed to set language", "error", err, "language", config.Language)
 		}
 	}
+
+	utils.InitKidMode(config)
+
+	if utils.IsKidModeEnabled() {
+		splashBytes, _ := resources.GetSplashImageBytes()
+		gaba.ProcessMessage("", gaba.ProcessMessageOptions{
+			ImageBytes:   splashBytes,
+			ImageWidth:   768,
+			ImageHeight:  540,
+			ProcessInput: true,
+		}, func() (interface{}, error) {
+			for i := 0; i < 20; i++ {
+				time.Sleep(100 * time.Millisecond)
+				if !utils.IsKidModeEnabled() {
+					break
+				}
+			}
+			return nil, nil
+		})
+	}
+
+	gaba.UnregisterCombo("unlock-kid-mode")
 
 	if config.DirectoryMappings == nil || len(config.DirectoryMappings) == 0 {
 		screen := ui.NewPlatformMappingScreen()

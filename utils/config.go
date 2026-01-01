@@ -29,6 +29,7 @@ type Config struct {
 	LogLevel               string                      `json:"log_level,omitempty"`
 	Language               string                      `json:"language,omitempty"`
 	CollectionView         string                      `json:"collection_view,omitempty"`
+	KidMode                bool                        `json:"kid_mode,omitempty"`
 
 	PlatformOrder []string `json:"platform_order,omitempty"`
 }

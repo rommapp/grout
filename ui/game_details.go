@@ -3,8 +3,6 @@ package ui
 import (
 	"errors"
 	"fmt"
-	"grout/romm"
-	"grout/utils"
 	"io"
 	"net/http"
 	"os"
@@ -12,6 +10,8 @@ import (
 	"time"
 
 	groutConstants "grout/constants"
+	"grout/romm"
+	"grout/utils"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
@@ -52,14 +52,20 @@ func (s *GameDetailsScreen) Draw(input GameDetailsInput) (ScreenResult[GameDetai
 	options.Sections = sections
 	options.ShowThemeBackground = false
 	options.ShowScrollbar = true
-	options.ActionButton = constants.VirtualButtonX
-	options.EnableAction = true
+	if !utils.IsKidModeEnabled() {
+		options.ActionButton = constants.VirtualButtonX
+		options.EnableAction = true
+	}
 
-	result, err := gaba.DetailScreen(input.Game.Name, options, []gaba.FooterHelpItem{
+	footerItems := []gaba.FooterHelpItem{
 		{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_back", Other: "Back"}, nil)},
-		{ButtonName: "X", HelpText: i18n.Localize(&goi18n.Message{ID: "button_options", Other: "Options"}, nil)},
-		{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_download", Other: "Download"}, nil)},
-	})
+	}
+	if !utils.IsKidModeEnabled() {
+		footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: "X", HelpText: i18n.Localize(&goi18n.Message{ID: "button_options", Other: "Options"}, nil)})
+	}
+	footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_download", Other: "Download"}, nil)})
+
+	result, err := gaba.DetailScreen(input.Game.Name, options, footerItems)
 
 	if err != nil {
 		if errors.Is(err, gaba.ErrCancelled) {

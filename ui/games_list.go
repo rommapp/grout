@@ -185,21 +185,23 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 	options.EnableImages = input.Config.ShowBoxArt
 	options.ActionButton = buttons.VirtualButtonX
 	options.MultiSelectButton = buttons.VirtualButtonSelect
+	options.DeselectAllButton = buttons.VirtualButtonL1
+	options.SelectAllButton = buttons.VirtualButtonR1
 	options.HelpButton = buttons.VirtualButtonMenu
 
-	if hasBIOS {
+	if hasBIOS && !utils.IsKidModeEnabled() {
 		options.SecondaryActionButton = buttons.VirtualButtonY
 	}
 
 	options.HelpTitle = i18n.Localize(&goi18n.Message{ID: "games_list_help_title", Other: "Games List Help"}, nil)
-	options.HelpText = strings.Split(i18n.Localize(&goi18n.Message{ID: "games_list_help_body", Other: "A - Select a game\nB - Go back to the previous screen\nX - Search for games by name\nSelect - Toggle multi-select mode\n  In multi-select mode:\n  - Use D-Pad to navigate\n  - Press A to toggle selection\n  - Press Start to confirm selections\nMenu - Show this help screen\nD-Pad - Navigate the game list"}, nil), "\n")
+	options.HelpText = strings.Split(i18n.Localize(&goi18n.Message{ID: "games_list_help_body", Other: "A - Select a game\nB - Go back to the previous screen\nX - Search for games by name\nSelect - Toggle multi-select mode\n  In multi-select mode:\n  - Use D-Pad to navigate\n  - Press A to toggle selection\n  - Press L1 to deselect all\n  - Press R1 to select all\n  - Press Start to confirm selections\nMenu - Show this help screen\nD-Pad - Navigate the game list"}, nil), "\n")
 	options.HelpExitText = i18n.Localize(&goi18n.Message{ID: "help_exit_text", Other: "Press any button to close help"}, nil)
 
 	footerItems := []gaba.FooterHelpItem{
 		{ButtonName: i18n.Localize(&goi18n.Message{ID: "button_menu", Other: "Menu"}, nil), HelpText: i18n.Localize(&goi18n.Message{ID: "button_help", Other: "Help"}, nil)},
 	}
 
-	if hasBIOS {
+	if hasBIOS && !utils.IsKidModeEnabled() {
 		footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: "Y", HelpText: i18n.Localize(&goi18n.Message{ID: "button_bios", Other: "BIOS"}, nil)})
 	}
 

@@ -291,7 +291,7 @@ other = "Nessun gioco in {{.Name}} corrisponde alle tue mappature di piattaforma
 
 [games_list_help_body]
 hash = "sha1-8d39456a7cb78ea5968d93177012f4eb1b328ef6"
-other = "A - Seleziona un gioco\nB - Torna alla schermata precedente\nX - Cerca giochi per nome\nSelect - Attiva/disattiva selezione multipla\n  In modalità selezione multipla:\n  - Usa D-Pad per navigare\n  - Premi A per selezionare/deselezionare\n  - Premi Start per confermare le selezioni\nMenu - Mostra questa schermata di aiuto\nD-Pad - Naviga nella lista giochi"
+other = "A - Seleziona un gioco\nB - Torna alla schermata precedente\nX - Cerca giochi per nome\nSelect - Attiva/disattiva selezione multipla\n  In modalità selezione multipla:\n  - Usa D-Pad per navigare\n  - Premi A per selezionare/deselezionare\n  - Premi L1 per deselezionare tutto\n  - Premi R1 per selezionare tutto\n  - Premi Start per confermare le selezioni\nMenu - Mostra questa schermata di aiuto\nD-Pad - Naviga nella lista giochi"
 
 [games_list_help_title]
 hash = "sha1-77fdd51f105473d648b8c22b6897d0f12d0dd360"
@@ -356,6 +356,12 @@ other = "Debug"
 [log_level_error]
 hash = "sha1-7f2f6a15cf8da2b27e5a4af47b58e7ad71c0b3d9"
 other = "Errore"
+
+[option_disabled]
+other = "Disattivato"
+
+[option_enabled]
+other = "Attivato"
 
 [login_error_connection_refused]
 hash = "sha1-90890854b1679ae152ec1b4316cde81c1c7bdcff"
@@ -567,6 +573,9 @@ other = "Generale"
 [settings_info]
 hash = "sha1-539fd998d1d49832e77eec5bf350485f054da400"
 other = "Info Grout"
+
+[settings_kid_mode]
+other = "Modalità Bambini"
 
 [settings_language]
 hash = "sha1-89b86ab0e66f527166d98df92ddbcf5416ed58f6"

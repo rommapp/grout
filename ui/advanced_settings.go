@@ -146,6 +146,14 @@ func (s *AdvancedSettingsScreen) buildMenuItems(config *utils.Config) []gaba.Ite
 			SelectedOption: s.findApiTimeoutIndex(config.ApiTimeout),
 		},
 		{
+			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_kid_mode", Other: "Kid Mode"}, nil)},
+			Options: []gaba.Option{
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "option_disabled", Other: "Disabled"}, nil), Value: false},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "option_enabled", Other: "Enabled"}, nil), Value: true},
+			},
+			SelectedOption: boolToIndex(config.KidMode),
+		},
+		{
 			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_log_level", Other: "Log Level"}, nil)},
 			Options: []gaba.Option{
 				{DisplayName: i18n.Localize(&goi18n.Message{ID: "log_level_debug", Other: "Debug"}, nil), Value: "DEBUG"},
@@ -174,6 +182,12 @@ func (s *AdvancedSettingsScreen) applySettings(config *utils.Config, items []gab
 		case i18n.Localize(&goi18n.Message{ID: "settings_log_level", Other: "Log Level"}, nil):
 			if val, ok := item.Options[item.SelectedOption].Value.(string); ok {
 				config.LogLevel = val
+			}
+
+		case i18n.Localize(&goi18n.Message{ID: "settings_kid_mode", Other: "Kid Mode"}, nil):
+			if val, ok := item.Options[item.SelectedOption].Value.(bool); ok {
+				config.KidMode = val
+				utils.SetKidMode(val)
 			}
 		}
 	}

@@ -1,11 +1,11 @@
 module grout
 
-go 1.24.1
+go 1.24.2
 
 require (
-	github.com/BrandonKowalski/gabagool/v2 v2.4.1
+	github.com/BrandonKowalski/gabagool/v2 v2.5.1
 	github.com/UncleJunVIP/certifiable v1.2.0
-	github.com/nicksnyder/go-i18n/v2 v2.6.0
+	github.com/nicksnyder/go-i18n/v2 v2.6.1
 	github.com/piglig/go-qr v0.2.6
 	github.com/sonh/qs v0.6.4
 	go.uber.org/atomic v1.11.0
