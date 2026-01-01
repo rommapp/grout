@@ -1,6 +1,6 @@
 {
   "name": "Grout",
-  "version": "v1.3.8",
+  "version": "v1.3.9",
   "type": "TOOL",
   "description": "A RomM client for NextUI, muOS, and Knulli.",
   "author": "K-Wall",
@@ -20,7 +20,8 @@
     "v1.3.4": "Fixed regression with multi-disk downloads.",
     "v1.3.5": "Fix auto save sync from hashing files unnecessarily ",
     "v1.3.6": "App didn't exit on update.",
-    "v1.3.8": "Fixed a boo-boo introduced on NextUI with the new font icons."
+    "v1.3.8": "Fixed a boo-boo introduced on NextUI with the new font icons.",
+    "v1.3.9": "Tried to be cute with pagination and lost. Fix for Grout not retrieving large ROM collections."
   },
   "screenshots": [],
   "platforms": [
