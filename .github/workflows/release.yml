@@ -100,8 +100,8 @@ jobs:
       - name: Create spruce distribution
         run: |
           cd build/Spruce
-          zip -r Grout.spruce Grout
-          mv Grout.spruce ../Grout.spruce
+          zip -r Grout.spruce.zip Grout
+          mv Grout.spruce.zip ../Grout.spruce.zip
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
