@@ -291,7 +291,7 @@ other = "Keine Spiele in {{.Name}} entsprechen Ihren Plattformzuordnungen"
 
 [games_list_help_body]
 hash = "sha1-8d39456a7cb78ea5968d93177012f4eb1b328ef6"
-other = "A - Spiel auswählen\nB - Zum vorherigen Bildschirm zurück\nX - Spiele nach Namen suchen\nSelect - Mehrfachauswahl umschalten\n  Im Mehrfachauswahl-Modus:\n  - D-Pad zum Navigieren verwenden\n  - A drücken zum Auswählen/Abwählen\n  - Start drücken zum Bestätigen\nMenü - Diese Hilfe anzeigen\nD-Pad - In der Spieleliste navigieren"
+other = "A - Spiel auswählen\nB - Zum vorherigen Bildschirm zurück\nX - Spiele nach Namen suchen\nSelect - Mehrfachauswahl umschalten\n  Im Mehrfachauswahl-Modus:\n  - D-Pad zum Navigieren verwenden\n  - A drücken zum Auswählen/Abwählen\n  - L1 drücken zum Alle abwählen\n  - R1 drücken zum Alle auswählen\n  - Start drücken zum Bestätigen\nMenü - Diese Hilfe anzeigen\nD-Pad - In der Spieleliste navigieren"
 
 [games_list_help_title]
 hash = "sha1-77fdd51f105473d648b8c22b6897d0f12d0dd360"

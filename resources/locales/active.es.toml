@@ -291,7 +291,7 @@ other = "Ningún juego en {{.Name}} coincide con tus mapeos de plataforma"
 
 [games_list_help_body]
 hash = "sha1-8d39456a7cb78ea5968d93177012f4eb1b328ef6"
-other = "A - Seleccionar un juego\nB - Volver a la pantalla anterior\nX - Buscar juegos por nombre\nSelect - Activar modo multi-selección\n  En modo multi-selección:\n  - Usa D-Pad para navegar\n  - Presiona A para alternar selección\n  - Presiona Start para confirmar selecciones\nMenu - Mostrar esta pantalla de ayuda\nD-Pad - Navegar la lista de juegos"
+other = "A - Seleccionar un juego\nB - Volver a la pantalla anterior\nX - Buscar juegos por nombre\nSelect - Activar modo multi-selección\n  En modo multi-selección:\n  - Usa D-Pad para navegar\n  - Presiona A para alternar selección\n  - Presiona L1 para deseleccionar todo\n  - Presiona R1 para seleccionar todo\n  - Presiona Start para confirmar selecciones\nMenu - Mostrar esta pantalla de ayuda\nD-Pad - Navegar la lista de juegos"
 
 [games_list_help_title]
 hash = "sha1-77fdd51f105473d648b8c22b6897d0f12d0dd360"

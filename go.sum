@@ -10,6 +10,10 @@ github.com/BrandonKowalski/gabagool/v2 v2.4.0 h1:m1vn1au0cMDXii4B+/OeNhP1Lh7aLCA
 github.com/BrandonKowalski/gabagool/v2 v2.4.0/go.mod h1:GMra4TXqVze081BlRc4PYCwEk+kP7vh3h9X5PHOAjPg=
 github.com/BrandonKowalski/gabagool/v2 v2.4.1 h1:WdTgR0s8cIjSHkWNRPYEO7P6j1NsjiCyzixR2URReFA=
 github.com/BrandonKowalski/gabagool/v2 v2.4.1/go.mod h1:GMra4TXqVze081BlRc4PYCwEk+kP7vh3h9X5PHOAjPg=
+github.com/BrandonKowalski/gabagool/v2 v2.5.0 h1:XKSKzhubWBJCCR7D+Wz7QtEWNOTz85im/vYgpqRPSwE=
+github.com/BrandonKowalski/gabagool/v2 v2.5.0/go.mod h1:GMra4TXqVze081BlRc4PYCwEk+kP7vh3h9X5PHOAjPg=
+github.com/BrandonKowalski/gabagool/v2 v2.5.1 h1:LVoH+6CGov6O0ZIHjRzSkDeT34S1BODsBBjFRtRbKn0=
+github.com/BrandonKowalski/gabagool/v2 v2.5.1/go.mod h1:GMra4TXqVze081BlRc4PYCwEk+kP7vh3h9X5PHOAjPg=
 github.com/BurntSushi/toml v1.6.0 h1:dRaEfpa2VI55EwlIW72hMRHdWouJeRF7TPYhI+AUQjk=
 github.com/BurntSushi/toml v1.6.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/UncleJunVIP/certifiable v1.2.0 h1:xGqpc7U9FafWPqJ/sQreOQRPj8fv0Y4x9EBdfa2ic3Q=
@@ -20,6 +24,8 @@ github.com/holoplot/go-evdev v0.0.0-20250804134636-ab1d56a1fe83 h1:B+A58zGFuDrvE
 github.com/holoplot/go-evdev v0.0.0-20250804134636-ab1d56a1fe83/go.mod h1:iHAf8OIncO2gcQ8XOjS7CMJ2aPbX2Bs0wl5pZyanEqk=
 github.com/nicksnyder/go-i18n/v2 v2.6.0 h1:C/m2NNWNiTB6SK4Ao8df5EWm3JETSTIGNXBpMJTxzxQ=
 github.com/nicksnyder/go-i18n/v2 v2.6.0/go.mod h1:88sRqr0C6OPyJn0/KRNaEz1uWorjxIKP7rUUcvycecE=
+github.com/nicksnyder/go-i18n/v2 v2.6.1 h1:JDEJraFsQE17Dut9HFDHzCoAWGEQJom5s0TRd17NIEQ=
+github.com/nicksnyder/go-i18n/v2 v2.6.1/go.mod h1:Vee0/9RD3Quc/NmwEjzzD7VTZ+Ir7QbXocrkhOzmUKA=
 github.com/piglig/go-qr v0.2.6 h1:oE8v9NGXHWahoFrnS44xsq0Lq0oIRIV7gMBM8cfRGwE=
 github.com/piglig/go-qr v0.2.6/go.mod h1:funyXL4IdgMPcbICoVm1XweMtZy7Px3kyITTENkmA5w=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=

@@ -69,8 +69,11 @@ func setup() SetupResult {
 			if _, err := os.Stat(cwdMappingPath); err == nil {
 				os.Setenv("INPUT_MAPPING_PATH", cwdMappingPath)
 			} else {
-				if mappingBytes, err := muos.GetInputMappingBytes(); err == nil {
+				mappingBytes, err := muos.GetInputMappingBytes()
+				if err == nil {
 					gaba.SetInputMappingBytes(mappingBytes)
+				} else {
+					slog.Error("Unable to read input mapping file", "error", err)
 				}
 			}
 		}

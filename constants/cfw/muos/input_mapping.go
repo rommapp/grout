@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
 
 //go:embed input_mappings/*.json
@@ -16,37 +18,26 @@ var embeddedInputMappings embed.FS
 type Device string
 
 const (
-	DeviceAnbernic       Device = "anbernic"
-	DeviceTrimuiBrick    Device = "trimui_brick"
-	DeviceTrimuiSmartPro Device = "trimui_smart_pro"
+	DeviceAnbernic Device = "anbernic"
+	DeviceTrimui   Device = "trimui"
 )
 
-const trimuiMainUIPath = "/usr/trimui/bin/MainUI"
-
-// DetectDevice detects the device type when running on muOS.
-// Logic:
-//   - If /usr/trimui/bin/MainUI doesn't exist → Anbernic
-//   - If it exists and `strings MainUI | grep ^Trimui` returns "Trimui Brick" → Brick
-//   - Otherwise → Smart Pro
+// DetectDevice detects the device type when running on muOS by checking input devices.
+// Returns DeviceTrimui if "TRIMUI" is found in /proc/bus/input/devices, otherwise DeviceAnbernic.
 func DetectDevice() Device {
-	if _, err := os.Stat(trimuiMainUIPath); os.IsNotExist(err) {
+	logger := gaba.GetLogger()
+	logger.Info("Detecting muOS device type...")
+
+	cmd := exec.Command("sh", "-c", "cat /proc/bus/input/devices | grep TRIMUI")
+	output, err := cmd.Output()
+
+	if err != nil || len(output) == 0 {
+		logger.Info("Device detection result", "device", DeviceAnbernic, "reason", "TRIMUI not found in input devices")
 		return DeviceAnbernic
 	}
 
-	// File exists, check if it's a Trimui Brick
-	cmd := exec.Command("sh", "-c", fmt.Sprintf("strings %s | grep ^Trimui", trimuiMainUIPath))
-	output, err := cmd.Output()
-	if err != nil {
-		// If strings/grep fails, default to Smart Pro
-		return DeviceTrimuiSmartPro
-	}
-
-	trimmedOutput := strings.TrimSpace(string(output))
-	if trimmedOutput == "Trimui Brick" {
-		return DeviceTrimuiBrick
-	}
-
-	return DeviceTrimuiSmartPro
+	logger.Info("Device detection result", "device", DeviceTrimui, "match", strings.TrimSpace(string(output)))
+	return DeviceTrimui
 }
 
 // GetInputMappingBytes returns the embedded input mapping JSON for the detected muOS device
@@ -61,24 +52,20 @@ func GetInputMappingBytesForDevice(device Device) ([]byte, error) {
 	switch device {
 	case DeviceAnbernic:
 		filename = "input_mappings/anbernic.json"
-	case DeviceTrimuiBrick:
-		filename = "input_mappings/trimui_brick.json"
-	case DeviceTrimuiSmartPro:
-		filename = "input_mappings/trimui_smart_pro.json"
+	case DeviceTrimui:
+		filename = "input_mappings/trimui.json"
 	default:
 		filename = "input_mappings/anbernic.json"
 	}
 
-	// Check for override file in current working directory
 	overridePath := filepath.Join("overrides", "cfw", "muos", filename)
-	if data, err := os.ReadFile(overridePath); err == nil {
-		return data, nil
+	data, err := os.ReadFile(overridePath)
+	if err != nil {
+		data, err = embeddedInputMappings.ReadFile(filename)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read embedded input mapping %s: %w", filename, err)
+		}
 	}
 
-	// Fall back to embedded file
-	data, err := embeddedInputMappings.ReadFile(filename)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read embedded input mapping %s: %w", filename, err)
-	}
 	return data, nil
 }
