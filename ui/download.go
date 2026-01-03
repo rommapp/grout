@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"grout/constants"
+	"grout/romm"
 	"grout/utils"
 	_ "image/gif"
 	_ "image/jpeg"
@@ -15,8 +16,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-
-	"grout/romm"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
@@ -417,7 +416,7 @@ func (s *DownloadScreen) downloadArt(artDownloads []artDownload, downloadedGames
 			req.Header.Set(k, v)
 		}
 
-		client := &http.Client{}
+		client := &http.Client{Timeout: constants.DefaultClientTimeout}
 		resp, err := client.Do(req)
 		if err != nil {
 			logger.Warn("Failed to download art", "game", art.GameName, "url", art.URL, "error", err)

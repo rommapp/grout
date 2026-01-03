@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"time"
 
 	"go.uber.org/atomic"
 )
@@ -119,7 +118,7 @@ func PerformUpdate(downloadURL string, progress *atomic.Float64) error {
 
 func downloadBinary(url, destPath string, progress *atomic.Float64) error {
 	client := &http.Client{
-		Timeout: 5 * time.Minute,
+		Timeout: constants.UpdaterTimeout,
 	}
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"grout/constants"
 	"io"
 	"net/http"
 	"strings"
@@ -42,7 +43,7 @@ func NewClient(baseURL string, opts ...ClientOption) *Client {
 	c := &Client{
 		baseURL: strings.TrimSuffix(baseURL, "/"),
 		httpClient: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: constants.DefaultClientTimeout,
 		},
 	}
 

@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"grout/constants"
 	"grout/romm"
 	"image/png"
 	"io"
@@ -124,7 +125,7 @@ func CheckRemoteLastModified(url string, authHeader string) (time.Time, error) {
 		req.Header.Set("Authorization", authHeader)
 	}
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{Timeout: 10 * constants.DefaultHTTPTimeout}
 	resp, err := client.Do(req)
 	if err != nil {
 		return time.Time{}, err
@@ -222,7 +223,7 @@ func DownloadAndCacheArtwork(rom romm.Rom, host romm.Host) error {
 	}
 	req.Header.Set("Authorization", host.BasicAuthHeader())
 
-	client := &http.Client{Timeout: 30 * time.Second}
+	client := &http.Client{Timeout: constants.DefaultClientTimeout}
 	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to download artwork: %w", err)
