@@ -8,7 +8,6 @@ import (
 	"os"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
@@ -19,13 +18,6 @@ var (
 	autoUpdate     *utils.AutoUpdate
 	autoUpdateOnce sync.Once
 )
-
-// triggerAutoSync triggers the auto-sync if it's configured and available
-func triggerAutoSync() {
-	if autoSync != nil {
-		autoSync.Trigger()
-	}
-}
 
 const (
 	platformSelection           gaba.StateName = "platform_selection"
@@ -86,14 +78,7 @@ func (s *NavState) ResetGameList() {
 	s.GameListPos = ListPosition{}
 }
 
-func (s *NavState) ResetCollections() {
-	s.CollectionGames = nil
-	s.CollectionSearchFilter = ""
-	s.CollectionListPos = ListPosition{}
-	s.CollectionPlatformPos = ListPosition{}
-}
-
-func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform, quitOnBack bool, showCollections bool, appStart time.Time) *gaba.FSM {
+func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform, quitOnBack bool, showCollections bool) *gaba.FSM {
 	fsm := gaba.NewFSM()
 
 	nav := &NavState{
@@ -590,18 +575,11 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 			config, _ := gaba.Get[*utils.Config](ctx)
 			host, _ := gaba.Get[romm.Host](ctx)
 			nav, _ := gaba.Get[*NavState](ctx)
-
-			gaba.Set(ctx, config)
 			nav.CollectionsSettingsPos = ListPosition{}
-
 			nav.ShowCollections = utils.ShowCollections(config, host)
 			return nil
 		}).
-		OnWithHook(gaba.ExitCodeBack, settings, func(ctx *gaba.Context) error {
-			nav, _ := gaba.Get[*NavState](ctx)
-			nav.CollectionsSettingsPos = ListPosition{}
-			return nil
-		})
+		On(gaba.ExitCodeBack, settings)
 
 	gaba.AddState(fsm, saveSyncSettings, func(ctx *gaba.Context) (ui.SaveSyncSettingsOutput, gaba.ExitCode) {
 		config, _ := gaba.Get[*utils.Config](ctx)
@@ -649,22 +627,11 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 
 		return result.Value, result.ExitCode
 	}).
-		OnWithHook(gaba.ExitCodeSuccess, settings, func(ctx *gaba.Context) error {
-			config, _ := gaba.Get[*utils.Config](ctx)
-			nav, _ := gaba.Get[*NavState](ctx)
-
-			gaba.Set(ctx, config)
-			nav.AdvancedSettingsPos = ListPosition{}
-			return nil
-		}).
+		On(gaba.ExitCodeSuccess, settings).
 		On(constants.ExitCodeEditMappings, settingsPlatformMapping).
 		On(constants.ExitCodeClearCache, clearCacheConfirmation).
 		On(constants.ExitCodeSyncArtwork, artworkSync).
-		OnWithHook(gaba.ExitCodeBack, settings, func(ctx *gaba.Context) error {
-			nav, _ := gaba.Get[*NavState](ctx)
-			nav.AdvancedSettingsPos = ListPosition{}
-			return nil
-		})
+		On(gaba.ExitCodeBack, settings)
 
 	gaba.AddState(fsm, settingsPlatformMapping, func(ctx *gaba.Context) (ui.PlatformMappingOutput, gaba.ExitCode) {
 		host, _ := gaba.Get[romm.Host](ctx)
@@ -880,4 +847,10 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		On(gaba.ExitCodeSuccess, settings)
 
 	return fsm.Start(platformSelection)
+}
+
+func triggerAutoSync() {
+	if autoSync != nil {
+		autoSync.Trigger()
+	}
 }

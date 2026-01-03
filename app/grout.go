@@ -3,7 +3,6 @@ package main
 import (
 	"grout/utils"
 	"os"
-	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
@@ -14,7 +13,6 @@ import (
 func main() {
 	defer cleanup()
 
-	appStart := time.Now()
 	result := setup()
 	config := result.Config
 	platforms := result.Platforms
@@ -26,7 +24,7 @@ func main() {
 	quitOnBack := len(config.Hosts) == 1
 	showCollections := utils.ShowCollections(config, config.Hosts[0])
 
-	fsm := buildFSM(config, cfw, platforms, quitOnBack, showCollections, appStart)
+	fsm := buildFSM(config, cfw, platforms, quitOnBack, showCollections)
 
 	if err := fsm.Run(); err != nil {
 		logger.Error("FSM error", "error", err)
