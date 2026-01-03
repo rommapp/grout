@@ -522,6 +522,9 @@ other = "Erro desconhecido"
 hash = "sha1-11ffd636fd7a3bf88d84e08f65c2a6cd05cfc2b2"
 other = "Saves Não Correspondidos"
 
+[save_sync_syncing]
+other = "Sincronizando saves..."
+
 [save_sync_up_to_date]
 hash = "sha1-73e9f0f39987b22aebf571b4f039ecde681e9434"
 other = "Tudo está atualizado!\nVá jogar!"

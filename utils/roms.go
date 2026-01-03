@@ -14,40 +14,36 @@ import (
 )
 
 type localRomFile struct {
-	RomID        int
-	RomName      string
-	Slug         string
-	Path         string
-	FileName     string
-	SHA1         string
-	LastModified time.Time
-	RemoteSaves  []romm.Save
-	SaveFile     *localSave
+	RomID       int
+	RomName     string
+	Slug        string
+	FileName    string
+	RemoteSaves []romm.Save
+	SaveFile    *localSave
 }
 
 func (lrf localRomFile) syncAction() SyncAction {
-	if lrf.SaveFile == nil && len(lrf.RemoteSaves) == 0 {
+	hasLocal := lrf.SaveFile != nil
+	hasRemote := len(lrf.RemoteSaves) > 0
+
+	switch {
+	case !hasLocal && !hasRemote:
 		return Skip
-	}
-	if lrf.SaveFile != nil && len(lrf.RemoteSaves) == 0 {
+	case hasLocal && !hasRemote:
 		return Upload
-	}
-	if lrf.SaveFile == nil && len(lrf.RemoteSaves) > 0 {
+	case !hasLocal && hasRemote:
 		return Download
 	}
 
-	lastRemote := lrf.lastRemoteSave()
-
+	// Both local and remote exist - compare timestamps
 	// Truncate to second precision to avoid timestamp precision issues
 	// API timestamps are typically second/millisecond precision, but filesystem is nanosecond
 	localTime := lrf.SaveFile.LastModified.Truncate(time.Second)
-	remoteTime := lastRemote.UpdatedAt.Truncate(time.Second)
+	remoteTime := lrf.lastRemoteSave().UpdatedAt.Truncate(time.Second)
 
 	switch localTime.Compare(remoteTime) {
 	case -1:
 		return Download
-	case 0:
-		return Skip
 	case 1:
 		return Upload
 	default:
@@ -70,12 +66,8 @@ func (lrf localRomFile) lastRemoteSave() romm.Save {
 // LocalRomScan holds the results of scanning local ROMs
 type LocalRomScan map[string][]localRomFile
 
-// ScanRoms scans all local ROM directories and calculates hashes
+// ScanRoms scans all local ROM directories and matches with save files
 func ScanRoms() LocalRomScan {
-	return scanRoms()
-}
-
-func scanRoms() map[string][]localRomFile {
 	logger := gaba.GetLogger()
 	result := make(map[string][]localRomFile)
 	cfw := GetCFW()
@@ -243,33 +235,16 @@ func scanRomDirectory(slug, romDir string, saveFileMap map[string]*localSave) []
 
 	visibleFiles := FilterVisibleFiles(entries)
 	for _, entry := range visibleFiles {
-		romPath := filepath.Join(romDir, entry.Name())
-
-		fileInfo, err := entry.Info()
-		if err != nil {
-			logger.Warn("Failed to get file info", "file", entry.Name(), "error", err)
-			continue
-		}
-
 		baseName := strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name()))
 		var saveFile *localSave
 		if sf, found := saveFileMap[baseName]; found {
 			saveFile = sf
 		}
 
-		// Calculate SHA1 for all ROMs to enable matching with remote saves
-		hash, err := calculateSHA1(romPath)
-		if err != nil {
-			logger.Warn("Failed to calculate SHA1 for ROM", "path", romPath, "error", err)
-		}
-
 		rom := localRomFile{
-			Slug:         slug,
-			Path:         romPath,
-			FileName:     entry.Name(),
-			SHA1:         hash,
-			LastModified: fileInfo.ModTime(),
-			SaveFile:     saveFile,
+			Slug:     slug,
+			FileName: entry.Name(),
+			SaveFile: saveFile,
 		}
 
 		roms = append(roms, rom)

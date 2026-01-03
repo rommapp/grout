@@ -27,10 +27,9 @@ type GameDetailsInput struct {
 }
 
 type GameDetailsOutput struct {
-	DownloadRequested  bool
-	GameOptionsClicked bool
-	Game               romm.Rom
-	Platform           romm.Platform
+	DownloadRequested bool
+	Game              romm.Rom
+	Platform          romm.Platform
 }
 
 type GameDetailsScreen struct{}
@@ -81,7 +80,6 @@ func (s *GameDetailsScreen) Draw(input GameDetailsInput) (ScreenResult[GameDetai
 	}
 
 	if result.Action == gaba.DetailActionTriggered {
-		output.GameOptionsClicked = true
 		return withCode(output, groutConstants.ExitCodeGameOptions), nil
 	}
 

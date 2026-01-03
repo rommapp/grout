@@ -10,8 +10,6 @@ import (
 	"strings"
 )
 
-const Downloaded = "\U000F01DA"
-
 func ParseTag(input string) string {
 	cleaned := filepath.Clean(input)
 
@@ -108,7 +106,7 @@ func IsGameDownloadedLocally(game romm.Rom, config Config) bool {
 	romDirectory := GetPlatformRomDirectory(config, platform)
 
 	if game.HasMultipleFiles {
-		m3uPath := filepath.Join(romDirectory, game.DisplayName+".m3u")
+		m3uPath := filepath.Join(romDirectory, game.FsNameNoExt+".m3u")
 		if _, err := os.Stat(m3uPath); err == nil {
 			return true
 		}
@@ -121,6 +119,11 @@ func IsGameDownloadedLocally(game romm.Rom, config Config) bool {
 	}
 
 	return false
+}
+
+// filenameKey normalizes a filename for cache lookup by removing the extension
+func filenameKey(filename string) string {
+	return strings.TrimSuffix(filename, filepath.Ext(filename))
 }
 
 func FormatBytes(bytes int) string {

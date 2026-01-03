@@ -187,32 +187,3 @@ func (c *Client) doMultipartRequest(method, path string, queryParams queryParam,
 
 	return nil
 }
-
-func (c *Client) downloadFile(downloadURL string) ([]byte, error) {
-	req, err := http.NewRequest("GET", downloadURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	if c.username != "" && c.password != "" {
-		req.SetBasicAuth(c.username, c.password)
-	}
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("API error: status %d, body: %s", resp.StatusCode, string(bodyBytes))
-	}
-
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	return data, nil
-}

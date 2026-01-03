@@ -21,7 +21,6 @@ var (
 	ErrServerError       = errors.New("server error")
 )
 
-// AuthError wraps authentication-specific errors
 type AuthError struct {
 	StatusCode int
 	Message    string

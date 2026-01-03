@@ -50,6 +50,16 @@ func (a *AutoSync) ShowButton() *atomic.Bool {
 	return &a.showButton
 }
 
+// Trigger starts a new sync if one isn't already running.
+// Returns true if a new sync was started, false if one is already in progress.
+func (a *AutoSync) Trigger() bool {
+	if a.running.Load() {
+		return false
+	}
+	a.Start()
+	return true
+}
+
 func (a *AutoSync) Host() romm.Host {
 	return a.host
 }

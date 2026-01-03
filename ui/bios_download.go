@@ -157,19 +157,19 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 			// No metadata - check if file exists and show basic status
 			biosDir := utils.GetBIOSDirectory()
 
-			// Try multiple potential file locations
-			potentialPaths := []string{
-				filepath.Join(biosDir, fw.FileName), // Root BIOS dir
-				filepath.Join(biosDir, fw.FilePath), // Using firmware's relative path
+			// Determine the correct file path using same logic as save
+			// FilePath may be: just filename, subdir/filename, or just subdir
+			var expectedPath string
+			if fw.FilePath == "" || fw.FilePath == fw.FileName {
+				expectedPath = filepath.Join(biosDir, fw.FileName)
+			} else if filepath.Base(fw.FilePath) == fw.FileName {
+				expectedPath = filepath.Join(biosDir, fw.FilePath)
+			} else {
+				expectedPath = filepath.Join(biosDir, fw.FilePath, fw.FileName)
 			}
 
-			fileExists := false
-			for _, path := range potentialPaths {
-				if _, err := os.Stat(path); err == nil {
-					fileExists = true
-					break
-				}
-			}
+			_, err := os.Stat(expectedPath)
+			fileExists := err == nil
 
 			var statusText string
 			if fileExists {
@@ -220,11 +220,7 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 
 	// Build downloads from selected items
 	var downloads []gaba.Download
-	type downloadInfo struct {
-		firmware romm.Firmware
-		metadata *constants.BIOSFile
-	}
-	locationToInfoMap := make(map[string]downloadInfo)
+	locationToInfoMap := make(map[string]firmwareWithMetadata)
 
 	baseURL := input.Host.URL()
 	for _, item := range selectedItems {
@@ -237,10 +233,7 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 			DisplayName: item.firmware.FileName,
 		})
 
-		locationToInfoMap[tempPath] = downloadInfo{
-			firmware: item.firmware,
-			metadata: item.metadata,
-		}
+		locationToInfoMap[tempPath] = item
 
 		logger.Debug("Added BIOS file to download queue",
 			"file", item.firmware.FileName,
@@ -292,14 +285,9 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 				continue
 			}
 		} else {
-			// No metadata - use firmware FilePath from RomM (preserves subdirectories)
+			// No metadata - just plop into the BIOS folder
 			biosDir := utils.GetBIOSDirectory()
-			// Use FilePath if it contains directory info, otherwise just use FileName
-			relativePath := info.firmware.FilePath
-			if relativePath == "" || relativePath == info.firmware.FileName {
-				relativePath = info.firmware.FileName
-			}
-			filePath := filepath.Join(biosDir, relativePath)
+			filePath := filepath.Join(biosDir, info.firmware.FileName)
 
 			if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
 				logger.Error("Failed to create BIOS directory", "error", err)

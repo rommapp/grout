@@ -34,7 +34,6 @@ func main() {
 }
 
 func cleanup() {
-	// Wait for auto-sync to complete before exiting
 	if autoSync != nil && autoSync.IsRunning() {
 		gaba.GetLogger().Info("Waiting for auto-sync to complete before exiting...")
 		gaba.ProcessMessage(

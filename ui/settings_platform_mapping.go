@@ -189,19 +189,6 @@ func (s *PlatformMappingScreen) buildPlatformOptions(
 	return options, selectedIndex
 }
 
-func (s *PlatformMappingScreen) findMatchingDirectory(
-	platform romm.Platform,
-	romDirectories []os.DirEntry,
-	cfw constants.CFW,
-) int {
-	for i, entry := range romDirectories {
-		if s.directoryMatchesPlatform(platform, entry.Name(), cfw) {
-			return i
-		}
-	}
-	return -1
-}
-
 func (s *PlatformMappingScreen) directoryMatchesPlatform(
 	platform romm.Platform,
 	dirName string,
@@ -226,14 +213,6 @@ func (s *PlatformMappingScreen) getCFWDirectoriesForPlatform(slug string, cfw co
 	return platformMap[slug]
 }
 
-func (s *PlatformMappingScreen) getSaveDirectoriesForPlatform(slug string, cfw constants.CFW) []string {
-	saveMap := utils.EmulatorFolderMap(cfw)
-	if saveMap == nil {
-		return []string{}
-	}
-	return saveMap[slug]
-}
-
 func (s *PlatformMappingScreen) directoriesMatch(dir1, dir2 string, cfw constants.CFW) bool {
 	if cfw == constants.NextUI {
 		return utils.ParseTag(dir1) == utils.ParseTag(dir2)
@@ -248,14 +227,6 @@ func (s *PlatformMappingScreen) isValidDirectoryForPlatform(dirName string, cfw 
 		}
 	}
 	return false
-}
-
-func (s *PlatformMappingScreen) getCreateDisplayName(slug string, cfw constants.CFW) string {
-	displayName := utils.RomMSlugToCFW(slug)
-	if cfw == constants.NextUI {
-		displayName = utils.ParseTag(displayName)
-	}
-	return displayName
 }
 
 func (s *PlatformMappingScreen) buildMappingsFromResult(items []gaba.ItemWithOptions) map[string]utils.DirectoryMapping {

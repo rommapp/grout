@@ -20,28 +20,35 @@ var (
 	autoUpdateOnce sync.Once
 )
 
+// triggerAutoSync triggers the auto-sync if it's configured and available
+func triggerAutoSync() {
+	if autoSync != nil {
+		autoSync.Trigger()
+	}
+}
+
 const (
 	platformSelection           gaba.StateName = "platform_selection"
-	gameList                                   = "game_list"
-	gameDetails                                = "game_details"
-	gameOptions                                = "game_options"
-	collectionList                             = "collection_list"
-	collectionPlatformSelection                = "collection_platform_selection"
-	search                                     = "search"
-	collectionSearch                           = "collection_search"
-	settings                                   = "settings"
-	generalSettings                            = "general_settings"
-	collectionsSettings                        = "collections_settings"
-	advancedSettings                           = "advanced_settings"
-	settingsPlatformMapping                    = "platform_mapping"
-	saveSyncSettings                           = "save_sync_settings"
-	info                                       = "info"
-	logoutConfirmation                         = "logout_confirmation"
-	clearCacheConfirmation                     = "clear_cache_confirmation"
-	saveSync                                   = "save_sync"
-	biosDownload                               = "bios_download"
-	artworkSync                                = "artwork_sync"
-	updateCheck                                = "update_check"
+	gameList                    gaba.StateName = "game_list"
+	gameDetails                 gaba.StateName = "game_details"
+	gameOptions                 gaba.StateName = "game_options"
+	collectionList              gaba.StateName = "collection_list"
+	collectionPlatformSelection gaba.StateName = "collection_platform_selection"
+	search                      gaba.StateName = "search"
+	collectionSearch            gaba.StateName = "collection_search"
+	settings                    gaba.StateName = "settings"
+	generalSettings             gaba.StateName = "general_settings"
+	collectionsSettings         gaba.StateName = "collections_settings"
+	advancedSettings            gaba.StateName = "advanced_settings"
+	settingsPlatformMapping     gaba.StateName = "platform_mapping"
+	saveSyncSettings            gaba.StateName = "save_sync_settings"
+	info                        gaba.StateName = "info"
+	logoutConfirmation          gaba.StateName = "logout_confirmation"
+	clearCacheConfirmation      gaba.StateName = "clear_cache_confirmation"
+	saveSync                    gaba.StateName = "save_sync"
+	biosDownload                gaba.StateName = "bios_download"
+	artworkSync                 gaba.StateName = "artwork_sync"
+	updateCheck                 gaba.StateName = "update_check"
 )
 
 type ListPosition struct {
@@ -375,6 +382,7 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 			downloadOutput := downloadScreen.Execute(*config, host, gameListOutput.Platform, gameListOutput.SelectedGames, gameListOutput.AllGames, nav.SearchFilter)
 			nav.CurrentGames = downloadOutput.AllGames
 			nav.SearchFilter = downloadOutput.SearchFilter
+			triggerAutoSync()
 			return ui.GameDetailsOutput{}, gaba.ExitCodeBack
 		}
 
@@ -404,6 +412,7 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 				downloadOutput := downloadScreen.Execute(*config, host, detailsOutput.Platform, []romm.Rom{detailsOutput.Game}, gameListOutput.AllGames, nav.SearchFilter)
 				nav.CurrentGames = downloadOutput.AllGames
 				nav.SearchFilter = downloadOutput.SearchFilter
+				triggerAutoSync()
 			}
 
 			return nil
@@ -613,6 +622,7 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		OnWithHook(gaba.ExitCodeSuccess, settings, func(ctx *gaba.Context) error {
 			output, _ := gaba.Get[ui.SaveSyncSettingsOutput](ctx)
 			gaba.Set(ctx, output.Config)
+			triggerAutoSync()
 			return nil
 		}).
 		On(gaba.ExitCodeBack, settings)

@@ -8,6 +8,7 @@ import (
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
 	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
+	"go.uber.org/atomic"
 )
 
 type SaveSyncInput struct {
@@ -26,7 +27,7 @@ func NewSaveSyncScreen() *SaveSyncScreen {
 func (s *SaveSyncScreen) Draw(input SaveSyncInput) (ScreenResult[SaveSyncOutput], error) {
 	output := SaveSyncOutput{}
 
-	// First, scan local ROMs (this involves hashing which can be slow)
+	// Scan local ROMs and match with save files
 	romScan, _ := gaba.ProcessMessage(i18n.Localize(&goi18n.Message{ID: "save_sync_scanning_roms", Other: "Scanning ROMs..."}, nil), gaba.ProcessMessageOptions{}, func() (interface{}, error) {
 		return utils.ScanRoms(), nil
 	})
@@ -60,13 +61,29 @@ func (s *SaveSyncScreen) Draw(input SaveSyncInput) (ScreenResult[SaveSyncOutput]
 		unmatched = scan.Unmatched
 		results = make([]utils.SyncResult, 0, len(scan.Syncs))
 
-		for i := range scan.Syncs {
-			s := &scan.Syncs[i]
-			result := s.Execute(input.Host, input.Config)
-			results = append(results, result)
-			if !result.Success {
-				gaba.GetLogger().Error("Unable to sync save!", "game", s.GameBase, "error", result.Error)
-			}
+		if len(scan.Syncs) > 0 {
+			progress := &atomic.Float64{}
+
+			gaba.ProcessMessage(
+				i18n.Localize(&goi18n.Message{ID: "save_sync_syncing", Other: "Syncing saves..."}, nil),
+				gaba.ProcessMessageOptions{
+					ShowProgressBar: true,
+					Progress:        progress,
+				},
+				func() (interface{}, error) {
+					total := len(scan.Syncs)
+					for i := range scan.Syncs {
+						s := &scan.Syncs[i]
+						result := s.Execute(input.Host, input.Config)
+						results = append(results, result)
+						if !result.Success {
+							gaba.GetLogger().Error("Unable to sync save!", "game", s.GameBase, "error", result.Error)
+						}
+						progress.Store(float64(i+1) / float64(total))
+					}
+					return nil, nil
+				},
+			)
 		}
 	}
 

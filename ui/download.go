@@ -158,7 +158,7 @@ func (s *DownloadScreen) draw(input downloadInput) (ScreenResult[downloadOutput]
 
 		tmpZipPath := filepath.Join(utils.TempDir(), fmt.Sprintf("grout_multirom_%d.zip", g.ID))
 		romDirectory := utils.GetPlatformRomDirectory(input.Config, gamePlatform)
-		extractDir := filepath.Join(romDirectory, g.DisplayName)
+		extractDir := filepath.Join(romDirectory, g.FsNameNoExt)
 
 		progress := &atomic.Float64{}
 		_, err := gaba.ProcessMessage(
@@ -178,8 +178,8 @@ func (s *DownloadScreen) draw(input downloadInput) (ScreenResult[downloadOutput]
 				}
 
 				if utils.GetCFW() == constants.MuOS {
-					if err := utils.OrganizeMultiFileRomForMuOS(extractDir, romDirectory, g.DisplayName); err != nil {
-						logger.Error("Failed to organize multi-file ROM for muOS", "game", g.DisplayName, "error", err)
+					if err := utils.OrganizeMultiFileRomForMuOS(extractDir, romDirectory, g.FsNameNoExt); err != nil {
+						logger.Error("Failed to organize multi-file ROM for muOS", "game", g.FsNameNoExt, "error", err)
 						os.Remove(tmpZipPath)
 						os.RemoveAll(extractDir)
 						return nil, err
@@ -264,14 +264,16 @@ func (s *DownloadScreen) draw(input downloadInput) (ScreenResult[downloadOutput]
 		}) {
 			downloadedGames = append(downloadedGames, g)
 
-			// Cache ROM hash for future save sync lookups
-			hash := g.Sha1Hash
-			if hash == "" && len(g.Files) > 0 {
-				hash = g.Files[0].Sha1Hash
+			// Cache ROM filename for future save sync lookups
+			var cacheFilename string
+			if g.HasMultipleFiles {
+				cacheFilename = g.FsNameNoExt
+			} else if len(g.Files) > 0 {
+				cacheFilename = g.Files[0].FileName
 			}
-			if hash != "" {
-				utils.CacheRomID(g.PlatformSlug, hash, g.ID, g.Name)
-				logger.Debug("Cached ROM hash", "name", g.Name, "hash", hash[:8], "id", g.ID)
+			if cacheFilename != "" {
+				utils.CacheRomID(g.PlatformSlug, cacheFilename, g.ID, g.Name)
+				logger.Debug("Cached ROM filename", "name", g.Name, "filename", cacheFilename, "id", g.ID)
 			}
 		}
 	}
@@ -324,7 +326,7 @@ func (s *DownloadScreen) buildDownloads(config utils.Config, host romm.Host, pla
 		if g.HasMultipleFiles {
 			tmpDir := utils.TempDir()
 			downloadLocation = filepath.Join(tmpDir, fmt.Sprintf("grout_multirom_%d.zip", g.ID))
-			sourceURL, _ = url.JoinPath(host.URL(), "/api/roms/", strconv.Itoa(g.ID), "content", g.DisplayName)
+			sourceURL, _ = url.JoinPath(host.URL(), "/api/roms/", strconv.Itoa(g.ID), "content", g.FsName)
 		} else {
 			downloadLocation = filepath.Join(romDirectory, g.Files[0].FileName)
 			sourceURL, _ = url.JoinPath(host.URL(), "/api/roms/", strconv.Itoa(g.ID), "content", g.Files[0].FileName)

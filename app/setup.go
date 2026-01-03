@@ -24,44 +24,9 @@ type SetupResult struct {
 	Platforms []romm.Platform
 }
 
-func classifyStartupError(err error) *goi18n.Message {
-	if err == nil {
-		return nil
-	}
-
-	switch {
-	case errors.Is(err, romm.ErrInvalidHostname):
-		return &goi18n.Message{ID: "startup_error_invalid_hostname", Other: "Could not resolve hostname!\nPlease check your server configuration."}
-	case errors.Is(err, romm.ErrConnectionRefused):
-		return &goi18n.Message{ID: "startup_error_connection_refused", Other: "Could not connect to RomM!\nPlease check the server is running."}
-	case errors.Is(err, romm.ErrTimeout):
-		return &goi18n.Message{ID: "startup_error_timeout", Other: "Connection timed out!\nPlease check your network connection."}
-	case errors.Is(err, romm.ErrWrongProtocol):
-		return &goi18n.Message{ID: "startup_error_wrong_protocol", Other: "Protocol mismatch!\nCheck your server configuration."}
-	case errors.Is(err, romm.ErrUnauthorized):
-		return &goi18n.Message{ID: "startup_error_credentials", Other: "Invalid credentials!\nPlease check your username and password."}
-	case errors.Is(err, romm.ErrForbidden):
-		return &goi18n.Message{ID: "startup_error_forbidden", Other: "Access forbidden!\nCheck your server permissions."}
-	case errors.Is(err, romm.ErrServerError):
-		return &goi18n.Message{ID: "startup_error_server", Other: "RomM server error!\nPlease check the RomM server logs."}
-	default:
-		return &goi18n.Message{ID: "error_loading_platforms", Other: "Error loading platforms!\nPlease check the logs for more info."}
-	}
-}
-
-func showStartupError(errorMsg string) bool {
-	footerItems := []gaba.FooterHelpItem{
-		{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "startup_error_action_exit", Other: "Exit"}, nil)},
-		{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "startup_error_action_retry", Other: "Retry Connection"}, nil)},
-	}
-
-	result, err := gaba.ConfirmationMessage(errorMsg, footerItems, gaba.MessageOptions{})
-
-	return err == nil && result != nil && result.Confirmed
-}
-
 func setup() SetupResult {
 	cfw := utils.GetCFW()
+	gaba.SetLogFilename("grout.log")
 
 	if cfw == constants.MuOS && !utils.IsDevelopment() {
 		if cwd, err := os.Getwd(); err == nil {
@@ -73,7 +38,7 @@ func setup() SetupResult {
 				if err == nil {
 					gaba.SetInputMappingBytes(mappingBytes)
 				} else {
-					slog.Error("Unable to read input mapping file", "error", err)
+					gaba.GetLogger().Error("Unable to read input mapping file", "error", err)
 				}
 			}
 		}
@@ -84,7 +49,6 @@ func setup() SetupResult {
 		PrimaryThemeColorHex: 0x007C77,
 		ShowBackground:       true,
 		IsNextUI:             cfw == constants.NextUI,
-		LogFilename:          "grout.log",
 	})
 
 	gaba.RegisterChord("unlock-kid-mode", []buttons.VirtualButton{
@@ -182,7 +146,7 @@ func setup() SetupResult {
 
 	gaba.UnregisterCombo("unlock-kid-mode")
 
-	if config.DirectoryMappings == nil || len(config.DirectoryMappings) == 0 {
+	if len(config.DirectoryMappings) == 0 {
 		screen := ui.NewPlatformMappingScreen()
 		result, err := screen.Draw(ui.PlatformMappingInput{
 			Host:           config.Hosts[0],
@@ -244,4 +208,40 @@ func setup() SetupResult {
 		Config:    config,
 		Platforms: platforms,
 	}
+}
+
+func classifyStartupError(err error) *goi18n.Message {
+	if err == nil {
+		return nil
+	}
+
+	switch {
+	case errors.Is(err, romm.ErrInvalidHostname):
+		return &goi18n.Message{ID: "startup_error_invalid_hostname", Other: "Could not resolve hostname!\nPlease check your server configuration."}
+	case errors.Is(err, romm.ErrConnectionRefused):
+		return &goi18n.Message{ID: "startup_error_connection_refused", Other: "Could not connect to RomM!\nPlease check the server is running."}
+	case errors.Is(err, romm.ErrTimeout):
+		return &goi18n.Message{ID: "startup_error_timeout", Other: "Connection timed out!\nPlease check your network connection."}
+	case errors.Is(err, romm.ErrWrongProtocol):
+		return &goi18n.Message{ID: "startup_error_wrong_protocol", Other: "Protocol mismatch!\nCheck your server configuration."}
+	case errors.Is(err, romm.ErrUnauthorized):
+		return &goi18n.Message{ID: "startup_error_credentials", Other: "Invalid credentials!\nPlease check your username and password."}
+	case errors.Is(err, romm.ErrForbidden):
+		return &goi18n.Message{ID: "startup_error_forbidden", Other: "Access forbidden!\nCheck your server permissions."}
+	case errors.Is(err, romm.ErrServerError):
+		return &goi18n.Message{ID: "startup_error_server", Other: "RomM server error!\nPlease check the RomM server logs."}
+	default:
+		return &goi18n.Message{ID: "error_loading_platforms", Other: "Error loading platforms!\nPlease check the logs for more info."}
+	}
+}
+
+func showStartupError(errorMsg string) bool {
+	footerItems := []gaba.FooterHelpItem{
+		{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "startup_error_action_exit", Other: "Exit"}, nil)},
+		{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "startup_error_action_retry", Other: "Retry Connection"}, nil)},
+	}
+
+	result, err := gaba.ConfirmationMessage(errorMsg, footerItems, gaba.MessageOptions{})
+
+	return err == nil && result != nil && result.Confirmed
 }

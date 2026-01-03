@@ -25,8 +25,8 @@ type SyncAction string
 
 const (
 	Download SyncAction = "DOWNLOAD"
-	Upload              = "UPLOAD"
-	Skip                = "SKIP"
+	Upload   SyncAction = "UPLOAD"
+	Skip     SyncAction = "SKIP"
 )
 
 type SyncResult struct {
@@ -117,15 +117,12 @@ func (s *SaveSync) download(host romm.Host, config *Config) (string, error) {
 		}
 	}
 
-	ext := s.Remote.FileExtension
-	if ext != "" && !strings.HasPrefix(ext, ".") {
-		ext = "." + ext
-	}
+	ext := normalizeExt(s.Remote.FileExtension)
 	filename := s.GameBase + ext
 	destPath := filepath.Join(destDir, filename)
 
 	if s.Local != nil && s.Local.Path != destPath {
-		defer os.Remove(s.Local.Path)
+		defer func() { _ = os.Remove(s.Local.Path) }()
 	}
 
 	err = os.WriteFile(destPath, saveData, 0644)
@@ -152,10 +149,7 @@ func (s *SaveSync) upload(host romm.Host) (string, error) {
 
 	rc := GetRommClient(host)
 
-	ext := filepath.Ext(s.Local.Path)
-	if ext != "" && !strings.HasPrefix(ext, ".") {
-		ext = "." + ext
-	}
+	ext := normalizeExt(filepath.Ext(s.Local.Path))
 
 	fileInfo, err := os.Stat(s.Local.Path)
 	if err != nil {
@@ -188,42 +182,31 @@ func (s *SaveSync) upload(host romm.Host) (string, error) {
 	return s.Local.Path, nil
 }
 
-func lookupRomID(romFile *localRomFile, rc *romm.Client) (int, string, error) {
+// lookupRomID looks up a ROM ID by filename, first checking cache then the provided ROM map
+func lookupRomID(romFile *localRomFile, romsByFilename map[string]romm.Rom) (int, string) {
 	logger := gaba.GetLogger()
 
-	// Skip lookup if no hash available
-	if romFile.SHA1 == "" {
-		logger.Debug("Skipping ROM lookup - no hash", "slug", romFile.Slug, "file", romFile.FileName)
-		return 0, "", nil
-	}
-
-	sha1Short := romFile.SHA1[:8]
-
 	// Check cache first
-	if romID, romName, found := GetCachedRomID(romFile.Slug, romFile.SHA1); found {
-		logger.Debug("ROM lookup from cache", "slug", romFile.Slug, "sha1", sha1Short, "romID", romID, "name", romName)
-		return romID, romName, nil
+	if romID, romName, found := GetCachedRomIDByFilename(romFile.Slug, romFile.FileName); found {
+		logger.Debug("ROM lookup from cache", "slug", romFile.Slug, "file", romFile.FileName, "romID", romID, "name", romName)
+		return romID, romName
 	}
 
-	logger.Debug("Looking up ROM by hash", "slug", romFile.Slug, "sha1", sha1Short)
-	rom, err := rc.GetRomByHash(romm.GetRomByHashQuery{
-		Sha1Hash: romFile.SHA1,
-	})
-
-	if err != nil {
-		logger.Debug("No remote ROM found for hash", "sha1", sha1Short, "error", err)
-		return 0, "", nil
+	// Look up in the ROM map by filename (without extension)
+	key := filenameKey(romFile.FileName)
+	if rom, found := romsByFilename[key]; found {
+		// Cache the result for next time
+		CacheRomID(romFile.Slug, romFile.FileName, rom.ID, rom.Name)
+		logger.Debug("ROM lookup from RomM", "slug", romFile.Slug, "file", romFile.FileName, "romID", rom.ID, "name", rom.Name)
+		return rom.ID, rom.Name
 	}
 
-	// Cache the result for next time
-	CacheRomID(romFile.Slug, romFile.SHA1, rom.ID, rom.Name)
-
-	logger.Debug("ROM lookup successful", "slug", romFile.Slug, "sha1", sha1Short, "romID", rom.ID, "name", rom.Name)
-	return rom.ID, rom.Name, nil
+	logger.Debug("No ROM found for file", "slug", romFile.Slug, "file", romFile.FileName)
+	return 0, ""
 }
 
 func FindSaveSyncs(host romm.Host) ([]SaveSync, []UnmatchedSave, error) {
-	return FindSaveSyncsFromScan(host, scanRoms())
+	return FindSaveSyncsFromScan(host, ScanRoms())
 }
 
 func FindSaveSyncsFromScan(host romm.Host, scanLocal LocalRomScan) ([]SaveSync, []UnmatchedSave, error) {
@@ -232,103 +215,145 @@ func FindSaveSyncsFromScan(host romm.Host, scanLocal LocalRomScan) ([]SaveSync, 
 
 	logger.Debug("FindSaveSyncs: Scanned local ROMs", "platformCount", len(scanLocal))
 
-	allSaves, err := rc.GetSaves(romm.SaveQuery{})
+	// Get all platforms to build slug -> platformID map
+	platforms, err := rc.GetPlatforms()
 	if err != nil {
-		logger.Error("FindSaveSyncs: Could not retrieve saves", "error", err)
+		logger.Error("FindSaveSyncs: Could not retrieve platforms", "error", err)
 		return []SaveSync{}, nil, err
 	}
-	logger.Debug("FindSaveSyncs: Retrieved all saves", "count", len(allSaves))
 
-	savesByRomID := make(map[int][]romm.Save)
-	for _, s := range allSaves {
-		savesByRomID[s.RomID] = append(savesByRomID[s.RomID], s)
+	slugToPlatformID := make(map[string]int)
+	for _, p := range platforms {
+		slugToPlatformID[p.Slug] = p.ID
 	}
 
-	// Collect ROMs that need lookup (ones with save files)
-	type lookupTask struct {
-		slug string
-		idx  int
-	}
-	var tasks []lookupTask
-	for slug, localRoms := range scanLocal {
-		for idx := range localRoms {
-			if scanLocal[slug][idx].SaveFile != nil || len(savesByRomID) > 0 {
-				tasks = append(tasks, lookupTask{slug: slug, idx: idx})
-			}
-		}
+	// Fetch saves and ROMs per platform in parallel
+	type platformFetchResult struct {
+		slug     string
+		saves    []romm.Save
+		roms     map[string]romm.Rom
+		hasError bool
 	}
 
-	// Parallel ROM lookups with worker pool
-	type lookupResult struct {
-		slug    string
-		idx     int
-		romID   int
-		romName string
-		err     error
-	}
-
-	const maxWorkers = 8
-	taskChan := make(chan lookupTask, len(tasks))
-	resultChan := make(chan lookupResult, len(tasks))
-
-	// Start workers
+	resultChan := make(chan platformFetchResult, len(scanLocal))
 	var wg sync.WaitGroup
-	for i := 0; i < maxWorkers && i < len(tasks); i++ {
+
+	for slug := range scanLocal {
+		platformID, ok := slugToPlatformID[slug]
+		if !ok {
+			logger.Debug("FindSaveSyncs: No platform ID for slug", "slug", slug)
+			continue
+		}
+
 		wg.Add(1)
-		go func() {
+		go func(slug string, platformID int) {
 			defer wg.Done()
-			for task := range taskChan {
-				romID, romName, err := lookupRomID(&scanLocal[task.slug][task.idx], rc)
-				resultChan <- lookupResult{
-					slug:    task.slug,
-					idx:     task.idx,
-					romID:   romID,
-					romName: romName,
-					err:     err,
-				}
+
+			result := platformFetchResult{
+				slug: slug,
+				roms: make(map[string]romm.Rom),
 			}
-		}()
+
+			// Fetch saves for this platform
+			platformSaves, err := rc.GetSaves(romm.SaveQuery{PlatformID: platformID})
+			if err != nil {
+				logger.Warn("FindSaveSyncs: Could not retrieve saves for platform", "slug", slug, "error", err)
+				result.hasError = true
+				resultChan <- result
+				return
+			}
+			result.saves = platformSaves
+			logger.Debug("FindSaveSyncs: Retrieved saves for platform", "slug", slug, "count", len(platformSaves))
+
+			// Fetch all ROMs for this platform to build filename map
+			page := 1
+			for {
+				romsPage, err := rc.GetRoms(romm.GetRomsQuery{
+					PlatformID: platformID,
+					Page:       page,
+					Limit:      100,
+				})
+				if err != nil {
+					logger.Warn("FindSaveSyncs: Could not retrieve ROMs for platform", "slug", slug, "error", err)
+					break
+				}
+
+				for _, rom := range romsPage.Items {
+					key := filenameKey(rom.FsNameNoExt)
+					result.roms[key] = rom
+				}
+
+				if len(romsPage.Items) < 100 {
+					break
+				}
+				page++
+			}
+			logger.Debug("FindSaveSyncs: Built ROM filename map", "slug", slug, "count", len(result.roms))
+
+			resultChan <- result
+		}(slug, platformID)
 	}
 
-	// Send tasks
-	for _, task := range tasks {
-		taskChan <- task
-	}
-	close(taskChan)
-
-	// Wait for workers and close results
 	go func() {
 		wg.Wait()
 		close(resultChan)
 	}()
 
 	// Collect results
-	var unmatched []UnmatchedSave
-	for result := range resultChan {
-		if result.err != nil {
-			logger.Warn("Error looking up ROM ID", "rom", scanLocal[result.slug][result.idx].FileName, "error", result.err)
-		}
+	savesByRomID := make(map[int][]romm.Save)
+	romsByFilename := make(map[string]map[string]romm.Rom)
 
-		if result.romID == 0 {
-			if scanLocal[result.slug][result.idx].SaveFile != nil {
-				unmatched = append(unmatched, UnmatchedSave{
-					SavePath: scanLocal[result.slug][result.idx].SaveFile.Path,
-					Slug:     result.slug,
-				})
-				logger.Info("Save has local ROM but not in RomM",
-					"save", filepath.Base(scanLocal[result.slug][result.idx].SaveFile.Path),
-					"romFile", scanLocal[result.slug][result.idx].FileName,
-					"slug", result.slug)
-			}
+	for result := range resultChan {
+		if result.hasError {
 			continue
 		}
 
-		scanLocal[result.slug][result.idx].RomID = result.romID
-		scanLocal[result.slug][result.idx].RomName = result.romName
+		for _, s := range result.saves {
+			savesByRomID[s.RomID] = append(savesByRomID[s.RomID], s)
+		}
 
-		if saves, ok := savesByRomID[result.romID]; ok {
-			scanLocal[result.slug][result.idx].RemoteSaves = saves
-			logger.Debug("Found remote saves for ROM", "romName", result.romName, "saveCount", len(saves))
+		romsByFilename[result.slug] = result.roms
+	}
+
+	// Match local ROMs to remote ROMs by filename
+	var unmatched []UnmatchedSave
+	for slug, localRoms := range scanLocal {
+		platformRoms := romsByFilename[slug]
+		if platformRoms == nil {
+			platformRoms = make(map[string]romm.Rom)
+		}
+
+		for idx := range localRoms {
+			romFile := &scanLocal[slug][idx]
+
+			// Skip if no save file and no remote saves exist
+			if romFile.SaveFile == nil && len(savesByRomID) == 0 {
+				continue
+			}
+
+			romID, romName := lookupRomID(romFile, platformRoms)
+
+			if romID == 0 {
+				if romFile.SaveFile != nil {
+					unmatched = append(unmatched, UnmatchedSave{
+						SavePath: romFile.SaveFile.Path,
+						Slug:     slug,
+					})
+					logger.Info("Save has local ROM but not in RomM",
+						"save", filepath.Base(romFile.SaveFile.Path),
+						"romFile", romFile.FileName,
+						"slug", slug)
+				}
+				continue
+			}
+
+			romFile.RomID = romID
+			romFile.RomName = romName
+
+			if saves, ok := savesByRomID[romID]; ok {
+				romFile.RemoteSaves = saves
+				logger.Debug("Found remote saves for ROM", "romName", romName, "saveCount", len(saves))
+			}
 		}
 	}
 
@@ -377,8 +402,8 @@ func FindSaveSyncsFromScan(host romm.Host, scanLocal LocalRomScan) ([]SaveSync, 
 	}
 
 	var syncs []SaveSync
-	for _, sync := range syncMap {
-		syncs = append(syncs, sync)
+	for _, s := range syncMap {
+		syncs = append(syncs, s)
 	}
 
 	if len(unmatched) > 0 {
@@ -386,4 +411,12 @@ func FindSaveSyncsFromScan(host romm.Host, scanLocal LocalRomScan) ([]SaveSync, 
 	}
 
 	return syncs, unmatched, nil
+}
+
+// normalizeExt ensures the extension has a leading dot
+func normalizeExt(ext string) string {
+	if ext != "" && !strings.HasPrefix(ext, ".") {
+		return "." + ext
+	}
+	return ext
 }

@@ -10,97 +10,97 @@ import (
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
 
-type HashCacheEntry struct {
+type RomCacheEntry struct {
 	RomID    int       `json:"rom_id"`
 	RomName  string    `json:"rom_name"`
 	CachedAt time.Time `json:"cached_at"`
 }
 
-type PlatformHashCache struct {
-	Entries map[string]HashCacheEntry `json:"entries"` // key = SHA1 hash
+type PlatformRomCache struct {
+	Entries map[string]RomCacheEntry `json:"entries"` // key = filename (no extension)
 }
 
-type HashCache struct {
-	platforms map[string]*PlatformHashCache // key = platform slug
+type RomCache struct {
+	platforms map[string]*PlatformRomCache // key = platform slug
 	mu        sync.RWMutex
 }
 
 var (
-	hashCache     *HashCache
-	hashCacheOnce sync.Once
+	romCache     *RomCache
+	romCacheOnce sync.Once
 )
 
-func GetHashCacheDir() string {
+func GetRomCacheDir() string {
 	wd, err := os.Getwd()
 	if err != nil {
-		return filepath.Join(os.TempDir(), ".cache", "hashes")
+		return filepath.Join(os.TempDir(), ".cache", "roms")
 	}
-	return filepath.Join(wd, ".cache", "hashes")
+	return filepath.Join(wd, ".cache", "roms")
 }
 
-func getHashCacheFilePath(slug string) string {
-	return filepath.Join(GetHashCacheDir(), slug+".json")
+func getRomCacheFilePath(slug string) string {
+	return filepath.Join(GetRomCacheDir(), slug+".json")
 }
 
-func getHashCache() *HashCache {
-	hashCacheOnce.Do(func() {
-		hashCache = &HashCache{
-			platforms: make(map[string]*PlatformHashCache),
+func getRomCache() *RomCache {
+	romCacheOnce.Do(func() {
+		romCache = &RomCache{
+			platforms: make(map[string]*PlatformRomCache),
 		}
 	})
-	return hashCache
+	return romCache
 }
 
-func (hc *HashCache) getPlatformCache(slug string) *PlatformHashCache {
-	hc.mu.RLock()
-	pc, exists := hc.platforms[slug]
-	hc.mu.RUnlock()
+func (rc *RomCache) getPlatformCache(slug string) *PlatformRomCache {
+	rc.mu.RLock()
+	pc, exists := rc.platforms[slug]
+	rc.mu.RUnlock()
 
 	if exists {
 		return pc
 	}
 
 	// Load from disk
-	pc = hc.loadPlatform(slug)
+	pc = rc.loadPlatform(slug)
 
-	hc.mu.Lock()
-	hc.platforms[slug] = pc
-	hc.mu.Unlock()
+	rc.mu.Lock()
+	rc.platforms[slug] = pc
+	rc.mu.Unlock()
 
 	return pc
 }
 
-func (hc *HashCache) loadPlatform(slug string) *PlatformHashCache {
+func (rc *RomCache) loadPlatform(slug string) *PlatformRomCache {
 	logger := gaba.GetLogger()
-	pc := &PlatformHashCache{
-		Entries: make(map[string]HashCacheEntry),
+	pc := &PlatformRomCache{
+		Entries: make(map[string]RomCacheEntry),
 	}
 
-	data, err := os.ReadFile(getHashCacheFilePath(slug))
+	data, err := os.ReadFile(getRomCacheFilePath(slug))
 	if err != nil {
 		if !os.IsNotExist(err) {
-			logger.Debug("Failed to read hash cache", "slug", slug, "error", err)
+			logger.Debug("Failed to read ROM cache", "slug", slug, "error", err)
 		}
 		return pc
 	}
 
 	if err := json.Unmarshal(data, pc); err != nil {
-		logger.Debug("Failed to parse hash cache", "slug", slug, "error", err)
-		return &PlatformHashCache{Entries: make(map[string]HashCacheEntry)}
+		logger.Debug("Failed to parse ROM cache", "slug", slug, "error", err)
+		return &PlatformRomCache{Entries: make(map[string]RomCacheEntry)}
 	}
 
 	if pc.Entries == nil {
-		pc.Entries = make(map[string]HashCacheEntry)
+		pc.Entries = make(map[string]RomCacheEntry)
 	}
 
-	logger.Debug("Loaded hash cache", "slug", slug, "entries", len(pc.Entries))
+	logger.Debug("Loaded ROM cache", "slug", slug, "entries", len(pc.Entries))
 	return pc
 }
 
-func (hc *HashCache) savePlatform(slug string, pc *PlatformHashCache) error {
+func (rc *RomCache) savePlatform(slug string, pc *PlatformRomCache) error {
 	logger := gaba.GetLogger()
 
-	if err := os.MkdirAll(GetHashCacheDir(), 0755); err != nil {
+	if err := os.MkdirAll(GetRomCacheDir(), 0755); err != nil {
 		return err
 	}
 
@@ -109,69 +109,81 @@ func (hc *HashCache) savePlatform(slug string, pc *PlatformHashCache) error {
 		return err
 	}
 
-	if err := os.WriteFile(getHashCacheFilePath(slug), data, 0644); err != nil {
+	if err := os.WriteFile(getRomCacheFilePath(slug), data, 0644); err != nil {
 		return err
 	}
 
-	logger.Debug("Saved hash cache", "slug", slug, "entries", len(pc.Entries))
+	logger.Debug("Saved ROM cache", "slug", slug, "entries", len(pc.Entries))
 	return nil
 }
 
-// GetCachedRomID looks up a ROM ID by SHA1 hash from the cache.
+// GetCachedRomIDByFilename looks up a ROM ID by filename from the cache.
 // Returns the ROM ID, ROM name, and whether it was found.
-func GetCachedRomID(slug, sha1 string) (int, string, bool) {
-	hc := getHashCache()
-	pc := hc.getPlatformCache(slug)
+func GetCachedRomIDByFilename(slug, filename string) (int, string, bool) {
+	rc := getRomCache()
+	pc := rc.getPlatformCache(slug)
 
-	hc.mu.RLock()
-	defer hc.mu.RUnlock()
+	key := filenameKey(filename)
 
-	if entry, ok := pc.Entries[sha1]; ok {
+	rc.mu.RLock()
+	defer rc.mu.RUnlock()
+
+	if entry, ok := pc.Entries[key]; ok {
 		return entry.RomID, entry.RomName, true
 	}
 
 	return 0, "", false
 }
 
-// CacheRomID stores a SHA1 hash to ROM ID mapping in the cache.
-func CacheRomID(slug, sha1 string, romID int, romName string) {
+// CacheRomID stores a filename to ROM ID mapping in the cache.
+func CacheRomID(slug, filename string, romID int, romName string) {
 	logger := gaba.GetLogger()
-	hc := getHashCache()
-	pc := hc.getPlatformCache(slug)
+	rc := getRomCache()
+	pc := rc.getPlatformCache(slug)
 
-	hc.mu.Lock()
-	pc.Entries[sha1] = HashCacheEntry{
+	key := filenameKey(filename)
+
+	rc.mu.Lock()
+	pc.Entries[key] = RomCacheEntry{
 		RomID:    romID,
 		RomName:  romName,
 		CachedAt: time.Now(),
 	}
-	hc.mu.Unlock()
 
-	if err := hc.savePlatform(slug, pc); err != nil {
-		logger.Debug("Failed to save hash cache", "slug", slug, "error", err)
+	// Make a copy of entries for serialization to avoid concurrent map access
+	entriesCopy := make(map[string]RomCacheEntry, len(pc.Entries))
+	for k, v := range pc.Entries {
+		entriesCopy[k] = v
+	}
+	rc.mu.Unlock()
+
+	// Save using the copy
+	pcCopy := &PlatformRomCache{Entries: entriesCopy}
+	if err := rc.savePlatform(slug, pcCopy); err != nil {
+		logger.Debug("Failed to save ROM cache", "slug", slug, "error", err)
 	}
 }
 
-// ClearHashCache removes all cached hash-to-ROM-ID mappings.
-func ClearHashCache() error {
-	cacheDir := GetHashCacheDir()
+// ClearRomCache removes all cached filename-to-ROM-ID mappings.
+func ClearRomCache() error {
+	cacheDir := GetRomCacheDir()
 
 	if _, err := os.Stat(cacheDir); os.IsNotExist(err) {
 		return nil
 	}
 
 	// Reset in-memory cache
-	hc := getHashCache()
-	hc.mu.Lock()
-	hc.platforms = make(map[string]*PlatformHashCache)
-	hc.mu.Unlock()
+	rc := getRomCache()
+	rc.mu.Lock()
+	rc.platforms = make(map[string]*PlatformRomCache)
+	rc.mu.Unlock()
 
 	return os.RemoveAll(cacheDir)
 }
 
-// HasHashCache returns true if the hash cache directory exists and has content.
-func HasHashCache() bool {
-	cacheDir := GetHashCacheDir()
+// HasRomCache returns true if the ROM cache directory exists and has content.
+func HasRomCache() bool {
+	cacheDir := GetRomCacheDir()
 
 	entries, err := os.ReadDir(cacheDir)
 	if err != nil {

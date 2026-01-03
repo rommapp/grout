@@ -522,6 +522,9 @@ other = "Неизвестная ошибка"
 hash = "sha1-11ffd636fd7a3bf88d84e08f65c2a6cd05cfc2b2"
 other = "Несопоставленные сохранения"
 
+[save_sync_syncing]
+other = "Синхронизация сохранений..."
+
 [save_sync_up_to_date]
 hash = "sha1-73e9f0f39987b22aebf571b4f039ecde681e9434"
 other = "Всё актуально!\nИграйте в удовольствие!"

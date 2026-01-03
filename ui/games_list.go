@@ -12,7 +12,7 @@ import (
 	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
-	buttons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
+	gabaconst "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
 	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
@@ -116,7 +116,7 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 			for i := range displayGames {
 				prefix := ""
 				if input.Config.DownloadedGames == "mark" && utils.IsGameDownloadedLocally(displayGames[i], *input.Config) {
-					prefix = utils.Downloaded + " "
+					prefix = gabaconst.Download + " "
 				}
 				displayGames[i].DisplayName = fmt.Sprintf("%s[%s] %s", prefix, displayGames[i].PlatformSlug, displayGames[i].DisplayName)
 			}
@@ -125,7 +125,7 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 			if input.Config.DownloadedGames == "mark" {
 				for i := range displayGames {
 					if utils.IsGameDownloadedLocally(displayGames[i], *input.Config) {
-						displayGames[i].DisplayName = fmt.Sprintf("%s %s", utils.Downloaded, displayGames[i].DisplayName)
+						displayGames[i].DisplayName = fmt.Sprintf("%s %s", gabaconst.Download, displayGames[i].DisplayName)
 					}
 				}
 			}
@@ -134,7 +134,7 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 		if input.Config.DownloadedGames == "mark" {
 			for i := range displayGames {
 				if utils.IsGameDownloadedLocally(displayGames[i], *input.Config) {
-					displayGames[i].DisplayName = fmt.Sprintf("%s %s", utils.Downloaded, displayGames[i].DisplayName)
+					displayGames[i].DisplayName = fmt.Sprintf("%s %s", gabaconst.Download, displayGames[i].DisplayName)
 				}
 			}
 		}
@@ -183,14 +183,14 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 	options := gaba.DefaultListOptions(title, menuItems)
 	options.SmallTitle = true
 	options.EnableImages = input.Config.ShowBoxArt
-	options.ActionButton = buttons.VirtualButtonX
-	options.MultiSelectButton = buttons.VirtualButtonSelect
-	options.DeselectAllButton = buttons.VirtualButtonL1
-	options.SelectAllButton = buttons.VirtualButtonR1
-	options.HelpButton = buttons.VirtualButtonMenu
+	options.ActionButton = gabaconst.VirtualButtonX
+	options.MultiSelectButton = gabaconst.VirtualButtonSelect
+	options.DeselectAllButton = gabaconst.VirtualButtonL1
+	options.SelectAllButton = gabaconst.VirtualButtonR1
+	options.HelpButton = gabaconst.VirtualButtonMenu
 
 	if hasBIOS && !utils.IsKidModeEnabled() {
-		options.SecondaryActionButton = buttons.VirtualButtonY
+		options.SecondaryActionButton = gabaconst.VirtualButtonY
 	}
 
 	options.HelpTitle = i18n.Localize(&goi18n.Message{ID: "games_list_help_title", Other: "Games List Help"}, nil)
