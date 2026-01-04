@@ -34,6 +34,17 @@ You can install Grout using one of these two methods:
 3. Place the `Grout.pak` directory into `SD_ROOT/Tools/tg5040`.
 4. Launch Grout from the `Tools` menu and enjoy!
 
+## Update
+
+### Pak Store update (Recommended)
+1. Launch the NextUI Pak Store from the `Tools` menu.
+2. If there are updates available, you will see an entry in the menu name `Available Pak Updates`. Navigate to it
+3. Select Grout and update.
+4. Launch Grout from the `Tools` menu and enjoy the latest version!
+
+
+### Manual update
+
 ## Next Steps
 
 After installation is complete, check out the [User Guide](USER_GUIDE.md) to learn how to use Grout.
