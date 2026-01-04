@@ -6,7 +6,7 @@ import (
 	"grout/internal/jsonutil"
 )
 
-//go:embed nextui muos knulli spruce
+//go:embed nextui muos knulli spruce crossmix
 var embeddedFiles embed.FS
 
 func mustLoadJSONMap[K comparable, V any](path string) map[K]V {
