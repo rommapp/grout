@@ -2,12 +2,13 @@ package main
 
 import (
 	"errors"
-	"grout/constants"
-	"grout/constants/cfw/muos"
+	"grout/cfw"
+	"grout/cfw/muos"
 	"grout/resources"
 	"grout/romm"
 	"grout/ui"
 	"grout/utils"
+	"log"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -25,10 +26,10 @@ type SetupResult struct {
 }
 
 func setup() SetupResult {
-	cfw := utils.GetCFW()
+	currentCFW := cfw.GetCFW()
 	gaba.SetLogFilename("grout.log")
 
-	if cfw == constants.MuOS && !utils.IsDevelopment() {
+	if currentCFW == cfw.MuOS && !utils.IsDevelopment() {
 		if cwd, err := os.Getwd(); err == nil {
 			cwdMappingPath := filepath.Join(cwd, "input_mapping.json")
 			if _, err := os.Stat(cwdMappingPath); err == nil {
@@ -48,7 +49,7 @@ func setup() SetupResult {
 		WindowTitle:          "Grout",
 		PrimaryThemeColorHex: 0x007C77,
 		ShowBackground:       true,
-		IsNextUI:             cfw == constants.NextUI,
+		IsNextUI:             currentCFW == cfw.NextUI,
 	})
 
 	gaba.RegisterChord("unlock-kid-mode", []buttons.VirtualButton{
@@ -70,10 +71,12 @@ func setup() SetupResult {
 
 	localeFiles, err := resources.GetLocaleMessageFiles()
 	if err != nil {
-		utils.LogStandardFatal("Failed to load locale files", err)
+		log.SetOutput(os.Stderr)
+		log.Fatalf("Failed to load locale files: %v", err)
 	}
 	if err := i18n.InitI18NFromBytes(localeFiles); err != nil {
-		utils.LogStandardFatal("Failed to initialize i18n", err)
+		log.SetOutput(os.Stderr)
+		log.Fatalf("Failed to initialize i18n: %v", err)
 	}
 
 	config, err := utils.LoadConfig()
@@ -107,7 +110,8 @@ func setup() SetupResult {
 		loginConfig, loginErr := ui.LoginFlow(romm.Host{})
 		if loginErr != nil {
 			logger.Error("Login flow failed", "error", loginErr)
-			utils.LogStandardFatal("Login failed", loginErr)
+			log.SetOutput(os.Stderr)
+			log.Fatalf("Login failed: %v", loginErr)
 		}
 		logger.Debug("Login successful, saving configuration")
 		config.Hosts = loginConfig.Hosts
@@ -151,8 +155,8 @@ func setup() SetupResult {
 		result, err := screen.Draw(ui.PlatformMappingInput{
 			Host:           config.Hosts[0],
 			ApiTimeout:     config.ApiTimeout,
-			CFW:            cfw,
-			RomDirectory:   utils.GetRomDirectory(),
+			CFW:            currentCFW,
+			RomDirectory:   cfw.GetRomDirectory(),
 			AutoSelect:     false,
 			HideBackButton: true,
 		})

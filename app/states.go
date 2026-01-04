@@ -1,22 +1,25 @@
 package main
 
 import (
+	"grout/cache"
+	"grout/cfw"
 	"grout/constants"
 	"grout/romm"
+	"grout/sync"
 	"grout/ui"
 	"grout/utils"
 	"os"
-	"sync"
+	gosync "sync"
 	"sync/atomic"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
 
 var (
-	autoSync       *utils.AutoSync
-	autoSyncOnce   sync.Once
+	autoSync       *sync.AutoSync
+	autoSyncOnce   gosync.Once
 	autoUpdate     *utils.AutoUpdate
-	autoUpdateOnce sync.Once
+	autoUpdateOnce gosync.Once
 )
 
 const (
@@ -78,7 +81,7 @@ func (s *NavState) ResetGameList() {
 	s.GameListPos = ListPosition{}
 }
 
-func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform, quitOnBack bool, showCollections bool) *gaba.FSM {
+func buildFSM(config *utils.Config, c cfw.CFW, platforms []romm.Platform, quitOnBack bool, showCollections bool) *gaba.FSM {
 	fsm := gaba.NewFSM()
 
 	nav := &NavState{
@@ -87,13 +90,16 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 	}
 
 	gaba.Set(fsm.Context(), config)
-	gaba.Set(fsm.Context(), cfw)
+	gaba.Set(fsm.Context(), c)
 	gaba.Set(fsm.Context(), config.Hosts[0])
 	gaba.Set(fsm.Context(), platforms)
 	gaba.Set(fsm.Context(), nav)
 
 	// Start background cache refresh immediately
-	utils.InitCacheRefresh(config.Hosts[0], config, platforms)
+	cache.InitRefresh(config.Hosts[0], config, platforms)
+
+	// Validate artwork cache in background
+	go cache.ValidateArtworkCache()
 
 	gaba.AddState(fsm, platformSelection, func(ctx *gaba.Context) (ui.PlatformSelectionOutput, gaba.ExitCode) {
 		platforms, _ := gaba.Get[[]romm.Platform](ctx)
@@ -101,22 +107,22 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 
 		screen := ui.NewPlatformSelectionScreen()
 		config, _ := gaba.Get[*utils.Config](ctx)
-		cfw, _ := gaba.Get[constants.CFW](ctx)
+		currentCFW, _ := gaba.Get[cfw.CFW](ctx)
 
 		// Start auto-sync on first platform menu view
 		if config.SaveSyncMode == "automatic" {
 			autoSyncOnce.Do(func() {
 				host, _ := gaba.Get[romm.Host](ctx)
-				autoSync = utils.NewAutoSync(host, config)
+				autoSync = sync.NewAutoSync(host, config)
 				utils.AddIcon(autoSync.Icon())
 				autoSync.Start()
 			})
 		}
 
 		// Start auto-update check on first platform menu view
-		if cfw != constants.NextUI {
+		if currentCFW != cfw.NextUI {
 			autoUpdateOnce.Do(func() {
-				autoUpdate = utils.NewAutoUpdate(cfw)
+				autoUpdate = utils.NewAutoUpdate(currentCFW)
 				utils.AddIcon(autoUpdate.Icon())
 				autoUpdate.Start()
 			})
@@ -491,14 +497,14 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 
 	gaba.AddState(fsm, settings, func(ctx *gaba.Context) (ui.SettingsOutput, gaba.ExitCode) {
 		config, _ := gaba.Get[*utils.Config](ctx)
-		cfw, _ := gaba.Get[constants.CFW](ctx)
+		currentCFW, _ := gaba.Get[cfw.CFW](ctx)
 		host, _ := gaba.Get[romm.Host](ctx)
 		nav, _ := gaba.Get[*NavState](ctx)
 
 		screen := ui.NewSettingsScreen()
 		result, err := screen.Draw(ui.SettingsInput{
 			Config:                config,
-			CFW:                   cfw,
+			CFW:                   currentCFW,
 			Host:                  host,
 			LastSelectedIndex:     nav.SettingsPos.Index,
 			LastVisibleStartIndex: nav.SettingsPos.VisibleStartIndex,
@@ -583,12 +589,12 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 
 	gaba.AddState(fsm, saveSyncSettings, func(ctx *gaba.Context) (ui.SaveSyncSettingsOutput, gaba.ExitCode) {
 		config, _ := gaba.Get[*utils.Config](ctx)
-		cfw, _ := gaba.Get[constants.CFW](ctx)
+		currentCFW, _ := gaba.Get[cfw.CFW](ctx)
 
 		screen := ui.NewSaveSyncSettingsScreen()
 		result, err := screen.Draw(ui.SaveSyncSettingsInput{
 			Config: config,
-			CFW:    cfw,
+			CFW:    currentCFW,
 		})
 
 		if err != nil {
@@ -636,14 +642,14 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 	gaba.AddState(fsm, settingsPlatformMapping, func(ctx *gaba.Context) (ui.PlatformMappingOutput, gaba.ExitCode) {
 		host, _ := gaba.Get[romm.Host](ctx)
 		config, _ := gaba.Get[*utils.Config](ctx)
-		cfw, _ := gaba.Get[constants.CFW](ctx)
+		currentCFW, _ := gaba.Get[cfw.CFW](ctx)
 
 		screen := ui.NewPlatformMappingScreen()
 		result, err := screen.Draw(ui.PlatformMappingInput{
 			Host:           host,
 			ApiTimeout:     config.ApiTimeout,
-			CFW:            cfw,
-			RomDirectory:   utils.GetRomDirectory(),
+			CFW:            currentCFW,
+			RomDirectory:   cfw.GetRomDirectory(),
 			AutoSelect:     false,
 			HideBackButton: false,
 		})
@@ -704,7 +710,7 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		On(gaba.ExitCodeBack, info).
 		OnWithHook(constants.ExitCodeLogout, platformSelection, func(ctx *gaba.Context) error {
 			config, _ := gaba.Get[*utils.Config](ctx)
-			cfw, _ := gaba.Get[constants.CFW](ctx)
+			currentCFW, _ := gaba.Get[cfw.CFW](ctx)
 
 			config.Hosts = nil
 			config.DirectoryMappings = nil
@@ -737,8 +743,8 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 				result, err := screen.Draw(ui.PlatformMappingInput{
 					Host:           config.Hosts[0],
 					ApiTimeout:     config.ApiTimeout,
-					CFW:            cfw,
-					RomDirectory:   utils.GetRomDirectory(),
+					CFW:            currentCFW,
+					RomDirectory:   cfw.GetRomDirectory(),
 					AutoSelect:     false,
 					HideBackButton: true,
 				})
@@ -826,11 +832,11 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		On(gaba.ExitCodeBack, advancedSettings)
 
 	gaba.AddState(fsm, updateCheck, func(ctx *gaba.Context) (ui.UpdateOutput, gaba.ExitCode) {
-		cfw, _ := gaba.Get[constants.CFW](ctx)
+		currentCFW, _ := gaba.Get[cfw.CFW](ctx)
 
 		screen := ui.NewUpdateScreen()
 		result, err := screen.Draw(ui.UpdateInput{
-			CFW: cfw,
+			CFW: currentCFW,
 		})
 
 		if err != nil {

@@ -2,6 +2,7 @@ package ui
 
 import (
 	"grout/romm"
+	"grout/sync"
 	"grout/utils"
 	"time"
 
@@ -29,23 +30,23 @@ func (s *SaveSyncScreen) Draw(input SaveSyncInput) (ScreenResult[SaveSyncOutput]
 
 	// Scan local ROMs and match with save files
 	romScan, _ := gaba.ProcessMessage(i18n.Localize(&goi18n.Message{ID: "save_sync_scanning_roms", Other: "Scanning ROMs..."}, nil), gaba.ProcessMessageOptions{}, func() (interface{}, error) {
-		return utils.ScanRoms(), nil
+		return sync.ScanRoms(), nil
 	})
 
 	type scanResult struct {
-		Syncs     []utils.SaveSync
-		Unmatched []utils.UnmatchedSave
+		Syncs     []sync.SaveSync
+		Unmatched []sync.UnmatchedSave
 	}
 
 	// Then, find save syncs using the pre-scanned ROM data
 	scanData, _ := gaba.ProcessMessage(i18n.Localize(&goi18n.Message{ID: "save_sync_scanning", Other: "Scanning save files..."}, nil), gaba.ProcessMessageOptions{}, func() (interface{}, error) {
-		localRoms, ok := romScan.(utils.LocalRomScan)
+		localRoms, ok := romScan.(sync.LocalRomScan)
 		if !ok {
 			gaba.GetLogger().Error("Unable to scan ROMs!")
 			return nil, nil
 		}
 
-		syncs, unmatched, err := utils.FindSaveSyncsFromScan(input.Host, input.Config, localRoms)
+		syncs, unmatched, err := sync.FindSaveSyncsFromScan(input.Host, input.Config, localRoms)
 		if err != nil {
 			gaba.GetLogger().Error("Unable to scan save files!", "error", err)
 			return nil, nil
@@ -54,12 +55,12 @@ func (s *SaveSyncScreen) Draw(input SaveSyncInput) (ScreenResult[SaveSyncOutput]
 		return scanResult{Syncs: syncs, Unmatched: unmatched}, nil
 	})
 
-	var results []utils.SyncResult
-	var unmatched []utils.UnmatchedSave
+	var results []sync.SyncResult
+	var unmatched []sync.UnmatchedSave
 
 	if scan, ok := scanData.(scanResult); ok {
 		unmatched = scan.Unmatched
-		results = make([]utils.SyncResult, 0, len(scan.Syncs))
+		results = make([]sync.SyncResult, 0, len(scan.Syncs))
 
 		if len(scan.Syncs) > 0 {
 			progress := &atomic.Float64{}

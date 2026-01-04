@@ -1,4 +1,4 @@
-package constants
+package cfw
 
 import (
 	"embed"
@@ -6,9 +6,9 @@ import (
 	"grout/internal/jsonutil"
 )
 
-//go:embed bios
+//go:embed nextui muos knulli spruce
 var embeddedFiles embed.FS
 
 func mustLoadJSONMap[K comparable, V any](path string) map[K]V {
-	return jsonutil.MustLoadJSONMap[K, V](embeddedFiles, path, "")
+	return jsonutil.MustLoadJSONMap[K, V](embeddedFiles, path, "cfw")
 }

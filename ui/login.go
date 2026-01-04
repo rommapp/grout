@@ -211,7 +211,7 @@ func LoginFlow(existingHost romm.Host) (*utils.Config, error) {
 }
 
 func attemptLogin(host romm.Host) loginAttemptResult {
-	validationClient := utils.GetRommClient(host, constants.ValidationTimeout)
+	validationClient := romm.NewClientFromHost(host, constants.ValidationTimeout)
 
 	result, _ := gabagool.ProcessMessage(
 		i18n.Localize(&goi18n.Message{ID: "login_validating", Other: "Validating connection..."}, nil),
@@ -222,7 +222,7 @@ func attemptLogin(host romm.Host) loginAttemptResult {
 				return classifyLoginError(err), nil
 			}
 
-			loginClient := utils.GetRommClient(host, constants.LoginTimeout)
+			loginClient := romm.NewClientFromHost(host, constants.LoginTimeout)
 			err = loginClient.Login(host.Username, host.Password)
 			if err != nil {
 				return classifyLoginError(err), nil

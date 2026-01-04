@@ -1,11 +1,14 @@
-package utils
+package sync
 
 import (
 	"fmt"
+	"grout/cfw"
+	"grout/internal/fileutil"
+	"grout/utils"
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
+	gosync "sync"
 	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -13,7 +16,7 @@ import (
 
 const backupTimestampFormat = "2006-01-02 15-04-05"
 
-type localSave struct {
+type LocalSave struct {
 	Slug         string
 	Path         string
 	LastModified time.Time
@@ -26,7 +29,7 @@ type EmulatorDirectoryInfo struct {
 	SaveCount     int
 }
 
-func (lc localSave) timestampedFilename() string {
+func (lc LocalSave) timestampedFilename() string {
 	ext := filepath.Ext(lc.Path)
 	base := strings.ReplaceAll(filepath.Base(lc.Path), ext, "")
 
@@ -35,17 +38,17 @@ func (lc localSave) timestampedFilename() string {
 	return fmt.Sprintf("%s [%s]%s", base, lm, ext)
 }
 
-func (lc localSave) backup() error {
+func (lc LocalSave) backup() error {
 	dest := filepath.Join(filepath.Dir(lc.Path), ".backup", lc.timestampedFilename())
-	return copyFile(lc.Path, dest)
+	return fileutil.CopyFile(lc.Path, dest)
 }
 
-func ResolveSavePath(slug string, gameID int, config *Config) (string, error) {
+func ResolveSavePath(slug string, gameID int, config *utils.Config) (string, error) {
 	logger := gaba.GetLogger()
 	logger.Debug("ResolveSavePath called", "slug", slug, "gameID", gameID)
-	basePath := BaseSavePath()
+	basePath := cfw.BaseSavePath()
 
-	emulatorFolders := EmulatorFoldersForSlug(slug)
+	emulatorFolders := cfw.EmulatorFoldersForSlug(slug)
 
 	if len(emulatorFolders) == 0 {
 		return "", fmt.Errorf("no save folder mapping for slug: %s", slug)
@@ -95,26 +98,26 @@ createDir:
 	return saveDir, nil
 }
 
-func findSaveFiles(slug string) []localSave {
+func findSaveFiles(slug string) []LocalSave {
 	logger := gaba.GetLogger()
 
-	basePath := BaseSavePath()
-	emulatorFolders := EmulatorFoldersForSlug(slug)
+	basePath := cfw.BaseSavePath()
+	emulatorFolders := cfw.EmulatorFoldersForSlug(slug)
 
 	if len(emulatorFolders) == 0 {
 		logger.Debug("No save folder mapping for slug", "slug", slug)
-		return []localSave{}
+		return []LocalSave{}
 	}
 
 	// Use channels and goroutines to scan directories in parallel
 	type scanResult struct {
-		saves []localSave
+		saves []LocalSave
 		path  string
 		count int
 	}
 
 	resultChan := make(chan scanResult, len(emulatorFolders))
-	var wg sync.WaitGroup
+	var wg gosync.WaitGroup
 
 	for _, folder := range emulatorFolders {
 		wg.Add(1)
@@ -122,7 +125,7 @@ func findSaveFiles(slug string) []localSave {
 			defer wg.Done()
 
 			sd := filepath.Join(basePath, folder)
-			result := scanResult{path: sd, saves: []localSave{}}
+			result := scanResult{path: sd, saves: []LocalSave{}}
 
 			if _, err := os.Stat(sd); os.IsNotExist(err) {
 				resultChan <- result
@@ -136,9 +139,9 @@ func findSaveFiles(slug string) []localSave {
 				return
 			}
 
-			visibleFiles := FilterVisibleFiles(entries)
+			visibleFiles := fileutil.FilterVisibleFiles(entries)
 			result.count = len(entries)
-			result.saves = make([]localSave, 0, len(visibleFiles))
+			result.saves = make([]LocalSave, 0, len(visibleFiles))
 
 			for _, entry := range visibleFiles {
 				savePath := filepath.Join(sd, entry.Name())
@@ -149,7 +152,7 @@ func findSaveFiles(slug string) []localSave {
 					continue
 				}
 
-				saveFile := localSave{
+				saveFile := LocalSave{
 					Slug:         slug,
 					Path:         savePath,
 					LastModified: fileInfo.ModTime(),
@@ -167,7 +170,7 @@ func findSaveFiles(slug string) []localSave {
 		close(resultChan)
 	}()
 
-	var allSaveFiles []localSave
+	var allSaveFiles []LocalSave
 	for result := range resultChan {
 		allSaveFiles = append(allSaveFiles, result.saves...)
 		if result.count > 0 {

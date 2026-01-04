@@ -3,7 +3,7 @@ package ui
 import (
 	"errors"
 	"fmt"
-	"grout/utils"
+	"grout/sync"
 	"path/filepath"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -12,8 +12,8 @@ import (
 )
 
 type syncReportInput struct {
-	Results   []utils.SyncResult
-	Unmatched []utils.UnmatchedSave
+	Results   []sync.SyncResult
+	Unmatched []sync.UnmatchedSave
 }
 
 type syncReportOutput struct{}
@@ -54,7 +54,7 @@ func (s *SyncReportScreen) draw(input syncReportInput) (ScreenResult[syncReportO
 	return success(output), nil
 }
 
-func (s *SyncReportScreen) buildSections(results []utils.SyncResult, unmatched []utils.UnmatchedSave) []gaba.Section {
+func (s *SyncReportScreen) buildSections(results []sync.SyncResult, unmatched []sync.UnmatchedSave) []gaba.Section {
 	logger := gaba.GetLogger()
 	logger.Debug("Building sync report", "totalResults", len(results), "unmatched", len(unmatched))
 
@@ -71,11 +71,11 @@ func (s *SyncReportScreen) buildSections(results []utils.SyncResult, unmatched [
 			continue
 		}
 		switch r.Action {
-		case utils.Upload:
+		case sync.Upload:
 			uploadedCount++
-		case utils.Download:
+		case sync.Download:
 			downloadedCount++
-		case utils.Skip:
+		case sync.Skip:
 			skippedCount++
 		}
 	}
@@ -108,7 +108,7 @@ func (s *SyncReportScreen) buildSections(results []utils.SyncResult, unmatched [
 	if downloadedCount > 0 {
 		downloadedFiles := ""
 		for _, r := range results {
-			if r.Success && r.Action == utils.Download {
+			if r.Success && r.Action == sync.Download {
 				if downloadedFiles != "" {
 					downloadedFiles += "\n"
 				}
@@ -125,7 +125,7 @@ func (s *SyncReportScreen) buildSections(results []utils.SyncResult, unmatched [
 	if uploadedCount > 0 {
 		uploadedFiles := ""
 		for _, r := range results {
-			if r.Success && r.Action == utils.Upload {
+			if r.Success && r.Action == sync.Upload {
 				if uploadedFiles != "" {
 					uploadedFiles += "\n"
 				}

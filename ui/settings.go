@@ -2,6 +2,7 @@ package ui
 
 import (
 	"errors"
+	"grout/cfw"
 	"grout/constants"
 	"grout/romm"
 	"grout/utils"
@@ -19,7 +20,7 @@ type settingsVisibility struct {
 
 type SettingsInput struct {
 	Config                *utils.Config
-	CFW                   constants.CFW
+	CFW                   cfw.CFW
 	Host                  romm.Host
 	LastSelectedIndex     int
 	LastVisibleStartIndex int
@@ -71,7 +72,7 @@ func (s *SettingsScreen) Draw(input SettingsInput) (ScreenResult[SettingsOutput]
 
 	visibility := &settingsVisibility{}
 	visibility.saveSyncSettings.Store(config.SaveSyncMode != "off")
-	visibility.checkUpdates.Store(input.CFW != constants.NextUI)
+	visibility.checkUpdates.Store(input.CFW != cfw.NextUI)
 
 	items := s.buildMenuItems(config, visibility)
 

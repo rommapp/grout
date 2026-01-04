@@ -2,7 +2,7 @@ package ui
 
 import (
 	"errors"
-	"grout/constants"
+	"grout/cfw"
 	"grout/utils"
 	"sort"
 
@@ -13,7 +13,7 @@ import (
 
 type SaveSyncSettingsInput struct {
 	Config *utils.Config
-	CFW    constants.CFW
+	CFW    cfw.CFW
 }
 
 type SaveSyncSettingsOutput struct {
@@ -82,7 +82,7 @@ func (s *SaveSyncSettingsScreen) buildMenuItems(config *utils.Config) []gaba.Ite
 	sort.Strings(slugs)
 
 	for _, slug := range slugs {
-		saveDirectories := utils.EmulatorFoldersForSlug(slug)
+		saveDirectories := cfw.EmulatorFoldersForSlug(slug)
 		if len(saveDirectories) == 0 {
 			continue
 		}

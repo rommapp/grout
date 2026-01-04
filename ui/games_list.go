@@ -3,6 +3,7 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"grout/cache"
 	"grout/constants"
 	"grout/romm"
 	"grout/utils"
@@ -169,7 +170,7 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 	for i, game := range displayGames {
 		imageFilename := ""
 		if input.Config.ShowBoxArt {
-			imageFilename = utils.GetArtworkCachePath(game.PlatformSlug, game.ID)
+			imageFilename = cache.GetArtworkCachePath(game.PlatformSlug, game.ID)
 		}
 		menuItems[i] = gaba.MenuItem{
 			Text:          game.DisplayName,
@@ -290,7 +291,7 @@ func (s *GameListScreen) loadGames(input GameListInput) (loadGamesResult, error)
 	query := getQueryForFetch(id, ft)
 
 	// Check if a prefetch is in progress for this platform
-	if cr := utils.GetCacheRefresh(); cr != nil {
+	if cr := cache.GetRefresh(); cr != nil {
 		if cr.IsPrefetchInProgress(cacheKey) {
 			logger.Debug("Waiting for prefetch to complete", "key", cacheKey)
 			// Show a loading message while waiting
@@ -303,7 +304,7 @@ func (s *GameListScreen) loadGames(input GameListInput) (loadGamesResult, error)
 				},
 			)
 			// After prefetch completes, load from cache
-			cached, err := utils.LoadCachedGames(cacheKey)
+			cached, err := cache.LoadCachedGames(cacheKey)
 			if err == nil {
 				logger.Debug("Loaded games from prefetch cache", "key", cacheKey, "count", len(cached))
 				result.games = cached
@@ -320,16 +321,16 @@ func (s *GameListScreen) loadGames(input GameListInput) (loadGamesResult, error)
 		}
 	}
 
-	isFresh, _ := utils.CheckCacheFreshness(host, config, cacheKey, query)
+	isFresh, _ := cache.CheckCacheFreshness(host, config, cacheKey, query)
 	if isFresh {
-		cached, err := utils.LoadCachedGames(cacheKey)
+		cached, err := cache.LoadCachedGames(cacheKey)
 		if err == nil {
 			logger.Debug("Loaded games from cache (no loading screen)", "key", cacheKey, "count", len(cached))
 			result.games = cached
 
 			// Check BIOS availability from pre-cached data
 			if platform.ID != 0 && !isCollectionSet(collection) {
-				if cr := utils.GetCacheRefresh(); cr != nil {
+				if cr := cache.GetRefresh(); cr != nil {
 					if hasBIOS, wasFetched := cr.HasBIOS(platform.ID); wasFetched {
 						result.hasBIOS = hasBIOS
 					}
@@ -347,7 +348,7 @@ func (s *GameListScreen) loadGames(input GameListInput) (loadGamesResult, error)
 		i18n.Localize(&goi18n.Message{ID: "games_list_loading", Other: "Loading {{.Name}}..."}, map[string]interface{}{"Name": displayName}),
 		gaba.ProcessMessageOptions{ShowThemeBackground: true},
 		func() (interface{}, error) {
-			rc := utils.GetRommClient(host, config.ApiTimeout)
+			rc := romm.NewClientFromHost(host, config.ApiTimeout)
 
 			// Fetch games and BIOS info in parallel
 			var wg sync.WaitGroup
@@ -368,7 +369,7 @@ func (s *GameListScreen) loadGames(input GameListInput) (loadGamesResult, error)
 			// Check BIOS availability (only for platforms, not collections)
 			if platform.ID != 0 && !isCollectionSet(collection) {
 				// First check pre-cached BIOS info
-				if cr := utils.GetCacheRefresh(); cr != nil {
+				if cr := cache.GetRefresh(); cr != nil {
 					if hasBIOS, wasFetched := cr.HasBIOS(platform.ID); wasFetched {
 						result.hasBIOS = hasBIOS
 					} else {
@@ -415,9 +416,9 @@ func (s *GameListScreen) loadGames(input GameListInput) (loadGamesResult, error)
 func getCacheKeyForFetch(id int, ft fetchType) string {
 	switch ft {
 	case ftPlatform:
-		return utils.GetPlatformCacheKey(id)
+		return cache.GetPlatformCacheKey(id)
 	case ftCollection:
-		return utils.GetCacheKey(utils.CacheTypeCollection, fmt.Sprintf("%d", id))
+		return cache.GetCacheKey(cache.Collection, fmt.Sprintf("%d", id))
 	}
 	return ""
 }
@@ -496,17 +497,17 @@ func fetchList(config *utils.Config, host romm.Host, queryID int, fetchType fetc
 	switch fetchType {
 	case ftPlatform:
 		query.PlatformID = queryID
-		cacheKey = utils.GetPlatformCacheKey(queryID)
+		cacheKey = cache.GetPlatformCacheKey(queryID)
 	case ftCollection:
 		query.CollectionID = queryID
-		cacheKey = utils.GetCacheKey(utils.CacheTypeCollection, fmt.Sprintf("%d", queryID))
+		cacheKey = cache.GetCacheKey(cache.Collection, fmt.Sprintf("%d", queryID))
 	}
 
 	// Check if cache is fresh
-	isFresh, err := utils.CheckCacheFreshness(host, config, cacheKey, query)
+	isFresh, err := cache.CheckCacheFreshness(host, config, cacheKey, query)
 	if err == nil && isFresh {
 		// Load from cache
-		cached, err := utils.LoadCachedGames(cacheKey)
+		cached, err := cache.LoadCachedGames(cacheKey)
 		if err == nil {
 			logger.Debug("Loaded games from cache", "key", cacheKey, "count", len(cached))
 			return cached, nil
@@ -515,7 +516,7 @@ func fetchList(config *utils.Config, host romm.Host, queryID int, fetchType fetc
 	}
 
 	// Fetch from API
-	rc := utils.GetRommClient(host, config.ApiTimeout)
+	rc := romm.NewClientFromHost(host, config.ApiTimeout)
 
 	res, err := rc.GetRoms(query)
 	if err != nil {
@@ -525,7 +526,7 @@ func fetchList(config *utils.Config, host romm.Host, queryID int, fetchType fetc
 	logger.Debug("Fetched games", "count", len(res.Items), "total", res.Total)
 
 	// Save to cache
-	if err := utils.SaveGamesToCache(cacheKey, res.Items); err != nil {
+	if err := cache.SaveGamesToCache(cacheKey, res.Items); err != nil {
 		logger.Debug("Failed to save games to cache", "error", err)
 	}
 

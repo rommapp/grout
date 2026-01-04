@@ -54,6 +54,14 @@ func NewClient(baseURL string, opts ...ClientOption) *Client {
 	return c
 }
 
+func NewClientFromHost(host Host, timeout ...time.Duration) *Client {
+	opts := []ClientOption{WithBasicAuth(host.Username, host.Password)}
+	if len(timeout) > 0 {
+		opts = append(opts, WithTimeout(timeout[0]))
+	}
+	return NewClient(host.URL(), opts...)
+}
+
 func (c *Client) doRequest(method string, path string, queryParams queryParam, body interface{}, result interface{}) error {
 	var reqBody io.Reader
 	if body != nil {

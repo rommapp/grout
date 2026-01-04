@@ -1,4 +1,4 @@
-package utils
+package cache
 
 import (
 	"grout/romm"
@@ -8,24 +8,20 @@ import (
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
 
-// CacheRefresh handles startup cache validation, BIOS pre-fetching, and prefetching missing platforms/collections
-type CacheRefresh struct {
+// Refresh handles startup cache validation, BIOS pre-fetching, and prefetching missing platforms/collections
+type Refresh struct {
 	host   romm.Host
-	config *Config
+	config Config
 
-	// Cache freshness results - map of cache key to freshness state
 	freshnessCache map[string]bool
 	freshnessMu    sync.RWMutex
 
-	// BIOS availability results - map of platform ID to hasBIOS
 	biosCache map[int]bool
 	biosMu    sync.RWMutex
 
-	// Prefetch tracking - map of cache key to completion channel
 	prefetchInProgress map[string]chan struct{}
 	prefetchMu         sync.RWMutex
 
-	// Collections cache - stores fetched collections for reuse
 	collections   []romm.Collection
 	collectionsMu sync.RWMutex
 
@@ -34,19 +30,17 @@ type CacheRefresh struct {
 }
 
 var (
-	cacheRefreshInstance *CacheRefresh
-	cacheRefreshOnce     sync.Once
+	refreshInstance *Refresh
+	refreshOnce     sync.Once
 )
 
-// GetCacheRefresh returns the singleton CacheRefresh instance
-func GetCacheRefresh() *CacheRefresh {
-	return cacheRefreshInstance
+func GetRefresh() *Refresh {
+	return refreshInstance
 }
 
-// InitCacheRefresh initializes and starts the cache refresh process
-func InitCacheRefresh(host romm.Host, config *Config, platforms []romm.Platform) {
-	cacheRefreshOnce.Do(func() {
-		cacheRefreshInstance = &CacheRefresh{
+func InitRefresh(host romm.Host, config Config, platforms []romm.Platform) {
+	refreshOnce.Do(func() {
+		refreshInstance = &Refresh{
 			host:               host,
 			config:             config,
 			freshnessCache:     make(map[string]bool),
@@ -54,33 +48,29 @@ func InitCacheRefresh(host romm.Host, config *Config, platforms []romm.Platform)
 			prefetchInProgress: make(map[string]chan struct{}),
 			done:               make(chan struct{}),
 		}
-		cacheRefreshInstance.start(platforms)
+		refreshInstance.start(platforms)
 	})
 }
 
-func (c *CacheRefresh) start(platforms []romm.Platform) {
+func (c *Refresh) start(platforms []romm.Platform) {
 	c.running = true
 	go c.run(platforms)
 }
 
-func (c *CacheRefresh) run(platforms []romm.Platform) {
+func (c *Refresh) run(platforms []romm.Platform) {
 	logger := gaba.GetLogger()
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Error("CacheRefresh: Panic recovered", "panic", r)
+			logger.Error("Refresh: Panic recovered", "panic", r)
 		}
 		c.running = false
 		close(c.done)
 	}()
 
-	logger.Debug("CacheRefresh: Starting background cache validation and prefetch")
-
-	// Validate artwork cache in background
-	ValidateArtworkCache()
+	logger.Debug("Refresh: Starting background cache validation and prefetch")
 
 	var wg sync.WaitGroup
 
-	// Pre-fetch BIOS availability for all platforms in parallel (fast, do first)
 	for _, platform := range platforms {
 		wg.Add(1)
 		go func(p romm.Platform) {
@@ -89,7 +79,6 @@ func (c *CacheRefresh) run(platforms []romm.Platform) {
 		}(platform)
 	}
 
-	// Validate and prefetch platforms in parallel
 	for _, platform := range platforms {
 		wg.Add(1)
 		go func(p romm.Platform) {
@@ -98,7 +87,6 @@ func (c *CacheRefresh) run(platforms []romm.Platform) {
 		}(platform)
 	}
 
-	// Fetch and prefetch collections in parallel
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -106,14 +94,14 @@ func (c *CacheRefresh) run(platforms []romm.Platform) {
 	}()
 
 	wg.Wait()
-	logger.Debug("CacheRefresh: Completed background cache validation and prefetch",
+	logger.Debug("Refresh: Completed background cache validation and prefetch",
 		"platforms", len(platforms),
 		"collections", len(c.collections),
 		"freshness_entries", len(c.freshnessCache),
 		"bios_entries", len(c.biosCache))
 }
 
-func (c *CacheRefresh) validateAndPrefetchPlatform(platform romm.Platform) {
+func (c *Refresh) validateAndPrefetchPlatform(platform romm.Platform) {
 	logger := gaba.GetLogger()
 	cacheKey := GetPlatformCacheKey(platform.ID)
 
@@ -121,11 +109,10 @@ func (c *CacheRefresh) validateAndPrefetchPlatform(platform romm.Platform) {
 	isFresh, err := checkCacheFreshnessInternal(c.host, c.config, cacheKey, query)
 
 	if err != nil {
-		logger.Debug("CacheRefresh: Failed to validate cache", "platform", platform.Name, "error", err)
+		logger.Debug("Refresh: Failed to validate cache", "platform", platform.Name, "error", err)
 		c.freshnessMu.Lock()
 		c.freshnessCache[cacheKey] = false
 		c.freshnessMu.Unlock()
-		// Still try to prefetch on error
 		c.prefetchPlatform(platform, cacheKey)
 		return
 	}
@@ -138,14 +125,12 @@ func (c *CacheRefresh) validateAndPrefetchPlatform(platform romm.Platform) {
 		return
 	}
 
-	// Cache is stale or missing, prefetch it
 	c.prefetchPlatform(platform, cacheKey)
 }
 
-func (c *CacheRefresh) prefetchPlatform(platform romm.Platform, cacheKey string) {
+func (c *Refresh) prefetchPlatform(platform romm.Platform, cacheKey string) {
 	logger := gaba.GetLogger()
 
-	// Create a completion channel for this prefetch
 	done := make(chan struct{})
 
 	c.prefetchMu.Lock()
@@ -153,33 +138,30 @@ func (c *CacheRefresh) prefetchPlatform(platform romm.Platform, cacheKey string)
 	c.prefetchMu.Unlock()
 
 	defer func() {
-		// Signal completion and remove from in-progress map
 		close(done)
 		c.prefetchMu.Lock()
 		delete(c.prefetchInProgress, cacheKey)
 		c.prefetchMu.Unlock()
 	}()
 
-	logger.Debug("CacheRefresh: Prefetching platform", "platform", platform.Name)
+	logger.Debug("Refresh: Prefetching platform", "platform", platform.Name)
 
-	// Fetch the games
 	games, err := c.fetchPlatformGames(platform.ID)
 	if err != nil {
-		logger.Debug("CacheRefresh: Failed to prefetch platform", "platform", platform.Name, "error", err)
+		logger.Debug("Refresh: Failed to prefetch platform", "platform", platform.Name, "error", err)
 		return
 	}
 
-	// Save to cache
 	if err := SaveGamesToCache(cacheKey, games); err != nil {
-		logger.Debug("CacheRefresh: Failed to save prefetched games", "platform", platform.Name, "error", err)
+		logger.Debug("Refresh: Failed to save prefetched games", "platform", platform.Name, "error", err)
 		return
 	}
 
-	logger.Debug("CacheRefresh: Prefetched platform", "platform", platform.Name, "games", len(games))
+	logger.Debug("Refresh: Prefetched platform", "platform", platform.Name, "games", len(games))
 }
 
-func (c *CacheRefresh) fetchPlatformGames(platformID int) ([]romm.Rom, error) {
-	rc := GetRommClient(c.host, c.config.ApiTimeout)
+func (c *Refresh) fetchPlatformGames(platformID int) ([]romm.Rom, error) {
+	rc := romm.NewClientFromHost(c.host, c.config.GetApiTimeout())
 
 	var allGames []romm.Rom
 	page := 1
@@ -209,22 +191,21 @@ func (c *CacheRefresh) fetchPlatformGames(platformID int) ([]romm.Rom, error) {
 	return allGames, nil
 }
 
-func (c *CacheRefresh) fetchAndPrefetchCollections() {
+func (c *Refresh) fetchAndPrefetchCollections() {
 	logger := gaba.GetLogger()
-	rc := GetRommClient(c.host, c.config.ApiTimeout)
+	rc := romm.NewClientFromHost(c.host, c.config.GetApiTimeout())
 
 	var allCollections []romm.Collection
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
-	// Fetch regular collections if enabled
-	if c.config.ShowCollections {
+	if c.config.GetShowCollections() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			collections, err := rc.GetCollections()
 			if err != nil {
-				logger.Debug("CacheRefresh: Failed to fetch regular collections", "error", err)
+				logger.Debug("Refresh: Failed to fetch regular collections", "error", err)
 				return
 			}
 			mu.Lock()
@@ -233,14 +214,13 @@ func (c *CacheRefresh) fetchAndPrefetchCollections() {
 		}()
 	}
 
-	// Fetch smart collections if enabled
-	if c.config.ShowSmartCollections {
+	if c.config.GetShowSmartCollections() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			collections, err := rc.GetSmartCollections()
 			if err != nil {
-				logger.Debug("CacheRefresh: Failed to fetch smart collections", "error", err)
+				logger.Debug("Refresh: Failed to fetch smart collections", "error", err)
 				return
 			}
 			for i := range collections {
@@ -252,14 +232,13 @@ func (c *CacheRefresh) fetchAndPrefetchCollections() {
 		}()
 	}
 
-	// Fetch virtual collections if enabled
-	if c.config.ShowVirtualCollections {
+	if c.config.GetShowVirtualCollections() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			virtualCollections, err := rc.GetVirtualCollections()
 			if err != nil {
-				logger.Debug("CacheRefresh: Failed to fetch virtual collections", "error", err)
+				logger.Debug("Refresh: Failed to fetch virtual collections", "error", err)
 				return
 			}
 			mu.Lock()
@@ -272,14 +251,12 @@ func (c *CacheRefresh) fetchAndPrefetchCollections() {
 
 	wg.Wait()
 
-	// Store collections for reuse
 	c.collectionsMu.Lock()
 	c.collections = allCollections
 	c.collectionsMu.Unlock()
 
-	logger.Debug("CacheRefresh: Fetched collections", "count", len(allCollections))
+	logger.Debug("Refresh: Fetched collections", "count", len(allCollections))
 
-	// Validate and prefetch each collection in parallel
 	var prefetchWg sync.WaitGroup
 	for _, collection := range allCollections {
 		prefetchWg.Add(1)
@@ -291,37 +268,32 @@ func (c *CacheRefresh) fetchAndPrefetchCollections() {
 	prefetchWg.Wait()
 }
 
-func (c *CacheRefresh) validateAndPrefetchCollection(collection romm.Collection) {
+func (c *Refresh) validateAndPrefetchCollection(collection romm.Collection) {
 	logger := gaba.GetLogger()
 	cacheKey := GetCollectionCacheKey(collection)
 
-	// Load cache metadata to check UpdatedAt
 	metadata, err := loadMetadata()
 	if err != nil {
-		logger.Debug("CacheRefresh: Failed to load metadata for collection", "collection", collection.Name, "error", err)
+		logger.Debug("Refresh: Failed to load metadata for collection", "collection", collection.Name, "error", err)
 		c.prefetchCollection(collection, cacheKey)
 		return
 	}
 
 	entry, exists := metadata.Entries[cacheKey]
 	if !exists {
-		logger.Debug("CacheRefresh: No cache entry for collection, prefetching", "collection", collection.Name)
+		logger.Debug("Refresh: No cache entry for collection, prefetching", "collection", collection.Name)
 		c.prefetchCollection(collection, cacheKey)
 		return
 	}
 
-	// Check if cache file exists
 	cachePath := getCacheFilePath(cacheKey)
 	if _, err := os.Stat(cachePath); os.IsNotExist(err) {
-		logger.Debug("CacheRefresh: Cache file missing for collection, prefetching", "collection", collection.Name)
+		logger.Debug("Refresh: Cache file missing for collection, prefetching", "collection", collection.Name)
 		c.prefetchCollection(collection, cacheKey)
 		return
 	}
 
-	// Compare UpdatedAt - if collection was updated after our cache, it's stale
-	// For virtual collections, UpdatedAt is zero, so we use the ROM-based freshness check
 	if collection.IsVirtual {
-		// Virtual collections don't have UpdatedAt, use ROM-based check
 		query := romm.GetRomsQuery{VirtualCollectionID: collection.VirtualID}
 		isFresh, _ := checkCacheFreshnessInternal(c.host, c.config, cacheKey, query)
 		c.freshnessMu.Lock()
@@ -330,14 +302,13 @@ func (c *CacheRefresh) validateAndPrefetchCollection(collection romm.Collection)
 		if !isFresh {
 			c.prefetchCollection(collection, cacheKey)
 		} else {
-			logger.Debug("CacheRefresh: Virtual collection cache is fresh", "collection", collection.Name)
+			logger.Debug("Refresh: Virtual collection cache is fresh", "collection", collection.Name)
 		}
 		return
 	}
 
-	// For regular and smart collections, compare UpdatedAt
 	if collection.UpdatedAt.After(entry.LastUpdatedAt) {
-		logger.Debug("CacheRefresh: Collection updated since cache, prefetching",
+		logger.Debug("Refresh: Collection updated since cache, prefetching",
 			"collection", collection.Name,
 			"cached_at", entry.LastUpdatedAt,
 			"updated_at", collection.UpdatedAt)
@@ -348,17 +319,15 @@ func (c *CacheRefresh) validateAndPrefetchCollection(collection romm.Collection)
 		return
 	}
 
-	// Cache is fresh
-	logger.Debug("CacheRefresh: Collection cache is fresh", "collection", collection.Name)
+	logger.Debug("Refresh: Collection cache is fresh", "collection", collection.Name)
 	c.freshnessMu.Lock()
 	c.freshnessCache[cacheKey] = true
 	c.freshnessMu.Unlock()
 }
 
-func (c *CacheRefresh) prefetchCollection(collection romm.Collection, cacheKey string) {
+func (c *Refresh) prefetchCollection(collection romm.Collection, cacheKey string) {
 	logger := gaba.GetLogger()
 
-	// Create a completion channel for this prefetch
 	done := make(chan struct{})
 
 	c.prefetchMu.Lock()
@@ -366,44 +335,39 @@ func (c *CacheRefresh) prefetchCollection(collection romm.Collection, cacheKey s
 	c.prefetchMu.Unlock()
 
 	defer func() {
-		// Signal completion and remove from in-progress map
 		close(done)
 		c.prefetchMu.Lock()
 		delete(c.prefetchInProgress, cacheKey)
 		c.prefetchMu.Unlock()
 	}()
 
-	logger.Debug("CacheRefresh: Prefetching collection", "collection", collection.Name)
+	logger.Debug("Refresh: Prefetching collection", "collection", collection.Name)
 
-	// Fetch the games
 	games, err := c.fetchCollectionGames(collection)
 	if err != nil {
-		logger.Debug("CacheRefresh: Failed to prefetch collection", "collection", collection.Name, "error", err)
+		logger.Debug("Refresh: Failed to prefetch collection", "collection", collection.Name, "error", err)
 		return
 	}
 
-	// Save to cache with collection's UpdatedAt as the timestamp
 	if err := saveCollectionToCache(cacheKey, games, collection.UpdatedAt); err != nil {
-		logger.Debug("CacheRefresh: Failed to save prefetched collection", "collection", collection.Name, "error", err)
+		logger.Debug("Refresh: Failed to save prefetched collection", "collection", collection.Name, "error", err)
 		return
 	}
 
-	// Mark as fresh
 	c.freshnessMu.Lock()
 	c.freshnessCache[cacheKey] = true
 	c.freshnessMu.Unlock()
 
-	logger.Debug("CacheRefresh: Prefetched collection", "collection", collection.Name, "games", len(games))
+	logger.Debug("Refresh: Prefetched collection", "collection", collection.Name, "games", len(games))
 }
 
-func (c *CacheRefresh) fetchCollectionGames(collection romm.Collection) ([]romm.Rom, error) {
-	rc := GetRommClient(c.host, c.config.ApiTimeout)
+func (c *Refresh) fetchCollectionGames(collection romm.Collection) ([]romm.Rom, error) {
+	rc := romm.NewClientFromHost(c.host, c.config.GetApiTimeout())
 
 	opt := romm.GetRomsQuery{
 		Limit: 10000,
 	}
 
-	// Use appropriate ID based on collection type
 	if collection.IsVirtual {
 		opt.VirtualCollectionID = collection.VirtualID
 	} else if collection.IsSmart {
@@ -420,8 +384,7 @@ func (c *CacheRefresh) fetchCollectionGames(collection romm.Collection) ([]romm.
 	return res.Items, nil
 }
 
-// GetCollections returns the cached collections list
-func (c *CacheRefresh) GetCollections() []romm.Collection {
+func (c *Refresh) GetCollections() []romm.Collection {
 	if c == nil {
 		return nil
 	}
@@ -432,27 +395,25 @@ func (c *CacheRefresh) GetCollections() []romm.Collection {
 	return c.collections
 }
 
-func (c *CacheRefresh) fetchBIOSAvailability(platform romm.Platform) {
+func (c *Refresh) fetchBIOSAvailability(platform romm.Platform) {
 	logger := gaba.GetLogger()
-	rc := GetRommClient(c.host, c.config.ApiTimeout)
+	rc := romm.NewClientFromHost(c.host, c.config.GetApiTimeout())
 
 	firmware, err := rc.GetFirmware(platform.ID)
 
 	c.biosMu.Lock()
 	if err != nil {
-		logger.Debug("CacheRefresh: Failed to fetch BIOS info", "platform", platform.Name, "error", err)
+		logger.Debug("Refresh: Failed to fetch BIOS info", "platform", platform.Name, "error", err)
 		c.biosCache[platform.ID] = false
 	} else {
 		hasBIOS := len(firmware) > 0
 		c.biosCache[platform.ID] = hasBIOS
-		logger.Debug("CacheRefresh: Fetched BIOS info", "platform", platform.Name, "hasBIOS", hasBIOS)
+		logger.Debug("Refresh: Fetched BIOS info", "platform", platform.Name, "hasBIOS", hasBIOS)
 	}
 	c.biosMu.Unlock()
 }
 
-// IsCacheFresh returns the pre-validated freshness state for a cache key
-// Returns (isFresh, wasValidated) - if wasValidated is false, caller should do network check
-func (c *CacheRefresh) IsCacheFresh(cacheKey string) (bool, bool) {
+func (c *Refresh) IsCacheFresh(cacheKey string) (bool, bool) {
 	if c == nil {
 		return false, false
 	}
@@ -464,9 +425,7 @@ func (c *CacheRefresh) IsCacheFresh(cacheKey string) (bool, bool) {
 	return isFresh, exists
 }
 
-// HasBIOS returns the pre-fetched BIOS availability for a platform
-// Returns (hasBIOS, wasFetched) - if wasFetched is false, caller should do network check
-func (c *CacheRefresh) HasBIOS(platformID int) (bool, bool) {
+func (c *Refresh) HasBIOS(platformID int) (bool, bool) {
 	if c == nil {
 		return false, false
 	}
@@ -478,8 +437,7 @@ func (c *CacheRefresh) HasBIOS(platformID int) (bool, bool) {
 	return hasBIOS, exists
 }
 
-// MarkCacheStale marks a cache key as stale (e.g., after fetching fresh data)
-func (c *CacheRefresh) MarkCacheStale(cacheKey string) {
+func (c *Refresh) MarkCacheStale(cacheKey string) {
 	if c == nil {
 		return
 	}
@@ -489,8 +447,7 @@ func (c *CacheRefresh) MarkCacheStale(cacheKey string) {
 	c.freshnessMu.Unlock()
 }
 
-// MarkCacheFresh marks a cache key as fresh (e.g., after saving new data)
-func (c *CacheRefresh) MarkCacheFresh(cacheKey string) {
+func (c *Refresh) MarkCacheFresh(cacheKey string) {
 	if c == nil {
 		return
 	}
@@ -500,9 +457,7 @@ func (c *CacheRefresh) MarkCacheFresh(cacheKey string) {
 	c.freshnessMu.Unlock()
 }
 
-// WaitForPrefetch waits for an in-progress prefetch to complete
-// Returns true if there was a prefetch in progress that we waited for
-func (c *CacheRefresh) WaitForPrefetch(cacheKey string) bool {
+func (c *Refresh) WaitForPrefetch(cacheKey string) bool {
 	if c == nil {
 		return false
 	}
@@ -515,13 +470,11 @@ func (c *CacheRefresh) WaitForPrefetch(cacheKey string) bool {
 		return false
 	}
 
-	// Wait for the prefetch to complete
 	<-done
 	return true
 }
 
-// IsPrefetchInProgress returns true if a prefetch is currently running for the given cache key
-func (c *CacheRefresh) IsPrefetchInProgress(cacheKey string) bool {
+func (c *Refresh) IsPrefetchInProgress(cacheKey string) bool {
 	if c == nil {
 		return false
 	}

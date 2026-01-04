@@ -1,12 +1,16 @@
-package utils
+package sync
 
 import (
 	"fmt"
+	"grout/cache"
+	"grout/internal/fileutil"
+	"grout/internal/stringutil"
 	"grout/romm"
+	"grout/utils"
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
+	gosync "sync"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
@@ -16,7 +20,7 @@ type SaveSync struct {
 	RomName  string
 	Slug     string
 	GameBase string
-	Local    *localSave
+	Local    *LocalSave
 	Remote   romm.Save
 	Action   SyncAction
 }
@@ -44,7 +48,7 @@ type UnmatchedSave struct {
 	Slug     string
 }
 
-func (s *SaveSync) Execute(host romm.Host, config *Config) SyncResult {
+func (s *SaveSync) Execute(host romm.Host, config *utils.Config) SyncResult {
 	logger := gaba.GetLogger()
 
 	// Strip file extension from ROM name for cleaner display
@@ -94,12 +98,12 @@ func (s *SaveSync) Execute(host romm.Host, config *Config) SyncResult {
 	return result
 }
 
-func (s *SaveSync) download(host romm.Host, config *Config) (string, error) {
+func (s *SaveSync) download(host romm.Host, config *utils.Config) (string, error) {
 	logger := gaba.GetLogger()
 	if config == nil {
 		return "", fmt.Errorf("config is nil")
 	}
-	rc := GetRommClient(host, config.ApiTimeout)
+	rc := romm.NewClientFromHost(host, config.ApiTimeout)
 
 	logger.Debug("Downloading save", "saveID", s.Remote.ID, "downloadPath", s.Remote.DownloadPath)
 
@@ -145,7 +149,7 @@ func (s *SaveSync) download(host romm.Host, config *Config) (string, error) {
 	return destPath, nil
 }
 
-func (s *SaveSync) upload(host romm.Host, config *Config) (string, error) {
+func (s *SaveSync) upload(host romm.Host, config *utils.Config) (string, error) {
 	if s.Local == nil {
 		return "", fmt.Errorf("cannot upload: no local save file")
 	}
@@ -153,7 +157,7 @@ func (s *SaveSync) upload(host romm.Host, config *Config) (string, error) {
 		return "", fmt.Errorf("config is nil")
 	}
 
-	rc := GetRommClient(host, config.ApiTimeout)
+	rc := romm.NewClientFromHost(host, config.ApiTimeout)
 
 	ext := normalizeExt(filepath.Ext(s.Local.Path))
 
@@ -165,9 +169,9 @@ func (s *SaveSync) upload(host romm.Host, config *Config) (string, error) {
 	timestamp := modTime.Format("[2006-01-02 15-04-05-000]")
 
 	filename := s.GameBase + " " + timestamp + ext
-	tmp := filepath.Join(TempDir(), "uploads", filename)
+	tmp := filepath.Join(fileutil.TempDir(), "uploads", filename)
 
-	err = copyFile(s.Local.Path, tmp)
+	err = fileutil.CopyFile(s.Local.Path, tmp)
 	if err != nil {
 		return "", err
 	}
@@ -189,20 +193,20 @@ func (s *SaveSync) upload(host romm.Host, config *Config) (string, error) {
 }
 
 // lookupRomID looks up a ROM ID by filename, first checking cache then the provided ROM map
-func lookupRomID(romFile *localRomFile, romsByFilename map[string]romm.Rom) (int, string) {
+func lookupRomID(romFile *LocalRomFile, romsByFilename map[string]romm.Rom) (int, string) {
 	logger := gaba.GetLogger()
 
 	// Check cache first
-	if romID, romName, found := GetCachedRomIDByFilename(romFile.Slug, romFile.FileName); found {
+	if romID, romName, found := cache.GetCachedRomIDByFilename(romFile.Slug, romFile.FileName); found {
 		logger.Debug("ROM lookup from cache", "slug", romFile.Slug, "file", romFile.FileName, "romID", romID, "name", romName)
 		return romID, romName
 	}
 
 	// Look up in the ROM map by filename (without extension)
-	key := filenameKey(romFile.FileName)
+	key := stringutil.StripExtension(romFile.FileName)
 	if rom, found := romsByFilename[key]; found {
 		// Cache the result for next time
-		CacheRomID(romFile.Slug, romFile.FileName, rom.ID, rom.Name)
+		cache.StoreRomID(romFile.Slug, romFile.FileName, rom.ID, rom.Name)
 		logger.Debug("ROM lookup from RomM", "slug", romFile.Slug, "file", romFile.FileName, "romID", rom.ID, "name", rom.Name)
 		return rom.ID, rom.Name
 	}
@@ -211,16 +215,16 @@ func lookupRomID(romFile *localRomFile, romsByFilename map[string]romm.Rom) (int
 	return 0, ""
 }
 
-func FindSaveSyncs(host romm.Host, config *Config) ([]SaveSync, []UnmatchedSave, error) {
+func FindSaveSyncs(host romm.Host, config *utils.Config) ([]SaveSync, []UnmatchedSave, error) {
 	return FindSaveSyncsFromScan(host, config, ScanRoms())
 }
 
-func FindSaveSyncsFromScan(host romm.Host, config *Config, scanLocal LocalRomScan) ([]SaveSync, []UnmatchedSave, error) {
+func FindSaveSyncsFromScan(host romm.Host, config *utils.Config, scanLocal LocalRomScan) ([]SaveSync, []UnmatchedSave, error) {
 	logger := gaba.GetLogger()
 	if config == nil {
 		return nil, nil, fmt.Errorf("config is nil")
 	}
-	rc := GetRommClient(host, config.ApiTimeout)
+	rc := romm.NewClientFromHost(host, config.ApiTimeout)
 
 	logger.Debug("FindSaveSyncs: Scanned local ROMs", "platformCount", len(scanLocal))
 
@@ -245,7 +249,7 @@ func FindSaveSyncsFromScan(host romm.Host, config *Config, scanLocal LocalRomSca
 	}
 
 	resultChan := make(chan platformFetchResult, len(scanLocal))
-	var wg sync.WaitGroup
+	var wg gosync.WaitGroup
 
 	for slug := range scanLocal {
 		platformID, ok := slugToPlatformID[slug]
@@ -288,7 +292,7 @@ func FindSaveSyncsFromScan(host romm.Host, config *Config, scanLocal LocalRomSca
 				}
 
 				for _, rom := range romsPage.Items {
-					key := filenameKey(rom.FsNameNoExt)
+					key := stringutil.StripExtension(rom.FsNameNoExt)
 					result.roms[key] = rom
 				}
 

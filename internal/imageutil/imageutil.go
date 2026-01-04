@@ -1,4 +1,4 @@
-package utils
+package imageutil
 
 import (
 	"fmt"
@@ -6,10 +6,30 @@ import (
 	"image/png"
 	"os"
 
-	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
+	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	go_qr "github.com/piglig/go-qr"
 	"golang.org/x/image/draw"
 )
+
+func CreateTempQRCode(content string, size int) (string, error) {
+	qr, err := go_qr.EncodeText(content, go_qr.Low)
+	if err != nil {
+		return "", err
+	}
+
+	tempFile, err := os.CreateTemp("", "qrcode-*.png")
+	if err != nil {
+		return "", err
+	}
+	tempFile.Close()
+
+	config := go_qr.NewQrCodeImgConfig(size/10, 0)
+	if err := qr.PNG(config, tempFile.Name()); err != nil {
+		return "", err
+	}
+
+	return tempFile.Name(), nil
+}
 
 func ProcessArtImage(inputPath string) error {
 	inputFile, err := os.Open(inputPath)
@@ -24,8 +44,8 @@ func ProcessArtImage(inputPath string) error {
 	}
 	inputFile.Close()
 
-	windowWidth := int(gaba.GetWindow().GetWidth()) / 2
-	windowHeight := int(gaba.GetWindow().GetHeight()) / 2
+	windowWidth := int(gabagool.GetWindow().GetWidth()) / 2
+	windowHeight := int(gabagool.GetWindow().GetHeight()) / 2
 
 	bounds := img.Bounds()
 	imgWidth := bounds.Dx()
@@ -64,24 +84,4 @@ func ProcessArtImage(inputPath string) error {
 	}
 
 	return nil
-}
-
-func CreateTempQRCode(content string, size int) (string, error) {
-	qr, err := go_qr.EncodeText(content, go_qr.Low)
-	if err != nil {
-		return "", err
-	}
-
-	tempFile, err := os.CreateTemp("", "qrcode-*.png")
-	if err != nil {
-		return "", err
-	}
-	tempFile.Close()
-
-	config := go_qr.NewQrCodeImgConfig(size/10, 0)
-	if err := qr.PNG(config, tempFile.Name()); err != nil {
-		return "", err
-	}
-
-	return tempFile.Name(), nil
 }

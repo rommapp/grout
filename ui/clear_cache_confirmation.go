@@ -2,6 +2,7 @@ package ui
 
 import (
 	"errors"
+	"grout/cache"
 	"grout/utils"
 	"time"
 
@@ -33,13 +34,13 @@ func (s *ClearCacheScreen) Draw() (ScreenResult[ClearCacheOutput], error) {
 	caches := []cacheItem{
 		{
 			name:     i18n.Localize(&goi18n.Message{ID: "cache_artwork", Other: "Artwork Cache"}, nil),
-			hasCache: utils.HasArtworkCache(),
-			clear:    utils.ClearArtworkCache,
+			hasCache: cache.HasArtworkCache(),
+			clear:    cache.ClearArtworkCache,
 		},
 		{
 			name:     i18n.Localize(&goi18n.Message{ID: "cache_games", Other: "Games Cache"}, nil),
-			hasCache: utils.HasGamesCache(),
-			clear:    utils.ClearGamesCache,
+			hasCache: cache.HasGamesCache(),
+			clear:    cache.ClearGamesCache,
 		},
 	}
 

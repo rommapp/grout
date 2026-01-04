@@ -7,130 +7,39 @@ import (
 	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-func FooterContinue() gaba.FooterHelpItem {
+func footerItem(button, msgID, fallback string) gaba.FooterHelpItem {
 	return gaba.FooterHelpItem{
-		ButtonName: "A",
-		HelpText:   i18n.Localize(&goi18n.Message{ID: "button_continue", Other: "Continue"}, nil),
+		ButtonName: button,
+		HelpText:   i18n.Localize(&goi18n.Message{ID: msgID, Other: fallback}, nil),
 	}
 }
 
-func FooterSelect() gaba.FooterHelpItem {
-	return gaba.FooterHelpItem{
-		ButtonName: "A",
-		HelpText:   i18n.Localize(&goi18n.Message{ID: "button_select", Other: "Select"}, nil),
-	}
-}
+func FooterContinue() gaba.FooterHelpItem { return footerItem("A", "button_continue", "Continue") }
+func FooterSelect() gaba.FooterHelpItem   { return footerItem("A", "button_select", "Select") }
+func FooterConfirm() gaba.FooterHelpItem  { return footerItem("A", "button_confirm", "Confirm") }
+func FooterDownload() gaba.FooterHelpItem { return footerItem("A", "button_download", "Download") }
+func FooterBack() gaba.FooterHelpItem     { return footerItem("B", "button_back", "Back") }
+func FooterCancel() gaba.FooterHelpItem   { return footerItem("B", "button_cancel", "Cancel") }
+func FooterClose() gaba.FooterHelpItem    { return footerItem("B", "button_close", "Close") }
+func FooterQuit() gaba.FooterHelpItem     { return footerItem("B", "button_quit", "Quit") }
+func FooterSearch() gaba.FooterHelpItem   { return footerItem("X", "button_search", "Search") }
+func FooterSettings() gaba.FooterHelpItem { return footerItem("X", "button_settings", "Settings") }
+func FooterOptions() gaba.FooterHelpItem  { return footerItem("X", "button_options", "Options") }
+func FooterLogout() gaba.FooterHelpItem   { return footerItem("X", "button_logout", "Logout") }
+func FooterBIOS() gaba.FooterHelpItem     { return footerItem("Y", "button_bios", "BIOS") }
+func FooterSaveSync() gaba.FooterHelpItem { return footerItem("Y", "button_save_sync", "Sync") }
+func FooterMenu() gaba.FooterHelpItem     { return footerItem("Start", "button_menu", "Menu") }
 
-func FooterConfirm() gaba.FooterHelpItem {
-	return gaba.FooterHelpItem{
-		ButtonName: "A",
-		HelpText:   i18n.Localize(&goi18n.Message{ID: "button_confirm", Other: "Confirm"}, nil),
-	}
-}
-
-func FooterBack() gaba.FooterHelpItem {
-	return gaba.FooterHelpItem{
-		ButtonName: "B",
-		HelpText:   i18n.Localize(&goi18n.Message{ID: "button_back", Other: "Back"}, nil),
-	}
-}
-
-func FooterCancel() gaba.FooterHelpItem {
-	return gaba.FooterHelpItem{
-		ButtonName: "B",
-		HelpText:   i18n.Localize(&goi18n.Message{ID: "button_cancel", Other: "Cancel"}, nil),
-	}
-}
-
-func FooterClose() gaba.FooterHelpItem {
-	return gaba.FooterHelpItem{
-		ButtonName: "B",
-		HelpText:   i18n.Localize(&goi18n.Message{ID: "button_close", Other: "Close"}, nil),
-	}
-}
-
-func FooterSearch() gaba.FooterHelpItem {
-	return gaba.FooterHelpItem{
-		ButtonName: "X",
-		HelpText:   i18n.Localize(&goi18n.Message{ID: "button_search", Other: "Search"}, nil),
-	}
-}
-
-func FooterSettings() gaba.FooterHelpItem {
-	return gaba.FooterHelpItem{
-		ButtonName: "X",
-		HelpText:   i18n.Localize(&goi18n.Message{ID: "button_settings", Other: "Settings"}, nil),
-	}
-}
-
-func FooterOptions() gaba.FooterHelpItem {
-	return gaba.FooterHelpItem{
-		ButtonName: "X",
-		HelpText:   i18n.Localize(&goi18n.Message{ID: "button_options", Other: "Options"}, nil),
-	}
+func FooterStartConfirm() gaba.FooterHelpItem {
+	return footerItem("Start", "button_confirm", "Confirm")
 }
 
 func FooterSave() gaba.FooterHelpItem {
-	return gaba.FooterHelpItem{
-		ButtonName: icons.Start,
-		HelpText:   i18n.Localize(&goi18n.Message{ID: "button_save", Other: "Save"}, nil),
-	}
+	return footerItem(icons.Start, "button_save", "Save")
 }
 
 func FooterCycle() gaba.FooterHelpItem {
-	return gaba.FooterHelpItem{
-		ButtonName: icons.LeftRight,
-		HelpText:   i18n.Localize(&goi18n.Message{ID: "button_cycle", Other: "Cycle"}, nil),
-	}
-}
-
-func FooterQuit() gaba.FooterHelpItem {
-	return gaba.FooterHelpItem{
-		ButtonName: "B",
-		HelpText:   i18n.Localize(&goi18n.Message{ID: "button_quit", Other: "Quit"}, nil),
-	}
-}
-
-func FooterBIOS() gaba.FooterHelpItem {
-	return gaba.FooterHelpItem{
-		ButtonName: "Y",
-		HelpText:   i18n.Localize(&goi18n.Message{ID: "button_bios", Other: "BIOS"}, nil),
-	}
-}
-
-func FooterSaveSync() gaba.FooterHelpItem {
-	return gaba.FooterHelpItem{
-		ButtonName: "Y",
-		HelpText:   i18n.Localize(&goi18n.Message{ID: "button_save_sync", Other: "Sync"}, nil),
-	}
-}
-
-func FooterDownload() gaba.FooterHelpItem {
-	return gaba.FooterHelpItem{
-		ButtonName: "A",
-		HelpText:   i18n.Localize(&goi18n.Message{ID: "button_download", Other: "Download"}, nil),
-	}
-}
-
-func FooterMenu() gaba.FooterHelpItem {
-	return gaba.FooterHelpItem{
-		ButtonName: "Start",
-		HelpText:   i18n.Localize(&goi18n.Message{ID: "button_menu", Other: "Menu"}, nil),
-	}
-}
-
-func FooterStartConfirm() gaba.FooterHelpItem {
-	return gaba.FooterHelpItem{
-		ButtonName: "Start",
-		HelpText:   i18n.Localize(&goi18n.Message{ID: "button_confirm", Other: "Confirm"}, nil),
-	}
-}
-
-func FooterLogout() gaba.FooterHelpItem {
-	return gaba.FooterHelpItem{
-		ButtonName: "X",
-		HelpText:   i18n.Localize(&goi18n.Message{ID: "button_logout", Other: "Logout"}, nil),
-	}
+	return footerItem(icons.LeftRight, "button_cycle", "Cycle")
 }
 
 func ContinueFooter() []gaba.FooterHelpItem {
@@ -138,16 +47,9 @@ func ContinueFooter() []gaba.FooterHelpItem {
 }
 
 func OptionsListFooter() []gaba.FooterHelpItem {
-	return []gaba.FooterHelpItem{
-		FooterCancel(),
-		FooterCycle(),
-		FooterSave(),
-	}
+	return []gaba.FooterHelpItem{FooterCancel(), FooterCycle(), FooterSave()}
 }
 
 func BackSelectFooter() []gaba.FooterHelpItem {
-	return []gaba.FooterHelpItem{
-		FooterBack(),
-		FooterSelect(),
-	}
+	return []gaba.FooterHelpItem{FooterBack(), FooterSelect()}
 }

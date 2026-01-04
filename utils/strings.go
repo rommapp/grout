@@ -2,12 +2,13 @@ package utils
 
 import (
 	"fmt"
-	"grout/constants"
-	"grout/romm"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
+
+	"grout/constants"
+	"grout/romm"
 )
 
 func ParseTag(input string) string {
@@ -70,6 +71,7 @@ func nameCleaner(name string, stripTag bool) (string, string) {
 	return cleaned, foundTag
 }
 
+// PrepareRomNames cleans and sorts ROM names for display.
 func PrepareRomNames(games []romm.Rom, config Config) []romm.Rom {
 	for i := range games {
 		regions := strings.Join(games[i].Regions, ", ")
@@ -91,8 +93,8 @@ func PrepareRomNames(games []romm.Rom, config Config) []romm.Rom {
 	return games
 }
 
+// IsGameDownloadedLocally checks if a game's ROM file exists locally.
 func IsGameDownloadedLocally(game romm.Rom, config Config) bool {
-	// Need platform info to get ROM directory
 	if game.PlatformSlug == "" {
 		return false
 	}
@@ -111,7 +113,6 @@ func IsGameDownloadedLocally(game romm.Rom, config Config) bool {
 			return true
 		}
 	} else if len(game.Files) > 0 {
-		// For single-file ROMs, check if the file exists based on filename
 		romPath := filepath.Join(romDirectory, game.Files[0].FileName)
 		if _, err := os.Stat(romPath); err == nil {
 			return true
@@ -119,22 +120,4 @@ func IsGameDownloadedLocally(game romm.Rom, config Config) bool {
 	}
 
 	return false
-}
-
-// filenameKey normalizes a filename for cache lookup by removing the extension
-func filenameKey(filename string) string {
-	return strings.TrimSuffix(filename, filepath.Ext(filename))
-}
-
-func FormatBytes(bytes int) string {
-	const unit = 1024
-	if bytes < unit {
-		return fmt.Sprintf("%d B", bytes)
-	}
-	div, exp := int64(unit), 0
-	for n := bytes / unit; n >= unit; n /= unit {
-		div *= unit
-		exp++
-	}
-	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
 }

@@ -44,7 +44,7 @@ func (s *CollectionSelectionScreen) Draw(input CollectionSelectionInput) (Screen
 		LastSelectedPosition: input.LastSelectedPosition,
 	}
 
-	rc := utils.GetRommClient(input.Host, input.Config.ApiTimeout)
+	rc := romm.NewClientFromHost(input.Host, input.Config.ApiTimeout)
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 

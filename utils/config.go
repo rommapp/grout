@@ -5,11 +5,14 @@ import (
 	"fmt"
 	"grout/romm"
 	"os"
+	"sync/atomic"
 	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
 )
+
+var kidModeEnabled atomic.Bool
 
 type Config struct {
 	Hosts                  []romm.Host                 `json:"hosts,omitempty"`
@@ -213,4 +216,80 @@ func PrunePlatformOrder(order []string, mappings map[string]DirectoryMapping) []
 	}
 
 	return pruned
+}
+
+func InitKidMode(config *Config) {
+	kidModeEnabled.Store(config.KidMode)
+}
+
+func IsKidModeEnabled() bool {
+	return kidModeEnabled.Load()
+}
+
+func SetKidMode(enabled bool) {
+	kidModeEnabled.Store(enabled)
+}
+
+func GetMappedPlatforms(host romm.Host, mappings map[string]DirectoryMapping, timeout ...time.Duration) ([]romm.Platform, error) {
+	c := romm.NewClientFromHost(host, timeout...)
+
+	rommPlatforms, err := c.GetPlatforms()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get platforms from RomM: %w", err)
+	}
+
+	var platforms []romm.Platform
+
+	for _, platform := range rommPlatforms {
+		_, exists := mappings[platform.Slug]
+		if exists {
+			platforms = append(platforms, romm.Platform{
+				Name: platform.Name,
+				ID:   platform.ID,
+				Slug: platform.Slug,
+			})
+		}
+	}
+
+	return platforms, nil
+}
+
+// Config interface methods for cache package
+func (c *Config) GetApiTimeout() time.Duration    { return c.ApiTimeout }
+func (c *Config) GetShowCollections() bool        { return c.ShowCollections }
+func (c *Config) GetShowSmartCollections() bool   { return c.ShowSmartCollections }
+func (c *Config) GetShowVirtualCollections() bool { return c.ShowVirtualCollections }
+
+func ShowCollections(config *Config, host romm.Host) bool {
+	if config == nil {
+		return false
+	}
+	if !config.ShowCollections && !config.ShowSmartCollections && !config.ShowVirtualCollections {
+		return false
+	}
+
+	rc := romm.NewClientFromHost(host, config.ApiTimeout)
+
+	if config.ShowCollections {
+		col, err := rc.GetCollections()
+		if err == nil && len(col) > 0 {
+			return true
+		}
+	}
+
+	if config.ShowSmartCollections {
+		smartCol, err := rc.GetSmartCollections()
+		if err == nil && len(smartCol) > 0 {
+			return true
+		}
+	}
+
+	if config.ShowVirtualCollections {
+		virtualCol, err := rc.GetVirtualCollections()
+		if err == nil && len(virtualCol) > 0 {
+			return true
+		}
+	}
+
+	return false
 }

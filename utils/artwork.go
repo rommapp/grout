@@ -2,106 +2,19 @@ package utils
 
 import (
 	"fmt"
+	"grout/cache"
 	"grout/constants"
+	"grout/internal/imageutil"
 	"grout/romm"
 	"image/png"
 	"io"
 	"net/http"
 	"os"
-	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
-
-func GetArtworkCacheDir() string {
-	wd, err := os.Getwd()
-	if err != nil {
-		return filepath.Join(os.TempDir(), ".cache", "artwork")
-	}
-	return filepath.Join(wd, ".cache", "artwork")
-}
-
-func ClearArtworkCache() error {
-	cacheDir := GetArtworkCacheDir()
-
-	if _, err := os.Stat(cacheDir); os.IsNotExist(err) {
-		return nil // Nothing to clear
-	}
-
-	return os.RemoveAll(cacheDir)
-}
-
-func HasArtworkCache() bool {
-	cacheDir := GetArtworkCacheDir()
-
-	entries, err := os.ReadDir(cacheDir)
-	if err != nil {
-		return false
-	}
-
-	return len(entries) > 0
-}
-
-func GetArtworkCachePath(platformSlug string, romID int) string {
-	return filepath.Join(GetArtworkCacheDir(), platformSlug, strconv.Itoa(romID)+".png")
-}
-
-func ArtworkExists(platformSlug string, romID int) bool {
-	path := GetArtworkCachePath(platformSlug, romID)
-	_, err := os.Stat(path)
-	return err == nil
-}
-
-func ValidateArtworkCache() {
-	go func() {
-		logger := gaba.GetLogger()
-		cacheDir := GetArtworkCacheDir()
-
-		platformDirs, err := os.ReadDir(cacheDir)
-		if err != nil {
-			return
-		}
-
-		removed := 0
-		for _, platformDir := range platformDirs {
-			if !platformDir.IsDir() {
-				continue
-			}
-
-			platformPath := filepath.Join(cacheDir, platformDir.Name())
-			files, err := os.ReadDir(platformPath)
-			if err != nil {
-				continue
-			}
-
-			for _, file := range files {
-				if file.IsDir() || filepath.Ext(file.Name()) != ".png" {
-					continue
-				}
-
-				path := filepath.Join(platformPath, file.Name())
-				f, err := os.Open(path)
-				if err != nil {
-					continue
-				}
-
-				_, err = png.DecodeConfig(f)
-				f.Close()
-				if err != nil {
-					os.Remove(path)
-					removed++
-				}
-			}
-		}
-
-		if removed > 0 {
-			logger.Debug("Removed corrupted artwork files", "count", removed)
-		}
-	}()
-}
 
 func GetMissingArtwork(roms []romm.Rom) []romm.Rom {
 	var missing []romm.Rom
@@ -109,7 +22,7 @@ func GetMissingArtwork(roms []romm.Rom) []romm.Rom {
 		if !HasArtworkURL(rom) {
 			continue
 		}
-		if !ArtworkExists(rom.PlatformSlug, rom.ID) {
+		if !cache.ArtworkExists(rom.PlatformSlug, rom.ID) {
 			missing = append(missing, rom)
 		}
 	}
@@ -145,7 +58,7 @@ func CheckRemoteLastModified(url string, authHeader string) (time.Time, error) {
 }
 
 func ArtworkNeedsUpdate(rom romm.Rom, host romm.Host) bool {
-	cachePath := GetArtworkCachePath(rom.PlatformSlug, rom.ID)
+	cachePath := cache.GetArtworkCachePath(rom.PlatformSlug, rom.ID)
 
 	localInfo, err := os.Stat(cachePath)
 	if err != nil {
@@ -174,7 +87,7 @@ func GetOutdatedArtwork(roms []romm.Rom, host romm.Host) []romm.Rom {
 		if !HasArtworkURL(rom) {
 			continue
 		}
-		if ArtworkExists(rom.PlatformSlug, rom.ID) && ArtworkNeedsUpdate(rom, host) {
+		if cache.ArtworkExists(rom.PlatformSlug, rom.ID) && ArtworkNeedsUpdate(rom, host) {
 			outdated = append(outdated, rom)
 		}
 	}
@@ -183,11 +96,6 @@ func GetOutdatedArtwork(roms []romm.Rom, host romm.Host) []romm.Rom {
 
 func HasArtworkURL(rom romm.Rom) bool {
 	return rom.PathCoverSmall != "" || rom.PathCoverLarge != "" || rom.URLCover != ""
-}
-
-func EnsureArtworkCacheDir(platformSlug string) error {
-	dir := filepath.Join(GetArtworkCacheDir(), platformSlug)
-	return os.MkdirAll(dir, 0755)
 }
 
 func GetArtworkCoverPath(rom romm.Rom) string {
@@ -208,11 +116,11 @@ func DownloadAndCacheArtwork(rom romm.Rom, host romm.Host) error {
 		return nil // No artwork available
 	}
 
-	if err := EnsureArtworkCacheDir(rom.PlatformSlug); err != nil {
+	if err := cache.EnsureArtworkCacheDir(rom.PlatformSlug); err != nil {
 		return fmt.Errorf("failed to create cache directory: %w", err)
 	}
 
-	cachePath := GetArtworkCachePath(rom.PlatformSlug, rom.ID)
+	cachePath := cache.GetArtworkCachePath(rom.PlatformSlug, rom.ID)
 
 	artURL := host.URL() + coverPath
 	artURL = strings.ReplaceAll(artURL, " ", "%20")
@@ -246,7 +154,7 @@ func DownloadAndCacheArtwork(rom romm.Rom, host romm.Host) error {
 	}
 	outFile.Close()
 
-	if err := ProcessArtImage(cachePath); err != nil {
+	if err := imageutil.ProcessArtImage(cachePath); err != nil {
 		logger.Warn("Failed to process artwork image", "path", cachePath, "error", err)
 		os.Remove(cachePath)
 		return fmt.Errorf("failed to process artwork: %w", err)

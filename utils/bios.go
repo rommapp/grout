@@ -4,16 +4,16 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"grout/cfw"
+	"grout/constants"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"grout/constants"
 )
 
 func SaveBIOSFile(biosFile constants.BIOSFile, platformSlug string, data []byte) error {
-	filePaths := GetBIOSFilePaths(biosFile, platformSlug)
+	filePaths := cfw.GetBIOSFilePaths(biosFile.RelativePath, platformSlug)
 
 	for _, filePath := range filePaths {
 		dir := filepath.Dir(filePath)
@@ -42,7 +42,7 @@ func VerifyBIOSFileMD5(data []byte, expectedMD5 string) (bool, string) {
 }
 
 func GetBIOSFileInfo(biosFile constants.BIOSFile, platformSlug string) (exists bool, size int64, md5Hash string, err error) {
-	filePaths := GetBIOSFilePaths(biosFile, platformSlug)
+	filePaths := cfw.GetBIOSFilePaths(biosFile.RelativePath, platformSlug)
 
 	for _, filePath := range filePaths {
 		info, err := os.Stat(filePath)

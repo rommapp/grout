@@ -1,6 +1,7 @@
 package main
 
 import (
+	"grout/cfw"
 	"grout/utils"
 	"os"
 
@@ -20,11 +21,11 @@ func main() {
 	logger := gaba.GetLogger()
 	logger.Debug("Starting Grout")
 
-	cfw := utils.GetCFW()
+	currentCFW := cfw.GetCFW()
 	quitOnBack := len(config.Hosts) == 1
 	showCollections := utils.ShowCollections(config, config.Hosts[0])
 
-	fsm := buildFSM(config, cfw, platforms, quitOnBack, showCollections)
+	fsm := buildFSM(config, currentCFW, platforms, quitOnBack, showCollections)
 
 	if err := fsm.Run(); err != nil {
 		logger.Error("FSM error", "error", err)

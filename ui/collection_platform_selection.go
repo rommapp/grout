@@ -3,6 +3,7 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"grout/cache"
 	"grout/romm"
 	"grout/utils"
 	"slices"
@@ -50,7 +51,7 @@ func (s *CollectionPlatformSelectionScreen) Draw(input CollectionPlatformSelecti
 		allGames = input.CachedGames
 	} else {
 		// Build query for cache key and freshness check
-		cacheKey := utils.GetCollectionCacheKey(input.Collection)
+		cacheKey := cache.GetCollectionCacheKey(input.Collection)
 		opt := romm.GetRomsQuery{
 			Limit: 10000,
 		}
@@ -66,7 +67,7 @@ func (s *CollectionPlatformSelectionScreen) Draw(input CollectionPlatformSelecti
 
 		// Check if a prefetch is in progress for this collection
 		loadedFromCache := false
-		if cr := utils.GetCacheRefresh(); cr != nil {
+		if cr := cache.GetRefresh(); cr != nil {
 			if cr.IsPrefetchInProgress(cacheKey) {
 				logger.Debug("Waiting for collection prefetch to complete", "key", cacheKey)
 				// Show a loading message while waiting
@@ -79,7 +80,7 @@ func (s *CollectionPlatformSelectionScreen) Draw(input CollectionPlatformSelecti
 					},
 				)
 				// After prefetch completes, load from cache
-				cached, err := utils.LoadCachedGames(cacheKey)
+				cached, err := cache.LoadCachedGames(cacheKey)
 				if err == nil {
 					logger.Debug("Loaded collection from prefetch cache", "key", cacheKey, "count", len(cached))
 					allGames = cached
@@ -90,9 +91,9 @@ func (s *CollectionPlatformSelectionScreen) Draw(input CollectionPlatformSelecti
 
 		// Check if cache is fresh (skip loading screen if so)
 		if !loadedFromCache {
-			isFresh, _ := utils.CheckCacheFreshness(input.Host, input.Config, cacheKey, opt)
+			isFresh, _ := cache.CheckCacheFreshness(input.Host, input.Config, cacheKey, opt)
 			if isFresh {
-				cached, err := utils.LoadCachedGames(cacheKey)
+				cached, err := cache.LoadCachedGames(cacheKey)
 				if err == nil {
 					logger.Debug("Loaded collection games from cache (no loading screen)", "key", cacheKey, "count", len(cached))
 					allGames = cached
@@ -109,7 +110,7 @@ func (s *CollectionPlatformSelectionScreen) Draw(input CollectionPlatformSelecti
 				gaba.ProcessMessageOptions{ShowThemeBackground: true},
 				func() (interface{}, error) {
 					// Fetch from API
-					rc := utils.GetRommClient(input.Host, input.Config.ApiTimeout)
+					rc := romm.NewClientFromHost(input.Host, input.Config.ApiTimeout)
 					res, err := rc.GetRoms(opt)
 					if err != nil {
 						logger.Error("Error downloading game list", "error", err)
@@ -119,7 +120,7 @@ func (s *CollectionPlatformSelectionScreen) Draw(input CollectionPlatformSelecti
 					allGames = res.Items
 
 					// Save to cache
-					if err := utils.SaveGamesToCache(cacheKey, allGames); err != nil {
+					if err := cache.SaveGamesToCache(cacheKey, allGames); err != nil {
 						logger.Debug("Failed to save games to cache", "error", err)
 					}
 

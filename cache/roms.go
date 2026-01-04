@@ -1,14 +1,19 @@
-package utils
+package cache
 
 import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
+
+func stripExtension(filename string) string {
+	return strings.TrimSuffix(filename, filepath.Ext(filename))
+}
 
 type RomCacheEntry struct {
 	RomID    int       `json:"rom_id"`
@@ -17,11 +22,11 @@ type RomCacheEntry struct {
 }
 
 type PlatformRomCache struct {
-	Entries map[string]RomCacheEntry `json:"entries"` // key = filename (no extension)
+	Entries map[string]RomCacheEntry `json:"entries"`
 }
 
 type RomCache struct {
-	platforms map[string]*PlatformRomCache // key = platform slug
+	platforms map[string]*PlatformRomCache
 	mu        sync.RWMutex
 }
 
@@ -60,7 +65,6 @@ func (rc *RomCache) getPlatformCache(slug string) *PlatformRomCache {
 		return pc
 	}
 
-	// Load from disk
 	pc = rc.loadPlatform(slug)
 
 	rc.mu.Lock()
@@ -117,13 +121,11 @@ func (rc *RomCache) savePlatform(slug string, pc *PlatformRomCache) error {
 	return nil
 }
 
-// GetCachedRomIDByFilename looks up a ROM ID by filename from the cache.
-// Returns the ROM ID, ROM name, and whether it was found.
 func GetCachedRomIDByFilename(slug, filename string) (int, string, bool) {
 	rc := getRomCache()
 	pc := rc.getPlatformCache(slug)
 
-	key := filenameKey(filename)
+	key := stripExtension(filename)
 
 	rc.mu.RLock()
 	defer rc.mu.RUnlock()
@@ -135,13 +137,12 @@ func GetCachedRomIDByFilename(slug, filename string) (int, string, bool) {
 	return 0, "", false
 }
 
-// CacheRomID stores a filename to ROM ID mapping in the cache.
-func CacheRomID(slug, filename string, romID int, romName string) {
+func StoreRomID(slug, filename string, romID int, romName string) {
 	logger := gaba.GetLogger()
 	rc := getRomCache()
 	pc := rc.getPlatformCache(slug)
 
-	key := filenameKey(filename)
+	key := stripExtension(filename)
 
 	rc.mu.Lock()
 	pc.Entries[key] = RomCacheEntry{
@@ -150,21 +151,18 @@ func CacheRomID(slug, filename string, romID int, romName string) {
 		CachedAt: time.Now(),
 	}
 
-	// Make a copy of entries for serialization to avoid concurrent map access
 	entriesCopy := make(map[string]RomCacheEntry, len(pc.Entries))
 	for k, v := range pc.Entries {
 		entriesCopy[k] = v
 	}
 	rc.mu.Unlock()
 
-	// Save using the copy
 	pcCopy := &PlatformRomCache{Entries: entriesCopy}
 	if err := rc.savePlatform(slug, pcCopy); err != nil {
 		logger.Debug("Failed to save ROM cache", "slug", slug, "error", err)
 	}
 }
 
-// ClearRomCache removes all cached filename-to-ROM-ID mappings.
 func ClearRomCache() error {
 	cacheDir := GetRomCacheDir()
 
@@ -172,7 +170,6 @@ func ClearRomCache() error {
 		return nil
 	}
 
-	// Reset in-memory cache
 	rc := getRomCache()
 	rc.mu.Lock()
 	rc.platforms = make(map[string]*PlatformRomCache)
@@ -181,7 +178,6 @@ func ClearRomCache() error {
 	return os.RemoveAll(cacheDir)
 }
 
-// HasRomCache returns true if the ROM cache directory exists and has content.
 func HasRomCache() bool {
 	cacheDir := GetRomCacheDir()
 

@@ -3,7 +3,11 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"grout/cache"
+	"grout/cfw"
 	"grout/constants"
+	"grout/internal/fileutil"
+	"grout/internal/imageutil"
 	"grout/romm"
 	"grout/utils"
 	_ "image/gif"
@@ -155,7 +159,7 @@ func (s *DownloadScreen) draw(input downloadInput) (ScreenResult[downloadOutput]
 			}
 		}
 
-		tmpZipPath := filepath.Join(utils.TempDir(), fmt.Sprintf("grout_multirom_%d.zip", g.ID))
+		tmpZipPath := filepath.Join(fileutil.TempDir(), fmt.Sprintf("grout_multirom_%d.zip", g.ID))
 		romDirectory := utils.GetPlatformRomDirectory(input.Config, gamePlatform)
 		extractDir := filepath.Join(romDirectory, g.FsNameNoExt)
 
@@ -170,13 +174,13 @@ func (s *DownloadScreen) draw(input downloadInput) (ScreenResult[downloadOutput]
 			func() (interface{}, error) {
 				logger.Debug("Extracting multi-file ROM", "game", g.DisplayName, "dest", extractDir)
 
-				if err := utils.Unzip(tmpZipPath, extractDir, progress); err != nil {
+				if err := fileutil.Unzip(tmpZipPath, extractDir, progress); err != nil {
 					logger.Error("Failed to extract multi-file ROM", "game", g.DisplayName, "error", err)
 					os.Remove(tmpZipPath)
 					return nil, err
 				}
 
-				if utils.GetCFW() == constants.MuOS {
+				if cfw.GetCFW() == cfw.MuOS {
 					if err := utils.OrganizeMultiFileRomForMuOS(extractDir, romDirectory, g.FsNameNoExt); err != nil {
 						logger.Error("Failed to organize multi-file ROM for muOS", "game", g.FsNameNoExt, "error", err)
 						os.Remove(tmpZipPath)
@@ -235,7 +239,7 @@ func (s *DownloadScreen) draw(input downloadInput) (ScreenResult[downloadOutput]
 					func() (interface{}, error) {
 						logger.Debug("Extracting single-file ROM", "game", g.Name, "file", zipPath)
 
-						if err := utils.Unzip(zipPath, romDirectory, progress); err != nil {
+						if err := fileutil.Unzip(zipPath, romDirectory, progress); err != nil {
 							logger.Error("Failed to extract single-file ROM", "game", g.Name, "error", err)
 							return nil, err
 						}
@@ -271,7 +275,7 @@ func (s *DownloadScreen) draw(input downloadInput) (ScreenResult[downloadOutput]
 				cacheFilename = g.Files[0].FileName
 			}
 			if cacheFilename != "" {
-				utils.CacheRomID(g.PlatformSlug, cacheFilename, g.ID, g.Name)
+				cache.StoreRomID(g.PlatformSlug, cacheFilename, g.ID, g.Name)
 				logger.Debug("Cached ROM filename", "name", g.Name, "filename", cacheFilename, "id", g.ID)
 			}
 		}
@@ -323,7 +327,7 @@ func (s *DownloadScreen) buildDownloads(config utils.Config, host romm.Host, pla
 		sourceURL := ""
 
 		if g.HasMultipleFiles {
-			tmpDir := utils.TempDir()
+			tmpDir := fileutil.TempDir()
 			downloadLocation = filepath.Join(tmpDir, fmt.Sprintf("grout_multirom_%d.zip", g.ID))
 			sourceURL, _ = url.JoinPath(host.URL(), "/api/roms/", strconv.Itoa(g.ID), "content", g.FsName)
 		} else {
@@ -466,7 +470,7 @@ func (s *DownloadScreen) downloadArt(artDownloads []artDownload, downloadedGames
 			continue
 		}
 
-		if err := utils.ProcessArtImage(art.Location); err != nil {
+		if err := imageutil.ProcessArtImage(art.Location); err != nil {
 			logger.Warn("Failed to process art image", "game", art.GameName, "location", art.Location, "error", err)
 			os.Remove(art.Location)
 			failCount++

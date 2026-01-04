@@ -2,10 +2,12 @@ package ui
 
 import (
 	"fmt"
+	"grout/internal/fileutil"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"grout/cfw"
 	"grout/constants"
 	"grout/romm"
 	"grout/utils"
@@ -55,7 +57,7 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 	}
 
 	// Fetch firmware list from RomM first
-	client := utils.GetRommClient(input.Host, input.Config.ApiTimeout)
+	client := romm.NewClientFromHost(input.Host, input.Config.ApiTimeout)
 	firmwareList, err := client.GetFirmware(input.Platform.ID)
 	if err != nil {
 		logger.Error("Failed to fetch firmware from RomM", "error", err, "platform_id", input.Platform.ID)
@@ -155,7 +157,7 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 			shouldSelect = status.Status == utils.BIOSStatusMissing || status.Status == utils.BIOSStatusInvalidHash
 		} else {
 			// No metadata - check if file exists and show basic status
-			biosDir := utils.GetBIOSDirectory()
+			biosDir := cfw.GetBIOSDirectory()
 
 			// Determine the correct file path using same logic as save
 			// FilePath may be: just filename, subdir/filename, or just subdir
@@ -225,7 +227,7 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 	baseURL := input.Host.URL()
 	for _, item := range selectedItems {
 		downloadURL := baseURL + item.firmware.DownloadURL
-		tempPath := filepath.Join(utils.TempDir(), fmt.Sprintf("bios_%s", item.firmware.FileName))
+		tempPath := filepath.Join(fileutil.TempDir(), fmt.Sprintf("bios_%s", item.firmware.FileName))
 
 		downloads = append(downloads, gaba.Download{
 			URL:         downloadURL,
@@ -286,7 +288,7 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 			}
 		} else {
 			// No metadata - just plop into the BIOS folder
-			biosDir := utils.GetBIOSDirectory()
+			biosDir := cfw.GetBIOSDirectory()
 			filePath := filepath.Join(biosDir, info.firmware.FileName)
 
 			if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {

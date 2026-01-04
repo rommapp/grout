@@ -1,28 +1,30 @@
-package utils
+package sync
 
 import (
-	"grout/constants"
+	"grout/cfw"
+	"grout/internal/fileutil"
 	"grout/romm"
+	"grout/utils"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
-	"sync"
+	gosync "sync"
 	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
 
-type localRomFile struct {
+type LocalRomFile struct {
 	RomID       int
 	RomName     string
 	Slug        string
 	FileName    string
 	RemoteSaves []romm.Save
-	SaveFile    *localSave
+	SaveFile    *LocalSave
 }
 
-func (lrf localRomFile) syncAction() SyncAction {
+func (lrf LocalRomFile) syncAction() SyncAction {
 	hasLocal := lrf.SaveFile != nil
 	hasRemote := len(lrf.RemoteSaves) > 0
 
@@ -51,7 +53,7 @@ func (lrf localRomFile) syncAction() SyncAction {
 	}
 }
 
-func (lrf localRomFile) lastRemoteSave() romm.Save {
+func (lrf LocalRomFile) lastRemoteSave() romm.Save {
 	if len(lrf.RemoteSaves) == 0 {
 		return romm.Save{}
 	}
@@ -64,26 +66,26 @@ func (lrf localRomFile) lastRemoteSave() romm.Save {
 }
 
 // LocalRomScan holds the results of scanning local ROMs
-type LocalRomScan map[string][]localRomFile
+type LocalRomScan map[string][]LocalRomFile
 
 // ScanRoms scans all local ROM directories and matches with save files
 func ScanRoms() LocalRomScan {
 	logger := gaba.GetLogger()
-	result := make(map[string][]localRomFile)
-	cfw := GetCFW()
+	result := make(map[string][]LocalRomFile)
+	currentCFW := cfw.GetCFW()
 
-	platformMap := GetPlatformMap(cfw)
+	platformMap := cfw.GetPlatformMap(currentCFW)
 	if platformMap == nil {
 		logger.Warn("Unknown CFW, cannot scan ROMs")
 		return result
 	}
 
-	baseRomDir := GetRomDirectory()
+	baseRomDir := cfw.GetRomDirectory()
 	logger.Debug("Starting ROM scan", "baseDir", baseRomDir)
 
-	config, _ := LoadConfig()
+	config, _ := utils.LoadConfig()
 
-	result = scanRomsByPlatform(baseRomDir, platformMap, config, cfw)
+	result = scanRomsByPlatform(baseRomDir, platformMap, config, currentCFW)
 
 	totalRoms := 0
 	for _, roms := range result {
@@ -94,9 +96,9 @@ func ScanRoms() LocalRomScan {
 	return result
 }
 
-func buildSaveFileMap(slug string) map[string]*localSave {
+func buildSaveFileMap(slug string) map[string]*LocalSave {
 	saveFiles := findSaveFiles(slug)
-	saveFileMap := make(map[string]*localSave)
+	saveFileMap := make(map[string]*LocalSave)
 	for i := range saveFiles {
 		baseName := strings.TrimSuffix(filepath.Base(saveFiles[i].Path), filepath.Ext(saveFiles[i].Path))
 		saveFileMap[baseName] = &saveFiles[i]
@@ -104,11 +106,11 @@ func buildSaveFileMap(slug string) map[string]*localSave {
 	return saveFileMap
 }
 
-func scanRomsByPlatform(baseRomDir string, platformMap map[string][]string, config *Config, cfw constants.CFW) map[string][]localRomFile {
+func scanRomsByPlatform(baseRomDir string, platformMap map[string][]string, config *utils.Config, currentCFW cfw.CFW) map[string][]LocalRomFile {
 	logger := gaba.GetLogger()
-	result := make(map[string][]localRomFile)
+	result := make(map[string][]LocalRomFile)
 
-	if cfw == constants.NextUI {
+	if currentCFW == cfw.NextUI {
 		entries, err := os.ReadDir(baseRomDir)
 		if err != nil {
 			logger.Error("Failed to read ROM directory", "path", baseRomDir, "error", err)
@@ -121,7 +123,7 @@ func scanRomsByPlatform(baseRomDir string, platformMap map[string][]string, conf
 			}
 
 			dirName := entry.Name()
-			tag := ParseTag(dirName)
+			tag := utils.ParseTag(dirName)
 			if tag == "" {
 				logger.Debug("No tag found in directory", "dir", dirName)
 				continue
@@ -130,7 +132,7 @@ func scanRomsByPlatform(baseRomDir string, platformMap map[string][]string, conf
 			for slug, cfwDirs := range platformMap {
 				matched := false
 				for _, cfwDir := range cfwDirs {
-					cfwTag := ParseTag(cfwDir)
+					cfwTag := utils.ParseTag(cfwDir)
 					if cfwTag == tag {
 						matched = true
 						break
@@ -140,7 +142,7 @@ func scanRomsByPlatform(baseRomDir string, platformMap map[string][]string, conf
 				if !matched {
 					if config != nil {
 						if mapping, ok := config.DirectoryMappings[slug]; ok {
-							if ParseTag(mapping.RelativePath) == tag {
+							if utils.ParseTag(mapping.RelativePath) == tag {
 								matched = true
 							}
 						}
@@ -162,11 +164,11 @@ func scanRomsByPlatform(baseRomDir string, platformMap map[string][]string, conf
 		// Parallelize platform scanning for MuOS and Knulli
 		type platformResult struct {
 			slug string
-			roms []localRomFile
+			roms []LocalRomFile
 		}
 
 		resultChan := make(chan platformResult, len(platformMap))
-		var wg sync.WaitGroup
+		var wg gosync.WaitGroup
 
 		for slug := range platformMap {
 			wg.Add(1)
@@ -181,7 +183,7 @@ func scanRomsByPlatform(baseRomDir string, platformMap map[string][]string, conf
 				}
 
 				if romFolderName == "" {
-					romFolderName = RomMSlugToCFW(s)
+					romFolderName = cfw.RomMSlugToCFW(s)
 				}
 
 				if romFolderName == "" {
@@ -223,9 +225,9 @@ func scanRomsByPlatform(baseRomDir string, platformMap map[string][]string, conf
 	return result
 }
 
-func scanRomDirectory(slug, romDir string, saveFileMap map[string]*localSave) []localRomFile {
+func scanRomDirectory(slug, romDir string, saveFileMap map[string]*LocalSave) []LocalRomFile {
 	logger := gaba.GetLogger()
-	var roms []localRomFile
+	var roms []LocalRomFile
 
 	entries, err := os.ReadDir(romDir)
 	if err != nil {
@@ -233,15 +235,15 @@ func scanRomDirectory(slug, romDir string, saveFileMap map[string]*localSave) []
 		return roms
 	}
 
-	visibleFiles := FilterVisibleFiles(entries)
+	visibleFiles := fileutil.FilterVisibleFiles(entries)
 	for _, entry := range visibleFiles {
 		baseName := strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name()))
-		var saveFile *localSave
+		var saveFile *LocalSave
 		if sf, found := saveFileMap[baseName]; found {
 			saveFile = sf
 		}
 
-		rom := localRomFile{
+		rom := LocalRomFile{
 			Slug:     slug,
 			FileName: entry.Name(),
 			SaveFile: saveFile,

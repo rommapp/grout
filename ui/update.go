@@ -3,7 +3,8 @@ package ui
 import (
 	"errors"
 	"fmt"
-	"grout/constants"
+	"grout/cfw"
+	"grout/internal/stringutil"
 	"grout/update"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -14,7 +15,7 @@ import (
 )
 
 type UpdateInput struct {
-	CFW constants.CFW
+	CFW cfw.CFW
 }
 
 type UpdateOutput struct {
@@ -77,7 +78,7 @@ func (s *UpdateScreen) Draw(input UpdateInput) (ScreenResult[UpdateOutput], erro
 		"%s\n%s\n%s",
 		i18n.Localize(&goi18n.Message{ID: "update_available", Other: "Update available: {{.Version}}"}, map[string]interface{}{"Version": updateInfo.LatestVersion}),
 		i18n.Localize(&goi18n.Message{ID: "update_current_version", Other: "Current: {{.Version}}"}, map[string]interface{}{"Version": updateInfo.CurrentVersion}),
-		i18n.Localize(&goi18n.Message{ID: "update_size", Other: "Size: {{.Size}}"}, map[string]interface{}{"Size": update.FormatSize(updateInfo.AssetSize)}),
+		i18n.Localize(&goi18n.Message{ID: "update_size", Other: "Size: {{.Size}}"}, map[string]interface{}{"Size": stringutil.FormatBytes(updateInfo.AssetSize)}),
 	)
 
 	_, err = gaba.ConfirmationMessage(

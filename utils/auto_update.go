@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"grout/constants"
+	"grout/cfw"
 	"grout/update"
 	"sync/atomic"
 
@@ -11,7 +11,7 @@ import (
 const updateIcon = "\U000F06B0"
 
 type AutoUpdate struct {
-	cfw             constants.CFW
+	cfwType         cfw.CFW
 	icon            *gaba.DynamicStatusBarIcon
 	running         atomic.Bool
 	updateAvailable atomic.Bool
@@ -19,11 +19,11 @@ type AutoUpdate struct {
 	updateInfo      *update.Info
 }
 
-func NewAutoUpdate(cfw constants.CFW) *AutoUpdate {
+func NewAutoUpdate(c cfw.CFW) *AutoUpdate {
 	return &AutoUpdate{
-		cfw:  cfw,
-		icon: gaba.NewDynamicStatusBarIcon(""), // Start empty, will show icon if update available
-		done: make(chan struct{}),
+		cfwType: c,
+		icon:    gaba.NewDynamicStatusBarIcon(""), // Start empty, will show icon if update available
+		done:    make(chan struct{}),
 	}
 }
 
@@ -60,7 +60,7 @@ func (a *AutoUpdate) run() {
 
 	logger.Debug("AutoUpdate: Checking for updates in background")
 
-	info, err := update.CheckForUpdate(a.cfw)
+	info, err := update.CheckForUpdate(a.cfwType)
 	if err != nil {
 		logger.Debug("AutoUpdate: Failed to check for updates", "error", err)
 		return

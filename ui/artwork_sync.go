@@ -2,6 +2,8 @@ package ui
 
 import (
 	"fmt"
+	"grout/cache"
+	"grout/internal/imageutil"
 	"grout/romm"
 	"grout/utils"
 	"strings"
@@ -38,7 +40,7 @@ func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 	logger := gaba.GetLogger()
 
 	// Fetch platforms
-	client := utils.GetRommClient(input.Host, input.Config.ApiTimeout)
+	client := romm.NewClientFromHost(input.Host, input.Config.ApiTimeout)
 	platforms, err := client.GetPlatforms()
 	if err != nil {
 		logger.Error("Failed to fetch platforms", "error", err)
@@ -119,10 +121,10 @@ func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 		}
 
 		downloadURL := strings.ReplaceAll(baseURL+coverPath, " ", "%20")
-		cachePath := utils.GetArtworkCachePath(rom.PlatformSlug, rom.ID)
+		cachePath := cache.GetArtworkCachePath(rom.PlatformSlug, rom.ID)
 
 		// Ensure directory exists
-		utils.EnsureArtworkCacheDir(rom.PlatformSlug)
+		cache.EnsureArtworkCacheDir(rom.PlatformSlug)
 
 		downloads = append(downloads, gaba.Download{
 			URL:         downloadURL,
@@ -184,7 +186,7 @@ func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 			semaphore <- struct{}{}        // Acquire
 			defer func() { <-semaphore }() // Release
 
-			if err := utils.ProcessArtImage(dl.Location); err != nil {
+			if err := imageutil.ProcessArtImage(dl.Location); err != nil {
 				logger.Warn("Failed to process artwork", "path", dl.Location, "error", err)
 				return
 			}

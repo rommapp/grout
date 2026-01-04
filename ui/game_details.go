@@ -3,6 +3,9 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"grout/cache"
+	"grout/internal/imageutil"
+	"grout/internal/stringutil"
 	"io"
 	"net/http"
 	"os"
@@ -157,7 +160,7 @@ func (s *GameDetailsScreen) buildSections(input GameDetailsInput) []gaba.Section
 	if game.FsSizeBytes > 0 {
 		metadata = append(metadata, gaba.MetadataItem{
 			Label: i18n.Localize(&goi18n.Message{ID: "game_details_file_size", Other: "File Size"}, nil),
-			Value: utils.FormatBytes(game.FsSizeBytes),
+			Value: stringutil.FormatBytes(int64(game.FsSizeBytes)),
 		})
 	}
 
@@ -180,7 +183,7 @@ func (s *GameDetailsScreen) buildSections(input GameDetailsInput) []gaba.Section
 		}))
 	}
 
-	qrcode, err := utils.CreateTempQRCode(game.GetGamePage(input.Host), 256)
+	qrcode, err := imageutil.CreateTempQRCode(game.GetGamePage(input.Host), 256)
 	if err == nil {
 		sections = append(sections, gaba.NewImageSection(
 			i18n.Localize(&goi18n.Message{ID: "game_details_qr_section", Other: "RomM Game Listing"}, nil),
@@ -202,8 +205,8 @@ func (s *GameDetailsScreen) getCoverImagePath(host romm.Host, game romm.Rom) str
 	logger := gaba.GetLogger()
 
 	// First, check if artwork is in the cache
-	if utils.ArtworkExists(game.PlatformSlug, game.ID) {
-		cachePath := utils.GetArtworkCachePath(game.PlatformSlug, game.ID)
+	if cache.ArtworkExists(game.PlatformSlug, game.ID) {
+		cachePath := cache.GetArtworkCachePath(game.PlatformSlug, game.ID)
 		logger.Debug("Using cached artwork for game details", "game", game.Name)
 		return cachePath
 	}
@@ -225,10 +228,10 @@ func (s *GameDetailsScreen) getCoverImagePath(host romm.Host, game romm.Rom) str
 
 	// Cache the artwork for future use and return cache path
 	if imageData != nil {
-		if err := utils.EnsureArtworkCacheDir(game.PlatformSlug); err == nil {
-			cachePath := utils.GetArtworkCachePath(game.PlatformSlug, game.ID)
+		if err := cache.EnsureArtworkCacheDir(game.PlatformSlug); err == nil {
+			cachePath := cache.GetArtworkCachePath(game.PlatformSlug, game.ID)
 			if err := os.WriteFile(cachePath, imageData, 0644); err == nil {
-				utils.ProcessArtImage(cachePath)
+				imageutil.ProcessArtImage(cachePath)
 				return cachePath
 			}
 		}
