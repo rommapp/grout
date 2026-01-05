@@ -1,6 +1,6 @@
 {
   "3do": [
-    "PANASONIC"
+    "PANASONIC/Opera"
   ],
   "3ds": [],
   "acpc": [
@@ -83,7 +83,12 @@
     "GB"
   ],
   "gba": [
-    "GBA"
+    "GBA/gpSP",
+    "GBA/mGBA",
+    "GBA/VAB-M",
+    "GBA/VBA-Next",
+    "GBA/Meteor",
+    "GBA/mGBA - Standalone"
   ],
   "gbc": [
     "GBC"
