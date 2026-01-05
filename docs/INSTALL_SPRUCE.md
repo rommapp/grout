@@ -29,7 +29,7 @@ You can install Grout using one of these two methods:
 
 ## Update
 
-### In-App update (recommended)
+### In-App update (Recommended)
 Grout has a built-in update mechanism. To update Grout, launch the application and navigate to the `Settings` menu. From there,
 select `Check for Updates`. If a new version is available, follow the on-screen prompts to download and install the update.
 
