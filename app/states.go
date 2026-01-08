@@ -658,7 +658,6 @@ func buildFSM(config *internal.Config, c cfw.CFW, platforms []romm.Platform, qui
 		return result.Value, result.ExitCode
 	}).
 		On(gaba.ExitCodeSuccess, settings).
-		On(constants.ExitCodeEditMappings, settingsPlatformMapping).
 		On(constants.ExitCodeRefreshCache, refreshCache).
 		On(constants.ExitCodeSyncArtwork, artworkSync).
 		On(gaba.ExitCodeBack, settings)
@@ -685,7 +684,7 @@ func buildFSM(config *internal.Config, c cfw.CFW, platforms []romm.Platform, qui
 
 		return result.Value, result.ExitCode
 	}).
-		OnWithHook(gaba.ExitCodeSuccess, advancedSettings, func(ctx *gaba.Context) error {
+		OnWithHook(gaba.ExitCodeSuccess, settings, func(ctx *gaba.Context) error {
 			output, _ := gaba.Get[ui.PlatformMappingOutput](ctx)
 			config, _ := gaba.Get[*internal.Config](ctx)
 			host, _ := gaba.Get[romm.Host](ctx)
@@ -703,7 +702,7 @@ func buildFSM(config *internal.Config, c cfw.CFW, platforms []romm.Platform, qui
 			gaba.Set(ctx, platforms)
 			return nil
 		}).
-		On(gaba.ExitCodeBack, advancedSettings)
+		On(gaba.ExitCodeBack, settings)
 
 	gaba.AddState(fsm, info, func(ctx *gaba.Context) (ui.InfoOutput, gaba.ExitCode) {
 		host, _ := gaba.Get[romm.Host](ctx)

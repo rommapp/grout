@@ -2,6 +2,7 @@ package ui
 
 import (
 	"errors"
+	"grout/cache"
 	"grout/cfw"
 	"grout/internal"
 	"sort"
@@ -20,7 +21,9 @@ type SaveSyncSettingsOutput struct {
 	Config *internal.Config
 }
 
-type SaveSyncSettingsScreen struct{}
+type SaveSyncSettingsScreen struct {
+	displayToFSSlug map[string]string
+}
 
 func NewSaveSyncSettingsScreen() *SaveSyncSettingsScreen {
 	return &SaveSyncSettingsScreen{}
@@ -73,6 +76,17 @@ func (s *SaveSyncSettingsScreen) Draw(input SaveSyncSettingsInput) (ScreenResult
 
 func (s *SaveSyncSettingsScreen) buildMenuItems(config *internal.Config) []gaba.ItemWithOptions {
 	items := make([]gaba.ItemWithOptions, 0)
+	s.displayToFSSlug = make(map[string]string)
+
+	// Build a map of fsSlug -> platform display name from cache
+	platformNames := make(map[string]string)
+	if cm := cache.GetCacheManager(); cm != nil {
+		if platforms, err := cm.GetPlatforms(); err == nil {
+			for _, p := range platforms {
+				platformNames[p.FSSlug] = p.Name
+			}
+		}
+	}
 
 	// Get all platform fsSlugs from directory mappings
 	fsSlugs := make([]string, 0, len(config.DirectoryMappings))
@@ -116,8 +130,17 @@ func (s *SaveSyncSettingsScreen) buildMenuItems(config *internal.Config) []gaba.
 			}
 		}
 
+		// Use platform display name if available, otherwise fall back to fsSlug
+		displayName := fsSlug
+		if name, ok := platformNames[fsSlug]; ok {
+			displayName = name
+		}
+
+		// Store mapping from display name to fsSlug for applying settings
+		s.displayToFSSlug[displayName] = fsSlug
+
 		items = append(items, gaba.ItemWithOptions{
-			Item:           gaba.MenuItem{Text: fsSlug},
+			Item:           gaba.MenuItem{Text: displayName},
 			Options:        options,
 			SelectedOption: selectedIndex,
 		})
@@ -132,7 +155,11 @@ func (s *SaveSyncSettingsScreen) applySettings(config *internal.Config, items []
 	}
 
 	for _, item := range items {
-		fsSlug := item.Item.Text
+		// Look up fsSlug from display name
+		fsSlug, ok := s.displayToFSSlug[item.Item.Text]
+		if !ok {
+			continue
+		}
 		if val, ok := item.Options[item.SelectedOption].Value.(string); ok {
 			if val == "" {
 				// Remove from map if set to default
