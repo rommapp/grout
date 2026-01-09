@@ -16,11 +16,6 @@ on:
         required: false
         type: boolean
         default: false
-      branch:
-        description: 'Branch to build from'
-        required: false
-        type: string
-        default: 'main'
 
 permissions:
   contents: write
@@ -31,7 +26,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.branch }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update pak.json files
@@ -113,7 +107,7 @@ jobs:
 
             ${{ inputs.changelog }}
 
-            ${{ inputs.beta && format('Built from branch: `{0}`', inputs.branch) || '' }}
+            ${{ inputs.beta && format('Built from branch: `{0}`', github.ref_name) || '' }}
           files: |
             build/Grout.pak.zip
             build/Grout.muxapp

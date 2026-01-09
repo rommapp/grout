@@ -3,15 +3,18 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"grout/cache"
+	"grout/internal"
+	constants2 "grout/internal/constants"
+	"grout/internal/imageutil"
+	"grout/internal/stringutil"
 	"io"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
-	groutConstants "grout/constants"
 	"grout/romm"
-	"grout/utils"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
@@ -20,17 +23,16 @@ import (
 )
 
 type GameDetailsInput struct {
-	Config   *utils.Config
+	Config   *internal.Config
 	Host     romm.Host
 	Platform romm.Platform
 	Game     romm.Rom
 }
 
 type GameDetailsOutput struct {
-	DownloadRequested  bool
-	GameOptionsClicked bool
-	Game               romm.Rom
-	Platform           romm.Platform
+	DownloadRequested bool
+	Game              romm.Rom
+	Platform          romm.Platform
 }
 
 type GameDetailsScreen struct{}
@@ -52,7 +54,7 @@ func (s *GameDetailsScreen) Draw(input GameDetailsInput) (ScreenResult[GameDetai
 	options.Sections = sections
 	options.ShowThemeBackground = false
 	options.ShowScrollbar = true
-	if !utils.IsKidModeEnabled() {
+	if !internal.IsKidModeEnabled() {
 		options.ActionButton = constants.VirtualButtonX
 		options.EnableAction = true
 	}
@@ -60,7 +62,7 @@ func (s *GameDetailsScreen) Draw(input GameDetailsInput) (ScreenResult[GameDetai
 	footerItems := []gaba.FooterHelpItem{
 		{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_back", Other: "Back"}, nil)},
 	}
-	if !utils.IsKidModeEnabled() {
+	if !internal.IsKidModeEnabled() {
 		footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: "X", HelpText: i18n.Localize(&goi18n.Message{ID: "button_options", Other: "Options"}, nil)})
 	}
 	footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_download", Other: "Download"}, nil)})
@@ -81,8 +83,7 @@ func (s *GameDetailsScreen) Draw(input GameDetailsInput) (ScreenResult[GameDetai
 	}
 
 	if result.Action == gaba.DetailActionTriggered {
-		output.GameOptionsClicked = true
-		return withCode(output, groutConstants.ExitCodeGameOptions), nil
+		return withCode(output, constants2.ExitCodeGameOptions), nil
 	}
 
 	return back(output), nil
@@ -159,7 +160,7 @@ func (s *GameDetailsScreen) buildSections(input GameDetailsInput) []gaba.Section
 	if game.FsSizeBytes > 0 {
 		metadata = append(metadata, gaba.MetadataItem{
 			Label: i18n.Localize(&goi18n.Message{ID: "game_details_file_size", Other: "File Size"}, nil),
-			Value: utils.FormatBytes(game.FsSizeBytes),
+			Value: stringutil.FormatBytes(int64(game.FsSizeBytes)),
 		})
 	}
 
@@ -182,7 +183,7 @@ func (s *GameDetailsScreen) buildSections(input GameDetailsInput) []gaba.Section
 		}))
 	}
 
-	qrcode, err := utils.CreateTempQRCode(game.GetGamePage(input.Host), 256)
+	qrcode, err := imageutil.CreateTempQRCode(game.GetGamePage(input.Host), 256)
 	if err == nil {
 		sections = append(sections, gaba.NewImageSection(
 			i18n.Localize(&goi18n.Message{ID: "game_details_qr_section", Other: "RomM Game Listing"}, nil),
@@ -204,8 +205,8 @@ func (s *GameDetailsScreen) getCoverImagePath(host romm.Host, game romm.Rom) str
 	logger := gaba.GetLogger()
 
 	// First, check if artwork is in the cache
-	if utils.ArtworkExists(game.PlatformSlug, game.ID) {
-		cachePath := utils.GetArtworkCachePath(game.PlatformSlug, game.ID)
+	if cache.ArtworkExists(game.PlatformFSSlug, game.ID) {
+		cachePath := cache.GetArtworkCachePath(game.PlatformFSSlug, game.ID)
 		logger.Debug("Using cached artwork for game details", "game", game.Name)
 		return cachePath
 	}
@@ -227,10 +228,10 @@ func (s *GameDetailsScreen) getCoverImagePath(host romm.Host, game romm.Rom) str
 
 	// Cache the artwork for future use and return cache path
 	if imageData != nil {
-		if err := utils.EnsureArtworkCacheDir(game.PlatformSlug); err == nil {
-			cachePath := utils.GetArtworkCachePath(game.PlatformSlug, game.ID)
+		if err := cache.EnsureArtworkCacheDir(game.PlatformFSSlug); err == nil {
+			cachePath := cache.GetArtworkCachePath(game.PlatformFSSlug, game.ID)
 			if err := os.WriteFile(cachePath, imageData, 0644); err == nil {
-				utils.ProcessArtImage(cachePath)
+				imageutil.ProcessArtImage(cachePath)
 				return cachePath
 			}
 		}
@@ -252,7 +253,7 @@ func (s *GameDetailsScreen) fetchImageFromURL(host romm.Host, imageURL string) [
 
 	req.SetBasicAuth(host.Username, host.Password)
 
-	client := &http.Client{Timeout: groutConstants.DefaultHTTPTimeout}
+	client := &http.Client{Timeout: constants2.DefaultHTTPTimeout}
 	resp, err := client.Do(req)
 	if err != nil {
 		logger.Warn("Failed to fetch image", "url", imageURL, "error", err)

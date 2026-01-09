@@ -22,7 +22,6 @@ type Firmware struct {
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
 
-	// Computed fields (not from API)
 	DownloadURL string `json:"-"`
 }
 
@@ -34,7 +33,6 @@ func (fo FirmwareOptions) Valid() bool {
 	return fo.PlatformID != 0
 }
 
-// GetFirmware retrieves all firmware/BIOS files for a given platform
 func (c *Client) GetFirmware(platformID int) ([]Firmware, error) {
 	var firmware []Firmware
 	err := c.doRequest("GET", endpointFirmware, FirmwareOptions{PlatformID: platformID}, nil, &firmware)
@@ -49,13 +47,4 @@ func (c *Client) GetFirmware(platformID int) ([]Firmware, error) {
 	}
 
 	return firmware, nil
-}
-
-// DownloadFirmware downloads a firmware/BIOS file and returns the raw bytes
-func (c *Client) DownloadFirmware(firmware Firmware) ([]byte, error) {
-	if firmware.DownloadURL == "" {
-		return nil, fmt.Errorf("firmware download URL is empty")
-	}
-
-	return c.downloadFile(firmware.DownloadURL)
 }

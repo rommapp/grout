@@ -30,6 +30,17 @@ _Please help verify compatibility on other devices by reporting your results!_
 > On the main Knulli menu, press `start`, 'System Settings', `Frontend Developer Options` (at the very bottom), and turn
 `Search For Local Art` on.
 
+## Update
+
+### In-App update (Recommended)
+Grout has a built-in update mechanism. To update Grout, launch the application and navigate to the `Settings` menu. From there,
+select `Check for Updates`. If a new version is available, follow the on-screen prompts to download and install the update.
+
+### Manual update
+To update Grout, simply download the latest release and replace the existing Grout folder in your Tools directory (`/userdata/roms/tools`) directory. If you
+have made any custom configurations, ensure to back them up before replacing the folder. Be sure to keep the `config.json`
+file if you do not want to authenticate again, and configure platforms folder mappings again.
+
 ## Next Steps
 
 After installation is complete, check out the [User Guide](USER_GUIDE.md) to learn how to use Grout.

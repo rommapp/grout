@@ -2,9 +2,10 @@ package ui
 
 import (
 	"errors"
-	"grout/constants"
+	"grout/cfw"
+	"grout/internal"
+	"grout/internal/constants"
 	"grout/romm"
-	"grout/utils"
 	"sync/atomic"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -18,18 +19,19 @@ type settingsVisibility struct {
 }
 
 type SettingsInput struct {
-	Config                *utils.Config
-	CFW                   constants.CFW
+	Config                *internal.Config
+	CFW                   cfw.CFW
 	Host                  romm.Host
 	LastSelectedIndex     int
 	LastVisibleStartIndex int
 }
 
 type SettingsOutput struct {
-	Config                     *utils.Config
+	Config                     *internal.Config
 	GeneralSettingsClicked     bool
 	InfoClicked                bool
 	CollectionsSettingsClicked bool
+	DirectoryMappingsClicked   bool
 	AdvancedSettingsClicked    bool
 	SaveSyncSettingsClicked    bool
 	CheckUpdatesClicked        bool
@@ -48,6 +50,7 @@ type SettingType string
 const (
 	SettingGeneralSettings     SettingType = "general_settings"
 	SettingCollectionsSettings SettingType = "collections_settings"
+	SettingDirectoryMappings   SettingType = "directory_mappings"
 	SettingSaveSync            SettingType = "save_sync"
 	SettingSaveSyncSettings    SettingType = "save_sync_settings"
 	SettingAdvancedSettings    SettingType = "advanced_settings"
@@ -58,6 +61,7 @@ const (
 var settingsOrder = []SettingType{
 	SettingGeneralSettings,
 	SettingCollectionsSettings,
+	SettingDirectoryMappings,
 	SettingSaveSync,
 	SettingSaveSyncSettings,
 	SettingAdvancedSettings,
@@ -71,7 +75,7 @@ func (s *SettingsScreen) Draw(input SettingsInput) (ScreenResult[SettingsOutput]
 
 	visibility := &settingsVisibility{}
 	visibility.saveSyncSettings.Store(config.SaveSyncMode != "off")
-	visibility.checkUpdates.Store(input.CFW != constants.NextUI)
+	visibility.checkUpdates.Store(input.CFW != cfw.NextUI)
 
 	items := s.buildMenuItems(config, visibility)
 
@@ -81,7 +85,7 @@ func (s *SettingsScreen) Draw(input SettingsInput) (ScreenResult[SettingsOutput]
 			FooterHelpItems:      OptionsListFooter(),
 			InitialSelectedIndex: input.LastSelectedIndex,
 			VisibleStartIndex:    input.LastVisibleStartIndex,
-			StatusBar:            utils.StatusBar(),
+			StatusBar:            StatusBar(),
 			SmallTitle:           true,
 		},
 		items,
@@ -118,6 +122,11 @@ func (s *SettingsScreen) Draw(input SettingsInput) (ScreenResult[SettingsOutput]
 			return withCode(output, constants.ExitCodeCollectionsSettings), nil
 		}
 
+		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_edit_mappings", Other: "Directory Mappings"}, nil) {
+			output.DirectoryMappingsClicked = true
+			return withCode(output, constants.ExitCodeEditMappings), nil
+		}
+
 		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_advanced", Other: "Advanced"}, nil) {
 			output.AdvancedSettingsClicked = true
 			return withCode(output, constants.ExitCodeAdvancedSettings), nil
@@ -138,7 +147,7 @@ func (s *SettingsScreen) Draw(input SettingsInput) (ScreenResult[SettingsOutput]
 	return success(output), nil
 }
 
-func (s *SettingsScreen) buildMenuItems(config *utils.Config, visibility *settingsVisibility) []gaba.ItemWithOptions {
+func (s *SettingsScreen) buildMenuItems(config *internal.Config, visibility *settingsVisibility) []gaba.ItemWithOptions {
 	items := make([]gaba.ItemWithOptions, 0, len(settingsOrder))
 	for _, settingType := range settingsOrder {
 		items = append(items, s.buildMenuItem(settingType, config, visibility))
@@ -146,7 +155,7 @@ func (s *SettingsScreen) buildMenuItems(config *utils.Config, visibility *settin
 	return items
 }
 
-func (s *SettingsScreen) buildMenuItem(settingType SettingType, config *utils.Config, visibility *settingsVisibility) gaba.ItemWithOptions {
+func (s *SettingsScreen) buildMenuItem(settingType SettingType, config *internal.Config, visibility *settingsVisibility) gaba.ItemWithOptions {
 	switch settingType {
 	case SettingGeneralSettings:
 		return gaba.ItemWithOptions{
@@ -157,6 +166,12 @@ func (s *SettingsScreen) buildMenuItem(settingType SettingType, config *utils.Co
 	case SettingCollectionsSettings:
 		return gaba.ItemWithOptions{
 			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_collections", Other: "Collections Settings"}, nil)},
+			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
+		}
+
+	case SettingDirectoryMappings:
+		return gaba.ItemWithOptions{
+			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_edit_mappings", Other: "Directory Mappings"}, nil)},
 			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
 		}
 
@@ -212,7 +227,7 @@ func (s *SettingsScreen) buildMenuItem(settingType SettingType, config *utils.Co
 	}
 }
 
-func (s *SettingsScreen) applySettings(config *utils.Config, items []gaba.ItemWithOptions) {
+func (s *SettingsScreen) applySettings(config *internal.Config, items []gaba.ItemWithOptions) {
 	for _, item := range items {
 		text := item.Item.Text
 		switch text {

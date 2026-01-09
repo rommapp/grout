@@ -2,13 +2,14 @@ package ui
 
 import (
 	"fmt"
+	"grout/bios"
+	"grout/cfw"
+	"grout/internal"
+	"grout/internal/fileutil"
+	"grout/romm"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"grout/constants"
-	"grout/romm"
-	"grout/utils"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	icons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
@@ -17,7 +18,7 @@ import (
 )
 
 type BIOSDownloadInput struct {
-	Config   utils.Config
+	Config   internal.Config
 	Host     romm.Host
 	Platform romm.Platform
 }
@@ -32,7 +33,7 @@ func NewBIOSDownloadScreen() *BIOSDownloadScreen {
 	return &BIOSDownloadScreen{}
 }
 
-func (s *BIOSDownloadScreen) Execute(config utils.Config, host romm.Host, platform romm.Platform) BIOSDownloadOutput {
+func (s *BIOSDownloadScreen) Execute(config internal.Config, host romm.Host, platform romm.Platform) BIOSDownloadOutput {
 	result, err := s.draw(BIOSDownloadInput{
 		Config:   config,
 		Host:     host,
@@ -55,7 +56,7 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 	}
 
 	// Fetch firmware list from RomM first
-	client := utils.GetRommClient(input.Host, input.Config.ApiTimeout)
+	client := romm.NewClientFromHost(input.Host, input.Config.ApiTimeout)
 	firmwareList, err := client.GetFirmware(input.Platform.ID)
 	if err != nil {
 		logger.Error("Failed to fetch firmware from RomM", "error", err, "platform_id", input.Platform.ID)
@@ -80,11 +81,11 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 	logger.Debug("Fetched firmware from RomM", "count", len(firmwareList), "platform_id", input.Platform.ID)
 
 	// Try to get BIOS metadata to enrich the firmware list (optional)
-	biosFiles := utils.GetBIOSFilesForPlatform(input.Platform.Slug)
+	biosFiles := bios.GetFilesForPlatform(input.Platform.FSSlug)
 
 	// Build metadata lookup by filename for enrichment (case-insensitive)
-	biosMetadataByFileName := make(map[string]constants.BIOSFile)
-	biosMetadataByRelPath := make(map[string]constants.BIOSFile)
+	biosMetadataByFileName := make(map[string]bios.File)
+	biosMetadataByRelPath := make(map[string]bios.File)
 	for _, biosFile := range biosFiles {
 		biosMetadataByFileName[strings.ToLower(biosFile.FileName)] = biosFile
 		biosMetadataByRelPath[strings.ToLower(biosFile.RelativePath)] = biosFile
@@ -97,7 +98,7 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 	// Create a BIOSFile entry for each firmware, enriching with metadata if available
 	type firmwareWithMetadata struct {
 		firmware romm.Firmware
-		metadata *constants.BIOSFile
+		metadata *bios.File
 	}
 
 	var firmwareItems []firmwareWithMetadata
@@ -132,17 +133,17 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 
 		if item.metadata != nil {
 			// We have metadata - show enriched information
-			status := utils.CheckBIOSFileStatus(*item.metadata, input.Platform.Slug)
+			status := bios.CheckFileStatus(*item.metadata, input.Platform.FSSlug)
 
 			var statusText string
 			switch status.Status {
-			case utils.BIOSStatusValid:
+			case bios.StatusValid:
 				statusText = i18n.Localize(&goi18n.Message{ID: "bios_status_ready", Other: "Ready"}, nil)
-			case utils.BIOSStatusInvalidHash:
+			case bios.StatusInvalidHash:
 				statusText = i18n.Localize(&goi18n.Message{ID: "bios_status_wrong_version", Other: "Wrong Version"}, nil)
-			case utils.BIOSStatusNoHashToVerify:
+			case bios.StatusNoHashToVerify:
 				statusText = i18n.Localize(&goi18n.Message{ID: "bios_status_unverified", Other: "Installed (Unverified)"}, nil)
-			case utils.BIOSStatusMissing:
+			case bios.StatusMissing:
 				statusText = i18n.Localize(&goi18n.Message{ID: "bios_status_not_installed", Other: "Not Installed"}, nil)
 			}
 
@@ -152,24 +153,23 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 			}
 
 			displayText = fmt.Sprintf("%s%s - %s", fw.FileName, optionalText, statusText)
-			shouldSelect = status.Status == utils.BIOSStatusMissing || status.Status == utils.BIOSStatusInvalidHash
+			shouldSelect = status.Status == bios.StatusMissing || status.Status == bios.StatusInvalidHash
 		} else {
 			// No metadata - check if file exists and show basic status
-			biosDir := utils.GetBIOSDirectory()
+			biosDir := cfw.GetBIOSDirectory()
 
-			// Try multiple potential file locations
-			potentialPaths := []string{
-				filepath.Join(biosDir, fw.FileName), // Root BIOS dir
-				filepath.Join(biosDir, fw.FilePath), // Using firmware's relative path
+			// Determine the correct file path using same logic as save
+			// FilePath may be: just filename, subdir/filename, or just subdir
+			var expectedPath string
+			if fw.FilePath == "" || fw.FilePath == fw.FileName {
+				expectedPath = filepath.Join(biosDir, fw.FileName)
+			} else if filepath.Base(fw.FilePath) == fw.FileName {
+				expectedPath = filepath.Join(biosDir, fw.FilePath)
+			} else {
+				expectedPath = filepath.Join(biosDir, fw.FilePath, fw.FileName)
 			}
 
-			fileExists := false
-			for _, path := range potentialPaths {
-				if _, err := os.Stat(path); err == nil {
-					fileExists = true
-					break
-				}
-			}
+			fileExists := fileutil.FileExists(expectedPath)
 
 			var statusText string
 			if fileExists {
@@ -198,7 +198,7 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 		FooterBack(),
 		{ButtonName: icons.Start, HelpText: i18n.Localize(&goi18n.Message{ID: "button_download", Other: "Download"}, nil), IsConfirmButton: true},
 	}
-	options.StatusBar = utils.StatusBar()
+	options.StatusBar = StatusBar()
 
 	sel, err := gaba.List(options)
 	if err != nil {
@@ -220,16 +220,12 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 
 	// Build downloads from selected items
 	var downloads []gaba.Download
-	type downloadInfo struct {
-		firmware romm.Firmware
-		metadata *constants.BIOSFile
-	}
-	locationToInfoMap := make(map[string]downloadInfo)
+	locationToInfoMap := make(map[string]firmwareWithMetadata)
 
 	baseURL := input.Host.URL()
 	for _, item := range selectedItems {
 		downloadURL := baseURL + item.firmware.DownloadURL
-		tempPath := filepath.Join(utils.TempDir(), fmt.Sprintf("bios_%s", item.firmware.FileName))
+		tempPath := filepath.Join(fileutil.TempDir(), fmt.Sprintf("bios_%s", item.firmware.FileName))
 
 		downloads = append(downloads, gaba.Download{
 			URL:         downloadURL,
@@ -237,10 +233,7 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 			DisplayName: item.firmware.FileName,
 		})
 
-		locationToInfoMap[tempPath] = downloadInfo{
-			firmware: item.firmware,
-			metadata: item.metadata,
-		}
+		locationToInfoMap[tempPath] = item
 
 		logger.Debug("Added BIOS file to download queue",
 			"file", item.firmware.FileName,
@@ -274,7 +267,7 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 
 		// Verify MD5 if we have metadata
 		if info.metadata != nil && info.metadata.MD5Hash != "" {
-			isValid, actualHash := utils.VerifyBIOSFileMD5(data, info.metadata.MD5Hash)
+			isValid, actualHash := bios.VerifyFileMD5(data, info.metadata.MD5Hash)
 			if !isValid {
 				logger.Warn("MD5 hash mismatch for BIOS file",
 					"file", info.metadata.FileName,
@@ -286,20 +279,15 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 
 		// Save the file
 		if info.metadata != nil {
-			// We have metadata - use SaveBIOSFile to handle subdirectories
-			if err := utils.SaveBIOSFile(*info.metadata, input.Platform.Slug, data); err != nil {
+			// We have metadata - use SaveFile to handle subdirectories
+			if err := bios.SaveFile(*info.metadata, input.Platform.FSSlug, data); err != nil {
 				logger.Error("Failed to save BIOS file", "file", info.metadata.FileName, "error", err)
 				continue
 			}
 		} else {
-			// No metadata - use firmware FilePath from RomM (preserves subdirectories)
-			biosDir := utils.GetBIOSDirectory()
-			// Use FilePath if it contains directory info, otherwise just use FileName
-			relativePath := info.firmware.FilePath
-			if relativePath == "" || relativePath == info.firmware.FileName {
-				relativePath = info.firmware.FileName
-			}
-			filePath := filepath.Join(biosDir, relativePath)
+			// No metadata - just plop into the BIOS folder
+			biosDir := cfw.GetBIOSDirectory()
+			filePath := filepath.Join(biosDir, info.firmware.FileName)
 
 			if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
 				logger.Error("Failed to create BIOS directory", "error", err)

@@ -2,7 +2,7 @@ package ui
 
 import (
 	"errors"
-	"grout/utils"
+	"grout/internal"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
@@ -10,11 +10,11 @@ import (
 )
 
 type GeneralSettingsInput struct {
-	Config *utils.Config
+	Config *internal.Config
 }
 
 type GeneralSettingsOutput struct {
-	Config *utils.Config
+	Config *internal.Config
 }
 
 type GeneralSettingsScreen struct{}
@@ -33,7 +33,7 @@ func (s *GeneralSettingsScreen) Draw(input GeneralSettingsInput) (ScreenResult[G
 		i18n.Localize(&goi18n.Message{ID: "settings_general", Other: "General"}, nil),
 		gaba.OptionListSettings{
 			FooterHelpItems: OptionsListFooter(),
-			StatusBar:       utils.StatusBar(),
+			StatusBar:       StatusBar(),
 			SmallTitle:      true,
 		},
 		items,
@@ -49,7 +49,7 @@ func (s *GeneralSettingsScreen) Draw(input GeneralSettingsInput) (ScreenResult[G
 
 	s.applySettings(config, result.Items)
 
-	err = utils.SaveConfig(config)
+	err = internal.SaveConfig(config)
 	if err != nil {
 		gaba.GetLogger().Error("Error saving general settings", "error", err)
 		return withCode(output, gaba.ExitCodeError), err
@@ -58,7 +58,7 @@ func (s *GeneralSettingsScreen) Draw(input GeneralSettingsInput) (ScreenResult[G
 	return success(output), nil
 }
 
-func (s *GeneralSettingsScreen) buildMenuItems(config *utils.Config) []gaba.ItemWithOptions {
+func (s *GeneralSettingsScreen) buildMenuItems(config *internal.Config) []gaba.ItemWithOptions {
 	return []gaba.ItemWithOptions{
 		{
 			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_box_art", Other: "Box Art"}, nil)},
@@ -110,7 +110,7 @@ func (s *GeneralSettingsScreen) buildMenuItems(config *utils.Config) []gaba.Item
 	}
 }
 
-func (s *GeneralSettingsScreen) applySettings(config *utils.Config, items []gaba.ItemWithOptions) {
+func (s *GeneralSettingsScreen) applySettings(config *internal.Config, items []gaba.ItemWithOptions) {
 	for _, item := range items {
 		selectedText := item.Item.Text
 

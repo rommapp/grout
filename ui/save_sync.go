@@ -1,17 +1,19 @@
 package ui
 
 import (
+	"grout/internal"
 	"grout/romm"
-	"grout/utils"
+	"grout/sync"
 	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
 	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
+	"go.uber.org/atomic"
 )
 
 type SaveSyncInput struct {
-	Config *utils.Config
+	Config *internal.Config
 	Host   romm.Host
 }
 
@@ -26,13 +28,25 @@ func NewSaveSyncScreen() *SaveSyncScreen {
 func (s *SaveSyncScreen) Draw(input SaveSyncInput) (ScreenResult[SaveSyncOutput], error) {
 	output := SaveSyncOutput{}
 
+	// Scan local ROMs and match with save files
+	romScan, _ := gaba.ProcessMessage(i18n.Localize(&goi18n.Message{ID: "save_sync_scanning_roms", Other: "Scanning ROMs..."}, nil), gaba.ProcessMessageOptions{}, func() (interface{}, error) {
+		return sync.ScanRoms(), nil
+	})
+
 	type scanResult struct {
-		Syncs     []utils.SaveSync
-		Unmatched []utils.UnmatchedSave
+		Syncs     []sync.SaveSync
+		Unmatched []sync.UnmatchedSave
 	}
 
+	// Then, find save syncs using the pre-scanned ROM data
 	scanData, _ := gaba.ProcessMessage(i18n.Localize(&goi18n.Message{ID: "save_sync_scanning", Other: "Scanning save files..."}, nil), gaba.ProcessMessageOptions{}, func() (interface{}, error) {
-		syncs, unmatched, err := utils.FindSaveSyncs(input.Host)
+		localRoms, ok := romScan.(sync.LocalRomScan)
+		if !ok {
+			gaba.GetLogger().Error("Unable to scan ROMs!")
+			return nil, nil
+		}
+
+		syncs, unmatched, err := sync.FindSaveSyncsFromScan(input.Host, input.Config, localRoms)
 		if err != nil {
 			gaba.GetLogger().Error("Unable to scan save files!", "error", err)
 			return nil, nil
@@ -41,20 +55,36 @@ func (s *SaveSyncScreen) Draw(input SaveSyncInput) (ScreenResult[SaveSyncOutput]
 		return scanResult{Syncs: syncs, Unmatched: unmatched}, nil
 	})
 
-	var results []utils.SyncResult
-	var unmatched []utils.UnmatchedSave
+	var results []sync.SyncResult
+	var unmatched []sync.UnmatchedSave
 
 	if scan, ok := scanData.(scanResult); ok {
 		unmatched = scan.Unmatched
-		results = make([]utils.SyncResult, 0, len(scan.Syncs))
+		results = make([]sync.SyncResult, 0, len(scan.Syncs))
 
-		for i := range scan.Syncs {
-			s := &scan.Syncs[i]
-			result := s.Execute(input.Host, input.Config)
-			results = append(results, result)
-			if !result.Success {
-				gaba.GetLogger().Error("Unable to sync save!", "game", s.GameBase, "error", result.Error)
-			}
+		if len(scan.Syncs) > 0 {
+			progress := &atomic.Float64{}
+
+			gaba.ProcessMessage(
+				i18n.Localize(&goi18n.Message{ID: "save_sync_syncing", Other: "Syncing saves..."}, nil),
+				gaba.ProcessMessageOptions{
+					ShowProgressBar: true,
+					Progress:        progress,
+				},
+				func() (interface{}, error) {
+					total := len(scan.Syncs)
+					for i := range scan.Syncs {
+						s := &scan.Syncs[i]
+						result := s.Execute(input.Host, input.Config)
+						results = append(results, result)
+						if !result.Success {
+							gaba.GetLogger().Error("Unable to sync save!", "game", s.GameBase, "error", result.Error)
+						}
+						progress.Store(float64(i+1) / float64(total))
+					}
+					return nil, nil
+				},
+			)
 		}
 	}
 

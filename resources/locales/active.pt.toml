@@ -26,6 +26,10 @@ other = "Escaneando plataforma %d/%d: %s..."
 hash = "sha1-ef880c0f2577f0a9fb8ca21f2ed3710e5aef1376"
 other = "Todo artwork já está em cache!"
 
+[artwork_sync_no_artwork]
+hash = "sha1-447a12c1a94ffbcefafc528ff6de40d16b247a7d"
+other = "Nenhum artwork disponível para download."
+
 [auto_sync_waiting]
 hash = "sha1-c005f14e70da37982e2152d3af9d29a58ea8f01c"
 other = "Aguardando a sincronização terminar..."
@@ -141,17 +145,12 @@ other = "Selecionar"
 hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
 other = "Configurações"
 
-[cache_artwork]
-hash = "sha1-1cb834b429143507648837792190c647a34f64ab"
-other = "Cache de Artwork"
+[cache_collections]
+other = "Cache de Coleções"
 
 [cache_games]
 hash = "sha1-1e7dbd606b8bad53986d06fd58c9d73dcad67d64"
 other = "Cache de Jogos"
-
-[clear_cache_title]
-hash = "sha1-522175083f0bf50b4584d1dd8dbed60ae22535be"
-other = "Limpar Cache"
 
 [collection_platform_no_mapped]
 hash = "sha1-423fa43d1088dbfa790bd41466ee1193947902cd"
@@ -491,6 +490,9 @@ other = "{{.Name}} (ROM não encontrada no RomM)"
 hash = "sha1-6e0e349d1314bd7909fa32d8c46698b412601d19"
 other = "Escaneando arquivos de save..."
 
+[save_sync_scanning_roms]
+other = "Escaneando ROMs..."
+
 [save_sync_settings_title]
 hash = "sha1-d3cc05947f3967eb75f60603d7fe6d6d88dbcf7f"
 other = "Mapeamentos de Sincronização"
@@ -519,6 +521,9 @@ other = "Erro desconhecido"
 hash = "sha1-11ffd636fd7a3bf88d84e08f65c2a6cd05cfc2b2"
 other = "Saves Não Correspondidos"
 
+[save_sync_syncing]
+other = "Sincronizando saves..."
+
 [save_sync_up_to_date]
 hash = "sha1-73e9f0f39987b22aebf571b4f039ecde681e9434"
 other = "Tudo está atualizado!\nVá jogar!"
@@ -538,10 +543,6 @@ other = "Timeout da API"
 [settings_box_art]
 hash = "sha1-0eb3d5ab393c2db23feb4e143d5c1987ff52685a"
 other = "Capa"
-
-[settings_clear_cache]
-hash = "sha1-522175083f0bf50b4584d1dd8dbed60ae22535be"
-other = "Limpar Cache"
 
 [settings_collection_view]
 hash = "sha1-b5c401da5ed3ead09ad836091786ea351f1a4218"
@@ -639,7 +640,7 @@ other = "Coleções Virtuais"
 
 [settings_sync_artwork]
 hash = "sha1-447a12c1a94ffbcefafc528ff6de40d16b247a7d"
-other = "Armazenar Artwork"
+other = "Pré-carregar Artwork"
 
 [settings_title]
 hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"

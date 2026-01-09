@@ -2,8 +2,9 @@ package ui
 
 import (
 	"errors"
+	"grout/cfw"
+	"grout/internal"
 	"grout/romm"
-	"grout/utils"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,12 +15,12 @@ import (
 )
 
 type GameOptionsInput struct {
-	Config *utils.Config
+	Config *internal.Config
 	Game   romm.Rom
 }
 
 type GameOptionsOutput struct {
-	Config *utils.Config
+	Config *internal.Config
 }
 
 type GameOptionsScreen struct{}
@@ -46,7 +47,7 @@ func (s *GameOptionsScreen) Draw(input GameOptionsInput) (ScreenResult[GameOptio
 		gaba.OptionListSettings{
 			FooterHelpItems:      OptionsListFooter(),
 			InitialSelectedIndex: 0,
-			StatusBar:            utils.StatusBar(),
+			StatusBar:            StatusBar(),
 			SmallTitle:           true,
 		},
 		items,
@@ -62,7 +63,7 @@ func (s *GameOptionsScreen) Draw(input GameOptionsInput) (ScreenResult[GameOptio
 
 	s.applySettings(config, input.Game, result.Items)
 
-	err = utils.SaveConfig(config)
+	err = internal.SaveConfig(config)
 	if err != nil {
 		gaba.GetLogger().Error("Error saving game options", "error", err)
 		return withCode(output, gaba.ExitCodeError), err
@@ -71,11 +72,11 @@ func (s *GameOptionsScreen) Draw(input GameOptionsInput) (ScreenResult[GameOptio
 	return success(output), nil
 }
 
-func (s *GameOptionsScreen) buildMenuItems(config *utils.Config, game romm.Rom) []gaba.ItemWithOptions {
+func (s *GameOptionsScreen) buildMenuItems(config *internal.Config, game romm.Rom) []gaba.ItemWithOptions {
 	items := make([]gaba.ItemWithOptions, 0)
 
 	// Save Directory option
-	saveDirectories := utils.EmulatorFoldersForSlug(game.PlatformSlug)
+	saveDirectories := cfw.EmulatorFoldersForFSSlug(game.PlatformFSSlug)
 	if len(saveDirectories) > 0 {
 		options := make([]gaba.Option, 0, len(saveDirectories)+1)
 
@@ -116,7 +117,7 @@ func (s *GameOptionsScreen) buildMenuItems(config *utils.Config, game romm.Rom) 
 	return items
 }
 
-func (s *GameOptionsScreen) applySettings(config *utils.Config, game romm.Rom, items []gaba.ItemWithOptions) {
+func (s *GameOptionsScreen) applySettings(config *internal.Config, game romm.Rom, items []gaba.ItemWithOptions) {
 	logger := gaba.GetLogger()
 
 	for _, item := range items {
@@ -135,7 +136,7 @@ func (s *GameOptionsScreen) applySettings(config *utils.Config, game romm.Rom, i
 			}
 
 			// Resolve actual directories (empty string means default/first in list)
-			saveDirectories := utils.EmulatorFoldersForSlug(game.PlatformSlug)
+			saveDirectories := cfw.EmulatorFoldersForFSSlug(game.PlatformFSSlug)
 			if len(saveDirectories) == 0 {
 				continue
 			}
@@ -173,7 +174,7 @@ func (s *GameOptionsScreen) applySettings(config *utils.Config, game romm.Rom, i
 
 func (s *GameOptionsScreen) moveSaveFile(game romm.Rom, oldDir, newDir string) {
 	logger := gaba.GetLogger()
-	basePath := utils.BaseSavePath()
+	basePath := cfw.BaseSavePath()
 
 	// Get the game's base name (ROM filename without extension)
 	gameBase := strings.TrimSuffix(game.FsNameNoExt, filepath.Ext(game.FsNameNoExt))

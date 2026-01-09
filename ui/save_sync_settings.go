@@ -2,8 +2,9 @@ package ui
 
 import (
 	"errors"
-	"grout/constants"
-	"grout/utils"
+	"grout/cache"
+	"grout/cfw"
+	"grout/internal"
 	"sort"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -12,15 +13,17 @@ import (
 )
 
 type SaveSyncSettingsInput struct {
-	Config *utils.Config
-	CFW    constants.CFW
+	Config *internal.Config
+	CFW    cfw.CFW
 }
 
 type SaveSyncSettingsOutput struct {
-	Config *utils.Config
+	Config *internal.Config
 }
 
-type SaveSyncSettingsScreen struct{}
+type SaveSyncSettingsScreen struct {
+	displayToFSSlug map[string]string
+}
 
 func NewSaveSyncSettingsScreen() *SaveSyncSettingsScreen {
 	return &SaveSyncSettingsScreen{}
@@ -46,7 +49,7 @@ func (s *SaveSyncSettingsScreen) Draw(input SaveSyncSettingsInput) (ScreenResult
 				FooterSave(),
 			},
 			InitialSelectedIndex: 0,
-			StatusBar:            utils.StatusBar(),
+			StatusBar:            StatusBar(),
 			SmallTitle:           true,
 		},
 		items,
@@ -62,7 +65,7 @@ func (s *SaveSyncSettingsScreen) Draw(input SaveSyncSettingsInput) (ScreenResult
 
 	s.applySettings(config, result.Items)
 
-	err = utils.SaveConfig(config)
+	err = internal.SaveConfig(config)
 	if err != nil {
 		gaba.GetLogger().Error("Error saving save sync settings", "error", err)
 		return withCode(output, gaba.ExitCodeError), err
@@ -71,18 +74,29 @@ func (s *SaveSyncSettingsScreen) Draw(input SaveSyncSettingsInput) (ScreenResult
 	return success(output), nil
 }
 
-func (s *SaveSyncSettingsScreen) buildMenuItems(config *utils.Config) []gaba.ItemWithOptions {
+func (s *SaveSyncSettingsScreen) buildMenuItems(config *internal.Config) []gaba.ItemWithOptions {
 	items := make([]gaba.ItemWithOptions, 0)
+	s.displayToFSSlug = make(map[string]string)
 
-	// Get all platform slugs from directory mappings
-	slugs := make([]string, 0, len(config.DirectoryMappings))
-	for slug := range config.DirectoryMappings {
-		slugs = append(slugs, slug)
+	// Build a map of fsSlug -> platform display name from cache
+	platformNames := make(map[string]string)
+	if cm := cache.GetCacheManager(); cm != nil {
+		if platforms, err := cm.GetPlatforms(); err == nil {
+			for _, p := range platforms {
+				platformNames[p.FSSlug] = p.Name
+			}
+		}
 	}
-	sort.Strings(slugs)
 
-	for _, slug := range slugs {
-		saveDirectories := utils.EmulatorFoldersForSlug(slug)
+	// Get all platform fsSlugs from directory mappings
+	fsSlugs := make([]string, 0, len(config.DirectoryMappings))
+	for fsSlug := range config.DirectoryMappings {
+		fsSlugs = append(fsSlugs, fsSlug)
+	}
+	sort.Strings(fsSlugs)
+
+	for _, fsSlug := range fsSlugs {
+		saveDirectories := cfw.EmulatorFoldersForFSSlug(fsSlug)
 		if len(saveDirectories) == 0 {
 			continue
 		}
@@ -106,7 +120,7 @@ func (s *SaveSyncSettingsScreen) buildMenuItems(config *utils.Config) []gaba.Ite
 		// Determine currently selected option
 		selectedIndex := 0
 		if config.SaveDirectoryMappings != nil {
-			if currentMapping, ok := config.SaveDirectoryMappings[slug]; ok && currentMapping != "" {
+			if currentMapping, ok := config.SaveDirectoryMappings[fsSlug]; ok && currentMapping != "" {
 				for i, opt := range options {
 					if val, ok := opt.Value.(string); ok && val == currentMapping {
 						selectedIndex = i
@@ -116,8 +130,17 @@ func (s *SaveSyncSettingsScreen) buildMenuItems(config *utils.Config) []gaba.Ite
 			}
 		}
 
+		// Use platform display name if available, otherwise fall back to fsSlug
+		displayName := fsSlug
+		if name, ok := platformNames[fsSlug]; ok {
+			displayName = name
+		}
+
+		// Store mapping from display name to fsSlug for applying settings
+		s.displayToFSSlug[displayName] = fsSlug
+
 		items = append(items, gaba.ItemWithOptions{
-			Item:           gaba.MenuItem{Text: slug},
+			Item:           gaba.MenuItem{Text: displayName},
 			Options:        options,
 			SelectedOption: selectedIndex,
 		})
@@ -126,19 +149,23 @@ func (s *SaveSyncSettingsScreen) buildMenuItems(config *utils.Config) []gaba.Ite
 	return items
 }
 
-func (s *SaveSyncSettingsScreen) applySettings(config *utils.Config, items []gaba.ItemWithOptions) {
+func (s *SaveSyncSettingsScreen) applySettings(config *internal.Config, items []gaba.ItemWithOptions) {
 	if config.SaveDirectoryMappings == nil {
 		config.SaveDirectoryMappings = make(map[string]string)
 	}
 
 	for _, item := range items {
-		slug := item.Item.Text
+		// Look up fsSlug from display name
+		fsSlug, ok := s.displayToFSSlug[item.Item.Text]
+		if !ok {
+			continue
+		}
 		if val, ok := item.Options[item.SelectedOption].Value.(string); ok {
 			if val == "" {
 				// Remove from map if set to default
-				delete(config.SaveDirectoryMappings, slug)
+				delete(config.SaveDirectoryMappings, fsSlug)
 			} else {
-				config.SaveDirectoryMappings[slug] = val
+				config.SaveDirectoryMappings[fsSlug] = val
 			}
 		}
 	}

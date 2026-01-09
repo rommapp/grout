@@ -2,8 +2,10 @@ package ui
 
 import (
 	"fmt"
+	"grout/cache"
+	"grout/internal"
+	"grout/internal/imageutil"
 	"grout/romm"
-	"grout/utils"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -14,7 +16,7 @@ import (
 )
 
 type ArtworkSyncInput struct {
-	Config utils.Config
+	Config internal.Config
 	Host   romm.Host
 }
 
@@ -26,7 +28,7 @@ func NewArtworkSyncScreen() *ArtworkSyncScreen {
 	return &ArtworkSyncScreen{}
 }
 
-func (s *ArtworkSyncScreen) Execute(config utils.Config, host romm.Host) ArtworkSyncOutput {
+func (s *ArtworkSyncScreen) Execute(config internal.Config, host romm.Host) ArtworkSyncOutput {
 	s.draw(ArtworkSyncInput{
 		Config: config,
 		Host:   host,
@@ -38,7 +40,7 @@ func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 	logger := gaba.GetLogger()
 
 	// Fetch platforms
-	client := utils.GetRommClient(input.Host, input.Config.ApiTimeout)
+	client := romm.NewClientFromHost(input.Host, input.Config.ApiTimeout)
 	platforms, err := client.GetPlatforms()
 	if err != nil {
 		logger.Error("Failed to fetch platforms", "error", err)
@@ -49,11 +51,12 @@ func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 		)
 		return
 	}
+	romm.DisambiguatePlatformNames(platforms)
 
 	// Filter to only mapped platforms
 	var mappedPlatforms []romm.Platform
 	for _, p := range platforms {
-		if _, exists := input.Config.DirectoryMappings[p.Slug]; exists {
+		if _, exists := input.Config.DirectoryMappings[p.FSSlug]; exists {
 			mappedPlatforms = append(mappedPlatforms, p)
 		}
 	}
@@ -67,40 +70,51 @@ func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 		return
 	}
 
-	// Collect all ROMs that need artwork (missing or outdated)
-	var allNeedingArtwork []romm.Rom
+	// Collect all ROMs that have artwork available
+	var allWithArtwork []romm.Rom
 	platformCount := len(mappedPlatforms)
 
+	cm := cache.GetCacheManager()
 	for i, platform := range mappedPlatforms {
 		// Show scanning progress
 		gaba.ProcessMessage(
 			fmt.Sprintf(i18n.Localize(&goi18n.Message{ID: "artwork_sync_scanning", Other: "Scanning platform %d/%d: %s..."}, nil), i+1, platformCount, platform.Name),
 			gaba.ProcessMessageOptions{ShowThemeBackground: true},
 			func() (interface{}, error) {
-				roms, err := client.GetRoms(romm.GetRomsQuery{
-					PlatformID: platform.ID,
-					Limit:      10000,
-				})
-				if err != nil {
-					logger.Error("Failed to fetch ROMs for platform", "platform", platform.Name, "error", err)
+				var roms []romm.Rom
+				var err error
+
+				// Use cache if available
+				if cm != nil {
+					roms, err = cm.GetPlatformGames(platform.ID)
+					if err != nil || len(roms) == 0 {
+						// Cache miss - refresh from API
+						if err := cm.RefreshPlatformGames(platform); err != nil {
+							logger.Error("Failed to refresh platform games", "platform", platform.Name, "error", err)
+							return nil, nil
+						}
+						roms, err = cm.GetPlatformGames(platform.ID)
+						if err != nil {
+							logger.Error("Failed to get platform games from cache", "platform", platform.Name, "error", err)
+							return nil, nil
+						}
+					}
+				} else {
+					logger.Error("Cache manager not available", "platform", platform.Name)
 					return nil, nil
 				}
 
-				// Get missing artwork
-				missing := utils.GetMissingArtwork(roms.Items)
-				allNeedingArtwork = append(allNeedingArtwork, missing...)
-
-				// Check for outdated artwork via ETag
-				outdated := utils.GetOutdatedArtwork(roms.Items, input.Host)
-				allNeedingArtwork = append(allNeedingArtwork, outdated...)
+				// Get all ROMs with artwork URLs (download everything)
+				withArtwork := cache.GetRomsWithArtwork(roms)
+				allWithArtwork = append(allWithArtwork, withArtwork...)
 				return nil, nil
 			},
 		)
 	}
 
-	if len(allNeedingArtwork) == 0 {
+	if len(allWithArtwork) == 0 {
 		gaba.ConfirmationMessage(
-			i18n.Localize(&goi18n.Message{ID: "artwork_sync_up_to_date", Other: "All artwork is already cached!"}, nil),
+			i18n.Localize(&goi18n.Message{ID: "artwork_sync_no_artwork", Other: "No artwork available to download."}, nil),
 			ContinueFooter(),
 			gaba.MessageOptions{},
 		)
@@ -112,17 +126,17 @@ func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 	romsByLocation := make(map[string]romm.Rom)
 
 	baseURL := input.Host.URL()
-	for _, rom := range allNeedingArtwork {
-		coverPath := utils.GetArtworkCoverPath(rom)
+	for _, rom := range allWithArtwork {
+		coverPath := cache.GetArtworkCoverPath(rom)
 		if coverPath == "" {
 			continue
 		}
 
 		downloadURL := strings.ReplaceAll(baseURL+coverPath, " ", "%20")
-		cachePath := utils.GetArtworkCachePath(rom.PlatformSlug, rom.ID)
+		cachePath := cache.GetArtworkCachePath(rom.PlatformFSSlug, rom.ID)
 
 		// Ensure directory exists
-		utils.EnsureArtworkCacheDir(rom.PlatformSlug)
+		cache.EnsureArtworkCacheDir(rom.PlatformFSSlug)
 
 		downloads = append(downloads, gaba.Download{
 			URL:         downloadURL,
@@ -184,7 +198,7 @@ func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 			semaphore <- struct{}{}        // Acquire
 			defer func() { <-semaphore }() // Release
 
-			if err := utils.ProcessArtImage(dl.Location); err != nil {
+			if err := imageutil.ProcessArtImage(dl.Location); err != nil {
 				logger.Warn("Failed to process artwork", "path", dl.Location, "error", err)
 				return
 			}

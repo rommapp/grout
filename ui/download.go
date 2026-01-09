@@ -3,8 +3,12 @@ package ui
 import (
 	"errors"
 	"fmt"
-	"grout/constants"
-	"grout/utils"
+	"grout/cfw"
+	"grout/cfw/muos"
+	"grout/internal"
+	"grout/internal/fileutil"
+	"grout/internal/imageutil"
+	"grout/romm"
 	_ "image/gif"
 	_ "image/jpeg"
 	"io"
@@ -16,8 +20,6 @@ import (
 	"strconv"
 	"strings"
 
-	"grout/romm"
-
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
 	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
@@ -25,7 +27,7 @@ import (
 )
 
 type downloadInput struct {
-	Config        utils.Config
+	Config        internal.Config
 	Host          romm.Host
 	Platform      romm.Platform
 	SelectedGames []romm.Rom
@@ -52,7 +54,7 @@ func NewDownloadScreen() *DownloadScreen {
 	return &DownloadScreen{}
 }
 
-func (s *DownloadScreen) Execute(config utils.Config, host romm.Host, platform romm.Platform, selectedGames []romm.Rom, allGames []romm.Rom, searchFilter string) downloadOutput {
+func (s *DownloadScreen) Execute(config internal.Config, host romm.Host, platform romm.Platform, selectedGames []romm.Rom, allGames []romm.Rom, searchFilter string) downloadOutput {
 	result, err := s.draw(downloadInput{
 		Config:        config,
 		Host:          host,
@@ -107,7 +109,7 @@ func (s *DownloadScreen) draw(input downloadInput) (ScreenResult[downloadOutput]
 		// Clean up any partial downloads when cancelled
 		if errors.Is(err, gaba.ErrCancelled) {
 			for _, d := range downloads {
-				utils.DeleteFile(d.Location)
+				fileutil.DeleteFile(d.Location)
 			}
 		}
 
@@ -126,7 +128,7 @@ func (s *DownloadScreen) draw(input downloadInput) (ScreenResult[downloadOutput]
 				return de.Download.DisplayName == g.DisplayName
 			})
 			if failedMatch {
-				utils.DeleteFile(g.Location)
+				fileutil.DeleteFile(g.Location)
 			}
 		}
 	}
@@ -150,15 +152,15 @@ func (s *DownloadScreen) draw(input downloadInput) (ScreenResult[downloadOutput]
 		gamePlatform := input.Platform
 		if input.Platform.ID == 0 && g.PlatformID != 0 {
 			gamePlatform = romm.Platform{
-				ID:   g.PlatformID,
-				Slug: g.PlatformSlug,
-				Name: g.PlatformDisplayName,
+				ID:     g.PlatformID,
+				FSSlug: g.PlatformFSSlug,
+				Name:   g.PlatformDisplayName,
 			}
 		}
 
-		tmpZipPath := filepath.Join(utils.TempDir(), fmt.Sprintf("grout_multirom_%d.zip", g.ID))
-		romDirectory := utils.GetPlatformRomDirectory(input.Config, gamePlatform)
-		extractDir := filepath.Join(romDirectory, g.DisplayName)
+		tmpZipPath := filepath.Join(fileutil.TempDir(), fmt.Sprintf("grout_multirom_%d.zip", g.ID))
+		romDirectory := input.Config.GetPlatformRomDirectory(gamePlatform)
+		extractDir := filepath.Join(romDirectory, g.FsNameNoExt)
 
 		progress := &atomic.Float64{}
 		_, err := gaba.ProcessMessage(
@@ -171,15 +173,15 @@ func (s *DownloadScreen) draw(input downloadInput) (ScreenResult[downloadOutput]
 			func() (interface{}, error) {
 				logger.Debug("Extracting multi-file ROM", "game", g.DisplayName, "dest", extractDir)
 
-				if err := utils.Unzip(tmpZipPath, extractDir, progress); err != nil {
+				if err := fileutil.Unzip(tmpZipPath, extractDir, progress); err != nil {
 					logger.Error("Failed to extract multi-file ROM", "game", g.DisplayName, "error", err)
 					os.Remove(tmpZipPath)
 					return nil, err
 				}
 
-				if utils.GetCFW() == constants.MuOS {
-					if err := utils.OrganizeMultiFileRomForMuOS(extractDir, romDirectory, g.DisplayName); err != nil {
-						logger.Error("Failed to organize multi-file ROM for muOS", "game", g.DisplayName, "error", err)
+				if cfw.GetCFW() == cfw.MuOS {
+					if err := muos.OrganizeMultiFileRom(extractDir, romDirectory, g.FsNameNoExt); err != nil {
+						logger.Error("Failed to organize multi-file ROM for muOS", "game", g.FsNameNoExt, "error", err)
 						os.Remove(tmpZipPath)
 						os.RemoveAll(extractDir)
 						return nil, err
@@ -215,14 +217,14 @@ func (s *DownloadScreen) draw(input downloadInput) (ScreenResult[downloadOutput]
 			gamePlatform := input.Platform
 			if input.Platform.ID == 0 && g.PlatformID != 0 {
 				gamePlatform = romm.Platform{
-					ID:   g.PlatformID,
-					Slug: g.PlatformSlug,
-					Name: g.PlatformDisplayName,
+					ID:     g.PlatformID,
+					FSSlug: g.PlatformFSSlug,
+					Name:   g.PlatformDisplayName,
 				}
 			}
 
 			if len(g.Files) > 0 && strings.ToLower(filepath.Ext(g.Files[0].FileName)) == ".zip" {
-				romDirectory := utils.GetPlatformRomDirectory(input.Config, gamePlatform)
+				romDirectory := input.Config.GetPlatformRomDirectory(gamePlatform)
 				zipPath := filepath.Join(romDirectory, g.Files[0].FileName)
 
 				progress := &atomic.Float64{}
@@ -236,7 +238,7 @@ func (s *DownloadScreen) draw(input downloadInput) (ScreenResult[downloadOutput]
 					func() (interface{}, error) {
 						logger.Debug("Extracting single-file ROM", "game", g.Name, "file", zipPath)
 
-						if err := utils.Unzip(zipPath, romDirectory, progress); err != nil {
+						if err := fileutil.Unzip(zipPath, romDirectory, progress); err != nil {
 							logger.Error("Failed to extract single-file ROM", "game", g.Name, "error", err)
 							return nil, err
 						}
@@ -292,7 +294,7 @@ func (s *DownloadScreen) draw(input downloadInput) (ScreenResult[downloadOutput]
 	return success(output), nil
 }
 
-func (s *DownloadScreen) buildDownloads(config utils.Config, host romm.Host, platform romm.Platform, games []romm.Rom) ([]gaba.Download, []artDownload) {
+func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, platform romm.Platform, games []romm.Rom) ([]gaba.Download, []artDownload) {
 	downloads := make([]gaba.Download, 0, len(games))
 	artDownloads := make([]artDownload, 0, len(games))
 
@@ -300,21 +302,21 @@ func (s *DownloadScreen) buildDownloads(config utils.Config, host romm.Host, pla
 		gamePlatform := platform
 		if platform.ID == 0 && g.PlatformID != 0 {
 			gamePlatform = romm.Platform{
-				ID:   g.PlatformID,
-				Slug: g.PlatformSlug,
-				Name: g.PlatformDisplayName,
+				ID:     g.PlatformID,
+				FSSlug: g.PlatformFSSlug,
+				Name:   g.PlatformDisplayName,
 			}
 		}
 
-		romDirectory := utils.GetPlatformRomDirectory(config, gamePlatform)
+		romDirectory := config.GetPlatformRomDirectory(gamePlatform)
 		downloadLocation := ""
 
 		sourceURL := ""
 
 		if g.HasMultipleFiles {
-			tmpDir := utils.TempDir()
+			tmpDir := fileutil.TempDir()
 			downloadLocation = filepath.Join(tmpDir, fmt.Sprintf("grout_multirom_%d.zip", g.ID))
-			sourceURL, _ = url.JoinPath(host.URL(), "/api/roms/", strconv.Itoa(g.ID), "content", g.DisplayName)
+			sourceURL, _ = url.JoinPath(host.URL(), "/api/roms/", strconv.Itoa(g.ID), "content", g.FsName)
 		} else {
 			downloadLocation = filepath.Join(romDirectory, g.Files[0].FileName)
 			sourceURL, _ = url.JoinPath(host.URL(), "/api/roms/", strconv.Itoa(g.ID), "content", g.Files[0].FileName)
@@ -328,7 +330,7 @@ func (s *DownloadScreen) buildDownloads(config utils.Config, host romm.Host, pla
 		})
 
 		if config.DownloadArt && (g.PathCoverLarge != "" || g.PathCoverSmall != "" || g.URLCover != "") {
-			artDir := utils.GetArtDirectory(config, gamePlatform)
+			artDir := config.GetArtDirectory(gamePlatform)
 			artFileName := g.FsNameNoExt + ".png"
 			artLocation := filepath.Join(artDir, artFileName)
 
@@ -405,7 +407,7 @@ func (s *DownloadScreen) downloadArt(artDownloads []artDownload, downloadedGames
 			req.Header.Set(k, v)
 		}
 
-		client := &http.Client{}
+		client := &http.Client{Timeout: romm.DefaultClientTimeout}
 		resp, err := client.Do(req)
 		if err != nil {
 			logger.Warn("Failed to download art", "game", art.GameName, "url", art.URL, "error", err)
@@ -455,7 +457,7 @@ func (s *DownloadScreen) downloadArt(artDownloads []artDownload, downloadedGames
 			continue
 		}
 
-		if err := utils.ProcessArtImage(art.Location); err != nil {
+		if err := imageutil.ProcessArtImage(art.Location); err != nil {
 			logger.Warn("Failed to process art image", "game", art.GameName, "location", art.Location, "error", err)
 			os.Remove(art.Location)
 			failCount++

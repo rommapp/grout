@@ -3,8 +3,8 @@ package ui
 import (
 	"errors"
 	"fmt"
-	"grout/constants"
-	"grout/utils"
+	"grout/internal"
+	"grout/internal/constants"
 	"os"
 	"strconv"
 	"strings"
@@ -24,7 +24,7 @@ type loginInput struct {
 
 type loginOutput struct {
 	Host   romm.Host
-	Config *utils.Config
+	Config *internal.Config
 }
 
 type loginAttemptResult struct {
@@ -171,7 +171,7 @@ func (s *LoginScreen) draw(input loginInput) (ScreenResult[loginOutput], error) 
 	return success(loginOutput{Host: newHost}), nil
 }
 
-func LoginFlow(existingHost romm.Host) (*utils.Config, error) {
+func LoginFlow(existingHost romm.Host) (*internal.Config, error) {
 	screen := newLoginScreen()
 
 	for {
@@ -193,7 +193,7 @@ func LoginFlow(existingHost romm.Host) (*utils.Config, error) {
 		loginResult := attemptLogin(host)
 
 		if loginResult.Success {
-			config := &utils.Config{
+			config := &internal.Config{
 				Hosts: []romm.Host{host},
 			}
 			return config, nil
@@ -211,7 +211,7 @@ func LoginFlow(existingHost romm.Host) (*utils.Config, error) {
 }
 
 func attemptLogin(host romm.Host) loginAttemptResult {
-	validationClient := utils.GetRommClient(host, constants.ValidationTimeout)
+	validationClient := romm.NewClientFromHost(host, constants.ValidationTimeout)
 
 	result, _ := gabagool.ProcessMessage(
 		i18n.Localize(&goi18n.Message{ID: "login_validating", Other: "Validating connection..."}, nil),
@@ -222,7 +222,7 @@ func attemptLogin(host romm.Host) loginAttemptResult {
 				return classifyLoginError(err), nil
 			}
 
-			loginClient := utils.GetRommClient(host, constants.LoginTimeout)
+			loginClient := romm.NewClientFromHost(host, constants.LoginTimeout)
 			err = loginClient.Login(host.Username, host.Password)
 			if err != nil {
 				return classifyLoginError(err), nil

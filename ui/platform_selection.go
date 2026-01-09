@@ -2,9 +2,9 @@ package ui
 
 import (
 	"errors"
-	"grout/constants"
+	"grout/internal"
+	"grout/internal/constants"
 	"grout/romm"
-	"grout/utils"
 	"sync/atomic"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -52,7 +52,7 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (ScreenResu
 			Text:           i18n.Localize(&goi18n.Message{ID: "platform_selection_collections", Other: "Collections"}, nil),
 			Selected:       false,
 			Focused:        false,
-			Metadata:       romm.Platform{Slug: "collections"},
+			Metadata:       romm.Platform{FSSlug: "collections"},
 			NotReorderable: true,
 		})
 	}
@@ -69,7 +69,7 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (ScreenResu
 	var footerItems []gaba.FooterHelpItem
 	if input.QuitOnBack {
 		footerItems = []gaba.FooterHelpItem{}
-		if !utils.IsKidModeEnabled() {
+		if !internal.IsKidModeEnabled() {
 			footerItems = append(footerItems, gaba.FooterHelpItem{
 				ButtonName: "X",
 				HelpText:   i18n.Localize(&goi18n.Message{ID: "button_settings", Other: "Settings"}, nil),
@@ -80,7 +80,7 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (ScreenResu
 				HelpText:   i18n.Localize(&goi18n.Message{ID: "button_quit", Other: "Quit"}, nil),
 			})
 		}
-		if input.ShowSaveSync != nil && !utils.IsKidModeEnabled() {
+		if input.ShowSaveSync != nil && !internal.IsKidModeEnabled() {
 			footerItems = append(footerItems, gaba.FooterHelpItem{
 				ButtonName: "Y",
 				HelpText:   i18n.Localize(&goi18n.Message{ID: "button_save_sync", Other: "Sync"}, nil),
@@ -96,7 +96,7 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (ScreenResu
 	}
 
 	options := gaba.DefaultListOptions("Grout", menuItems)
-	if !utils.IsKidModeEnabled() {
+	if !internal.IsKidModeEnabled() {
 		options.ActionButton = buttons.VirtualButtonX
 	}
 	if input.ShowSaveSync != nil {
@@ -107,7 +107,7 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (ScreenResu
 	options.SelectedIndex = input.LastSelectedIndex
 	options.VisibleStartIndex = max(0, input.LastSelectedIndex-input.LastSelectedPosition)
 
-	options.StatusBar = utils.StatusBar()
+	options.StatusBar = StatusBar()
 
 	sel, err := gaba.List(options)
 
@@ -124,7 +124,7 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (ScreenResu
 			for i := 0; i < len(input.Platforms); i++ {
 				originalPlatform := input.Platforms[i]
 				returnedPlatform := sel.Items[i+startIndex].Metadata.(romm.Platform)
-				if originalPlatform.Slug != returnedPlatform.Slug {
+				if originalPlatform.FSSlug != returnedPlatform.FSSlug {
 					platformsReordered = true
 					break
 				}
@@ -156,7 +156,7 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (ScreenResu
 		output.LastSelectedIndex = sel.Selected[0]
 		output.LastSelectedPosition = sel.VisiblePosition
 
-		if platform.Slug == "collections" {
+		if platform.FSSlug == "collections" {
 			return withCode(output, constants.ExitCodeCollections), nil
 		}
 

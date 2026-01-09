@@ -1,47 +1,53 @@
 package main
 
 import (
-	"grout/constants"
+	"grout/cache"
+	"grout/cfw"
+	"grout/internal"
+	"grout/internal/constants"
 	"grout/romm"
+	"grout/sync"
 	"grout/ui"
-	"grout/utils"
+	"grout/update"
 	"os"
-	"sync"
+	gosync "sync"
 	"sync/atomic"
-	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
+	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
+	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
+	uatomic "go.uber.org/atomic"
 )
 
 var (
-	autoSync       *utils.AutoSync
-	autoSyncOnce   sync.Once
-	autoUpdate     *utils.AutoUpdate
-	autoUpdateOnce sync.Once
+	autoSync       *sync.AutoSync
+	autoSyncOnce   gosync.Once
+	autoUpdate     *update.AutoUpdate
+	autoUpdateOnce gosync.Once
 )
 
 const (
 	platformSelection           gaba.StateName = "platform_selection"
-	gameList                                   = "game_list"
-	gameDetails                                = "game_details"
-	gameOptions                                = "game_options"
-	collectionList                             = "collection_list"
-	collectionPlatformSelection                = "collection_platform_selection"
-	search                                     = "search"
-	collectionSearch                           = "collection_search"
-	settings                                   = "settings"
-	generalSettings                            = "general_settings"
-	collectionsSettings                        = "collections_settings"
-	advancedSettings                           = "advanced_settings"
-	settingsPlatformMapping                    = "platform_mapping"
-	saveSyncSettings                           = "save_sync_settings"
-	info                                       = "info"
-	logoutConfirmation                         = "logout_confirmation"
-	clearCacheConfirmation                     = "clear_cache_confirmation"
-	saveSync                                   = "save_sync"
-	biosDownload                               = "bios_download"
-	artworkSync                                = "artwork_sync"
-	updateCheck                                = "update_check"
+	gameList                    gaba.StateName = "game_list"
+	gameDetails                 gaba.StateName = "game_details"
+	gameOptions                 gaba.StateName = "game_options"
+	collectionList              gaba.StateName = "collection_list"
+	collectionPlatformSelection gaba.StateName = "collection_platform_selection"
+	search                      gaba.StateName = "search"
+	collectionSearch            gaba.StateName = "collection_search"
+	settings                    gaba.StateName = "settings"
+	generalSettings             gaba.StateName = "general_settings"
+	collectionsSettings         gaba.StateName = "collections_settings"
+	advancedSettings            gaba.StateName = "advanced_settings"
+	settingsPlatformMapping     gaba.StateName = "platform_mapping"
+	saveSyncSettings            gaba.StateName = "save_sync_settings"
+	info                        gaba.StateName = "info"
+	logoutConfirmation          gaba.StateName = "logout_confirmation"
+	refreshCache                gaba.StateName = "refresh_cache"
+	saveSync                    gaba.StateName = "save_sync"
+	biosDownload                gaba.StateName = "bios_download"
+	artworkSync                 gaba.StateName = "artwork_sync"
+	updateCheck                 gaba.StateName = "update_check"
 )
 
 type ListPosition struct {
@@ -79,14 +85,7 @@ func (s *NavState) ResetGameList() {
 	s.GameListPos = ListPosition{}
 }
 
-func (s *NavState) ResetCollections() {
-	s.CollectionGames = nil
-	s.CollectionSearchFilter = ""
-	s.CollectionListPos = ListPosition{}
-	s.CollectionPlatformPos = ListPosition{}
-}
-
-func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform, quitOnBack bool, showCollections bool, appStart time.Time) *gaba.FSM {
+func buildFSM(config *internal.Config, c cfw.CFW, platforms []romm.Platform, quitOnBack bool, showCollections bool) *gaba.FSM {
 	fsm := gaba.NewFSM()
 
 	nav := &NavState{
@@ -95,37 +94,59 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 	}
 
 	gaba.Set(fsm.Context(), config)
-	gaba.Set(fsm.Context(), cfw)
+	gaba.Set(fsm.Context(), c)
 	gaba.Set(fsm.Context(), config.Hosts[0])
 	gaba.Set(fsm.Context(), platforms)
 	gaba.Set(fsm.Context(), nav)
 
-	// Start background cache refresh immediately
-	utils.InitCacheRefresh(config.Hosts[0], config, platforms)
+	// Initialize cache manager
+	if err := cache.InitCacheManager(config.Hosts[0], config); err != nil {
+		gaba.GetLogger().Error("Failed to initialize cache manager", "error", err)
+	}
+
+	// Check if this is a first run and populate cache if needed
+	if cm := cache.GetCacheManager(); cm != nil && cm.IsFirstRun() {
+		gaba.GetLogger().Info("First run detected, populating cache")
+		progress := uatomic.NewFloat64(0)
+		gaba.ProcessMessage(
+			i18n.Localize(&goi18n.Message{ID: "cache_building", Other: "Building cache..."}, nil),
+			gaba.ProcessMessageOptions{
+				ShowThemeBackground: true,
+				ShowProgressBar:     true,
+				Progress:            progress,
+			},
+			func() (interface{}, error) {
+				return nil, cm.PopulateFullCacheWithProgress(platforms, progress)
+			},
+		)
+	}
+
+	// Validate artwork cache in background
+	cache.RunArtworkValidation()
 
 	gaba.AddState(fsm, platformSelection, func(ctx *gaba.Context) (ui.PlatformSelectionOutput, gaba.ExitCode) {
 		platforms, _ := gaba.Get[[]romm.Platform](ctx)
 		nav, _ := gaba.Get[*NavState](ctx)
 
 		screen := ui.NewPlatformSelectionScreen()
-		config, _ := gaba.Get[*utils.Config](ctx)
-		cfw, _ := gaba.Get[constants.CFW](ctx)
+		config, _ := gaba.Get[*internal.Config](ctx)
+		currentCFW, _ := gaba.Get[cfw.CFW](ctx)
 
 		// Start auto-sync on first platform menu view
 		if config.SaveSyncMode == "automatic" {
 			autoSyncOnce.Do(func() {
 				host, _ := gaba.Get[romm.Host](ctx)
-				autoSync = utils.NewAutoSync(host, config)
-				utils.AddIcon(autoSync.Icon())
+				autoSync = sync.NewAutoSync(host, config)
+				ui.AddStatusBarIcon(autoSync.Icon())
 				autoSync.Start()
 			})
 		}
 
 		// Start auto-update check on first platform menu view
-		if cfw != constants.NextUI {
+		if currentCFW != cfw.NextUI {
 			autoUpdateOnce.Do(func() {
-				autoUpdate = utils.NewAutoUpdate(cfw)
-				utils.AddIcon(autoUpdate.Icon())
+				autoUpdate = update.NewAutoUpdate(currentCFW)
+				ui.AddStatusBarIcon(autoUpdate.Icon())
 				autoUpdate.Start()
 			})
 		}
@@ -162,7 +183,7 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		nav.PlatformListPos.VisibleStartIndex = result.Value.LastSelectedPosition
 
 		if len(result.Value.ReorderedPlatforms) > 0 {
-			config, _ := gaba.Get[*utils.Config](ctx)
+			config, _ := gaba.Get[*internal.Config](ctx)
 
 			var platformOrder []string
 			for _, p := range result.Value.ReorderedPlatforms {
@@ -172,7 +193,7 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 			gaba.GetLogger().Debug("Saving platform order to config", "order", platformOrder)
 
 			config.PlatformOrder = platformOrder
-			if err := utils.SaveConfig(config); err != nil {
+			if err := internal.SaveConfig(config); err != nil {
 				gaba.GetLogger().Error("Failed to save platform order", "error", err)
 			} else {
 				gaba.GetLogger().Info("Platform order saved successfully", "order", platformOrder)
@@ -200,7 +221,7 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		Exit(gaba.ExitCodeQuit)
 
 	gaba.AddState(fsm, collectionList, func(ctx *gaba.Context) (ui.CollectionSelectionOutput, gaba.ExitCode) {
-		config, _ := gaba.Get[*utils.Config](ctx)
+		config, _ := gaba.Get[*internal.Config](ctx)
 		host, _ := gaba.Get[romm.Host](ctx)
 		nav, _ := gaba.Get[*NavState](ctx)
 
@@ -241,7 +262,7 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		On(gaba.ExitCodeBack, platformSelection)
 
 	gaba.AddState(fsm, collectionPlatformSelection, func(ctx *gaba.Context) (ui.CollectionPlatformSelectionOutput, gaba.ExitCode) {
-		config, _ := gaba.Get[*utils.Config](ctx)
+		config, _ := gaba.Get[*internal.Config](ctx)
 		host, _ := gaba.Get[romm.Host](ctx)
 		collection, _ := gaba.Get[ui.CollectionSelectionOutput](ctx)
 		nav, _ := gaba.Get[*NavState](ctx)
@@ -268,7 +289,7 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 	}).
 		OnWithHook(gaba.ExitCodeSuccess, gameList, func(ctx *gaba.Context) error {
 			output, _ := gaba.Get[ui.CollectionPlatformSelectionOutput](ctx)
-			config, _ := gaba.Get[*utils.Config](ctx)
+			config, _ := gaba.Get[*internal.Config](ctx)
 			nav, _ := gaba.Get[*NavState](ctx)
 
 			var finalGames []romm.Rom
@@ -296,7 +317,7 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		On(gaba.ExitCodeBack, collectionList)
 
 	gaba.AddState(fsm, gameList, func(ctx *gaba.Context) (ui.GameListOutput, gaba.ExitCode) {
-		config, _ := gaba.Get[*utils.Config](ctx)
+		config, _ := gaba.Get[*internal.Config](ctx)
 		host, _ := gaba.Get[romm.Host](ctx)
 		platform, _ := gaba.Get[ui.PlatformSelectionOutput](ctx)
 		collection, _ := gaba.Get[ui.CollectionSelectionOutput](ctx)
@@ -364,7 +385,7 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		On(constants.ExitCodeNoResults, search)
 
 	gaba.AddState(fsm, gameDetails, func(ctx *gaba.Context) (ui.GameDetailsOutput, gaba.ExitCode) {
-		config, _ := gaba.Get[*utils.Config](ctx)
+		config, _ := gaba.Get[*internal.Config](ctx)
 		host, _ := gaba.Get[romm.Host](ctx)
 		gameListOutput, _ := gaba.Get[ui.GameListOutput](ctx)
 		nav, _ := gaba.Get[*NavState](ctx)
@@ -375,6 +396,7 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 			downloadOutput := downloadScreen.Execute(*config, host, gameListOutput.Platform, gameListOutput.SelectedGames, gameListOutput.AllGames, nav.SearchFilter)
 			nav.CurrentGames = downloadOutput.AllGames
 			nav.SearchFilter = downloadOutput.SearchFilter
+			triggerAutoSync()
 			return ui.GameDetailsOutput{}, gaba.ExitCodeBack
 		}
 
@@ -394,7 +416,7 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 	}).
 		OnWithHook(gaba.ExitCodeSuccess, gameList, func(ctx *gaba.Context) error {
 			detailsOutput, _ := gaba.Get[ui.GameDetailsOutput](ctx)
-			config, _ := gaba.Get[*utils.Config](ctx)
+			config, _ := gaba.Get[*internal.Config](ctx)
 			host, _ := gaba.Get[romm.Host](ctx)
 			gameListOutput, _ := gaba.Get[ui.GameListOutput](ctx)
 			nav, _ := gaba.Get[*NavState](ctx)
@@ -404,6 +426,7 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 				downloadOutput := downloadScreen.Execute(*config, host, detailsOutput.Platform, []romm.Rom{detailsOutput.Game}, gameListOutput.AllGames, nav.SearchFilter)
 				nav.CurrentGames = downloadOutput.AllGames
 				nav.SearchFilter = downloadOutput.SearchFilter
+				triggerAutoSync()
 			}
 
 			return nil
@@ -413,7 +436,7 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 
 	// Game options state
 	gaba.AddState(fsm, gameOptions, func(ctx *gaba.Context) (ui.GameOptionsOutput, gaba.ExitCode) {
-		config, _ := gaba.Get[*utils.Config](ctx)
+		config, _ := gaba.Get[*internal.Config](ctx)
 		gameListOutput, _ := gaba.Get[ui.GameListOutput](ctx)
 
 		if len(gameListOutput.SelectedGames) != 1 {
@@ -496,15 +519,15 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		})
 
 	gaba.AddState(fsm, settings, func(ctx *gaba.Context) (ui.SettingsOutput, gaba.ExitCode) {
-		config, _ := gaba.Get[*utils.Config](ctx)
-		cfw, _ := gaba.Get[constants.CFW](ctx)
+		config, _ := gaba.Get[*internal.Config](ctx)
+		currentCFW, _ := gaba.Get[cfw.CFW](ctx)
 		host, _ := gaba.Get[romm.Host](ctx)
 		nav, _ := gaba.Get[*NavState](ctx)
 
 		screen := ui.NewSettingsScreen()
 		result, err := screen.Draw(ui.SettingsInput{
 			Config:                config,
-			CFW:                   cfw,
+			CFW:                   currentCFW,
 			Host:                  host,
 			LastSelectedIndex:     nav.SettingsPos.Index,
 			LastVisibleStartIndex: nav.SettingsPos.VisibleStartIndex,
@@ -523,15 +546,16 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 			output, _ := gaba.Get[ui.SettingsOutput](ctx)
 			host, _ := gaba.Get[romm.Host](ctx)
 			nav, _ := gaba.Get[*NavState](ctx)
-			utils.SaveConfig(output.Config)
+			internal.SaveConfig(output.Config)
 			gaba.Set(ctx, output.Config)
 			nav.SettingsPos = ListPosition{}
 
-			nav.ShowCollections = utils.ShowCollections(output.Config, host)
+			nav.ShowCollections = output.Config.ShowCollections(host)
 			return nil
 		}).
 		On(constants.ExitCodeGeneralSettings, generalSettings).
 		On(constants.ExitCodeCollectionsSettings, collectionsSettings).
+		On(constants.ExitCodeEditMappings, settingsPlatformMapping).
 		On(constants.ExitCodeAdvancedSettings, advancedSettings).
 		On(constants.ExitCodeSaveSyncSettings, saveSyncSettings).
 		On(constants.ExitCodeInfo, info).
@@ -543,7 +567,7 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		})
 
 	gaba.AddState(fsm, generalSettings, func(ctx *gaba.Context) (ui.GeneralSettingsOutput, gaba.ExitCode) {
-		config, _ := gaba.Get[*utils.Config](ctx)
+		config, _ := gaba.Get[*internal.Config](ctx)
 
 		screen := ui.NewGeneralSettingsScreen()
 		result, err := screen.Draw(ui.GeneralSettingsInput{
@@ -564,7 +588,7 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		On(gaba.ExitCodeBack, settings)
 
 	gaba.AddState(fsm, collectionsSettings, func(ctx *gaba.Context) (ui.CollectionsSettingsOutput, gaba.ExitCode) {
-		config, _ := gaba.Get[*utils.Config](ctx)
+		config, _ := gaba.Get[*internal.Config](ctx)
 
 		screen := ui.NewCollectionsSettingsScreen()
 		result, err := screen.Draw(ui.CollectionsSettingsInput{
@@ -578,30 +602,23 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		return result.Value, result.ExitCode
 	}).
 		OnWithHook(gaba.ExitCodeSuccess, settings, func(ctx *gaba.Context) error {
-			config, _ := gaba.Get[*utils.Config](ctx)
+			config, _ := gaba.Get[*internal.Config](ctx)
 			host, _ := gaba.Get[romm.Host](ctx)
 			nav, _ := gaba.Get[*NavState](ctx)
-
-			gaba.Set(ctx, config)
 			nav.CollectionsSettingsPos = ListPosition{}
-
-			nav.ShowCollections = utils.ShowCollections(config, host)
+			nav.ShowCollections = config.ShowCollections(host)
 			return nil
 		}).
-		OnWithHook(gaba.ExitCodeBack, settings, func(ctx *gaba.Context) error {
-			nav, _ := gaba.Get[*NavState](ctx)
-			nav.CollectionsSettingsPos = ListPosition{}
-			return nil
-		})
+		On(gaba.ExitCodeBack, settings)
 
 	gaba.AddState(fsm, saveSyncSettings, func(ctx *gaba.Context) (ui.SaveSyncSettingsOutput, gaba.ExitCode) {
-		config, _ := gaba.Get[*utils.Config](ctx)
-		cfw, _ := gaba.Get[constants.CFW](ctx)
+		config, _ := gaba.Get[*internal.Config](ctx)
+		currentCFW, _ := gaba.Get[cfw.CFW](ctx)
 
 		screen := ui.NewSaveSyncSettingsScreen()
 		result, err := screen.Draw(ui.SaveSyncSettingsInput{
 			Config: config,
-			CFW:    cfw,
+			CFW:    currentCFW,
 		})
 
 		if err != nil {
@@ -613,12 +630,13 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		OnWithHook(gaba.ExitCodeSuccess, settings, func(ctx *gaba.Context) error {
 			output, _ := gaba.Get[ui.SaveSyncSettingsOutput](ctx)
 			gaba.Set(ctx, output.Config)
+			triggerAutoSync()
 			return nil
 		}).
 		On(gaba.ExitCodeBack, settings)
 
 	gaba.AddState(fsm, advancedSettings, func(ctx *gaba.Context) (ui.AdvancedSettingsOutput, gaba.ExitCode) {
-		config, _ := gaba.Get[*utils.Config](ctx)
+		config, _ := gaba.Get[*internal.Config](ctx)
 		host, _ := gaba.Get[romm.Host](ctx)
 		nav, _ := gaba.Get[*NavState](ctx)
 
@@ -639,36 +657,25 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 
 		return result.Value, result.ExitCode
 	}).
-		OnWithHook(gaba.ExitCodeSuccess, settings, func(ctx *gaba.Context) error {
-			config, _ := gaba.Get[*utils.Config](ctx)
-			nav, _ := gaba.Get[*NavState](ctx)
-
-			gaba.Set(ctx, config)
-			nav.AdvancedSettingsPos = ListPosition{}
-			return nil
-		}).
-		On(constants.ExitCodeEditMappings, settingsPlatformMapping).
-		On(constants.ExitCodeClearCache, clearCacheConfirmation).
+		On(gaba.ExitCodeSuccess, settings).
+		On(constants.ExitCodeRefreshCache, refreshCache).
 		On(constants.ExitCodeSyncArtwork, artworkSync).
-		OnWithHook(gaba.ExitCodeBack, settings, func(ctx *gaba.Context) error {
-			nav, _ := gaba.Get[*NavState](ctx)
-			nav.AdvancedSettingsPos = ListPosition{}
-			return nil
-		})
+		On(gaba.ExitCodeBack, settings)
 
 	gaba.AddState(fsm, settingsPlatformMapping, func(ctx *gaba.Context) (ui.PlatformMappingOutput, gaba.ExitCode) {
 		host, _ := gaba.Get[romm.Host](ctx)
-		config, _ := gaba.Get[*utils.Config](ctx)
-		cfw, _ := gaba.Get[constants.CFW](ctx)
+		config, _ := gaba.Get[*internal.Config](ctx)
+		currentCFW, _ := gaba.Get[cfw.CFW](ctx)
 
 		screen := ui.NewPlatformMappingScreen()
 		result, err := screen.Draw(ui.PlatformMappingInput{
-			Host:           host,
-			ApiTimeout:     config.ApiTimeout,
-			CFW:            cfw,
-			RomDirectory:   utils.GetRomDirectory(),
-			AutoSelect:     false,
-			HideBackButton: false,
+			Host:             host,
+			ApiTimeout:       config.ApiTimeout,
+			CFW:              currentCFW,
+			RomDirectory:     cfw.GetRomDirectory(),
+			AutoSelect:       false,
+			HideBackButton:   false,
+			ExistingMappings: config.DirectoryMappings, // Pass existing mappings for return visits
 		})
 
 		if err != nil {
@@ -677,17 +684,17 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 
 		return result.Value, result.ExitCode
 	}).
-		OnWithHook(gaba.ExitCodeSuccess, advancedSettings, func(ctx *gaba.Context) error {
+		OnWithHook(gaba.ExitCodeSuccess, settings, func(ctx *gaba.Context) error {
 			output, _ := gaba.Get[ui.PlatformMappingOutput](ctx)
-			config, _ := gaba.Get[*utils.Config](ctx)
+			config, _ := gaba.Get[*internal.Config](ctx)
 			host, _ := gaba.Get[romm.Host](ctx)
 
 			config.DirectoryMappings = output.Mappings
-			config.PlatformOrder = utils.PrunePlatformOrder(config.PlatformOrder, output.Mappings)
-			utils.SaveConfig(config)
+			config.PlatformOrder = internal.PrunePlatformOrder(config.PlatformOrder, output.Mappings)
+			internal.SaveConfig(config)
 			gaba.Set(ctx, config)
 
-			platforms, err := utils.GetMappedPlatforms(host, output.Mappings)
+			platforms, err := internal.GetMappedPlatforms(host, output.Mappings, config.ApiTimeout)
 			if err != nil {
 				gaba.GetLogger().Error("Failed to load platforms", "error", err)
 				return err
@@ -695,7 +702,7 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 			gaba.Set(ctx, platforms)
 			return nil
 		}).
-		On(gaba.ExitCodeBack, advancedSettings)
+		On(gaba.ExitCodeBack, settings)
 
 	gaba.AddState(fsm, info, func(ctx *gaba.Context) (ui.InfoOutput, gaba.ExitCode) {
 		host, _ := gaba.Get[romm.Host](ctx)
@@ -726,14 +733,20 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 	}).
 		On(gaba.ExitCodeBack, info).
 		OnWithHook(constants.ExitCodeLogout, platformSelection, func(ctx *gaba.Context) error {
-			config, _ := gaba.Get[*utils.Config](ctx)
-			cfw, _ := gaba.Get[constants.CFW](ctx)
+			config, _ := gaba.Get[*internal.Config](ctx)
+			currentCFW, _ := gaba.Get[cfw.CFW](ctx)
+
+			// Delete the entire cache folder on logout
+			if err := cache.DeleteCacheFolder(); err != nil {
+				gaba.GetLogger().Error("Failed to delete cache folder", "error", err)
+				// Continue with logout even if cache deletion fails
+			}
 
 			config.Hosts = nil
 			config.DirectoryMappings = nil
 			config.PlatformOrder = nil
 
-			if err := utils.SaveConfig(config); err != nil {
+			if err := internal.SaveConfig(config); err != nil {
 				gaba.GetLogger().Error("Failed to save config after logout", "error", err)
 				return err
 			}
@@ -747,7 +760,7 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 			}
 
 			config.Hosts = loginConfig.Hosts
-			if err := utils.SaveConfig(config); err != nil {
+			if err := internal.SaveConfig(config); err != nil {
 				gaba.GetLogger().Error("Failed to save config after re-login", "error", err)
 				return err
 			}
@@ -760,24 +773,45 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 				result, err := screen.Draw(ui.PlatformMappingInput{
 					Host:           config.Hosts[0],
 					ApiTimeout:     config.ApiTimeout,
-					CFW:            cfw,
-					RomDirectory:   utils.GetRomDirectory(),
+					CFW:            currentCFW,
+					RomDirectory:   cfw.GetRomDirectory(),
 					AutoSelect:     false,
 					HideBackButton: true,
 				})
 
 				if err == nil && result.ExitCode == gaba.ExitCodeSuccess {
 					config.DirectoryMappings = result.Value.Mappings
-					utils.SaveConfig(config)
+					internal.SaveConfig(config)
 				}
 			}
 
-			platforms, err := utils.GetMappedPlatforms(config.Hosts[0], config.DirectoryMappings)
+			// Re-initialize cache manager for the new host
+			if err := cache.InitCacheManager(config.Hosts[0], config); err != nil {
+				gaba.GetLogger().Error("Failed to initialize cache manager after re-login", "error", err)
+			}
+
+			platforms, err := internal.GetMappedPlatforms(config.Hosts[0], config.DirectoryMappings, config.ApiTimeout)
 			if err != nil {
 				gaba.GetLogger().Error("Failed to load platforms after re-login", "error", err)
 				return err
 			}
 			gaba.Set(ctx, platforms)
+
+			// Populate cache for the new login
+			if cm := cache.GetCacheManager(); cm != nil && cm.IsFirstRun() {
+				progress := uatomic.NewFloat64(0)
+				gaba.ProcessMessage(
+					i18n.Localize(&goi18n.Message{ID: "cache_building", Other: "Building cache..."}, nil),
+					gaba.ProcessMessageOptions{
+						ShowThemeBackground: true,
+						ShowProgressBar:     true,
+						Progress:            progress,
+					},
+					func() (interface{}, error) {
+						return nil, cm.PopulateFullCacheWithProgress(platforms, progress)
+					},
+				)
+			}
 
 			nav, _ := gaba.Get[*NavState](ctx)
 			nav.ResetGameList()
@@ -786,21 +820,88 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 			return nil
 		})
 
-	gaba.AddState(fsm, clearCacheConfirmation, func(ctx *gaba.Context) (ui.ClearCacheOutput, gaba.ExitCode) {
-		screen := ui.NewClearCacheScreen()
+	gaba.AddState(fsm, refreshCache, func(ctx *gaba.Context) (ui.RefreshCacheOutput, gaba.ExitCode) {
+		screen := ui.NewRefreshCacheScreen()
 		result, err := screen.Draw()
 
 		if err != nil {
-			return ui.ClearCacheOutput{}, gaba.ExitCodeError
+			return ui.RefreshCacheOutput{}, gaba.ExitCodeError
 		}
 
 		return result.Value, result.ExitCode
 	}).
 		On(gaba.ExitCodeBack, advancedSettings).
-		On(gaba.ExitCodeSuccess, advancedSettings)
+		OnWithHook(gaba.ExitCodeSuccess, advancedSettings, func(ctx *gaba.Context) error {
+			logger := gaba.GetLogger()
+			host, _ := gaba.Get[romm.Host](ctx)
+			config, _ := gaba.Get[*internal.Config](ctx)
+			result, _ := gaba.Get[ui.RefreshCacheOutput](ctx)
+
+			cm := cache.GetCacheManager()
+			if cm == nil {
+				logger.Error("Cache manager not initialized")
+				return nil
+			}
+
+			refreshGames := false
+			refreshCollections := false
+
+			for _, t := range result.SelectedTypes {
+				switch t {
+				case ui.RefreshCacheGames:
+					refreshGames = true
+				case ui.RefreshCacheCollections:
+					refreshCollections = true
+				}
+			}
+
+			// Clear selected caches
+			if refreshGames {
+				if err := cm.ClearGames(); err != nil {
+					logger.Error("Failed to clear games cache", "error", err)
+				}
+			}
+			if refreshCollections {
+				if err := cm.ClearCollections(); err != nil {
+					logger.Error("Failed to clear collections cache", "error", err)
+				}
+			}
+
+			// If we need to refresh games or collections, re-populate
+			if refreshGames || refreshCollections {
+				// Fetch fresh platform list from API
+				platforms, err := internal.GetMappedPlatforms(host, config.DirectoryMappings, config.ApiTimeout)
+				if err != nil {
+					logger.Error("Failed to fetch platforms", "error", err)
+					return nil
+				}
+
+				// Update platforms in context
+				gaba.Set(ctx, platforms)
+
+				// Re-populate cache with progress
+				progress := uatomic.NewFloat64(0)
+				gaba.ProcessMessage(
+					i18n.Localize(&goi18n.Message{ID: "cache_building", Other: "Building cache..."}, nil),
+					gaba.ProcessMessageOptions{
+						ShowThemeBackground: true,
+						ShowProgressBar:     true,
+						Progress:            progress,
+					},
+					func() (interface{}, error) {
+						return nil, cm.PopulateFullCacheWithProgress(platforms, progress)
+					},
+				)
+			}
+
+			logger.Info("Cache refresh completed",
+				"games", refreshGames,
+				"collections", refreshCollections)
+			return nil
+		})
 
 	gaba.AddState(fsm, saveSync, func(ctx *gaba.Context) (ui.SaveSyncOutput, gaba.ExitCode) {
-		config, _ := gaba.Get[*utils.Config](ctx)
+		config, _ := gaba.Get[*internal.Config](ctx)
 		host, _ := gaba.Get[romm.Host](ctx)
 
 		screen := ui.NewSaveSyncScreen()
@@ -818,7 +919,7 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		On(gaba.ExitCodeBack, platformSelection)
 
 	gaba.AddState(fsm, biosDownload, func(ctx *gaba.Context) (ui.BIOSDownloadOutput, gaba.ExitCode) {
-		config, _ := gaba.Get[*utils.Config](ctx)
+		config, _ := gaba.Get[*internal.Config](ctx)
 		host, _ := gaba.Get[romm.Host](ctx)
 		platform, _ := gaba.Get[ui.PlatformSelectionOutput](ctx)
 		collectionPlatform, _ := gaba.Get[ui.CollectionPlatformSelectionOutput](ctx)
@@ -838,7 +939,7 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		On(gaba.ExitCodeBack, gameList)
 
 	gaba.AddState(fsm, artworkSync, func(ctx *gaba.Context) (ui.ArtworkSyncOutput, gaba.ExitCode) {
-		config, _ := gaba.Get[*utils.Config](ctx)
+		config, _ := gaba.Get[*internal.Config](ctx)
 		host, _ := gaba.Get[romm.Host](ctx)
 
 		screen := ui.NewArtworkSyncScreen()
@@ -849,11 +950,11 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		On(gaba.ExitCodeBack, advancedSettings)
 
 	gaba.AddState(fsm, updateCheck, func(ctx *gaba.Context) (ui.UpdateOutput, gaba.ExitCode) {
-		cfw, _ := gaba.Get[constants.CFW](ctx)
+		currentCFW, _ := gaba.Get[cfw.CFW](ctx)
 
 		screen := ui.NewUpdateScreen()
 		result, err := screen.Draw(ui.UpdateInput{
-			CFW: cfw,
+			CFW: currentCFW,
 		})
 
 		if err != nil {
@@ -870,4 +971,10 @@ func buildFSM(config *utils.Config, cfw constants.CFW, platforms []romm.Platform
 		On(gaba.ExitCodeSuccess, settings)
 
 	return fsm.Start(platformSelection)
+}
+
+func triggerAutoSync() {
+	if autoSync != nil {
+		autoSync.Trigger()
+	}
 }

@@ -2,12 +2,15 @@ package main
 
 import (
 	"errors"
-	"grout/constants"
-	"grout/constants/cfw/muos"
+	"grout/cfw"
+	"grout/cfw/muos"
+	"grout/internal"
+	"grout/internal/environment"
+	"grout/internal/fileutil"
 	"grout/resources"
 	"grout/romm"
 	"grout/ui"
-	"grout/utils"
+	"log"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -20,8 +23,197 @@ import (
 )
 
 type SetupResult struct {
-	Config    *utils.Config
+	Config    *internal.Config
 	Platforms []romm.Platform
+}
+
+func setup() SetupResult {
+	currentCFW := cfw.GetCFW()
+	gaba.SetLogFilename("grout.log")
+
+	if currentCFW == cfw.MuOS && !environment.IsDevelopment() {
+		if cwd, err := os.Getwd(); err == nil {
+			cwdMappingPath := filepath.Join(cwd, "input_mapping.json")
+			if fileutil.FileExists(cwdMappingPath) {
+				os.Setenv("INPUT_MAPPING_PATH", cwdMappingPath)
+			} else {
+				mappingBytes, err := muos.GetInputMappingBytes()
+				if err == nil {
+					gaba.SetInputMappingBytes(mappingBytes)
+				} else {
+					gaba.GetLogger().Error("Unable to read input mapping file", "error", err)
+				}
+			}
+		}
+	}
+
+	gaba.Init(gaba.Options{
+		WindowTitle:          "Grout",
+		PrimaryThemeColorHex: 0x007C77,
+		ShowBackground:       true,
+		IsNextUI:             currentCFW == cfw.NextUI,
+	})
+
+	gaba.RegisterChord("unlock-kid-mode", []buttons.VirtualButton{
+		buttons.VirtualButtonL1,
+		buttons.VirtualButtonR1,
+		buttons.VirtualButtonMenu,
+	}, gaba.ChordOptions{
+		Window: time.Millisecond * 1500,
+		OnTrigger: func() {
+			if internal.IsKidModeEnabled() {
+				internal.SetKidMode(false)
+				gaba.GetLogger().Info("Kid Mode unlocked for this session")
+			}
+		},
+	})
+
+	gaba.SetLogLevel(slog.LevelDebug)
+	logger := gaba.GetLogger()
+
+	localeFiles, err := resources.GetLocaleMessageFiles()
+	if err != nil {
+		log.SetOutput(os.Stderr)
+		log.Fatalf("Failed to load locale files: %v", err)
+	}
+	if err := i18n.InitI18NFromBytes(localeFiles); err != nil {
+		log.SetOutput(os.Stderr)
+		log.Fatalf("Failed to initialize i18n: %v", err)
+	}
+
+	config, err := internal.LoadConfig()
+	isFirstLaunch := err != nil || (len(config.Hosts) == 0 && config.Language == "")
+
+	if isFirstLaunch {
+		logger.Debug("First launch detected, showing language selection")
+		languageScreen := ui.NewLanguageSelectionScreen()
+		selectedLanguage, langErr := languageScreen.Draw()
+		if langErr != nil {
+			logger.Error("Language selection failed", "error", langErr)
+			selectedLanguage = "en"
+		}
+		logger.Debug("Language selected", "language", selectedLanguage)
+
+		if err := i18n.SetWithCode(selectedLanguage); err != nil {
+			logger.Error("Failed to set language", "error", err, "language", selectedLanguage)
+		}
+
+		if config == nil {
+			config = &internal.Config{
+				ShowRegularCollections: true,
+			}
+		}
+		config.Language = selectedLanguage
+	}
+
+	if err != nil || len(config.Hosts) == 0 {
+		logger.Debug("No RomM Host Configured", "error", err)
+		logger.Debug("Starting login flow for initial setup")
+		loginConfig, loginErr := ui.LoginFlow(romm.Host{})
+		if loginErr != nil {
+			logger.Error("Login flow failed", "error", loginErr)
+			log.SetOutput(os.Stderr)
+			log.Fatalf("Login failed: %v", loginErr)
+		}
+		logger.Debug("Login successful, saving configuration")
+		config.Hosts = loginConfig.Hosts
+		internal.SaveConfig(config)
+	}
+
+	if config.LogLevel != "" {
+		gaba.SetRawLogLevel(config.LogLevel)
+	}
+
+	if config.Language != "" && !isFirstLaunch {
+		if err := i18n.SetWithCode(config.Language); err != nil {
+			logger.Error("Failed to set language", "error", err, "language", config.Language)
+		}
+	}
+
+	internal.InitKidMode(config)
+
+	if internal.IsKidModeEnabled() {
+		splashBytes, _ := resources.GetSplashImageBytes()
+		gaba.ProcessMessage("", gaba.ProcessMessageOptions{
+			ImageBytes:   splashBytes,
+			ImageWidth:   768,
+			ImageHeight:  540,
+			ProcessInput: true,
+		}, func() (interface{}, error) {
+			for i := 0; i < 20; i++ {
+				time.Sleep(100 * time.Millisecond)
+				if !internal.IsKidModeEnabled() {
+					break
+				}
+			}
+			return nil, nil
+		})
+	}
+
+	gaba.UnregisterCombo("unlock-kid-mode")
+
+	if len(config.DirectoryMappings) == 0 {
+		screen := ui.NewPlatformMappingScreen()
+		result, err := screen.Draw(ui.PlatformMappingInput{
+			Host:           config.Hosts[0],
+			ApiTimeout:     config.ApiTimeout,
+			CFW:            currentCFW,
+			RomDirectory:   cfw.GetRomDirectory(),
+			AutoSelect:     false,
+			HideBackButton: true,
+		})
+
+		if err == nil && result.ExitCode == gaba.ExitCodeSuccess {
+			config.DirectoryMappings = result.Value.Mappings
+			internal.SaveConfig(config)
+		}
+	}
+
+	logger.Debug("Configuration Loaded!", "config", config.ToLoggable())
+
+	var platforms []romm.Platform
+	var loadErr error
+
+	splashBytes, _ := resources.GetSplashImageBytes()
+
+	for {
+		gaba.ProcessMessage("", gaba.ProcessMessageOptions{
+			ImageBytes:  splashBytes,
+			ImageWidth:  768,
+			ImageHeight: 540,
+		}, func() (interface{}, error) {
+			var err error
+			platforms, err = internal.GetMappedPlatforms(config.Hosts[0], config.DirectoryMappings, config.ApiTimeout)
+			if err != nil {
+				loadErr = err
+				return nil, err
+			}
+			loadErr = nil
+			platforms = internal.SortPlatformsByOrder(platforms, config.PlatformOrder)
+			return nil, nil
+		})
+
+		if loadErr == nil {
+			break
+		}
+
+		logger.Error("Failed to load platforms", "error", loadErr)
+		errorMessage := classifyStartupError(loadErr)
+		errorMsg := i18n.Localize(errorMessage, nil)
+
+		retry := showStartupError(errorMsg)
+		if !retry {
+			logger.Info("User chose to quit after startup error")
+			gaba.Close()
+			os.Exit(1)
+		}
+		logger.Info("User chose to retry connection")
+	}
+
+	return SetupResult{
+		Config:    config,
+		Platforms: platforms,
+	}
 }
 
 func classifyStartupError(err error) *goi18n.Message {
@@ -58,190 +250,4 @@ func showStartupError(errorMsg string) bool {
 	result, err := gaba.ConfirmationMessage(errorMsg, footerItems, gaba.MessageOptions{})
 
 	return err == nil && result != nil && result.Confirmed
-}
-
-func setup() SetupResult {
-	cfw := utils.GetCFW()
-
-	if cfw == constants.MuOS && !utils.IsDevelopment() {
-		if cwd, err := os.Getwd(); err == nil {
-			cwdMappingPath := filepath.Join(cwd, "input_mapping.json")
-			if _, err := os.Stat(cwdMappingPath); err == nil {
-				os.Setenv("INPUT_MAPPING_PATH", cwdMappingPath)
-			} else {
-				mappingBytes, err := muos.GetInputMappingBytes()
-				if err == nil {
-					gaba.SetInputMappingBytes(mappingBytes)
-				} else {
-					slog.Error("Unable to read input mapping file", "error", err)
-				}
-			}
-		}
-	}
-
-	gaba.Init(gaba.Options{
-		WindowTitle:          "Grout",
-		PrimaryThemeColorHex: 0x007C77,
-		ShowBackground:       true,
-		IsNextUI:             cfw == constants.NextUI,
-		LogFilename:          "grout.log",
-	})
-
-	gaba.RegisterChord("unlock-kid-mode", []buttons.VirtualButton{
-		buttons.VirtualButtonL1,
-		buttons.VirtualButtonR1,
-		buttons.VirtualButtonMenu,
-	}, gaba.ChordOptions{
-		Window: time.Millisecond * 1500,
-		OnTrigger: func() {
-			if utils.IsKidModeEnabled() {
-				utils.SetKidMode(false)
-				gaba.GetLogger().Info("Kid Mode unlocked for this session")
-			}
-		},
-	})
-
-	gaba.SetLogLevel(slog.LevelDebug)
-	logger := gaba.GetLogger()
-
-	localeFiles, err := resources.GetLocaleMessageFiles()
-	if err != nil {
-		utils.LogStandardFatal("Failed to load locale files", err)
-	}
-	if err := i18n.InitI18NFromBytes(localeFiles); err != nil {
-		utils.LogStandardFatal("Failed to initialize i18n", err)
-	}
-
-	config, err := utils.LoadConfig()
-	isFirstLaunch := err != nil || (len(config.Hosts) == 0 && config.Language == "")
-
-	if isFirstLaunch {
-		logger.Debug("First launch detected, showing language selection")
-		languageScreen := ui.NewLanguageSelectionScreen()
-		selectedLanguage, langErr := languageScreen.Draw()
-		if langErr != nil {
-			logger.Error("Language selection failed", "error", langErr)
-			selectedLanguage = "en"
-		}
-		logger.Debug("Language selected", "language", selectedLanguage)
-
-		if err := i18n.SetWithCode(selectedLanguage); err != nil {
-			logger.Error("Failed to set language", "error", err, "language", selectedLanguage)
-		}
-
-		if config == nil {
-			config = &utils.Config{
-				ShowCollections: true,
-			}
-		}
-		config.Language = selectedLanguage
-	}
-
-	if err != nil || len(config.Hosts) == 0 {
-		logger.Debug("No RomM Host Configured", "error", err)
-		logger.Debug("Starting login flow for initial setup")
-		loginConfig, loginErr := ui.LoginFlow(romm.Host{})
-		if loginErr != nil {
-			logger.Error("Login flow failed", "error", loginErr)
-			utils.LogStandardFatal("Login failed", loginErr)
-		}
-		logger.Debug("Login successful, saving configuration")
-		config.Hosts = loginConfig.Hosts
-		utils.SaveConfig(config)
-	}
-
-	if config.LogLevel != "" {
-		gaba.SetRawLogLevel(config.LogLevel)
-	}
-
-	if config.Language != "" && !isFirstLaunch {
-		if err := i18n.SetWithCode(config.Language); err != nil {
-			logger.Error("Failed to set language", "error", err, "language", config.Language)
-		}
-	}
-
-	utils.InitKidMode(config)
-
-	if utils.IsKidModeEnabled() {
-		splashBytes, _ := resources.GetSplashImageBytes()
-		gaba.ProcessMessage("", gaba.ProcessMessageOptions{
-			ImageBytes:   splashBytes,
-			ImageWidth:   768,
-			ImageHeight:  540,
-			ProcessInput: true,
-		}, func() (interface{}, error) {
-			for i := 0; i < 20; i++ {
-				time.Sleep(100 * time.Millisecond)
-				if !utils.IsKidModeEnabled() {
-					break
-				}
-			}
-			return nil, nil
-		})
-	}
-
-	gaba.UnregisterCombo("unlock-kid-mode")
-
-	if config.DirectoryMappings == nil || len(config.DirectoryMappings) == 0 {
-		screen := ui.NewPlatformMappingScreen()
-		result, err := screen.Draw(ui.PlatformMappingInput{
-			Host:           config.Hosts[0],
-			ApiTimeout:     config.ApiTimeout,
-			CFW:            cfw,
-			RomDirectory:   utils.GetRomDirectory(),
-			AutoSelect:     false,
-			HideBackButton: true,
-		})
-
-		if err == nil && result.ExitCode == gaba.ExitCodeSuccess {
-			config.DirectoryMappings = result.Value.Mappings
-			utils.SaveConfig(config)
-		}
-	}
-
-	logger.Debug("Configuration Loaded!", "config", config.ToLoggable())
-
-	var platforms []romm.Platform
-	var loadErr error
-
-	splashBytes, _ := resources.GetSplashImageBytes()
-
-	for {
-		gaba.ProcessMessage("", gaba.ProcessMessageOptions{
-			ImageBytes:  splashBytes,
-			ImageWidth:  768,
-			ImageHeight: 540,
-		}, func() (interface{}, error) {
-			var err error
-			platforms, err = utils.GetMappedPlatforms(config.Hosts[0], config.DirectoryMappings)
-			if err != nil {
-				loadErr = err
-				return nil, err
-			}
-			loadErr = nil
-			platforms = utils.SortPlatformsByOrder(platforms, config.PlatformOrder)
-			return nil, nil
-		})
-
-		if loadErr == nil {
-			break
-		}
-
-		logger.Error("Failed to load platforms", "error", loadErr)
-		errorMessage := classifyStartupError(loadErr)
-		errorMsg := i18n.Localize(errorMessage, nil)
-
-		retry := showStartupError(errorMsg)
-		if !retry {
-			logger.Info("User chose to quit after startup error")
-			gaba.Close()
-			os.Exit(1)
-		}
-		logger.Info("User chose to retry connection")
-	}
-
-	return SetupResult{
-		Config:    config,
-		Platforms: platforms,
-	}
 }

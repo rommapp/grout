@@ -3,18 +3,21 @@ package ui
 import (
 	"errors"
 	"fmt"
-	"grout/constants"
+	"grout/cache"
+	"grout/internal"
+	"grout/internal/constants"
+	"grout/internal/stringutil"
 	"grout/romm"
-	"grout/utils"
 	"slices"
 	"strings"
 	"sync"
 	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
-	buttons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
+	gabaconst "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
 	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
+	uatomic "go.uber.org/atomic"
 )
 
 type fetchType int
@@ -25,7 +28,7 @@ const (
 )
 
 type GameListInput struct {
-	Config               *utils.Config
+	Config               *internal.Config
 	Host                 romm.Host
 	Platform             romm.Platform
 	Collection           romm.Collection
@@ -71,7 +74,7 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 		hasBIOS = loaded.hasBIOS
 
 		if input.Config.ShowBoxArt {
-			go utils.SyncArtworkInBackground(input.Host, games)
+			go cache.SyncArtworkInBackground(input.Host, games)
 		}
 	}
 
@@ -85,12 +88,12 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 		LastSelectedPosition: input.LastSelectedPosition,
 	}
 
-	displayGames := utils.PrepareRomNames(games, *input.Config)
+	displayGames := stringutil.PrepareRomNames(games)
 
 	if input.Config.DownloadedGames == "filter" {
 		filteredGames := make([]romm.Rom, 0, len(displayGames))
 		for _, game := range displayGames {
-			if !utils.IsGameDownloadedLocally(game, *input.Config) {
+			if !game.IsDownloaded(*input.Config) {
 				filteredGames = append(filteredGames, game)
 			}
 		}
@@ -104,7 +107,7 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 		originalCount := len(displayGames)
 		filteredGames := make([]romm.Rom, 0, len(displayGames))
 		for _, game := range displayGames {
-			if _, hasMapping := input.Config.DirectoryMappings[game.PlatformSlug]; hasMapping {
+			if _, hasMapping := input.Config.DirectoryMappings[game.PlatformFSSlug]; hasMapping {
 				filteredGames = append(filteredGames, game)
 			}
 		}
@@ -115,17 +118,17 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 		if input.Platform.ID == 0 {
 			for i := range displayGames {
 				prefix := ""
-				if input.Config.DownloadedGames == "mark" && utils.IsGameDownloadedLocally(displayGames[i], *input.Config) {
-					prefix = utils.Downloaded + " "
+				if input.Config.DownloadedGames == "mark" && displayGames[i].IsDownloaded(*input.Config) {
+					prefix = gabaconst.Download + " "
 				}
-				displayGames[i].DisplayName = fmt.Sprintf("%s[%s] %s", prefix, displayGames[i].PlatformSlug, displayGames[i].DisplayName)
+				displayGames[i].DisplayName = fmt.Sprintf("%s[%s] %s", prefix, displayGames[i].PlatformFSSlug, displayGames[i].DisplayName)
 			}
 		} else {
 			displayName = fmt.Sprintf("%s - %s", input.Collection.Name, input.Platform.Name)
 			if input.Config.DownloadedGames == "mark" {
 				for i := range displayGames {
-					if utils.IsGameDownloadedLocally(displayGames[i], *input.Config) {
-						displayGames[i].DisplayName = fmt.Sprintf("%s %s", utils.Downloaded, displayGames[i].DisplayName)
+					if displayGames[i].IsDownloaded(*input.Config) {
+						displayGames[i].DisplayName = fmt.Sprintf("%s %s", gabaconst.Download, displayGames[i].DisplayName)
 					}
 				}
 			}
@@ -133,8 +136,8 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 	} else {
 		if input.Config.DownloadedGames == "mark" {
 			for i := range displayGames {
-				if utils.IsGameDownloadedLocally(displayGames[i], *input.Config) {
-					displayGames[i].DisplayName = fmt.Sprintf("%s %s", utils.Downloaded, displayGames[i].DisplayName)
+				if displayGames[i].IsDownloaded(*input.Config) {
+					displayGames[i].DisplayName = fmt.Sprintf("%s %s", gabaconst.Download, displayGames[i].DisplayName)
 				}
 			}
 		}
@@ -169,7 +172,7 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 	for i, game := range displayGames {
 		imageFilename := ""
 		if input.Config.ShowBoxArt {
-			imageFilename = utils.GetArtworkCachePath(game.PlatformSlug, game.ID)
+			imageFilename = cache.GetArtworkCachePath(game.PlatformFSSlug, game.ID)
 		}
 		menuItems[i] = gaba.MenuItem{
 			Text:          game.DisplayName,
@@ -183,14 +186,14 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 	options := gaba.DefaultListOptions(title, menuItems)
 	options.SmallTitle = true
 	options.EnableImages = input.Config.ShowBoxArt
-	options.ActionButton = buttons.VirtualButtonX
-	options.MultiSelectButton = buttons.VirtualButtonSelect
-	options.DeselectAllButton = buttons.VirtualButtonL1
-	options.SelectAllButton = buttons.VirtualButtonR1
-	options.HelpButton = buttons.VirtualButtonMenu
+	options.ActionButton = gabaconst.VirtualButtonX
+	options.MultiSelectButton = gabaconst.VirtualButtonSelect
+	options.DeselectAllButton = gabaconst.VirtualButtonL1
+	options.SelectAllButton = gabaconst.VirtualButtonR1
+	options.HelpButton = gabaconst.VirtualButtonMenu
 
-	if hasBIOS && !utils.IsKidModeEnabled() {
-		options.SecondaryActionButton = buttons.VirtualButtonY
+	if hasBIOS && !internal.IsKidModeEnabled() {
+		options.SecondaryActionButton = gabaconst.VirtualButtonY
 	}
 
 	options.HelpTitle = i18n.Localize(&goi18n.Message{ID: "games_list_help_title", Other: "Games List Help"}, nil)
@@ -201,7 +204,7 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 		{ButtonName: i18n.Localize(&goi18n.Message{ID: "button_menu", Other: "Menu"}, nil), HelpText: i18n.Localize(&goi18n.Message{ID: "button_help", Other: "Help"}, nil)},
 	}
 
-	if hasBIOS && !utils.IsKidModeEnabled() {
+	if hasBIOS && !internal.IsKidModeEnabled() {
 		footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: "Y", HelpText: i18n.Localize(&goi18n.Message{ID: "button_bios", Other: "BIOS"}, nil)})
 	}
 
@@ -211,7 +214,7 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 
 	options.SelectedIndex = input.LastSelectedIndex
 	options.VisibleStartIndex = max(0, input.LastSelectedIndex-input.LastSelectedPosition)
-	options.StatusBar = utils.StatusBar()
+	options.StatusBar = StatusBar()
 
 	res, err := gaba.List(options)
 	if err != nil {
@@ -282,57 +285,29 @@ func (s *GameListScreen) loadGames(input GameListInput) (loadGamesResult, error)
 	}
 
 	logger := gaba.GetLogger()
+	cm := cache.GetCacheManager()
 
 	var result loadGamesResult
 
 	// Check if we can use cached games (skip loading screen if so)
-	cacheKey := getCacheKeyForFetch(id, ft)
-	query := getQueryForFetch(id, ft)
+	if cm != nil {
+		var cached []romm.Rom
+		var err error
 
-	// Check if a prefetch is in progress for this platform
-	if cr := utils.GetCacheRefresh(); cr != nil {
-		if cr.IsPrefetchInProgress(cacheKey) {
-			logger.Debug("Waiting for prefetch to complete", "key", cacheKey)
-			// Show a loading message while waiting
-			gaba.ProcessMessage(
-				i18n.Localize(&goi18n.Message{ID: "games_list_loading", Other: "Loading {{.Name}}..."}, map[string]interface{}{"Name": displayName}),
-				gaba.ProcessMessageOptions{ShowThemeBackground: true},
-				func() (interface{}, error) {
-					cr.WaitForPrefetch(cacheKey)
-					return nil, nil
-				},
-			)
-			// After prefetch completes, load from cache
-			cached, err := utils.LoadCachedGames(cacheKey)
-			if err == nil {
-				logger.Debug("Loaded games from prefetch cache", "key", cacheKey, "count", len(cached))
-				result.games = cached
-
-				// Check BIOS availability from pre-cached data
-				if platform.ID != 0 && !isCollectionSet(collection) {
-					if hasBIOS, wasFetched := cr.HasBIOS(platform.ID); wasFetched {
-						result.hasBIOS = hasBIOS
-					}
-				}
-
-				return result, nil
-			}
+		if ft == ftPlatform {
+			cached, err = cm.GetPlatformGames(id)
+		} else if ft == ftCollection {
+			cached, err = cm.GetCollectionGames(collection)
 		}
-	}
 
-	isFresh, _ := utils.CheckCacheFreshness(host, config, cacheKey, query)
-	if isFresh {
-		cached, err := utils.LoadCachedGames(cacheKey)
-		if err == nil {
-			logger.Debug("Loaded games from cache (no loading screen)", "key", cacheKey, "count", len(cached))
+		if err == nil && len(cached) > 0 {
+			logger.Debug("Loaded games from cache (no loading screen)", "type", ft, "id", id, "count", len(cached))
 			result.games = cached
 
-			// Check BIOS availability from pre-cached data
+			// Check BIOS availability from cached data
 			if platform.ID != 0 && !isCollectionSet(collection) {
-				if cr := utils.GetCacheRefresh(); cr != nil {
-					if hasBIOS, wasFetched := cr.HasBIOS(platform.ID); wasFetched {
-						result.hasBIOS = hasBIOS
-					}
+				if hasBIOS, wasFetched := cm.HasBIOS(platform.ID); wasFetched {
+					result.hasBIOS = hasBIOS
 				}
 			}
 
@@ -343,11 +318,79 @@ func (s *GameListScreen) loadGames(input GameListInput) (loadGamesResult, error)
 	// Cache miss or stale - show loading screen and fetch
 	var loadErr error
 
+	// For platforms, use progress bar since they can have many games
+	if ft == ftPlatform && cm != nil {
+		progress := uatomic.NewFloat64(0)
+		_, err := gaba.ProcessMessage(
+			i18n.Localize(&goi18n.Message{ID: "games_list_loading", Other: "Loading {{.Name}}..."}, map[string]interface{}{"Name": displayName}),
+			gaba.ProcessMessageOptions{
+				ShowThemeBackground: true,
+				ShowProgressBar:     true,
+				Progress:            progress,
+			},
+			func() (interface{}, error) {
+				rc := romm.NewClientFromHost(host, config.ApiTimeout)
+
+				// Fetch games with progress and BIOS info in parallel
+				var wg sync.WaitGroup
+				var gamesFetchErr error
+
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					if err := cm.RefreshPlatformGamesWithProgress(platform, progress); err != nil {
+						logger.Error("Failed to refresh platform games", "error", err)
+						gamesFetchErr = err
+						return
+					}
+					// Load from cache after refresh
+					if games, err := cm.GetPlatformGames(id); err == nil {
+						result.games = games
+					} else {
+						gamesFetchErr = err
+					}
+				}()
+
+				// Check BIOS availability
+				if hasBIOS, wasFetched := cm.HasBIOS(platform.ID); wasFetched {
+					result.hasBIOS = hasBIOS
+				} else {
+					wg.Add(1)
+					go func() {
+						defer wg.Done()
+						firmware, err := rc.GetFirmware(platform.ID)
+						if err == nil && len(firmware) > 0 {
+							result.hasBIOS = true
+							cm.SetBIOSAvailability(platform.ID, true)
+						} else {
+							cm.SetBIOSAvailability(platform.ID, false)
+						}
+					}()
+				}
+
+				wg.Wait()
+
+				if gamesFetchErr != nil {
+					loadErr = gamesFetchErr
+					return nil, gamesFetchErr
+				}
+				return nil, nil
+			},
+		)
+
+		if err != nil || loadErr != nil {
+			return loadGamesResult{}, fmt.Errorf("failed to load games: %w", err)
+		}
+
+		return result, nil
+	}
+
+	// For collections or when cache manager is unavailable, use simple loading screen
 	_, err := gaba.ProcessMessage(
 		i18n.Localize(&goi18n.Message{ID: "games_list_loading", Other: "Loading {{.Name}}..."}, map[string]interface{}{"Name": displayName}),
 		gaba.ProcessMessageOptions{ShowThemeBackground: true},
 		func() (interface{}, error) {
-			rc := utils.GetRommClient(host, config.ApiTimeout)
+			rc := romm.NewClientFromHost(host, config.ApiTimeout)
 
 			// Fetch games and BIOS info in parallel
 			var wg sync.WaitGroup
@@ -367,23 +410,27 @@ func (s *GameListScreen) loadGames(input GameListInput) (loadGamesResult, error)
 
 			// Check BIOS availability (only for platforms, not collections)
 			if platform.ID != 0 && !isCollectionSet(collection) {
-				// First check pre-cached BIOS info
-				if cr := utils.GetCacheRefresh(); cr != nil {
-					if hasBIOS, wasFetched := cr.HasBIOS(platform.ID); wasFetched {
+				// First check cached BIOS info
+				if cm := cache.GetCacheManager(); cm != nil {
+					if hasBIOS, wasFetched := cm.HasBIOS(platform.ID); wasFetched {
 						result.hasBIOS = hasBIOS
 					} else {
-						// Fall back to network fetch if not pre-cached
+						// Fall back to network fetch if not cached
 						wg.Add(1)
 						go func() {
 							defer wg.Done()
 							firmware, err := rc.GetFirmware(platform.ID)
 							if err == nil && len(firmware) > 0 {
 								result.hasBIOS = true
+								// Cache the BIOS availability
+								cm.SetBIOSAvailability(platform.ID, true)
+							} else {
+								cm.SetBIOSAvailability(platform.ID, false)
 							}
 						}()
 					}
 				} else {
-					// No cache refresh instance, do network fetch
+					// No cache manager, do network fetch
 					wg.Add(1)
 					go func() {
 						defer wg.Done()
@@ -410,27 +457,6 @@ func (s *GameListScreen) loadGames(input GameListInput) (loadGamesResult, error)
 	}
 
 	return result, nil
-}
-
-func getCacheKeyForFetch(id int, ft fetchType) string {
-	switch ft {
-	case ftPlatform:
-		return utils.GetPlatformCacheKey(id)
-	case ftCollection:
-		return utils.GetCacheKey(utils.CacheTypeCollection, fmt.Sprintf("%d", id))
-	}
-	return ""
-}
-
-func getQueryForFetch(id int, ft fetchType) romm.GetRomsQuery {
-	query := romm.GetRomsQuery{}
-	switch ft {
-	case ftPlatform:
-		query.PlatformID = id
-	case ftCollection:
-		query.CollectionID = id
-	}
-	return query
 }
 
 func (s *GameListScreen) showEmptyMessage(platformName, searchFilter string) {
@@ -484,52 +510,45 @@ func (s *GameListScreen) showErrorMessage(err error) {
 	)
 }
 
-func fetchList(config *utils.Config, host romm.Host, queryID int, fetchType fetchType) ([]romm.Rom, error) {
+func fetchList(config *internal.Config, host romm.Host, queryID int, fetchType fetchType) ([]romm.Rom, error) {
 	logger := gaba.GetLogger()
-
-	// Build query for cache key and freshness check
-	query := romm.GetRomsQuery{
-		Limit: 10000,
-	}
-	var cacheKey string
+	cm := cache.GetCacheManager()
 
 	switch fetchType {
 	case ftPlatform:
-		query.PlatformID = queryID
-		cacheKey = utils.GetPlatformCacheKey(queryID)
-	case ftCollection:
-		query.CollectionID = queryID
-		cacheKey = utils.GetCacheKey(utils.CacheTypeCollection, fmt.Sprintf("%d", queryID))
-	}
-
-	// Check if cache is fresh
-	isFresh, err := utils.CheckCacheFreshness(host, config, cacheKey, query)
-	if err == nil && isFresh {
-		// Load from cache
-		cached, err := utils.LoadCachedGames(cacheKey)
-		if err == nil {
-			logger.Debug("Loaded games from cache", "key", cacheKey, "count", len(cached))
-			return cached, nil
+		// Check cache first
+		if cm != nil {
+			if games, err := cm.GetPlatformGames(queryID); err == nil && len(games) > 0 {
+				logger.Debug("Loaded platform games from cache", "platformID", queryID, "count", len(games))
+				return games, nil
+			}
 		}
-		logger.Debug("Failed to load cached games, fetching fresh", "error", err)
+
+		// Cache miss - use efficient paginated fetch
+		if cm != nil {
+			platform := romm.Platform{ID: queryID}
+			if err := cm.RefreshPlatformGames(platform); err != nil {
+				logger.Error("Failed to refresh platform games", "error", err)
+				return nil, err
+			}
+			// Load from cache after refresh
+			if games, err := cm.GetPlatformGames(queryID); err == nil {
+				logger.Debug("Loaded platform games after refresh", "platformID", queryID, "count", len(games))
+				return games, nil
+			}
+		}
+
+		// Cache manager should always be available - return error if not
+		return nil, fmt.Errorf("cache manager not available")
+
+	case ftCollection:
+		// Collections should already be cached from initial population
+		// This path shouldn't normally be hit since collection games are loaded via GetCollectionGames
+		// with the full collection object. Return error if we get here without cache.
+		return nil, fmt.Errorf("collection fetch requires cache manager")
 	}
 
-	// Fetch from API
-	rc := utils.GetRommClient(host, config.ApiTimeout)
-
-	res, err := rc.GetRoms(query)
-	if err != nil {
-		return nil, err
-	}
-
-	logger.Debug("Fetched games", "count", len(res.Items), "total", res.Total)
-
-	// Save to cache
-	if err := utils.SaveGamesToCache(cacheKey, res.Items); err != nil {
-		logger.Debug("Failed to save games to cache", "error", err)
-	}
-
-	return res.Items, nil
+	return nil, fmt.Errorf("unsupported fetch type")
 }
 
 func filterList(itemList []romm.Rom, filter string) []romm.Rom {

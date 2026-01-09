@@ -2,7 +2,7 @@ package ui
 
 import (
 	"errors"
-	"grout/constants"
+	"grout/internal/constants"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	buttons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"

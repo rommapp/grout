@@ -2,7 +2,6 @@ package ui
 
 import (
 	"errors"
-	"grout/utils"
 	"sort"
 	"strings"
 
@@ -12,7 +11,7 @@ import (
 )
 
 type EmulatorSelectionInput struct {
-	PlatformSlug         string
+	PlatformFSSlug       string
 	PlatformName         string
 	EmulatorChoices      []EmulatorChoice
 	LastSelectedIndex    int
@@ -87,7 +86,7 @@ func (s *EmulatorSelectionScreen) Draw(input EmulatorSelectionInput) (ScreenResu
 	options.FooterHelpItems = footerItems
 	options.SelectedIndex = input.LastSelectedIndex
 	options.VisibleStartIndex = max(0, input.LastSelectedIndex-input.LastSelectedPosition)
-	options.StatusBar = utils.StatusBar()
+	options.StatusBar = StatusBar()
 
 	sel, err := gaba.List(options)
 	if err != nil {

@@ -33,7 +33,6 @@ tasks:
       - task: extract
       - task: package-next
       - task: package-muos
-      - task: muxapp
       - task: package-knulli
       - task: package-spruce
 
@@ -60,10 +59,11 @@ tasks:
   package-muos:
     desc: Package for muOS
     cmds:
-      - rm -rf build/muOS || true
+      - rm -rf build/muOS build/Grout.muxapp || true
       - mkdir -p build/muOS/Grout/lib
       - cp build/grout scripts/muOS/mux_launch.sh README.md LICENSE build/muOS/Grout
       - cp -R build/lib/* build/muOS/Grout/lib/
+      - cd build/muOS && zip -r ../Grout.muxapp Grout
     silent: true
 
   package-knulli:
@@ -85,15 +85,6 @@ tasks:
       - cp -R build/lib/* build/Spruce/Grout/grout/lib/
     silent: true
 
-  muxapp:
-    desc: Create .muxapp archive for muOS
-    cmds:
-      - task: package-muos
-      - rm -rf build/Grout.muxapp || true
-      - cd build/muOS && zip -r ../Grout.muxapp Grout
-      - echo "Created build/Grout.muxapp"
-    silent: true
-
   adb-next:
     desc: Deploy to NextUI device via ADB
     cmds:
@@ -102,8 +93,16 @@ tasks:
       - adb push config-platformless.json /mnt/SDCARD/Tools/tg5040/Grout.pak/config.json
     silent: true
 
-  adb-muos:
-    desc: Deploy to muOS device via ADB
+  adb-muos-sd1:
+    desc: Deploy to muOS device via ADB to SD1
+    cmds:
+      - adb shell rm -rf /mnt/mmc/MUOS/application/Grout || true
+      - adb push build/muOS/Grout /mnt/mmc/MUOS/application
+      - adb push config-platformless.json /mnt/mmc/MUOS/application/Grout/config.json
+    silent: true
+
+  adb-muos-sd2:
+    desc: Deploy to muOS device via ADB to SD2
     cmds:
       - adb shell rm -rf /mnt/sdcard/MUOS/application/Grout || true
       - adb push build/muOS/Grout /mnt/sdcard/MUOS/application
@@ -207,3 +206,13 @@ tasks:
     cmds:
       - task: i18n:extract
       - task: i18n:merge
+
+  lint:
+    desc: Run Go code style checks (fmt, vet, staticcheck)
+    cmds:
+      - echo "Running go fmt..."
+      - go fmt ./...
+      - echo "Running go vet..."
+      - go vet ./...
+      - echo "Running staticcheck..."
+      - staticcheck ./...

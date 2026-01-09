@@ -26,6 +26,10 @@ other = "Сканирование платформы %d/%d: %s..."
 hash = "sha1-ef880c0f2577f0a9fb8ca21f2ed3710e5aef1376"
 other = "Все обложки уже в кэше!"
 
+[artwork_sync_no_artwork]
+hash = "sha1-447a12c1a94ffbcefafc528ff6de40d16b247a7d"
+other = "Нет доступных обложек для загрузки."
+
 [auto_sync_waiting]
 hash = "sha1-c005f14e70da37982e2152d3af9d29a58ea8f01c"
 other = "Ожидание завершения синхронизации..."
@@ -141,17 +145,12 @@ other = "Выбрать"
 hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
 other = "Настройки"
 
-[cache_artwork]
-hash = "sha1-1cb834b429143507648837792190c647a34f64ab"
-other = "Кэш обложек"
+[cache_collections]
+other = "Кэш коллекций"
 
 [cache_games]
 hash = "sha1-1e7dbd606b8bad53986d06fd58c9d73dcad67d64"
 other = "Кэш игр"
-
-[clear_cache_title]
-hash = "sha1-522175083f0bf50b4584d1dd8dbed60ae22535be"
-other = "Очистить кэш"
 
 [collection_platform_no_mapped]
 hash = "sha1-423fa43d1088dbfa790bd41466ee1193947902cd"
@@ -491,6 +490,9 @@ other = "{{.Name}} (ROM не найден в RomM)"
 hash = "sha1-6e0e349d1314bd7909fa32d8c46698b412601d19"
 other = "Сканирование файлов сохранений..."
 
+[save_sync_scanning_roms]
+other = "Сканирование ROM..."
+
 [save_sync_settings_title]
 hash = "sha1-d3cc05947f3967eb75f60603d7fe6d6d88dbcf7f"
 other = "Настройки синхронизации"
@@ -519,6 +521,9 @@ other = "Неизвестная ошибка"
 hash = "sha1-11ffd636fd7a3bf88d84e08f65c2a6cd05cfc2b2"
 other = "Несопоставленные сохранения"
 
+[save_sync_syncing]
+other = "Синхронизация сохранений..."
+
 [save_sync_up_to_date]
 hash = "sha1-73e9f0f39987b22aebf571b4f039ecde681e9434"
 other = "Всё актуально!\nИграйте в удовольствие!"
@@ -538,10 +543,6 @@ other = "Тайм-аут API"
 [settings_box_art]
 hash = "sha1-0eb3d5ab393c2db23feb4e143d5c1987ff52685a"
 other = "Обложка"
-
-[settings_clear_cache]
-hash = "sha1-522175083f0bf50b4584d1dd8dbed60ae22535be"
-other = "Очистить кэш"
 
 [settings_collection_view]
 hash = "sha1-b5c401da5ed3ead09ad836091786ea351f1a4218"
@@ -639,7 +640,7 @@ other = "Виртуальные коллекции"
 
 [settings_sync_artwork]
 hash = "sha1-447a12c1a94ffbcefafc528ff6de40d16b247a7d"
-other = "Кэшировать обложки"
+other = "Предзагрузить обложки"
 
 [settings_title]
 hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"

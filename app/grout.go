@@ -1,9 +1,8 @@
 package main
 
 import (
-	"grout/utils"
+	"grout/cfw"
 	"os"
-	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
@@ -14,7 +13,6 @@ import (
 func main() {
 	defer cleanup()
 
-	appStart := time.Now()
 	result := setup()
 	config := result.Config
 	platforms := result.Platforms
@@ -22,11 +20,11 @@ func main() {
 	logger := gaba.GetLogger()
 	logger.Debug("Starting Grout")
 
-	cfw := utils.GetCFW()
+	currentCFW := cfw.GetCFW()
 	quitOnBack := len(config.Hosts) == 1
-	showCollections := utils.ShowCollections(config, config.Hosts[0])
+	showCollections := config.ShowCollections(config.Hosts[0])
 
-	fsm := buildFSM(config, cfw, platforms, quitOnBack, showCollections, appStart)
+	fsm := buildFSM(config, currentCFW, platforms, quitOnBack, showCollections)
 
 	if err := fsm.Run(); err != nil {
 		logger.Error("FSM error", "error", err)
@@ -34,7 +32,6 @@ func main() {
 }
 
 func cleanup() {
-	// Wait for auto-sync to complete before exiting
 	if autoSync != nil && autoSync.IsRunning() {
 		gaba.GetLogger().Info("Waiting for auto-sync to complete before exiting...")
 		gaba.ProcessMessage(

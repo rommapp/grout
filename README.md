@@ -37,16 +37,22 @@ A RomM Client for <a href="https://muos.dev">muOS</a>, <a href="https://knulli.o
 
 Choose your platform and follow the installation guide:
 
-- [muOS Installation](docs/INSTALL_MUOS.md)
-- [Knulli Installation](docs/INSTALL_KNULLI.md)
-- [Spruce Installation](docs/INSTALL_SPRUCE.md)
-- [NextUI Installation](docs/INSTALL_NEXTUI.md)
+- [muOS Installation / Update](docs/INSTALL_MUOS.md)
+- [Knulli Installation / Update](docs/INSTALL_KNULLI.md)
+- [Spruce Installation / Update](docs/INSTALL_SPRUCE.md)
+- [NextUI Installation / Update](docs/INSTALL_NEXTUI.md)
 
 ---
 
 ## User Guide
 
 For detailed usage instructions and configuration options, see the [User Guide](docs/USER_GUIDE.md).
+
+---
+
+## Development
+
+Interested in contributing? Check out the [Development Guide](docs/DEVELOPMENT.md) to get started.
 
 ---
 

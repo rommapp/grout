@@ -21,19 +21,10 @@ func (c *Client) ValidateConnection() error {
 			!errors.Is(classifiedErr, ErrInvalidHostname)
 
 		if shouldTryProtocolSwitch {
-			if switchedURL := switchProtocol(c.baseURL); switchedURL != c.baseURL {
-				if testReq, testErr := http.NewRequest("GET", switchedURL+endpointHeartbeat, nil); testErr == nil {
-					if testResp, testRespErr := c.httpClient.Do(testReq); testRespErr == nil {
-						testResp.Body.Close()
-						if testResp.StatusCode >= 200 && testResp.StatusCode < 300 {
-							return &ProtocolError{
-								RequestedProtocol: req.URL.Scheme,
-								CorrectProtocol:   testReq.URL.Scheme,
-								Err:               ErrWrongProtocol,
-							}
-						}
-					}
-				}
+			if protocolErr := c.tryAlternateProtocol(req.URL.Scheme, func(r *http.Response) bool {
+				return r.StatusCode >= 200 && r.StatusCode < 300
+			}); protocolErr != nil {
+				return protocolErr
 			}
 		}
 
@@ -59,21 +50,11 @@ func (c *Client) ValidateConnection() error {
 			Err:        ErrServerError,
 		}
 	default:
-		if switchedURL := switchProtocol(c.baseURL); switchedURL != c.baseURL {
-			if testReq, testErr := http.NewRequest("GET", switchedURL+endpointHeartbeat, nil); testErr == nil {
-				if testResp, testRespErr := c.httpClient.Do(testReq); testRespErr == nil {
-					defer testResp.Body.Close()
-					if testResp.StatusCode >= 200 && testResp.StatusCode < 300 {
-						return &ProtocolError{
-							RequestedProtocol: req.URL.Scheme,
-							CorrectProtocol:   testReq.URL.Scheme,
-							Err:               ErrWrongProtocol,
-						}
-					}
-				}
-			}
+		if protocolErr := c.tryAlternateProtocol(req.URL.Scheme, func(r *http.Response) bool {
+			return r.StatusCode >= 200 && r.StatusCode < 300
+		}); protocolErr != nil {
+			return protocolErr
 		}
-
 		return fmt.Errorf("heartbeat check failed with status: %d", resp.StatusCode)
 	}
 }
@@ -86,6 +67,35 @@ func switchProtocol(baseURL string) string {
 		return "https://" + baseURL[7:]
 	}
 	return baseURL
+}
+
+// tryAlternateProtocol tests if the alternate protocol works and returns a ProtocolError if it does.
+// The isSuccess function determines if the response indicates the alternate protocol is working.
+func (c *Client) tryAlternateProtocol(originalScheme string, isSuccess func(resp *http.Response) bool) *ProtocolError {
+	switchedURL := switchProtocol(c.baseURL)
+	if switchedURL == c.baseURL {
+		return nil
+	}
+
+	testReq, err := http.NewRequest("GET", switchedURL+endpointHeartbeat, nil)
+	if err != nil {
+		return nil
+	}
+
+	testResp, err := c.httpClient.Do(testReq)
+	if err != nil {
+		return nil
+	}
+	defer testResp.Body.Close()
+
+	if isSuccess(testResp) {
+		return &ProtocolError{
+			RequestedProtocol: originalScheme,
+			CorrectProtocol:   testReq.URL.Scheme,
+			Err:               ErrWrongProtocol,
+		}
+	}
+	return nil
 }
 
 func (c *Client) Login(username, password string) error {

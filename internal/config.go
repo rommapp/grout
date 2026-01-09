@@ -1,0 +1,301 @@
+package internal
+
+import (
+	"encoding/json"
+	"fmt"
+	"grout/cfw"
+	"grout/romm"
+	"os"
+	"sync/atomic"
+	"time"
+
+	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
+	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
+)
+
+var kidModeEnabled atomic.Bool
+
+type Config struct {
+	Hosts                  []romm.Host                 `json:"hosts,omitempty"`
+	DirectoryMappings      map[string]DirectoryMapping `json:"directory_mappings,omitempty"`
+	SaveSyncMode           string                      `json:"save_sync_mode"`
+	SaveDirectoryMappings  map[string]string           `json:"save_directory_mappings,omitempty"`
+	GameSaveOverrides      map[int]string              `json:"game_save_overrides,omitempty"`
+	DownloadArt            bool                        `json:"download_art,omitempty"`
+	ShowBoxArt             bool                        `json:"show_box_art,omitempty"`
+	UnzipDownloads         bool                        `json:"unzip_downloads,omitempty"`
+	ShowRegularCollections bool                        `json:"show_collections"`
+	ShowSmartCollections   bool                        `json:"show_smart_collections"`
+	ShowVirtualCollections bool                        `json:"show_virtual_collections"`
+	DownloadedGames        string                      `json:"downloaded_games,omitempty"`
+	ApiTimeout             time.Duration               `json:"api_timeout"`
+	DownloadTimeout        time.Duration               `json:"download_timeout"`
+	LogLevel               string                      `json:"log_level,omitempty"`
+	Language               string                      `json:"language,omitempty"`
+	CollectionView         string                      `json:"collection_view,omitempty"`
+	KidMode                bool                        `json:"kid_mode,omitempty"`
+
+	PlatformOrder []string `json:"platform_order,omitempty"`
+}
+
+type DirectoryMapping struct {
+	RomMSlug     string `json:"slug"`
+	RelativePath string `json:"relative_path"`
+}
+
+func (c Config) ToLoggable() any {
+	safeHosts := make([]map[string]any, len(c.Hosts))
+	for i, host := range c.Hosts {
+		safeHosts[i] = host.ToLoggable()
+	}
+
+	return map[string]any{
+		"hosts":                   safeHosts,
+		"directory_mappings":      c.DirectoryMappings,
+		"api_timeout":             c.ApiTimeout,
+		"download_timeout":        c.DownloadTimeout,
+		"unzip_downloads":         c.UnzipDownloads,
+		"download_art":            c.DownloadArt,
+		"show_box_art":            c.ShowBoxArt,
+		"save_directory_mappings": c.SaveDirectoryMappings,
+		"game_save_overrides":     c.GameSaveOverrides,
+		"collections":             c.ShowRegularCollections,
+		"smart_collections":       c.ShowSmartCollections,
+		"virtual_collections":     c.ShowVirtualCollections,
+		"downloaded_games_action": c.DownloadedGames,
+		"log_level":               c.LogLevel,
+	}
+}
+
+func LoadConfig() (*Config, error) {
+	data, err := os.ReadFile("config.json")
+	if err != nil {
+		return nil, fmt.Errorf("reading config.json: %w", err)
+	}
+
+	var config Config
+	if err := json.Unmarshal(data, &config); err != nil {
+		return nil, fmt.Errorf("parsing config.json: %w", err)
+	}
+
+	if config.ApiTimeout == 0 {
+		config.ApiTimeout = 30 * time.Minute
+	}
+
+	if config.DownloadTimeout == 0 {
+		config.DownloadTimeout = 60 * time.Minute
+	}
+
+	if config.Language == "" {
+		config.Language = "en"
+	}
+
+	if config.DownloadedGames == "" {
+		config.DownloadedGames = "do_nothing"
+	}
+
+	if config.CollectionView == "" {
+		config.CollectionView = "platform"
+	}
+
+	if config.SaveSyncMode == "" {
+		config.SaveSyncMode = "off"
+	}
+
+	return &config, nil
+}
+
+func SaveConfig(config *Config) error {
+	if config.LogLevel == "" {
+		config.LogLevel = "ERROR"
+	}
+
+	if config.Language == "" {
+		config.Language = "en"
+	}
+
+	if config.DownloadedGames == "" {
+		config.DownloadedGames = "do_nothing"
+	}
+
+	if config.CollectionView == "" {
+		config.CollectionView = "platform"
+	}
+
+	if config.SaveSyncMode == "" {
+		config.SaveSyncMode = "off"
+	}
+
+	gaba.SetRawLogLevel(config.LogLevel)
+
+	if err := i18n.SetWithCode(config.Language); err != nil {
+		gaba.GetLogger().Error("Failed to set language", "error", err, "language", config.Language)
+	}
+
+	pretty, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		gaba.GetLogger().Error("Failed to marshal config to JSON", "error", err)
+		return err
+	}
+
+	if err := os.WriteFile("config.json", pretty, 0644); err != nil {
+		gaba.GetLogger().Error("Failed to write config file", "error", err)
+		return err
+	}
+
+	return nil
+}
+
+// SortPlatformsByOrder sorts platforms based on the saved order in config.
+// If no order is saved, platforms are sorted alphabetically.
+func SortPlatformsByOrder(platforms []romm.Platform, order []string) []romm.Platform {
+	if len(order) == 0 {
+		// No saved order, return alphabetically sorted
+		return SortPlatformsAlphabetically(platforms)
+	}
+
+	// Create a map of fs_slug to platform for quick lookup
+	platformMap := make(map[string]romm.Platform)
+	for _, p := range platforms {
+		platformMap[p.FSSlug] = p
+	}
+
+	// Create result slice with platforms in saved order
+	var result []romm.Platform
+	usedSlugs := make(map[string]bool)
+
+	// Add platforms in saved order
+	for _, fsSlug := range order {
+		if platform, exists := platformMap[fsSlug]; exists {
+			result = append(result, platform)
+			usedSlugs[fsSlug] = true
+		}
+	}
+
+	// Add any new platforms that aren't in the saved order (alphabetically)
+	var newPlatforms []romm.Platform
+	for _, p := range platforms {
+		if !usedSlugs[p.FSSlug] {
+			newPlatforms = append(newPlatforms, p)
+		}
+	}
+	newPlatforms = SortPlatformsAlphabetically(newPlatforms)
+	result = append(result, newPlatforms...)
+
+	return result
+}
+
+// SortPlatformsAlphabetically sorts platforms by name
+func SortPlatformsAlphabetically(platforms []romm.Platform) []romm.Platform {
+	sorted := make([]romm.Platform, len(platforms))
+	copy(sorted, platforms)
+
+	for i := 0; i < len(sorted); i++ {
+		for j := i + 1; j < len(sorted); j++ {
+			if sorted[i].Name > sorted[j].Name {
+				sorted[i], sorted[j] = sorted[j], sorted[i]
+			}
+		}
+	}
+
+	return sorted
+}
+
+func PrunePlatformOrder(order []string, mappings map[string]DirectoryMapping) []string {
+	if len(order) == 0 {
+		return order
+	}
+
+	pruned := make([]string, 0, len(order))
+	for _, fsSlug := range order {
+		if _, exists := mappings[fsSlug]; exists {
+			pruned = append(pruned, fsSlug)
+		}
+	}
+
+	return pruned
+}
+
+func InitKidMode(config *Config) {
+	kidModeEnabled.Store(config.KidMode)
+}
+
+func IsKidModeEnabled() bool {
+	return kidModeEnabled.Load()
+}
+
+func SetKidMode(enabled bool) {
+	kidModeEnabled.Store(enabled)
+}
+
+func GetMappedPlatforms(host romm.Host, mappings map[string]DirectoryMapping, timeout ...time.Duration) ([]romm.Platform, error) {
+	c := romm.NewClientFromHost(host, timeout...)
+
+	rommPlatforms, err := c.GetPlatforms()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get platforms from RomM: %w", err)
+	}
+
+	romm.DisambiguatePlatformNames(rommPlatforms)
+
+	var platforms []romm.Platform
+
+	for _, platform := range rommPlatforms {
+		_, exists := mappings[platform.FSSlug]
+		if exists {
+			platforms = append(platforms, platform)
+		}
+	}
+
+	return platforms, nil
+}
+
+// To decouple a circular dependency
+func (c Config) GetApiTimeout() time.Duration    { return c.ApiTimeout }
+func (c Config) GetShowCollections() bool        { return c.ShowRegularCollections }
+func (c Config) GetShowSmartCollections() bool   { return c.ShowSmartCollections }
+func (c Config) GetShowVirtualCollections() bool { return c.ShowVirtualCollections }
+
+func (c Config) GetPlatformRomDirectory(platform romm.Platform) string {
+	rp := platform.FSSlug
+	if mapping, ok := c.DirectoryMappings[platform.FSSlug]; ok && mapping.RelativePath != "" {
+		rp = mapping.RelativePath
+	}
+	return cfw.GetPlatformRomDirectory(rp, platform.FSSlug)
+}
+
+func (c Config) GetArtDirectory(platform romm.Platform) string {
+	romDir := c.GetPlatformRomDirectory(platform)
+	return cfw.GetArtDirectory(romDir, platform.FSSlug, platform.Name)
+}
+
+func (c Config) ShowCollections(host romm.Host) bool {
+	if !c.ShowRegularCollections && !c.ShowSmartCollections && !c.ShowVirtualCollections {
+		return false
+	}
+
+	rc := romm.NewClientFromHost(host, c.ApiTimeout)
+
+	if c.ShowRegularCollections {
+		col, err := rc.GetCollections()
+		if err == nil && len(col) > 0 {
+			return true
+		}
+	}
+
+	if c.ShowSmartCollections {
+		smartCol, err := rc.GetSmartCollections()
+		if err == nil && len(smartCol) > 0 {
+			return true
+		}
+	}
+
+	if c.ShowVirtualCollections {
+		virtualCol, err := rc.GetVirtualCollections()
+		if err == nil && len(virtualCol) > 0 {
+			return true
+		}
+	}
+
+	return false
+}

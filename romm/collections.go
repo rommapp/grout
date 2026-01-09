@@ -6,34 +6,42 @@ import (
 )
 
 type Collection struct {
-	ID          int       `json:"id"`
-	VirtualID   string    `json:"-"`
-	IsVirtual   bool      `json:"-"`
-	IsSmart     bool      `json:"-"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	URLCover    string    `json:"url_cover"`
-	HasCover    bool      `json:"has_cover"`
-	IsPublic    bool      `json:"is_public"`
-	UserID      int       `json:"user_id"`
-	ROMs        []Rom     `json:"roms"`
-	ROMCount    int       `json:"rom_count"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID              int       `json:"id"`
+	VirtualID       string    `json:"virtual_id,omitempty"`
+	IsVirtual       bool      `json:"is_virtual"`
+	IsSmart         bool      `json:"is_smart"`
+	Name            string    `json:"name"`
+	Description     string    `json:"description"`
+	URLCover        string    `json:"url_cover"`
+	PathCoverSmall  string    `json:"path_cover_small"`
+	PathCoverLarge  string    `json:"path_cover_large"`
+	PathCoversSmall []string  `json:"path_covers_small"`
+	PathCoversLarge []string  `json:"path_covers_large"`
+	IsPublic        bool      `json:"is_public"`
+	IsFavorite      bool      `json:"is_favorite"`
+	UserID          int       `json:"user_id"`
+	ROMIDs          []int     `json:"rom_ids"`
+	ROMCount        int       `json:"rom_count"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
 }
 
 type VirtualCollection struct {
-	ID          string    `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	URLCover    string    `json:"url_cover"`
-	HasCover    bool      `json:"has_cover"`
-	IsPublic    bool      `json:"is_public"`
-	UserID      int       `json:"user_id"`
-	ROMs        []Rom     `json:"roms"`
-	ROMCount    int       `json:"rom_count"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID              string    `json:"id"`
+	Name            string    `json:"name"`
+	Description     string    `json:"description"`
+	URLCover        string    `json:"url_cover"`
+	PathCoverSmall  string    `json:"path_cover_small"`
+	PathCoverLarge  string    `json:"path_cover_large"`
+	PathCoversSmall []string  `json:"path_covers_small"`
+	PathCoversLarge []string  `json:"path_covers_large"`
+	IsPublic        bool      `json:"is_public"`
+	IsFavorite      bool      `json:"is_favorite"`
+	UserID          int       `json:"user_id"`
+	ROMIDs          []int     `json:"rom_ids"`
+	ROMCount        int       `json:"rom_count"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
 }
 
 type VirtualCollectionsQuery struct {
@@ -72,18 +80,22 @@ func (c *Client) GetVirtualCollections() ([]VirtualCollection, error) {
 // ToCollection converts a VirtualCollection to a Collection for unified handling
 func (vc VirtualCollection) ToCollection() Collection {
 	return Collection{
-		ID:          0, // Virtual collections don't have int IDs
-		VirtualID:   vc.ID,
-		IsVirtual:   true,
-		Name:        vc.Name,
-		Description: vc.Description,
-		URLCover:    vc.URLCover,
-		HasCover:    vc.HasCover,
-		IsPublic:    vc.IsPublic,
-		UserID:      vc.UserID,
-		ROMs:        vc.ROMs,
-		ROMCount:    vc.ROMCount,
-		CreatedAt:   vc.CreatedAt,
-		UpdatedAt:   vc.UpdatedAt,
+		ID:              0, // Virtual collections don't have int IDs
+		VirtualID:       vc.ID,
+		IsVirtual:       true,
+		Name:            vc.Name,
+		Description:     vc.Description,
+		URLCover:        vc.URLCover,
+		PathCoverSmall:  vc.PathCoverSmall,
+		PathCoverLarge:  vc.PathCoverLarge,
+		PathCoversSmall: vc.PathCoversSmall,
+		PathCoversLarge: vc.PathCoversLarge,
+		IsPublic:        vc.IsPublic,
+		IsFavorite:      vc.IsFavorite,
+		UserID:          vc.UserID,
+		ROMIDs:          vc.ROMIDs,
+		ROMCount:        vc.ROMCount,
+		CreatedAt:       vc.CreatedAt,
+		UpdatedAt:       vc.UpdatedAt,
 	}
 }

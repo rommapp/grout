@@ -25,4 +25,5 @@ A concise description of what you expected to happen.
 - CFW:
 - CFW Version:
 - Handheld Device:
+- Grout Version:
 - RomM Version:

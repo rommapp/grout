@@ -1,21 +1,28 @@
-**/.DS_Store
+# OS
 .DS_Store
-/*.iml
 
-/.idea/
-/.tmp/
-/.cache/*
-/build/
-/logs/*
+# IDE
+.idea/
+*.iml
 
-/.env
-/config.*
-/config-*.json
+# Build
+build/
+grout
+app/app
 
-/grout
-/app/app
+# Local config
+.env
+config.json
+config-*.json
 
-/translations_todo/
+# Cache & temp
+.cache/
+.tmp/
+logs/
 
+# Go workspace (local dev)
 go.work
 go.work.sum
+
+# i18n workflow
+translations_todo/

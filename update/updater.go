@@ -2,13 +2,13 @@ package update
 
 import (
 	"fmt"
-	"grout/constants"
+	"grout/cfw"
+	"grout/internal/constants"
 	"grout/version"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
-	"time"
 
 	"go.uber.org/atomic"
 )
@@ -22,16 +22,16 @@ type Info struct {
 	UpdateAvailable bool
 }
 
-func GetAssetName(cfw constants.CFW) string {
-	switch cfw {
-	case constants.MuOS, constants.Knulli:
+func GetAssetName(c cfw.CFW) string {
+	switch c {
+	case cfw.MuOS, cfw.Knulli:
 		return "grout"
 	default:
 		return ""
 	}
 }
 
-func CheckForUpdate(cfw constants.CFW) (*Info, error) {
+func CheckForUpdate(c cfw.CFW) (*Info, error) {
 	currentVersion := version.Get().Version
 
 	if currentVersion == "dev" {
@@ -57,7 +57,7 @@ func CheckForUpdate(cfw constants.CFW) (*Info, error) {
 		return info, nil
 	}
 
-	assetName := GetAssetName(cfw)
+	assetName := GetAssetName(c)
 	if assetName == "" {
 		return nil, fmt.Errorf("unsupported platform for updates")
 	}
@@ -119,7 +119,7 @@ func PerformUpdate(downloadURL string, progress *atomic.Float64) error {
 
 func downloadBinary(url, destPath string, progress *atomic.Float64) error {
 	client := &http.Client{
-		Timeout: 5 * time.Minute,
+		Timeout: constants.UpdaterTimeout,
 	}
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -175,20 +175,4 @@ func downloadBinary(url, destPath string, progress *atomic.Float64) error {
 	}
 
 	return nil
-}
-
-func FormatSize(bytes int64) string {
-	const (
-		KB = 1024
-		MB = KB * 1024
-	)
-
-	switch {
-	case bytes >= MB:
-		return fmt.Sprintf("%.1f MB", float64(bytes)/float64(MB))
-	case bytes >= KB:
-		return fmt.Sprintf("%.1f KB", float64(bytes)/float64(KB))
-	default:
-		return fmt.Sprintf("%d B", bytes)
-	}
 }

@@ -2,9 +2,9 @@ package ui
 
 import (
 	"errors"
-	"grout/constants"
+	"grout/internal/constants"
+	"grout/internal/imageutil"
 	"grout/romm"
-	"grout/utils"
 	"grout/version"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -85,7 +85,7 @@ func (s *InfoScreen) buildSections(input InfoInput) []gaba.Section {
 	sections = append(sections, gaba.NewInfoSection("RomM", metadata))
 
 	qrText := "https://github.com/rommapp/grout"
-	qrcode, err := utils.CreateTempQRCode(qrText, 256)
+	qrcode, err := imageutil.CreateTempQRCode(qrText, 256)
 	if err == nil {
 		sections = append(sections, gaba.NewImageSection(
 			i18n.Localize(&goi18n.Message{ID: "info_repository", Other: "GitHub Repository"}, nil),

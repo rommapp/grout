@@ -2,9 +2,9 @@ package ui
 
 import (
 	"errors"
-	"grout/constants"
+	"grout/internal"
+	"grout/internal/constants"
 	"grout/romm"
-	"grout/utils"
 	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -13,15 +13,14 @@ import (
 )
 
 type AdvancedSettingsInput struct {
-	Config                *utils.Config
+	Config                *internal.Config
 	Host                  romm.Host
 	LastSelectedIndex     int
 	LastVisibleStartIndex int
 }
 
 type AdvancedSettingsOutput struct {
-	EditMappingsClicked   bool
-	ClearCacheClicked     bool
+	RefreshCacheClicked   bool
 	SyncArtworkClicked    bool
 	LastSelectedIndex     int
 	LastVisibleStartIndex int
@@ -49,7 +48,7 @@ func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (ScreenResult
 			},
 			InitialSelectedIndex: input.LastSelectedIndex,
 			VisibleStartIndex:    input.LastVisibleStartIndex,
-			StatusBar:            utils.StatusBar(),
+			StatusBar:            StatusBar(),
 			SmallTitle:           true,
 		},
 		items,
@@ -71,17 +70,12 @@ func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (ScreenResult
 	if result.Action == gaba.ListActionSelected {
 		selectedText := items[result.Selected].Item.Text
 
-		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_edit_mappings", Other: "Directory Mappings"}, nil) {
-			output.EditMappingsClicked = true
-			return withCode(output, constants.ExitCodeEditMappings), nil
+		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_refresh_cache", Other: "Refresh Cache"}, nil) {
+			output.RefreshCacheClicked = true
+			return withCode(output, constants.ExitCodeRefreshCache), nil
 		}
 
-		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_clear_cache", Other: "Clear Cache"}, nil) {
-			output.ClearCacheClicked = true
-			return withCode(output, constants.ExitCodeClearCache), nil
-		}
-
-		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_sync_artwork", Other: "Cache Artwork"}, nil) {
+		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_sync_artwork", Other: "Preload Artwork"}, nil) {
 			output.SyncArtworkClicked = true
 			return withCode(output, constants.ExitCodeSyncArtwork), nil
 		}
@@ -89,7 +83,7 @@ func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (ScreenResult
 
 	s.applySettings(config, result.Items)
 
-	err = utils.SaveConfig(config)
+	err = internal.SaveConfig(config)
 	if err != nil {
 		gaba.GetLogger().Error("Error saving advanced settings", "error", err)
 		return withCode(output, gaba.ExitCodeError), err
@@ -98,22 +92,15 @@ func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (ScreenResult
 	return success(output), nil
 }
 
-func (s *AdvancedSettingsScreen) buildMenuItems(config *utils.Config) []gaba.ItemWithOptions {
+func (s *AdvancedSettingsScreen) buildMenuItems(config *internal.Config) []gaba.ItemWithOptions {
 	return []gaba.ItemWithOptions{
 		{
-			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_edit_mappings", Other: "Directory Mappings"}, nil)},
+			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_sync_artwork", Other: "Preload Artwork"}, nil)},
 			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
 		},
 		{
-			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_sync_artwork", Other: "Cache Artwork"}, nil)},
+			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_refresh_cache", Other: "Refresh Cache"}, nil)},
 			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
-		},
-		{
-			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_clear_cache", Other: "Clear Cache"}, nil)},
-			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
-			Visible: func() bool {
-				return utils.HasArtworkCache() || utils.HasGamesCache()
-			},
 		},
 		{
 			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_timeout", Other: "Download Timeout"}, nil)},
@@ -164,7 +151,7 @@ func (s *AdvancedSettingsScreen) buildMenuItems(config *utils.Config) []gaba.Ite
 	}
 }
 
-func (s *AdvancedSettingsScreen) applySettings(config *utils.Config, items []gaba.ItemWithOptions) {
+func (s *AdvancedSettingsScreen) applySettings(config *internal.Config, items []gaba.ItemWithOptions) {
 	for _, item := range items {
 		selectedText := item.Item.Text
 
@@ -187,7 +174,7 @@ func (s *AdvancedSettingsScreen) applySettings(config *utils.Config, items []gab
 		case i18n.Localize(&goi18n.Message{ID: "settings_kid_mode", Other: "Kid Mode"}, nil):
 			if val, ok := item.Options[item.SelectedOption].Value.(bool); ok {
 				config.KidMode = val
-				utils.SetKidMode(val)
+				internal.SetKidMode(val)
 			}
 		}
 	}

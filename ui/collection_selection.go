@@ -3,12 +3,12 @@ package ui
 import (
 	"errors"
 	"fmt"
-	"grout/constants"
+	"grout/cache"
+	"grout/internal"
+	"grout/internal/constants"
 	"grout/romm"
-	"grout/utils"
 	"slices"
 	"strings"
-	"sync"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	buttons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
@@ -17,7 +17,7 @@ import (
 )
 
 type CollectionSelectionInput struct {
-	Config               *utils.Config
+	Config               *internal.Config
 	Host                 romm.Host
 	SearchFilter         string
 	LastSelectedIndex    int
@@ -44,76 +44,42 @@ func (s *CollectionSelectionScreen) Draw(input CollectionSelectionInput) (Screen
 		LastSelectedPosition: input.LastSelectedPosition,
 	}
 
-	rc := utils.GetRommClient(input.Host)
-	var wg sync.WaitGroup
-	var mu sync.Mutex
-
-	var regularCollections []romm.Collection
-	var smartCollections []romm.Collection
-	var virtualCollections []romm.VirtualCollection
-
-	// Fetch regular collections if enabled
-	if input.Config.ShowCollections {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			fetched, err := rc.GetCollections()
-			if err == nil {
-				mu.Lock()
-				regularCollections = fetched
-				mu.Unlock()
-			}
-		}()
-	}
-
-	// Fetch smart collections if enabled
-	if input.Config.ShowSmartCollections {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			fetched, err := rc.GetSmartCollections()
-			if err == nil {
-				mu.Lock()
-				smartCollections = fetched
-				for i := range smartCollections {
-					smartCollections[i].IsSmart = true
-				}
-				mu.Unlock()
-			}
-		}()
-	}
-
-	// Fetch virtual collections if enabled
-	if input.Config.ShowVirtualCollections {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			fetched, err := rc.GetVirtualCollections()
-			if err == nil {
-				mu.Lock()
-				virtualCollections = fetched
-				mu.Unlock()
-			}
-		}()
-	}
-
-	// Wait for all fetches to complete
-	wg.Wait()
-
-	// Combine enabled collections based on current config
+	// Try to get collections from cache first
 	var collections []romm.Collection
+	cm := cache.GetCacheManager()
 
-	if input.Config.ShowCollections {
-		collections = append(collections, regularCollections...)
-	}
+	if cm != nil && cm.HasCollections() {
+		// Load from cache, filtering by enabled types
+		if input.Config.ShowRegularCollections {
+			if regular, err := cm.GetCollectionsByType("regular"); err == nil {
+				collections = append(collections, regular...)
+			}
+		}
+		if input.Config.ShowSmartCollections {
+			if smart, err := cm.GetCollectionsByType("smart"); err == nil {
+				collections = append(collections, smart...)
+			}
+		}
+		if input.Config.ShowVirtualCollections {
+			if virtual, err := cm.GetCollectionsByType("virtual"); err == nil {
+				collections = append(collections, virtual...)
+			}
+		}
 
-	if input.Config.ShowSmartCollections {
-		collections = append(collections, smartCollections...)
-	}
-
-	if input.Config.ShowVirtualCollections {
-		for _, vc := range virtualCollections {
-			collections = append(collections, vc.ToCollection())
+		// Filter collections to only show those with games from mapped platforms
+		cachedGameIDs := cm.GetCachedGameIDs()
+		if len(cachedGameIDs) > 0 {
+			filteredCollections := make([]romm.Collection, 0, len(collections))
+			for _, coll := range collections {
+				// Check if any of the collection's ROM IDs are in cached games
+				for _, romID := range coll.ROMIDs {
+					if cachedGameIDs[romID] {
+						filteredCollections = append(filteredCollections, coll)
+						break
+					}
+				}
+			}
+			collections = filteredCollections
 		}
 	}
 
@@ -163,7 +129,7 @@ func (s *CollectionSelectionScreen) Draw(input CollectionSelectionInput) (Screen
 	options.FooterHelpItems = footerItems
 	options.SelectedIndex = input.LastSelectedIndex
 	options.VisibleStartIndex = max(0, input.LastSelectedIndex-input.LastSelectedPosition)
-	options.StatusBar = utils.StatusBar()
+	options.StatusBar = StatusBar()
 
 	sel, err := gaba.List(options)
 	if err != nil {
