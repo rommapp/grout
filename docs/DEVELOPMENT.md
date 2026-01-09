@@ -85,18 +85,10 @@ task all-local
 
 ### Build Process
 
-Before your first build, create the base Docker image:
+The build happens in two stages:
 
-```shell
-task build-base
-```
-
-This creates a reusable `grout-base:latest` image (~2GB) with Go and SDL2 dependencies. You only need to run this
-once, or when Go/SDL2 versions change.
-
-The build then happens in two stages:
-
-1. **Docker Build** (`task build`) - Cross-compiles the Go binary for ARM64 Linux using the base image.
+1. **Docker Build** (`task build`) - Cross-compiles the Go binary for ARM64 Linux inside a Docker container. This
+   ensures consistent builds regardless of your host OS and handles SDL2 dependencies.
 
 2. **Extract** (`task extract`) - Copies the compiled binary and required shared libraries (like `libSDL2_gfx`) from
    the Docker container to the local `build/` directory.
