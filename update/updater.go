@@ -3,7 +3,7 @@ package update
 import (
 	"fmt"
 	"grout/cfw"
-	"grout/constants"
+	"grout/internal/constants"
 	"grout/version"
 	"io"
 	"net/http"

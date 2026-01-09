@@ -2,7 +2,6 @@ package cache
 
 import (
 	"fmt"
-	"grout/constants"
 	"grout/internal/fileutil"
 	"grout/internal/imageutil"
 	"grout/romm"
@@ -160,7 +159,7 @@ func DownloadAndCacheArtwork(rom romm.Rom, host romm.Host) error {
 	}
 	req.Header.Set("Authorization", host.BasicAuthHeader())
 
-	client := &http.Client{Timeout: constants.DefaultClientTimeout}
+	client := &http.Client{Timeout: romm.DefaultClientTimeout}
 	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to download artwork: %w", err)

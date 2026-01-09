@@ -3,8 +3,8 @@ package ui
 import (
 	"errors"
 	"fmt"
-	"grout/constants"
 	"grout/internal"
+	"grout/internal/constants"
 	"os"
 	"strconv"
 	"strings"

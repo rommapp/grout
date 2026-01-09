@@ -2,6 +2,8 @@
 
 This document shows the navigation flow between screens in Grout.
 
+---
+
 ## Main Flow
 
 ```mermaid
@@ -31,6 +33,8 @@ flowchart TD
     BIOS --> GL
 ```
 
+---
+
 ## Collections Flow
 
 ```mermaid
@@ -55,6 +59,8 @@ flowchart TD
     GL -.->|"Back (unified)"| CL
 ```
 
+---
+
 ## Settings Flow
 
 ```mermaid
@@ -65,7 +71,9 @@ flowchart TD
     CSET[Collections Settings]
     SSSET[Save Sync Settings]
     ASET[Advanced Settings]
+    PM[Platform Mapping]
     INFO[Info]
+    UPD[Update Check]
     LOGOUT[Logout Confirm]
 
     PS -->|"Settings"| SET
@@ -74,12 +82,16 @@ flowchart TD
     SET --> CSET
     SET --> SSSET
     SET --> ASET
+    SET --> PM
     SET --> INFO
+    SET --> UPD
 
     GSET --> SET
     CSET --> SET
     SSSET --> SET
     ASET --> SET
+    PM --> SET
+    UPD --> SET
 
     INFO -->|"Back"| SET
     INFO --> LOGOUT
@@ -88,74 +100,80 @@ flowchart TD
     LOGOUT -->|"Confirm"| PS
 ```
 
+---
+
 ## Advanced Settings Flow
 
 ```mermaid
 flowchart TD
     SET[Settings]
     ASET[Advanced Settings]
-    PM[Platform Mapping]
-    CC[Clear Cache]
+    RC[Refresh Cache]
     ART[Artwork Sync]
 
     SET --> ASET
     ASET -->|"Back"| SET
-    ASET --> PM
-    ASET --> CC
+    ASET --> RC
     ASET --> ART
 
-    PM --> ASET
-    CC --> ASET
+    RC --> ASET
     ART --> ASET
 ```
 
+---
+
 ## State Descriptions
 
-| State | Description |
-|-------|-------------|
-| Platform Selection | Main menu showing platforms and collections |
-| Game List | List of games for selected platform/collection |
-| Game Details | Detailed view with metadata and download |
-| Game Options | Per-game settings (save directory) |
-| Search | On-screen keyboard for game search |
-| Collection List | List of available collections |
-| Collection Platform Selection | Platform filter within a collection |
-| Collection Search | On-screen keyboard for collection search |
-| Settings | Main settings menu with save sync toggle |
-| General Settings | Box art, download behavior, language |
-| Collections Settings | Collection display options |
-| Save Sync Settings | Per-platform save directory config |
-| Advanced Settings | Timeouts, cache, mappings |
-| Platform Mapping | Configure ROM directory mappings |
-| Clear Cache | Confirm cache clearing |
-| Artwork Sync | Pre-cache artwork for all games |
-| Info | App info and logout option |
-| Logout Confirmation | Confirm logout action |
-| Save Sync | Manual save synchronization |
-| BIOS Download | Download BIOS files |
+| State                         | Description                                    |
+|-------------------------------|------------------------------------------------|
+| Platform Selection            | Main menu showing platforms and collections    |
+| Game List                     | List of games for selected platform/collection |
+| Game Details                  | Detailed view with metadata and download       |
+| Game Options                  | Per-game settings (save directory)             |
+| Search                        | On-screen keyboard for game search             |
+| Collection List               | List of available collections                  |
+| Collection Platform Selection | Platform filter within a collection            |
+| Collection Search             | On-screen keyboard for collection search       |
+| Settings                      | Main settings menu                             |
+| General Settings              | Box art, download behavior, language           |
+| Collections Settings          | Collection display options                     |
+| Save Sync Settings            | Save sync mode and per-platform config         |
+| Advanced Settings             | Timeouts and cache management                  |
+| Platform Mapping              | Configure ROM directory mappings               |
+| Refresh Cache                 | Select and refresh cache types                 |
+| Artwork Sync                  | Pre-cache artwork for all games                |
+| Info                          | App info and logout option                     |
+| Update Check                  | Check for and install updates                  |
+| Logout Confirmation           | Confirm logout action                          |
+| Save Sync                     | Manual save synchronization                    |
+| BIOS Download                 | Download BIOS files                            |
+
+---
 
 ## Navigation State
 
-The FSM maintains state in a single `NavState` struct:
+The FSM maintains state in a `NavState` struct:
 
 ```go
 type NavState struct {
-    CurrentGames, FullGames []romm.Rom
-    SearchFilter            string
-    HasBIOS                 bool
-    GameListPos             ListPosition
+    CurrentGames []romm.Rom
+    FullGames    []romm.Rom
+    SearchFilter string
+    HasBIOS      bool
+    GameListPos  ListPosition
 
-    CollectionSearchFilter  string
-    CollectionGames         []romm.Rom
-    CollectionListPos       ListPosition
-    CollectionPlatformPos   ListPosition
+    CollectionSearchFilter string
+    CollectionGames        []romm.Rom
+    CollectionListPos      ListPosition
+    CollectionPlatformPos  ListPosition
 
-    PlatformListPos         ListPosition
-    SettingsPos             ListPosition
-    GeneralSettingsPos      ListPosition
-    CollectionsSettingsPos  ListPosition
-    AdvancedSettingsPos     ListPosition
+    PlatformListPos ListPosition
 
-    QuitOnBack, ShowCollections bool
+    SettingsPos            ListPosition
+    CollectionsSettingsPos ListPosition
+    AdvancedSettingsPos    ListPosition
+
+    QuitOnBack      bool
+    ShowCollections bool
 }
 ```

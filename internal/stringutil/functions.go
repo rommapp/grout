@@ -2,12 +2,15 @@ package stringutil
 
 import (
 	"fmt"
-	"grout/constants"
 	"grout/romm"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 )
+
+var TagRegex = regexp.MustCompile(`\((.*?)\)`)
+var OrderedFolderRegex = regexp.MustCompile(`\d+\)\s`)
 
 func StripExtension(filename string) string {
 	return strings.TrimSuffix(filename, filepath.Ext(filename))
@@ -29,7 +32,7 @@ func FormatBytes(bytes int64) string {
 func ParseTag(input string) string {
 	cleaned := filepath.Clean(input)
 
-	tags := constants.TagRegex.FindAllStringSubmatch(cleaned, -1)
+	tags := TagRegex.FindAllStringSubmatch(cleaned, -1)
 
 	var foundTags []string
 	foundTag := ""
@@ -51,7 +54,7 @@ func ParseTag(input string) string {
 func nameCleaner(name string, stripTag bool) (string, string) {
 	cleaned := filepath.Clean(name)
 
-	tags := constants.TagRegex.FindAllStringSubmatch(cleaned, -1)
+	tags := TagRegex.FindAllStringSubmatch(cleaned, -1)
 
 	var foundTags []string
 	foundTag := ""
@@ -70,7 +73,7 @@ func nameCleaner(name string, stripTag bool) (string, string) {
 		}
 	}
 
-	orderedFolderRegex := constants.OrderedFolderRegex.FindStringSubmatch(cleaned)
+	orderedFolderRegex := OrderedFolderRegex.FindStringSubmatch(cleaned)
 
 	if len(orderedFolderRegex) > 0 {
 		cleaned = strings.ReplaceAll(cleaned, orderedFolderRegex[0], "")

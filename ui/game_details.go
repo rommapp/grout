@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"grout/cache"
 	"grout/internal"
+	constants2 "grout/internal/constants"
 	"grout/internal/imageutil"
 	"grout/internal/stringutil"
 	"io"
@@ -13,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	groutConstants "grout/constants"
 	"grout/romm"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -83,7 +83,7 @@ func (s *GameDetailsScreen) Draw(input GameDetailsInput) (ScreenResult[GameDetai
 	}
 
 	if result.Action == gaba.DetailActionTriggered {
-		return withCode(output, groutConstants.ExitCodeGameOptions), nil
+		return withCode(output, constants2.ExitCodeGameOptions), nil
 	}
 
 	return back(output), nil
@@ -253,7 +253,7 @@ func (s *GameDetailsScreen) fetchImageFromURL(host romm.Host, imageURL string) [
 
 	req.SetBasicAuth(host.Username, host.Password)
 
-	client := &http.Client{Timeout: groutConstants.DefaultHTTPTimeout}
+	client := &http.Client{Timeout: constants2.DefaultHTTPTimeout}
 	resp, err := client.Do(req)
 	if err != nil {
 		logger.Warn("Failed to fetch image", "url", imageURL, "error", err)

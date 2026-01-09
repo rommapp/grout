@@ -2,7 +2,7 @@ package ui
 
 import (
 	"errors"
-	"grout/constants"
+	"grout/internal/constants"
 	"grout/internal/imageutil"
 	"grout/romm"
 	"grout/version"

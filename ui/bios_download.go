@@ -3,15 +3,13 @@ package ui
 import (
 	"fmt"
 	"grout/bios"
+	"grout/cfw"
 	"grout/internal"
 	"grout/internal/fileutil"
+	"grout/romm"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"grout/cfw"
-	"grout/constants"
-	"grout/romm"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	icons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
@@ -86,8 +84,8 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 	biosFiles := bios.GetFilesForPlatform(input.Platform.FSSlug)
 
 	// Build metadata lookup by filename for enrichment (case-insensitive)
-	biosMetadataByFileName := make(map[string]constants.BIOSFile)
-	biosMetadataByRelPath := make(map[string]constants.BIOSFile)
+	biosMetadataByFileName := make(map[string]bios.File)
+	biosMetadataByRelPath := make(map[string]bios.File)
 	for _, biosFile := range biosFiles {
 		biosMetadataByFileName[strings.ToLower(biosFile.FileName)] = biosFile
 		biosMetadataByRelPath[strings.ToLower(biosFile.RelativePath)] = biosFile
@@ -100,7 +98,7 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 	// Create a BIOSFile entry for each firmware, enriching with metadata if available
 	type firmwareWithMetadata struct {
 		firmware romm.Firmware
-		metadata *constants.BIOSFile
+		metadata *bios.File
 	}
 
 	var firmwareItems []firmwareWithMetadata

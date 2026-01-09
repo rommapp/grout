@@ -3,8 +3,8 @@ package main
 import (
 	"grout/cache"
 	"grout/cfw"
-	"grout/constants"
 	"grout/internal"
+	"grout/internal/constants"
 	"grout/romm"
 	"grout/sync"
 	"grout/ui"

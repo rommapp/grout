@@ -4,13 +4,16 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"grout/constants"
 	"io"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/sonh/qs"
+)
+
+const (
+	DefaultClientTimeout = 30 * time.Second
 )
 
 type Client struct {
@@ -43,7 +46,7 @@ func NewClient(baseURL string, opts ...ClientOption) *Client {
 	c := &Client{
 		baseURL: strings.TrimSuffix(baseURL, "/"),
 		httpClient: &http.Client{
-			Timeout: constants.DefaultClientTimeout,
+			Timeout: DefaultClientTimeout,
 		},
 	}
 

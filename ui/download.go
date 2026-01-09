@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"grout/cfw"
 	"grout/cfw/muos"
-	"grout/constants"
 	"grout/internal"
 	"grout/internal/fileutil"
 	"grout/internal/imageutil"
@@ -408,7 +407,7 @@ func (s *DownloadScreen) downloadArt(artDownloads []artDownload, downloadedGames
 			req.Header.Set(k, v)
 		}
 
-		client := &http.Client{Timeout: constants.DefaultClientTimeout}
+		client := &http.Client{Timeout: romm.DefaultClientTimeout}
 		resp, err := client.Do(req)
 		if err != nil {
 			logger.Warn("Failed to download art", "game", art.GameName, "url", art.URL, "error", err)

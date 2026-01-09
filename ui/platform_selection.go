@@ -2,8 +2,8 @@ package ui
 
 import (
 	"errors"
-	"grout/constants"
 	"grout/internal"
+	"grout/internal/constants"
 	"grout/romm"
 	"sync/atomic"
 

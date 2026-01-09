@@ -3,8 +3,8 @@ package ui
 import (
 	"errors"
 	"grout/cfw"
-	"grout/constants"
 	"grout/internal"
+	"grout/internal/constants"
 	"grout/romm"
 	"sync/atomic"
 

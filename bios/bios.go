@@ -2,17 +2,48 @@ package bios
 
 import (
 	"crypto/md5"
+	"embed"
 	"encoding/hex"
 	"fmt"
 	"grout/cfw"
-	"grout/constants"
+	"grout/internal/jsonutil"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
-func SaveFile(biosFile constants.BIOSFile, platformFSSlug string, data []byte) error {
+//go:embed data
+var embeddedFiles embed.FS
+
+func mustLoadJSONMap[K comparable, V any](path string) map[K]V {
+	return jsonutil.MustLoadJSONMap[K, V](embeddedFiles, path, "")
+}
+
+var LibretroCoreToBIOS = mustLoadJSONMap[string, CoreBIOS]("data/core_requirements.json")
+var PlatformToLibretroCores = mustLoadJSONMap[string, []string]("data/platform_cores.json")
+
+// CoreBIOSSubdirectories maps Libretro core names (without _libretro suffix)
+// to their required BIOS subdirectory within the system BIOS directory.
+// Cores not in this map use the root BIOS directory.
+var CoreBIOSSubdirectories = mustLoadJSONMap[string, string]("data/core_subdirectories.json")
+
+// File represents a single BIOS/firmware file requirement
+type File struct {
+	FileName     string // e.g., "gba_bios.bin"
+	RelativePath string // e.g., "gba_bios.bin" or "psx/scph5500.bin"
+	MD5Hash      string // e.g., "a860e8c0b6d573d191e4ec7db1b1e4f6" (optional, empty string if unknown)
+	Optional     bool   // true if BIOS file is optional for the emulator to function
+}
+
+// CoreBIOS represents all BIOS requirements for a Libretro core
+type CoreBIOS struct {
+	CoreName    string // e.g., "mgba_libretro"
+	DisplayName string // e.g., "Nintendo - Game Boy Advance (mGBA)"
+	Files       []File // List of BIOS files for this core
+}
+
+func SaveFile(biosFile File, platformFSSlug string, data []byte) error {
 	filePaths := cfw.GetBIOSFilePaths(biosFile.RelativePath, platformFSSlug)
 
 	for _, filePath := range filePaths {
@@ -41,7 +72,7 @@ func VerifyFileMD5(data []byte, expectedMD5 string) (bool, string) {
 	return actualMD5 == expectedMD5, actualMD5
 }
 
-func GetFileInfo(biosFile constants.BIOSFile, platformFSSlug string) (exists bool, size int64, md5Hash string, err error) {
+func GetFileInfo(biosFile File, platformFSSlug string) (exists bool, size int64, md5Hash string, err error) {
 	filePaths := cfw.GetBIOSFilePaths(biosFile.RelativePath, platformFSSlug)
 
 	for _, filePath := range filePaths {
@@ -72,10 +103,10 @@ func GetFileInfo(biosFile constants.BIOSFile, platformFSSlug string) (exists boo
 	return false, 0, "", nil
 }
 
-func GetFilesForPlatform(platformFSSlug string) []constants.BIOSFile {
-	var biosFiles []constants.BIOSFile
+func GetFilesForPlatform(platformFSSlug string) []File {
+	var biosFiles []File
 
-	coreNames, ok := constants.PlatformToLibretroCores[platformFSSlug]
+	coreNames, ok := PlatformToLibretroCores[platformFSSlug]
 	if !ok {
 		return biosFiles
 	}
@@ -83,7 +114,7 @@ func GetFilesForPlatform(platformFSSlug string) []constants.BIOSFile {
 	seen := make(map[string]bool)
 	for _, coreName := range coreNames {
 		normalizedCoreName := strings.TrimSuffix(coreName, "_libretro")
-		coreInfo, ok := constants.LibretroCoreToBIOS[normalizedCoreName]
+		coreInfo, ok := LibretroCoreToBIOS[normalizedCoreName]
 		if !ok {
 			continue
 		}
@@ -109,7 +140,7 @@ const (
 )
 
 type FileStatus struct {
-	File        constants.BIOSFile
+	File        File
 	Status      Status
 	Exists      bool
 	Size        int64
@@ -117,7 +148,7 @@ type FileStatus struct {
 	ExpectedMD5 string
 }
 
-func CheckFileStatus(biosFile constants.BIOSFile, platformFSSlug string) FileStatus {
+func CheckFileStatus(biosFile File, platformFSSlug string) FileStatus {
 	status := FileStatus{
 		File:        biosFile,
 		ExpectedMD5: biosFile.MD5Hash,
