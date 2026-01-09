@@ -1,6 +1,6 @@
 {
   "name": "Grout",
-  "version": "v1.4.0",
+  "version": "v1.4.1",
   "type": "TOOL",
   "description": "A RomM client for NextUI, muOS, Knulli, and Spruce v4.",
   "author": "K-Wall",
@@ -22,7 +22,8 @@
     "v1.3.6": "App didn't exit on update.",
     "v1.3.8": "Fixed a boo-boo introduced on NextUI with the new font icons.",
     "v1.3.9": "Tried to be cute with pagination and lost. Fix for Grout not retrieving large ROM collections.",
-    "v1.4.0": "Spruce v4 support (thanks @pawndev!), select / deselect all and fix for input mapping regression."
+    "v1.4.0": "Spruce v4 support (thanks @pawndev!), select / deselect all and fix for input mapping regression.",
+    "v1.4.1": "New local cache for a sweet sweet performance boost"
   },
   "screenshots": [],
   "platforms": [
