@@ -393,7 +393,7 @@ func buildFSM(config *internal.Config, c cfw.CFW, platforms []romm.Platform, qui
 		// If multiple games selected, skip details and go straight to download
 		if len(gameListOutput.SelectedGames) != 1 {
 			downloadScreen := ui.NewDownloadScreen()
-			downloadOutput := downloadScreen.Execute(*config, host, gameListOutput.Platform, gameListOutput.SelectedGames, gameListOutput.AllGames, nav.SearchFilter)
+			downloadOutput := downloadScreen.Execute(*config, host, gameListOutput.Platform, gameListOutput.SelectedGames, gameListOutput.AllGames, nav.SearchFilter, 0)
 			nav.CurrentGames = downloadOutput.AllGames
 			nav.SearchFilter = downloadOutput.SearchFilter
 			triggerAutoSync()
@@ -414,23 +414,22 @@ func buildFSM(config *internal.Config, c cfw.CFW, platforms []romm.Platform, qui
 
 		return result.Value, result.ExitCode
 	}).
-		OnWithHook(gaba.ExitCodeSuccess, gameList, func(ctx *gaba.Context) error {
+		OnWithHook(constants.ExitCodeDownloadRequested, gameDetails, func(ctx *gaba.Context) error {
 			detailsOutput, _ := gaba.Get[ui.GameDetailsOutput](ctx)
 			config, _ := gaba.Get[*internal.Config](ctx)
 			host, _ := gaba.Get[romm.Host](ctx)
 			gameListOutput, _ := gaba.Get[ui.GameListOutput](ctx)
 			nav, _ := gaba.Get[*NavState](ctx)
 
-			if detailsOutput.DownloadRequested {
-				downloadScreen := ui.NewDownloadScreen()
-				downloadOutput := downloadScreen.Execute(*config, host, detailsOutput.Platform, []romm.Rom{detailsOutput.Game}, gameListOutput.AllGames, nav.SearchFilter)
-				nav.CurrentGames = downloadOutput.AllGames
-				nav.SearchFilter = downloadOutput.SearchFilter
-				triggerAutoSync()
-			}
+			downloadScreen := ui.NewDownloadScreen()
+			downloadOutput := downloadScreen.Execute(*config, host, detailsOutput.Platform, []romm.Rom{detailsOutput.Game}, gameListOutput.AllGames, nav.SearchFilter, detailsOutput.SelectedFileID)
+			nav.CurrentGames = downloadOutput.AllGames
+			nav.SearchFilter = downloadOutput.SearchFilter
+			triggerAutoSync()
 
 			return nil
 		}).
+		On(gaba.ExitCodeSuccess, gameList).
 		On(gaba.ExitCodeBack, gameList).
 		On(constants.ExitCodeGameOptions, gameOptions)
 
@@ -876,7 +875,8 @@ func buildFSM(config *internal.Config, c cfw.CFW, platforms []romm.Platform, qui
 					return nil
 				}
 
-				// Update platforms in context
+				// Apply custom platform order and update in context
+				platforms = internal.SortPlatformsByOrder(platforms, config.PlatformOrder)
 				gaba.Set(ctx, platforms)
 
 				// Re-populate cache with progress

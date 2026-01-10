@@ -134,11 +134,38 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 			}
 		}
 	} else {
-		if input.Config.DownloadedGames == "mark" {
-			for i := range displayGames {
-				if displayGames[i].IsDownloaded(*input.Config) {
-					displayGames[i].DisplayName = fmt.Sprintf("%s %s", gabaconst.Download, displayGames[i].DisplayName)
+		for i := range displayGames {
+			prefix := ""
+			game := &displayGames[i]
+
+			if game.HasNestedSingleFile {
+				// For multi-file games, check if all files are downloaded
+				allDownloaded := len(game.Files) > 0
+				anyDownloaded := false
+				for _, file := range game.Files {
+					if game.IsFileDownloaded(*input.Config, file.FileName) {
+						anyDownloaded = true
+					} else {
+						allDownloaded = false
+					}
 				}
+
+				if input.Config.DownloadedGames == "mark" {
+					if allDownloaded {
+						prefix = constants.MultipleDownloaded + " "
+					} else if anyDownloaded {
+						prefix = gabaconst.Download + " "
+					}
+				}
+				prefix += constants.MultipleFiles + " "
+			} else {
+				if input.Config.DownloadedGames == "mark" && game.IsDownloaded(*input.Config) {
+					prefix = gabaconst.Download + " "
+				}
+			}
+
+			if prefix != "" {
+				game.DisplayName = prefix + game.DisplayName
 			}
 		}
 	}

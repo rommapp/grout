@@ -210,9 +210,45 @@ func (r Rom) GetLocalPath(resolver PlatformDirResolver) string {
 }
 
 func (r Rom) IsDownloaded(resolver PlatformDirResolver) bool {
-	path := r.GetLocalPath(resolver)
-	if path == "" {
+	if r.PlatformFSSlug == "" {
 		return false
 	}
-	return fileutil.FileExists(path)
+
+	platform := Platform{
+		ID:     r.PlatformID,
+		FSSlug: r.PlatformFSSlug,
+		Name:   r.PlatformDisplayName,
+	}
+	romDirectory := resolver.GetPlatformRomDirectory(platform)
+
+	// For multi-disk games, check the m3u file
+	if r.HasMultipleFiles {
+		m3uPath := filepath.Join(romDirectory, r.FsNameNoExt+".m3u")
+		return fileutil.FileExists(m3uPath)
+	}
+
+	// Check if any of the associated files exist
+	for _, file := range r.Files {
+		filePath := filepath.Join(romDirectory, file.FileName)
+		if fileutil.FileExists(filePath) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (r Rom) IsFileDownloaded(resolver PlatformDirResolver, fileName string) bool {
+	if r.PlatformFSSlug == "" {
+		return false
+	}
+
+	platform := Platform{
+		ID:     r.PlatformID,
+		FSSlug: r.PlatformFSSlug,
+		Name:   r.PlatformDisplayName,
+	}
+	romDirectory := resolver.GetPlatformRomDirectory(platform)
+	filePath := filepath.Join(romDirectory, fileName)
+	return fileutil.FileExists(filePath)
 }

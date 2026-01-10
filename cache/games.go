@@ -102,13 +102,8 @@ func (cm *Manager) SavePlatformGames(platformID int, games []romm.Rom) error {
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec(`DELETE FROM games WHERE platform_id = ?`, platformID)
-	if err != nil {
-		return newCacheError("save", "games", GetPlatformCacheKey(platformID), err)
-	}
-
 	stmt, err := tx.Prepare(`
-		INSERT INTO games (id, platform_id, platform_fs_slug, name, fs_name, fs_name_no_ext, crc_hash, md5_hash, sha1_hash, data_json, updated_at, cached_at)
+		INSERT OR REPLACE INTO games (id, platform_id, platform_fs_slug, name, fs_name, fs_name_no_ext, crc_hash, md5_hash, sha1_hash, data_json, updated_at, cached_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`)
 	if err != nil {

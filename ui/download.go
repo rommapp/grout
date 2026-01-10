@@ -27,12 +27,13 @@ import (
 )
 
 type downloadInput struct {
-	Config        internal.Config
-	Host          romm.Host
-	Platform      romm.Platform
-	SelectedGames []romm.Rom
-	AllGames      []romm.Rom
-	SearchFilter  string
+	Config         internal.Config
+	Host           romm.Host
+	Platform       romm.Platform
+	SelectedGames  []romm.Rom
+	AllGames       []romm.Rom
+	SearchFilter   string
+	SelectedFileID int
 }
 
 type downloadOutput struct {
@@ -54,14 +55,15 @@ func NewDownloadScreen() *DownloadScreen {
 	return &DownloadScreen{}
 }
 
-func (s *DownloadScreen) Execute(config internal.Config, host romm.Host, platform romm.Platform, selectedGames []romm.Rom, allGames []romm.Rom, searchFilter string) downloadOutput {
+func (s *DownloadScreen) Execute(config internal.Config, host romm.Host, platform romm.Platform, selectedGames []romm.Rom, allGames []romm.Rom, searchFilter string, selectedFileID int) downloadOutput {
 	result, err := s.draw(downloadInput{
-		Config:        config,
-		Host:          host,
-		Platform:      platform,
-		SelectedGames: selectedGames,
-		AllGames:      allGames,
-		SearchFilter:  searchFilter,
+		Config:         config,
+		Host:           host,
+		Platform:       platform,
+		SelectedGames:  selectedGames,
+		AllGames:       allGames,
+		SelectedFileID: selectedFileID,
+		SearchFilter:   searchFilter,
 	})
 
 	if err != nil {
@@ -89,7 +91,7 @@ func (s *DownloadScreen) draw(input downloadInput) (ScreenResult[downloadOutput]
 		SearchFilter: input.SearchFilter,
 	}
 
-	downloads, artDownloads := s.buildDownloads(input.Config, input.Host, input.Platform, input.SelectedGames)
+	downloads, artDownloads := s.buildDownloads(input.Config, input.Host, input.Platform, input.SelectedGames, input.SelectedFileID)
 
 	headers := make(map[string]string)
 	headers["Authorization"] = input.Host.BasicAuthHeader()
@@ -294,7 +296,7 @@ func (s *DownloadScreen) draw(input downloadInput) (ScreenResult[downloadOutput]
 	return success(output), nil
 }
 
-func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, platform romm.Platform, games []romm.Rom) ([]gaba.Download, []artDownload) {
+func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, platform romm.Platform, games []romm.Rom, selectedFileID int) ([]gaba.Download, []artDownload) {
 	downloads := make([]gaba.Download, 0, len(games))
 	artDownloads := make([]artDownload, 0, len(games))
 
@@ -318,8 +320,18 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 			downloadLocation = filepath.Join(tmpDir, fmt.Sprintf("grout_multirom_%d.zip", g.ID))
 			sourceURL, _ = url.JoinPath(host.URL(), "/api/roms/", strconv.Itoa(g.ID), "content", g.FsName)
 		} else {
-			downloadLocation = filepath.Join(romDirectory, g.Files[0].FileName)
-			sourceURL, _ = url.JoinPath(host.URL(), "/api/roms/", strconv.Itoa(g.ID), "content", g.Files[0].FileName)
+			// Find the file to download - use selected file if specified, otherwise first file
+			fileToDownload := g.Files[0]
+			if selectedFileID > 0 {
+				for _, f := range g.Files {
+					if f.ID == selectedFileID {
+						fileToDownload = f
+						break
+					}
+				}
+			}
+			downloadLocation = filepath.Join(romDirectory, fileToDownload.FileName)
+			sourceURL, _ = url.JoinPath(host.URL(), "/api/roms/", strconv.Itoa(g.ID), "content", fileToDownload.FileName)
 		}
 
 		downloads = append(downloads, gaba.Download{

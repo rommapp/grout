@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bufio"
 	"fmt"
+	"hash/crc32"
 	"io"
 	"os"
 	"path/filepath"
@@ -183,4 +184,22 @@ func FilterHiddenDirectories(entries []os.DirEntry) []os.DirEntry {
 		}
 	}
 	return result
+}
+
+// ComputeCRC32 computes the CRC32 hash of a file and returns it as an uppercase hex string
+func ComputeCRC32(filePath string) (string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to open file: %w", err)
+	}
+	defer file.Close()
+
+	hash := crc32.NewIEEE()
+	buffer := make([]byte, DefaultBufferSize)
+
+	if _, err := io.CopyBuffer(hash, file, buffer); err != nil {
+		return "", fmt.Errorf("failed to compute hash: %w", err)
+	}
+
+	return fmt.Sprintf("%08X", hash.Sum32()), nil
 }

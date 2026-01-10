@@ -21,6 +21,7 @@ type LocalRomFile struct {
 	RomName     string
 	FSSlug      string
 	FileName    string
+	FilePath    string
 	RemoteSaves []romm.Save
 	SaveFile    *LocalSave
 }
@@ -247,6 +248,7 @@ func scanRomDirectory(fsSlug, romDir string, saveFileMap map[string]*LocalSave) 
 		rom := LocalRomFile{
 			FSSlug:   fsSlug,
 			FileName: entry.Name(),
+			FilePath: filepath.Join(romDir, entry.Name()),
 			SaveFile: saveFile,
 		}
 

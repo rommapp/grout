@@ -205,6 +205,39 @@ func lookupRomID(romFile *LocalRomFile) (int, string) {
 	return 0, ""
 }
 
+func lookupRomByHash(rc *romm.Client, romFile *LocalRomFile) (int, string) {
+	logger := gaba.GetLogger()
+
+	if romFile.FilePath == "" {
+		return 0, ""
+	}
+
+	crcHash, err := fileutil.ComputeCRC32(romFile.FilePath)
+	if err != nil {
+		logger.Debug("Failed to compute CRC32 hash", "file", romFile.FileName, "error", err)
+		return 0, ""
+	}
+
+	logger.Debug("Looking up ROM by CRC32 hash", "file", romFile.FileName, "crc", crcHash)
+
+	rom, err := rc.GetRomByHash(romm.GetRomByHashQuery{CrcHash: crcHash})
+	if err != nil {
+		logger.Debug("ROM not found by hash", "file", romFile.FileName, "crc", crcHash, "error", err)
+		return 0, ""
+	}
+
+	if rom.ID > 0 {
+		logger.Info("Found ROM by CRC32 hash",
+			"file", romFile.FileName,
+			"crc", crcHash,
+			"romID", rom.ID,
+			"romName", rom.Name)
+		return rom.ID, rom.Name
+	}
+
+	return 0, ""
+}
+
 func FindSaveSyncs(host romm.Host, config *internal.Config) ([]SaveSync, []UnmatchedSave, error) {
 	return FindSaveSyncsFromScan(host, config, ScanRoms())
 }
@@ -310,6 +343,11 @@ func FindSaveSyncsFromScan(host romm.Host, config *internal.Config, scanLocal Lo
 
 			// Look up ROM ID from the games cache
 			romID, romName := lookupRomID(romFile)
+
+			if romID == 0 && romFile.SaveFile != nil {
+				// Try to find ROM by CRC32 hash as fallback
+				romID, romName = lookupRomByHash(rc, romFile)
+			}
 
 			if romID == 0 {
 				if romFile.SaveFile != nil {
