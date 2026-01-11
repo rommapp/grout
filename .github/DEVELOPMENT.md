@@ -70,7 +70,7 @@ The codebase is laid out fairly well. It attempts to keep everything grouped by 
 
 ## Packaging
 
-The `Taskfile.yml` defines scripts for building and packaging Grout for various CFWs. All builds target ARM64 Linux
+The `taskfile.yml` defines scripts for building and packaging Grout for various CFWs. All builds target ARM64 Linux
 and use Docker for cross-compilation.
 
 ### Quick Start
@@ -156,7 +156,7 @@ build/
 
 ## Helper Tools
 
-The `Taskfile.yml` includes several utility tasks for common development workflows.
+The `taskfile.yml` includes several utility tasks for common development workflows.
 
 ### Internationalization (i18n)
 
@@ -185,9 +185,10 @@ The `i18n` task will:
 task lint
 ```
 
-This runs `go fmt`, `go vet`, and `staticcheck` across the codebase. 
+This runs `go fmt`, `go vet`, and `staticcheck` across the codebase.
 
-Requires [staticcheck](https://staticcheck.dev/) to be installed (`go install honnef.co/go/tools/cmd/staticcheck@latest`).
+Requires [staticcheck](https://staticcheck.dev/) to be installed (
+`go install honnef.co/go/tools/cmd/staticcheck@latest`).
 
 ### Media Conversion
 

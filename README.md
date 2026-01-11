@@ -35,24 +35,29 @@ A RomM Client for <a href="https://muos.dev">muOS</a>, <a href="https://knulli.o
 
 ## Installation / Updating
 
-Choose your platform and follow the installation guide:
+Choose your platform and follow the installation / updating guide:
 
-- [muOS Installation / Update](docs/INSTALL_MUOS.md)
-- [Knulli Installation / Update](docs/INSTALL_KNULLI.md)
-- [Spruce Installation / Update](docs/INSTALL_SPRUCE.md)
-- [NextUI Installation / Update](docs/INSTALL_NEXTUI.md)
+- [muOS Installation / Updating](docs/INSTALL_MUOS.md)
+- [Knulli Installation / Updating](docs/INSTALL_KNULLI.md)
+- [Spruce Installation / Updating](docs/INSTALL_SPRUCE.md)
+- [NextUI Installation / Updating](docs/INSTALL_NEXTUI.md)
 
 ---
 
-## User Guide
+## Documentation
 
-For detailed usage instructions and configuration options, see the [User Guide](docs/USER_GUIDE.md).
+| Guide                                    | Description                             |
+|------------------------------------------|-----------------------------------------|
+| [Quick Start](docs/QUICK_START.md)       | Get up and running in 5 steps           |
+| [User Guide](docs/USER_GUIDE.md)         | Complete feature documentation          |
+| [Settings Reference](docs/SETTINGS.md)   | All settings explained                  |
+| [Save Sync Guide](docs/SAVE_SYNC.md)     | Keep saves synchronized across devices  |
 
 ---
 
 ## Development
 
-Interested in contributing? Check out the [Development Guide](docs/DEVELOPMENT.md) to get started.
+Interested in contributing? Check out the [Development Guide](.github/DEVELOPMENT.md) to get started.
 
 ---
 
