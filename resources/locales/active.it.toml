@@ -438,6 +438,9 @@ other = "Accedi a RomM"
 hash = "sha1-84c29015de33e5d22422382a372caba5c58f8c01"
 other = "Nome utente"
 
+[login_skip_ssl_verify]
+other = "Salta verifica SSL"
+
 [login_validating]
 hash = "sha1-cd2c8fff39519159039f7640f974edc2db8b6ce3"
 other = "Verifica connessione..."

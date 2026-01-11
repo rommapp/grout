@@ -3,7 +3,7 @@ module grout
 go 1.24.2
 
 require (
-	github.com/BrandonKowalski/gabagool/v2 v2.6.0
+	github.com/BrandonKowalski/gabagool/v2 v2.6.1
 	github.com/UncleJunVIP/certifiable v1.2.0
 	github.com/nicksnyder/go-i18n/v2 v2.6.1
 	github.com/piglig/go-qr v0.2.6

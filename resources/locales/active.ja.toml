@@ -438,6 +438,9 @@ other = "RomMにログイン"
 hash = "sha1-84c29015de33e5d22422382a372caba5c58f8c01"
 other = "ユーザー名"
 
+[login_skip_ssl_verify]
+other = "SSL検証をスキップ"
+
 [login_validating]
 hash = "sha1-cd2c8fff39519159039f7640f974edc2db8b6ce3"
 other = "接続を検証中..."

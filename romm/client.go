@@ -2,6 +2,7 @@ package romm
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -42,6 +43,16 @@ func WithBasicAuth(username, password string) ClientOption {
 	}
 }
 
+func WithInsecureSkipVerify(skip bool) ClientOption {
+	return func(c *Client) {
+		if skip {
+			c.httpClient.Transport = &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			}
+		}
+	}
+}
+
 func NewClient(baseURL string, opts ...ClientOption) *Client {
 	c := &Client{
 		baseURL: strings.TrimSuffix(baseURL, "/"),
@@ -58,7 +69,10 @@ func NewClient(baseURL string, opts ...ClientOption) *Client {
 }
 
 func NewClientFromHost(host Host, timeout ...time.Duration) *Client {
-	opts := []ClientOption{WithBasicAuth(host.Username, host.Password)}
+	opts := []ClientOption{
+		WithBasicAuth(host.Username, host.Password),
+		WithInsecureSkipVerify(host.InsecureSkipVerify),
+	}
 	if len(timeout) > 0 {
 		opts = append(opts, WithTimeout(timeout[0]))
 	}

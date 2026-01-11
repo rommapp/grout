@@ -11,17 +11,19 @@ type Host struct {
 	RootURI     string `json:"root_uri,omitempty"`
 	Port        int    `json:"port,omitempty"`
 
-	Username string `json:"username,omitempty"`
-	Password string `json:"password,omitempty"`
+	Username           string `json:"username,omitempty"`
+	Password           string `json:"password,omitempty"`
+	InsecureSkipVerify bool   `json:"insecure_skip_verify,omitempty"`
 }
 
 func (h Host) ToLoggable() map[string]any {
 	temp := map[string]any{
-		"display_name": h.DisplayName,
-		"root_uri":     h.RootURI,
-		"port":         h.Port,
-		"username":     h.Username,
-		"password":     strings.Repeat("*", len(h.Password)),
+		"display_name":         h.DisplayName,
+		"root_uri":             h.RootURI,
+		"port":                 h.Port,
+		"username":             h.Username,
+		"password":             strings.Repeat("*", len(h.Password)),
+		"insecure_skip_verify": h.InsecureSkipVerify,
 	}
 
 	return temp

@@ -135,6 +135,21 @@ func (s *LoginScreen) draw(input loginInput) (ScreenResult[loginOutput], error) 
 				},
 			},
 		},
+		{
+			Item: gabagool.MenuItem{
+				Text: i18n.Localize(&goi18n.Message{ID: "login_skip_ssl_verify", Other: "Skip SSL Verification"}, nil),
+			},
+			Options: []gabagool.Option{
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "option_disabled", Other: "Disabled"}, nil), Value: false},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "option_enabled", Other: "Enabled"}, nil), Value: true},
+			},
+			SelectedOption: func() int {
+				if host.InsecureSkipVerify {
+					return 1
+				}
+				return 0
+			}(),
+		},
 	}
 
 	res, err := gabagool.OptionsList(
@@ -164,8 +179,9 @@ func (s *LoginScreen) draw(input loginInput) (ScreenResult[loginOutput], error) 
 			}
 			return 0
 		}(loginSettings[2].Value().(string)),
-		Username: loginSettings[3].Options[0].Value.(string),
-		Password: loginSettings[4].Options[0].Value.(string),
+		Username:           loginSettings[3].Options[0].Value.(string),
+		Password:           loginSettings[4].Options[0].Value.(string),
+		InsecureSkipVerify: loginSettings[5].Options[loginSettings[5].SelectedOption].Value.(bool),
 	}
 
 	return success(loginOutput{Host: newHost}), nil

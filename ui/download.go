@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"grout/cfw"
@@ -103,7 +104,8 @@ func (s *DownloadScreen) draw(input downloadInput) (ScreenResult[downloadOutput]
 	logger.Debug("Starting ROM download", "downloads", downloads)
 
 	res, err := gaba.DownloadManager(downloads, headers, gaba.DownloadManagerOptions{
-		AutoContinue: input.Config.DownloadArt,
+		AutoContinue:       input.Config.DownloadArt,
+		InsecureSkipVerify: input.Host.InsecureSkipVerify,
 	})
 	if err != nil {
 		logger.Error("Error downloading", "error", err)
@@ -282,7 +284,7 @@ func (s *DownloadScreen) draw(input downloadInput) (ScreenResult[downloadOutput]
 				Progress:            progress,
 			},
 			func() (interface{}, error) {
-				s.downloadArt(artDownloads, downloadedGames, headers, progress)
+				s.downloadArt(artDownloads, downloadedGames, headers, progress, input.Host.InsecureSkipVerify)
 				return nil, nil
 			},
 		)
@@ -369,7 +371,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 	return downloads, artDownloads
 }
 
-func (s *DownloadScreen) downloadArt(artDownloads []artDownload, downloadedGames []romm.Rom, headers map[string]string, progress *atomic.Float64) {
+func (s *DownloadScreen) downloadArt(artDownloads []artDownload, downloadedGames []romm.Rom, headers map[string]string, progress *atomic.Float64, insecureSkipVerify bool) {
 	logger := gaba.GetLogger()
 
 	downloadedGameNames := make(map[string]bool)
@@ -420,6 +422,11 @@ func (s *DownloadScreen) downloadArt(artDownloads []artDownload, downloadedGames
 		}
 
 		client := &http.Client{Timeout: romm.DefaultClientTimeout}
+		if insecureSkipVerify {
+			client.Transport = &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			}
+		}
 		resp, err := client.Do(req)
 		if err != nil {
 			logger.Warn("Failed to download art", "game", art.GameName, "url", art.URL, "error", err)
