@@ -72,7 +72,7 @@ The newer save (based on last modified time) determines the action:
 
 The save file is reported as "unmatched" in the sync results.
 
-> [!NOTE]
+> [!IMPORTANT]
 > The filename of the save will match the local filename of the ROM. This will allow you to have a ROM file duplicated
 > locally under two names to handle two different saves (e.g. a Nuzlocke run in Pokémon alongside a vanilla
 > playthrough).

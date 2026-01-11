@@ -90,7 +90,7 @@ to the next step. If something goes wrong, you'll get a message telling you what
 > If you're using a self-signed certificate or a certificate from an internal Certificate Authority, set
 > **SSL Certificates** to **Skip Verification** to avoid connection errors.
 
-> [!NOTE]
+> [!IMPORTANT]
 > **OIDC Users:** If your RomM instance uses OIDC authentication, you can still use Grout by setting a password for your
 > user account. Grout will support API Keys once they are available in RomM. For more details,
 > see [this GitHub issue](https://github.com/rommapp/romm/issues/1767#issuecomment-2744215262).
@@ -359,7 +359,8 @@ being overwritten.
 > Save Sync works with save files only, **NOT** save states. If you use save states with autoload, the emulator may load
 > the state instead of your synced save.
 
-For complete documentation including sync logic, per-game settings, and troubleshooting, see the **[Save Sync Guide](SAVE_SYNC.md)**.
+For complete documentation including sync logic, per-game settings, and troubleshooting, see the *
+*[Save Sync Guide](SAVE_SYNC.md)**.
 
 ---
 

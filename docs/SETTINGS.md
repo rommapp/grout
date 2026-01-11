@@ -69,7 +69,7 @@ library view.
 When enabled, selecting a game shows a detailed information screen with cover art, summary,
 metadata, and game options before downloading. When disabled, selecting a game immediately starts the download.
 
-> [!NOTE]
+> [!IMPORTANT]
 > **Kids Mode Impact:** When Kids Mode is enabled, the Game Details screen is still accessible, but the Game Options button (`Y`) is hidden.
 
 ### Downloaded Games
