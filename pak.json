@@ -1,6 +1,6 @@
 {
   "name": "Grout",
-  "version": "v1.3.1",
+  "version": "v1.4.2",
   "type": "TOOL",
   "description": "A RomM client for NextUI, muOS, Knulli, and Spruce v4.",
   "author": "K-Wall",
@@ -14,7 +14,7 @@
     "v1.2.3": "Background art downloads moved to the foreground due to inadvertent early termination.",
     "v1.2.4": "Correct check for the muOS info folder to determine the proper mnt path to use.",
     "v1.3.0": "New Year New Me",
-    "v1.3.1": "Just a test of in-app updater with beta release support",
+    "v1.3.1": "Add missing languages to settings",
     "v1.3.2": "Bug fixes and performance tweaks.",
     "v1.3.3": "Added auto updater function for muOS and Knulli plus a number of performance / organizational fixes.",
     "v1.3.4": "Fixed regression with multi-disk downloads.",
