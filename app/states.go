@@ -47,6 +47,7 @@ const (
 	saveSync                    gaba.StateName = "save_sync"
 	biosDownload                gaba.StateName = "bios_download"
 	artworkSync                 gaba.StateName = "artwork_sync"
+	orphanMatcher               gaba.StateName = "orphan_matcher"
 	updateCheck                 gaba.StateName = "update_check"
 )
 
@@ -659,6 +660,7 @@ func buildFSM(config *internal.Config, c cfw.CFW, platforms []romm.Platform, qui
 		On(gaba.ExitCodeSuccess, settings).
 		On(constants.ExitCodeRefreshCache, refreshCache).
 		On(constants.ExitCodeSyncArtwork, artworkSync).
+		On(constants.ExitCodeMatchOrphans, orphanMatcher).
 		On(gaba.ExitCodeBack, settings)
 
 	gaba.AddState(fsm, settingsPlatformMapping, func(ctx *gaba.Context) (ui.PlatformMappingOutput, gaba.ExitCode) {
@@ -943,6 +945,17 @@ func buildFSM(config *internal.Config, c cfw.CFW, platforms []romm.Platform, qui
 		host, _ := gaba.Get[romm.Host](ctx)
 
 		screen := ui.NewArtworkSyncScreen()
+		output := screen.Execute(*config, host)
+
+		return output, gaba.ExitCodeBack
+	}).
+		On(gaba.ExitCodeBack, advancedSettings)
+
+	gaba.AddState(fsm, orphanMatcher, func(ctx *gaba.Context) (ui.OrphanMatcherOutput, gaba.ExitCode) {
+		config, _ := gaba.Get[*internal.Config](ctx)
+		host, _ := gaba.Get[romm.Host](ctx)
+
+		screen := ui.NewOrphanMatcherScreen()
 		output := screen.Execute(*config, host)
 
 		return output, gaba.ExitCodeBack

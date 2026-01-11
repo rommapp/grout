@@ -22,6 +22,7 @@ type AdvancedSettingsInput struct {
 type AdvancedSettingsOutput struct {
 	RefreshCacheClicked   bool
 	SyncArtworkClicked    bool
+	MatchOrphansClicked   bool
 	LastSelectedIndex     int
 	LastVisibleStartIndex int
 }
@@ -79,6 +80,11 @@ func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (ScreenResult
 			output.SyncArtworkClicked = true
 			return withCode(output, constants.ExitCodeSyncArtwork), nil
 		}
+
+		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_match_orphans", Other: "Match Orphans By Hash"}, nil) {
+			output.MatchOrphansClicked = true
+			return withCode(output, constants.ExitCodeMatchOrphans), nil
+		}
 	}
 
 	s.applySettings(config, result.Items)
@@ -100,6 +106,10 @@ func (s *AdvancedSettingsScreen) buildMenuItems(config *internal.Config) []gaba.
 		},
 		{
 			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_refresh_cache", Other: "Refresh Cache"}, nil)},
+			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
+		},
+		{
+			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_match_orphans", Other: "Match Orphans By Hash"}, nil)},
 			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
 		},
 		{

@@ -160,7 +160,7 @@ func (cm *Manager) Clear() error {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 
-	tables := []string{"games", "game_collections", "collections", "platforms", "bios_availability"}
+	tables := []string{"games", "game_collections", "collections", "platforms", "bios_availability", "filename_mappings"}
 
 	tx, err := cm.db.Begin()
 	if err != nil {

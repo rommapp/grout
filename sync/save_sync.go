@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"errors"
 	"fmt"
 	"grout/cache"
 	"grout/internal"
@@ -13,6 +14,10 @@ import (
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
+
+// ErrOrphanRom is returned when attempting to sync a save for a ROM that isn't matched in the cache.
+// This typically happens when the local ROM filename differs from what's in RomM.
+var ErrOrphanRom = errors.New("orphan ROM")
 
 type SaveSync struct {
 	RomID    int
@@ -38,6 +43,7 @@ type SyncResult struct {
 	Action         SyncAction
 	Success        bool
 	Error          string
+	Err            error // The actual error for type checking
 	FilePath       string
 	UnmatchedSaves []UnmatchedSave
 }
@@ -89,6 +95,7 @@ func (s *SaveSync) Execute(host romm.Host, config *internal.Config) SyncResult {
 	}
 
 	if err != nil {
+		result.Err = err
 		result.Error = err.Error()
 	} else {
 		result.Success = true
@@ -101,6 +108,9 @@ func (s *SaveSync) download(host romm.Host, config *internal.Config) (string, er
 	logger := gaba.GetLogger()
 	if config == nil {
 		return "", fmt.Errorf("config is nil")
+	}
+	if s.RomID == 0 && s.Local == nil {
+		return "", ErrOrphanRom
 	}
 	rc := romm.NewClientFromHost(host, config.ApiTimeout)
 
@@ -155,6 +165,9 @@ func (s *SaveSync) upload(host romm.Host, config *internal.Config) (string, erro
 	if config == nil {
 		return "", fmt.Errorf("config is nil")
 	}
+	if s.RomID == 0 {
+		return "", ErrOrphanRom
+	}
 
 	rc := romm.NewClientFromHost(host, config.ApiTimeout)
 
@@ -191,7 +204,6 @@ func (s *SaveSync) upload(host romm.Host, config *internal.Config) (string, erro
 	return s.Local.Path, nil
 }
 
-// lookupRomID looks up a ROM ID by filename from the cache
 func lookupRomID(romFile *LocalRomFile) (int, string) {
 	logger := gaba.GetLogger()
 

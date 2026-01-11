@@ -3,6 +3,7 @@ package fileutil
 import (
 	"archive/zip"
 	"bufio"
+	"crypto/sha1"
 	"fmt"
 	"hash/crc32"
 	"io"
@@ -202,4 +203,22 @@ func ComputeCRC32(filePath string) (string, error) {
 	}
 
 	return fmt.Sprintf("%08X", hash.Sum32()), nil
+}
+
+// ComputeSHA1 computes the SHA1 hash of a file and returns it as a lowercase hex string
+func ComputeSHA1(filePath string) (string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to open file: %w", err)
+	}
+	defer file.Close()
+
+	hash := sha1.New()
+	buffer := make([]byte, DefaultBufferSize)
+
+	if _, err := io.CopyBuffer(hash, file, buffer); err != nil {
+		return "", fmt.Errorf("failed to compute hash: %w", err)
+	}
+
+	return fmt.Sprintf("%x", hash.Sum(nil)), nil
 }

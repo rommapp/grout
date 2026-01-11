@@ -140,6 +140,20 @@ games without cached artwork, and downloads cover art from RomM. Useful for pre-
 Re-sync cached data from RomM. Select which caches to refresh: Games Cache (platform and ROM data)
 or Collections Cache. Shows when each cache was last refreshed.
 
+### Match Orphans By Hash
+
+Scan your local ROM files and match any "orphan" ROMs to your RomM library using CRC32 hash lookup.
+
+An orphan ROM is a local file that isn't matched in the cache, usually because:
+- The filename differs from what's in RomM (e.g., renamed files, different naming conventions)
+- The ROM was added to your device from a source other than Grout
+- The ROM exists in RomM but wasn't included in the initial cache
+
+This feature computes the CRC32 hash of each unmatched ROM and queries RomM to find a match. Matched ROMs are added to the cache, enabling Save Sync and other features that require ROM identification.
+
+> [!CAUTION]
+> This process can be slow for large ROM collections as it reads each file to compute the hash.
+
 ### Download Timeout
 
 How long Grout waits for a single ROM to download before giving up. Useful for large files or

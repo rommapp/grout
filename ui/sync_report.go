@@ -155,6 +155,10 @@ func (s *SyncReportScreen) buildSections(results []sync.SyncResult, unmatched []
 				if errorMsg == "" {
 					errorMsg = i18n.Localize(&goi18n.Message{ID: "save_sync_unknown_error", Other: "Unknown error"}, nil)
 				}
+				// Check for orphan ROM error and provide localized message
+				if errors.Is(r.Err, sync.ErrOrphanRom) {
+					errorMsg = i18n.Localize(&goi18n.Message{ID: "save_sync_orphan_rom_error", Other: "ROM not matched. Use 'Match Orphans By Hash' in Advanced Settings"}, nil)
+				}
 				displayName := r.RomDisplayName
 				if displayName == "" {
 					displayName = r.GameName

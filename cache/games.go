@@ -3,6 +3,7 @@ package cache
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"grout/internal/stringutil"
 	"grout/romm"
 	"strconv"
@@ -488,9 +489,28 @@ func (cm *Manager) GetRomIDByFilename(fsSlug, filename string) (int, string, boo
 
 	var romID int
 	var romName string
+
+	// First, try to find in the games table (exact filename match from RomM)
 	err := cm.db.QueryRow(`
 		SELECT id, name FROM games
 		WHERE platform_fs_slug = ? AND fs_name_no_ext = ?
+	`, fsSlug, key).Scan(&romID, &romName)
+
+	if err == nil {
+		cm.stats.recordHit()
+		return romID, romName, true
+	}
+
+	if err != sql.ErrNoRows {
+		cm.stats.recordError()
+		gaba.GetLogger().Debug("ROM lookup error", "fsSlug", fsSlug, "filename", filename, "error", err)
+		return 0, "", false
+	}
+
+	// Fallback: check filename_mappings table for orphan matches
+	err = cm.db.QueryRow(`
+		SELECT rom_id, rom_name FROM filename_mappings
+		WHERE platform_fs_slug = ? AND local_filename_no_ext = ?
 	`, fsSlug, key).Scan(&romID, &romName)
 
 	if err == sql.ErrNoRows {
@@ -499,12 +519,39 @@ func (cm *Manager) GetRomIDByFilename(fsSlug, filename string) (int, string, boo
 	}
 	if err != nil {
 		cm.stats.recordError()
-		gaba.GetLogger().Debug("ROM lookup error", "fsSlug", fsSlug, "filename", filename, "error", err)
+		gaba.GetLogger().Debug("Filename mapping lookup error", "fsSlug", fsSlug, "filename", filename, "error", err)
 		return 0, "", false
 	}
 
 	cm.stats.recordHit()
 	return romID, romName, true
+}
+
+// SaveFilenameMapping saves a mapping between a local filename and a RomM ROM ID.
+// This is used when orphan ROMs are matched by hash to remember the association.
+func (cm *Manager) SaveFilenameMapping(fsSlug, localFilename string, romID int, romName string) error {
+	if cm == nil || !cm.initialized {
+		return ErrNotInitialized
+	}
+
+	logger := gaba.GetLogger()
+
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
+
+	key := stringutil.StripExtension(localFilename)
+
+	_, err := cm.db.Exec(`
+		INSERT OR REPLACE INTO filename_mappings (platform_fs_slug, local_filename_no_ext, rom_id, rom_name, matched_at)
+		VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+	`, fsSlug, key, romID, romName)
+
+	if err != nil {
+		return newCacheError("save", "filename_mapping", fmt.Sprintf("%s/%s", fsSlug, key), err)
+	}
+
+	logger.Debug("Saved filename mapping", "fsSlug", fsSlug, "localFilename", key, "romID", romID, "romName", romName)
+	return nil
 }
 
 func (cm *Manager) GetRomByHash(md5, sha1, crc string) (int, string, bool) {
@@ -552,4 +599,13 @@ func GetCachedRomIDByFilename(fsSlug, filename string) (int, string, bool) {
 		return 0, "", false
 	}
 	return cm.GetRomIDByFilename(fsSlug, filename)
+}
+
+// SaveFilenameMapping is a public wrapper to save a filename-to-ROM mapping
+func SaveFilenameMapping(fsSlug, localFilename string, romID int, romName string) error {
+	cm := GetCacheManager()
+	if cm == nil {
+		return ErrNotInitialized
+	}
+	return cm.SaveFilenameMapping(fsSlug, localFilename, romID, romName)
 }

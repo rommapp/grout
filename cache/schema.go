@@ -4,7 +4,7 @@ import (
 	"database/sql"
 )
 
-const schemaVersion = 1
+const schemaVersion = 2
 
 func createTables(db *sql.DB) error {
 	tx, err := db.Begin()
@@ -140,6 +140,28 @@ func createTables(db *sql.DB) error {
 			checked_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)
 	`)
+	if err != nil {
+		return err
+	}
+
+	// filename_mappings stores user's local filenames that differ from RomM's fs_name
+	// This enables matching orphan ROMs by hash and remembering the association
+	_, err = tx.Exec(`
+		CREATE TABLE IF NOT EXISTS filename_mappings (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			platform_fs_slug TEXT NOT NULL,
+			local_filename_no_ext TEXT NOT NULL,
+			rom_id INTEGER NOT NULL,
+			rom_name TEXT NOT NULL,
+			matched_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(platform_fs_slug, local_filename_no_ext)
+		)
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`CREATE INDEX IF NOT EXISTS idx_filename_mappings_lookup ON filename_mappings(platform_fs_slug, local_filename_no_ext)`)
 	if err != nil {
 		return err
 	}
