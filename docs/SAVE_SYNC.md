@@ -73,16 +73,23 @@ stored in RomM. This is useful when:
 ### 3. Fuzzy Title Match
 
 If both filename and hash matching fail, Grout attempts to match based on title similarity. This helps when ROM names
-differ slightly between your device and RomM (e.g., different naming conventions or region tags).
+differ slightly between your device and RomM.
 
-When a potential match is found with at least 80% similarity, Grout displays a confirmation prompt:
+**What fuzzy matching handles:**
+
+- **Accented characters** — "Pokémon Red" matches "Pokemon Red"
+- **User-added suffixes** — "Pokemon Red Nuzlocke" matches "Pokemon Red Version" (both share "Pokemon Red" as a common
+  prefix)
+- **Naming convention differences** — "Pokemon - Red Version" matches "Pokemon Red"
+
+When a potential match is found with at least **80% similarity**, Grout displays a confirmation prompt:
 
 ```
 ┌─────────────────────────────────────┐
 │  Potential Match Found              │
 │                                     │
-│  Local: "Pokemon Red (USA)"         │
-│  Match: "Pokemon - Red Version"     │
+│  Local: "Pokemon Red Nuzlocke"      │
+│  Match: "Pokémon Red Version"       │
 │  Similarity: 85%                    │
 │                                     │
 │  Is this the same game?             │
@@ -95,7 +102,7 @@ When a potential match is found with at least 80% similarity, Grout displays a c
 - Press `B` to decline
 
 **Confirmed matches are remembered** — once you confirm a fuzzy match, Grout saves the association and won't ask again
-for that ROM.
+for that ROM. This is useful for maintaining separate saves (like a Nuzlocke run alongside a regular playthrough).
 
 **Declined matches have a cooldown** — if you decline a fuzzy match, Grout won't prompt you again for 24 hours.
 
