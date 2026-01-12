@@ -15,7 +15,6 @@ import (
 
 type settingsVisibility struct {
 	saveSyncSettings atomic.Bool
-	checkUpdates     atomic.Bool
 }
 
 type SettingsInput struct {
@@ -75,7 +74,6 @@ func (s *SettingsScreen) Draw(input SettingsInput) (ScreenResult[SettingsOutput]
 
 	visibility := &settingsVisibility{}
 	visibility.saveSyncSettings.Store(config.SaveSyncMode != "off")
-	visibility.checkUpdates.Store(input.CFW != cfw.NextUI)
 
 	items := s.buildMenuItems(config, visibility)
 
@@ -213,9 +211,8 @@ func (s *SettingsScreen) buildMenuItem(settingType SettingType, config *internal
 
 	case SettingCheckUpdates:
 		return gaba.ItemWithOptions{
-			Item:        gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "update_check_for_updates", Other: "Check for Updates"}, nil)},
-			Options:     []gaba.Option{{Type: gaba.OptionTypeClickable}},
-			VisibleWhen: &visibility.checkUpdates,
+			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "update_check_for_updates", Other: "Check for Updates"}, nil)},
+			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
 		}
 
 	default:
@@ -251,6 +248,17 @@ func logLevelToIndex(level string) int {
 	case "DEBUG":
 		return 0
 	case "ERROR":
+		return 1
+	default:
+		return 0
+	}
+}
+
+func releaseChannelToIndex(releaseChannel internal.ReleaseChannel) int {
+	switch releaseChannel {
+	case internal.ReleaseChannelStable:
+		return 0
+	case internal.ReleaseChannelBeta:
 		return 1
 	default:
 		return 0

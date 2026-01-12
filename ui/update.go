@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"grout/cfw"
+	"grout/internal"
 	"grout/internal/stringutil"
 	"grout/update"
 
@@ -15,7 +16,8 @@ import (
 )
 
 type UpdateInput struct {
-	CFW cfw.CFW
+	CFW            cfw.CFW
+	ReleaseChannel internal.ReleaseChannel
 }
 
 type UpdateOutput struct {
@@ -41,7 +43,7 @@ func (s *UpdateScreen) Draw(input UpdateInput) (ScreenResult[UpdateOutput], erro
 			ShowThemeBackground: true,
 		},
 		func() (interface{}, error) {
-			updateInfo, checkErr = update.CheckForUpdate(input.CFW)
+			updateInfo, checkErr = update.CheckForUpdate(input.CFW, input.ReleaseChannel)
 			return nil, checkErr
 		},
 	)

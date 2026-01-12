@@ -148,6 +148,14 @@ func (s *AdvancedSettingsScreen) buildMenuItems(config *internal.Config) []gaba.
 			},
 			SelectedOption: logLevelToIndex(config.LogLevel),
 		},
+		{
+			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_release_channel", Other: "Release Channel"}, nil)},
+			Options: []gaba.Option{
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "release_stable", Other: "Stable"}, nil), Value: internal.ReleaseChannelStable},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "release_beta", Other: "Beta"}, nil), Value: internal.ReleaseChannelBeta},
+			},
+			SelectedOption: releaseChannelToIndex(config.ReleaseChannel),
+		},
 	}
 }
 
@@ -169,6 +177,11 @@ func (s *AdvancedSettingsScreen) applySettings(config *internal.Config, items []
 		case i18n.Localize(&goi18n.Message{ID: "settings_log_level", Other: "Log Level"}, nil):
 			if val, ok := item.Options[item.SelectedOption].Value.(string); ok {
 				config.LogLevel = val
+			}
+
+		case i18n.Localize(&goi18n.Message{ID: "settings_release_channel", Other: "Release Channel"}, nil):
+			if val, ok := item.Options[item.SelectedOption].Value.(internal.ReleaseChannel); ok {
+				config.ReleaseChannel = val
 			}
 
 		case i18n.Localize(&goi18n.Message{ID: "settings_kid_mode", Other: "Kid Mode"}, nil):

@@ -3,6 +3,7 @@ package update
 import (
 	"fmt"
 	"grout/cfw"
+	"grout/internal"
 	"grout/internal/constants"
 	"grout/version"
 	"io"
@@ -24,14 +25,14 @@ type Info struct {
 
 func GetAssetName(c cfw.CFW) string {
 	switch c {
-	case cfw.MuOS, cfw.Knulli:
+	case cfw.MuOS, cfw.Knulli, cfw.Spruce, cfw.NextUI:
 		return "grout"
 	default:
 		return ""
 	}
 }
 
-func CheckForUpdate(c cfw.CFW) (*Info, error) {
+func CheckForUpdate(c cfw.CFW, releaseChannel internal.ReleaseChannel) (*Info, error) {
 	currentVersion := version.Get().Version
 
 	if currentVersion == "dev" {
@@ -41,7 +42,7 @@ func CheckForUpdate(c cfw.CFW) (*Info, error) {
 		}, nil
 	}
 
-	release, err := FetchLatestRelease()
+	release, err := FetchLatestRelease(releaseChannel)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check for updates: %w", err)
 	}

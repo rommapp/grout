@@ -3,8 +3,11 @@ package update
 import (
 	"encoding/json"
 	"fmt"
+	"grout/internal"
 	"net/http"
 	"time"
+
+	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
 
 const (
@@ -31,8 +34,8 @@ type GitHubAsset struct {
 	ContentType        string `json:"content_type"`
 }
 
-func FetchLatestRelease() (*GitHubRelease, error) {
-	url := fmt.Sprintf("%s/repos/%s/%s/releases/latest", githubAPIURL, repoOwner, repoName)
+func FetchLatestRelease(releaseChannel internal.ReleaseChannel) (*GitHubRelease, error) {
+	url := fmt.Sprintf("%s/repos/%s/%s/releases", githubAPIURL, repoOwner, repoName)
 
 	client := &http.Client{
 		Timeout: defaultTimeout,
@@ -60,12 +63,28 @@ func FetchLatestRelease() (*GitHubRelease, error) {
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	var release GitHubRelease
-	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
+	var releases []GitHubRelease
+	if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return &release, nil
+	if len(releases) == 0 {
+		return nil, fmt.Errorf("no releases found")
+	}
+
+	if releaseChannel == internal.ReleaseChannelBeta {
+		gaba.GetLogger().Debug("latest release is: %+v", releases[0])
+		return &releases[0], nil
+	}
+
+	for _, release := range releases {
+		if !release.Prerelease && !release.Draft {
+			gaba.GetLogger().Debug("latest stable release is: %+v", release)
+			return &release, nil
+		}
+	}
+
+	return &releases[0], nil
 }
 
 func (r *GitHubRelease) FindAsset(name string) *GitHubAsset {

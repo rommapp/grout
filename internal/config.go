@@ -13,6 +13,13 @@ import (
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
 )
 
+type ReleaseChannel string
+
+const (
+	ReleaseChannelStable ReleaseChannel = "stable"
+	ReleaseChannelBeta   ReleaseChannel = "beta"
+)
+
 var kidModeEnabled atomic.Bool
 
 type Config struct {
@@ -34,6 +41,7 @@ type Config struct {
 	Language               string                      `json:"language,omitempty"`
 	CollectionView         string                      `json:"collection_view,omitempty"`
 	KidMode                bool                        `json:"kid_mode,omitempty"`
+	ReleaseChannel         ReleaseChannel              `json:"release_channel,omitempty"`
 
 	PlatformOrder []string `json:"platform_order,omitempty"`
 }
@@ -124,6 +132,10 @@ func SaveConfig(config *Config) error {
 
 	if config.SaveSyncMode == "" {
 		config.SaveSyncMode = "off"
+	}
+
+	if config.ReleaseChannel == "" {
+		config.ReleaseChannel = ReleaseChannelStable
 	}
 
 	gaba.SetRawLogLevel(config.LogLevel)

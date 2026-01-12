@@ -188,6 +188,9 @@ func getBasePath(cfw CFW) string {
 		return "/userdata"
 
 	case Spruce:
+		if basePath := os.Getenv("BASE_PATH"); basePath != "" {
+			return basePath
+		}
 		return "/mnt/SDCARD"
 	default:
 		return ""
