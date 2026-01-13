@@ -289,8 +289,8 @@ appropriate directory on your device. Press `Y` to cancel the download.
 3. **Artwork is downloaded** – If "Download Art" is enabled in Settings, Grout downloads box art for each game to your
    artwork directory after the ROMs finish.
 
-4. **Zipped files are extracted automatically** – If "Zipped Downloads" is set to "Uncompress" in Settings, Grout
-   will extract the files to the configured ROM directory and then delete the zip file.
+4. **Archived files are extracted automatically** – If "Archived Downloads" is set to "Uncompress" in Settings, Grout
+   will extract zip and 7z files to the configured ROM directory and then delete the archive.
 
 If a download fails, Grout will show you which games had problems and clean up any leftover cruft.
 

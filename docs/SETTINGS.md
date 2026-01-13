@@ -85,12 +85,12 @@ Controls how already-downloaded games appear in game lists:
 When enabled, Grout downloads box art for games after downloading the ROMs. The art goes into your
 artwork directory so your frontend can display it.
 
-### Zipped Downloads
+### Archived Downloads
 
-Controls what happens when downloading zipped ROM files:
+Controls what happens when downloading archived ROM files (zip and 7z):
 
-- **Uncompress** - Grout automatically extracts zipped ROMs after downloading. The zip file is deleted after extraction.
-- **Do Nothing** - Keep the downloaded zip file as-is without extracting.
+- **Uncompress** - Grout automatically extracts archived ROMs after downloading. The archive is deleted after extraction.
+- **Do Nothing** - Keep the downloaded archive as-is without extracting.
 
 ### Language
 
