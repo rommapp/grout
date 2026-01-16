@@ -16,6 +16,98 @@ tasks:
       - cd .. && docker buildx build --platform=linux/arm64 --build-arg USE_LOCAL_GABAGOOL=true --build-arg GITHUB_ACTIONS=false -f grout/Dockerfile -t retro-console-arm64 .
     silent: true
 
+  build-miyoo:
+    desc: Build for ARM32 (Miyoo Mini Plus)
+    cmds:
+      - echo "Building for Miyoo Mini Plus (ARM32 Cortex-A7)..."
+      - docker buildx build --platform=linux/arm/v7 --build-arg GITHUB_ACTIONS=false -t grout-miyoo-arm32 -f Dockerfile.miyoo .
+    silent: true
+
+  extract-miyoo:
+    desc: Extract Miyoo binary from Docker image
+    cmds:
+      - mkdir -p build-miyoo
+      - mkdir -p build-miyoo/libs
+      - docker rm extract-miyoo || true
+      - docker create --name extract-miyoo grout-miyoo-arm32
+      - docker cp extract-miyoo:/build/grout build-miyoo/grout
+      - echo "Binary extracted to build-miyoo/grout"
+      - echo "NOTE: You must manually add steward-fu's SDL2 libraries to build-miyoo/libs/"
+      - echo "  Required: libSDL2-2.0.so.0, libEGL.so, libGLESv2.so, libjson-c.so.5"
+      - echo "  From: https://github.com/steward-fu/sdl2/tree/master/prebuilt"
+    silent: true
+
+  package-miyoo:
+    desc: Package for Miyoo Mini Plus
+    cmds:
+      - rm -rf build-miyoo/Grout || true
+      - mkdir -p build-miyoo/Grout/libs
+      - cp build-miyoo/grout build-miyoo/Grout/
+      - cp scripts/Miyoo/launch.sh build-miyoo/Grout/
+      - chmod +x build-miyoo/Grout/launch.sh
+      - cp README.md LICENSE build-miyoo/Grout/ || true
+      - echo "Package created at build-miyoo/Grout/"
+      - echo "NOTE: Add steward-fu's SDL2 libs to build-miyoo/Grout/libs/ before deploying"
+    silent: true
+
+  build-miyoo-full:
+    desc: Build for Miyoo Mini Plus with complete SDL2 toolchain (slow but self-contained)
+    cmds:
+      - echo "Building for Miyoo Mini Plus with full SDL2 toolchain..."
+      - echo "This will take a while (downloads toolchain, builds SDL2 + deps from source)"
+      - docker build --platform=linux/amd64 --build-arg GITHUB_ACTIONS=false -t grout-miyoo-full -f Dockerfile.miyoo-full .
+    silent: true
+
+  extract-miyoo-full:
+    desc: Extract Miyoo binary and all SDL2 libraries from full build
+    cmds:
+      - rm -rf build-miyoo || true
+      - mkdir -p build-miyoo/libs
+      - docker rm extract-miyoo-full || true
+      - docker create --name extract-miyoo-full grout-miyoo-full
+      - docker cp extract-miyoo-full:/output/grout build-miyoo/grout
+      - docker cp extract-miyoo-full:/output/lib/. build-miyoo/libs/
+      - docker rm extract-miyoo-full
+      - echo "=== Extracted files ==="
+      - ls -la build-miyoo/
+      - ls -la build-miyoo/libs/
+    silent: true
+
+  package-miyoo-full:
+    desc: Package complete Miyoo Mini Plus build with all libraries
+    cmds:
+      # Use grout-pkg to avoid case-insensitivity conflict with grout binary on macOS
+      - rm -rf build-miyoo/grout-pkg || true
+      - mkdir -p build-miyoo/grout-pkg/libs
+      - cp build-miyoo/grout build-miyoo/grout-pkg/
+      - cp scripts/Miyoo/launch.sh build-miyoo/grout-pkg/
+      - chmod +x build-miyoo/grout-pkg/launch.sh
+      - chmod +x build-miyoo/grout-pkg/grout
+      - cp README.md LICENSE build-miyoo/grout-pkg/ || true
+      - cp build-miyoo/libs/libSDL2-2.0.so.0* build-miyoo/grout-pkg/libs/ || true
+      - cp build-miyoo/libs/libSDL2_image* build-miyoo/grout-pkg/libs/ || true
+      - cp build-miyoo/libs/libSDL2_ttf* build-miyoo/grout-pkg/libs/ || true
+      - cp build-miyoo/libs/libSDL2_gfx* build-miyoo/grout-pkg/libs/ || true
+      - cp build-miyoo/libs/libEGL.so build-miyoo/grout-pkg/libs/ || true
+      - cp build-miyoo/libs/libGLESv2.so build-miyoo/grout-pkg/libs/ || true
+      - cp build-miyoo/libs/libmi_*.so build-miyoo/grout-pkg/libs/ || true
+      - cp build-miyoo/libs/libshmvar.so build-miyoo/grout-pkg/libs/ || true
+      - cp build-miyoo/libs/libssgfx.so build-miyoo/grout-pkg/libs/ || true
+      - echo "=== Package contents ==="
+      - ls -la build-miyoo/grout-pkg/
+      - ls -la build-miyoo/grout-pkg/libs/
+      - cd build-miyoo && zip -r Grout-MiyooMiniPlus.zip grout-pkg
+      - echo "Package created: build-miyoo/Grout-MiyooMiniPlus.zip"
+      - echo "NOTE: Extract and rename 'grout-pkg' folder to 'Grout' on device"
+    silent: true
+
+  miyoo-full:
+    desc: Complete Miyoo Mini Plus build pipeline (build + extract + package)
+    cmds:
+      - task: build-miyoo-full
+      - task: extract-miyoo-full
+      - task: package-miyoo-full
+
   all:
     desc: Build and package for all platforms
     cmds:
