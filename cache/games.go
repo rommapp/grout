@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"grout/cfw"
 	"grout/internal/stringutil"
 	"grout/romm"
 	"strconv"
@@ -485,7 +486,19 @@ func (cm *Manager) GetGamesForPlatform(fsSlug string) ([]romm.Rom, error) {
 	cm.mu.RLock()
 	defer cm.mu.RUnlock()
 
-	rows, err := cm.db.Query(`SELECT id, name, data_json FROM games WHERE platform_fs_slug = ?`, fsSlug)
+	// Check all aliased platforms (e.g., sfam/snes, famicom/nes)
+	aliases := cfw.GetPlatformAliases(fsSlug)
+
+	// Build query with IN clause for all aliases
+	placeholders := make([]string, len(aliases))
+	args := make([]any, len(aliases))
+	for i, slug := range aliases {
+		placeholders[i] = "?"
+		args[i] = slug
+	}
+
+	query := `SELECT id, name, data_json FROM games WHERE platform_fs_slug IN (` + strings.Join(placeholders, ",") + `)`
+	rows, err := cm.db.Query(query, args...)
 	if err != nil {
 		cm.stats.recordError()
 		return nil, newCacheError("get", "games", fsSlug, err)
@@ -533,42 +546,48 @@ func (cm *Manager) GetRomIDByFilename(fsSlug, filename string) (int, string, boo
 
 	key := stringutil.StripExtension(filename)
 
+	aliases := cfw.GetPlatformAliases(fsSlug)
+
 	var romID int
 	var romName string
 
-	err := cm.db.QueryRow(`
-		SELECT id, name FROM games
-		WHERE platform_fs_slug = ? AND fs_name_no_ext = ?
-	`, fsSlug, key).Scan(&romID, &romName)
+	for _, slug := range aliases {
+		err := cm.db.QueryRow(`
+			SELECT id, name FROM games
+			WHERE platform_fs_slug = ? AND fs_name_no_ext = ?
+		`, slug, key).Scan(&romID, &romName)
 
-	if err == nil {
-		cm.stats.recordHit()
-		return romID, romName, true
+		if err == nil {
+			cm.stats.recordHit()
+			return romID, romName, true
+		}
+
+		if err != sql.ErrNoRows {
+			cm.stats.recordError()
+			gaba.GetLogger().Debug("ROM lookup error", "fsSlug", slug, "filename", filename, "error", err)
+		}
 	}
 
-	if err != sql.ErrNoRows {
-		cm.stats.recordError()
-		gaba.GetLogger().Debug("ROM lookup error", "fsSlug", fsSlug, "filename", filename, "error", err)
-		return 0, "", false
+	for _, slug := range aliases {
+		err := cm.db.QueryRow(`
+			SELECT rom_id, rom_name FROM filename_mappings
+			WHERE platform_fs_slug = ? AND local_filename_no_ext = ?
+		`, slug, key).Scan(&romID, &romName)
+
+		if err == nil {
+			cm.stats.recordHit()
+			return romID, romName, true
+		}
+
+		if err != sql.ErrNoRows {
+			cm.stats.recordError()
+			gaba.GetLogger().Debug("Filename mapping lookup error", "fsSlug", slug, "filename", filename, "error", err)
+		}
 	}
 
-	err = cm.db.QueryRow(`
-		SELECT rom_id, rom_name FROM filename_mappings
-		WHERE platform_fs_slug = ? AND local_filename_no_ext = ?
-	`, fsSlug, key).Scan(&romID, &romName)
-
-	if err == sql.ErrNoRows {
-		cm.stats.recordMiss()
-		return 0, "", false
-	}
-	if err != nil {
-		cm.stats.recordError()
-		gaba.GetLogger().Debug("Filename mapping lookup error", "fsSlug", fsSlug, "filename", filename, "error", err)
-		return 0, "", false
-	}
-
-	cm.stats.recordHit()
-	return romID, romName, true
+	// No match found in any aliased platform
+	cm.stats.recordMiss()
+	return 0, "", false
 }
 
 // SaveFilenameMapping saves a mapping between a local filename and a RomM ROM ID.

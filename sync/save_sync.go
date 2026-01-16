@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"grout/cache"
+	"grout/cfw"
 	"grout/internal"
 	"grout/internal/fileutil"
 	"grout/internal/stringutil"
@@ -425,9 +426,15 @@ func FindSaveSyncsFromScan(host romm.Host, config *internal.Config, scanLocal Lo
 	var wg gosync.WaitGroup
 
 	for fsSlug := range scanLocal {
-		platformID, ok := fsSlugToPlatformID[fsSlug]
-		if !ok {
-			logger.Debug("FindSaveSyncs: No platform ID for fsSlug", "fsSlug", fsSlug)
+		var platformID int
+		for _, alias := range cfw.GetPlatformAliases(fsSlug) {
+			if id, ok := fsSlugToPlatformID[alias]; ok {
+				platformID = id
+				break
+			}
+		}
+		if platformID == 0 {
+			logger.Debug("FindSaveSyncs: No platform ID for fsSlug or aliases", "fsSlug", fsSlug)
 			continue
 		}
 

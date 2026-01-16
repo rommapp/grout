@@ -18,6 +18,12 @@ const (
 	Spruce CFW = "SPRUCE"
 )
 
+const (
+	MuOSSD1             = "/mnt/mmc"
+	MuOSSD2             = "/mnt/sdcard"
+	MuOSRomsFolderUnion = "/mnt/union/ROMS"
+)
+
 var (
 	NextUIPlatforms       = mustLoadJSONMap[string, []string]("nextui/platforms.json")
 	NextUISaveDirectories = mustLoadJSONMap[string, []string]("nextui/save_directories.json")
@@ -32,9 +38,96 @@ var (
 	KnulliPlatforms = mustLoadJSONMap[string, []string]("knulli/platforms.json")
 )
 
-const MuOSSD1 = "/mnt/mmc"
-const MuOSSD2 = "/mnt/sdcard"
-const MuOSRomsFolderUnion = "/mnt/union/ROMS"
+// platformAliasMap is computed from platform mappings - slugs that map to
+// overlapping local folders are considered aliases (e.g., sfam/snes both map to "snes")
+var platformAliasMap = buildPlatformAliasMap()
+
+func buildPlatformAliasMap() map[string][]string {
+	// Combine all platform maps to find aliases across all CFWs
+	allMaps := []map[string][]string{
+		KnulliPlatforms,
+		MuOSPlatforms,
+		NextUIPlatforms,
+		SprucePlatforms,
+	}
+
+	// Build reverse map: primary folder -> list of RomM slugs that use it as primary
+	// Only use the FIRST folder in each list (the primary/default folder)
+	// This avoids false aliases like arcade/neogeoaes which share "neogeo" as a secondary folder
+	primaryFolderToSlugs := make(map[string]map[string]bool)
+	for _, platformMap := range allMaps {
+		for slug, folders := range platformMap {
+			if len(folders) == 0 {
+				continue
+			}
+			// Use only the primary (first) folder
+			primary := strings.ToLower(folders[0])
+			if primaryFolderToSlugs[primary] == nil {
+				primaryFolderToSlugs[primary] = make(map[string]bool)
+			}
+			primaryFolderToSlugs[primary][slug] = true
+		}
+	}
+
+	// Find slug groups that share the same primary folder using union-find
+	parent := make(map[string]string)
+	var find func(s string) string
+	find = func(s string) string {
+		if parent[s] == "" {
+			parent[s] = s
+		}
+		if parent[s] != s {
+			parent[s] = find(parent[s])
+		}
+		return parent[s]
+	}
+	union := func(a, b string) {
+		pa, pb := find(a), find(b)
+		if pa != pb {
+			parent[pa] = pb
+		}
+	}
+
+	// Union slugs that share the same primary folder
+	for _, slugs := range primaryFolderToSlugs {
+		var slugList []string
+		for slug := range slugs {
+			slugList = append(slugList, slug)
+		}
+		for i := 1; i < len(slugList); i++ {
+			union(slugList[0], slugList[i])
+		}
+	}
+
+	// Group slugs by their root parent
+	groups := make(map[string][]string)
+	for slug := range parent {
+		root := find(slug)
+		groups[root] = append(groups[root], slug)
+	}
+
+	// Build final alias map (only for groups with more than one slug)
+	result := make(map[string][]string)
+	for _, group := range groups {
+		if len(group) > 1 {
+			for _, slug := range group {
+				result[slug] = group
+			}
+		}
+	}
+
+	return result
+}
+
+// GetPlatformAliases returns all equivalent platform slugs for the given slug.
+// Aliases are RomM slugs that map to overlapping local folders across CFWs.
+// Returns a slice containing at least the input slug itself.
+func GetPlatformAliases(fsSlug string) []string {
+	if aliases, ok := platformAliasMap[fsSlug]; ok {
+		return aliases
+	}
+	return []string{fsSlug}
+}
 
 func GetCFW() CFW {
 	cfwEnv := strings.ToUpper(os.Getenv("CFW"))
@@ -186,9 +279,15 @@ func getBasePath(cfw CFW) string {
 		return sd1
 
 	case NextUI:
+		if basePath := os.Getenv("BASE_PATH"); basePath != "" {
+			return basePath
+		}
 		return "/mnt/SDCARD"
 
 	case Knulli:
+		if basePath := os.Getenv("BASE_PATH"); basePath != "" {
+			return basePath
+		}
 		return "/userdata"
 
 	case Spruce:
