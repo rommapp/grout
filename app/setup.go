@@ -86,6 +86,7 @@ func setup() SetupResult {
 
 	if isFirstLaunch {
 		logger.Debug("First launch detected, showing language selection")
+		cfw.FirstLaunchSetup()
 		languageScreen := ui.NewLanguageSelectionScreen()
 		selectedLanguage, langErr := languageScreen.Draw()
 		if langErr != nil {

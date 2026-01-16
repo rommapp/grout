@@ -71,7 +71,7 @@ tasks:
     cmds:
       - rm -rf build/Knulli || true
       - mkdir -p build/Knulli/Grout/lib
-      - cp build/grout scripts/Knulli/Grout.sh README.md LICENSE build/Knulli/Grout
+      - cp build/grout scripts/Knulli/Grout.sh scripts/Knulli/logo.png README.md LICENSE build/Knulli/Grout
       - cp -R build/lib/* build/Knulli/Grout/lib/
     silent: true
 
