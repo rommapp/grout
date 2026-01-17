@@ -15,7 +15,7 @@ Grout attempts to be consistent with its controls. Here's a quick reference:
 | `Start`      | Confirm / Save settings                   |
 | `Select`     | Toggle list mode (multi-select, reorder)  |
 | `L1` / `R1`  | Shoulder buttons (used in button combos)  |
-| `Menu`       | Help menu (used in button combos)         |
+| `Menu`       | Help menu (also used in button combos)    |
 | `Up/Down`    | Navigate lists                            |
 | `Left/Right` | Cycle options / Jump pages in list        |
 
@@ -25,6 +25,7 @@ Grout attempts to be consistent with its controls. Here's a quick reference:
 
 - [First Launch and Login](#first-launch-and-login)
 - [Platform Directory Mapping](#platform-directory-mapping)
+- [Background Cache Sync](#background-cache-sync)
 - [Main Menu - Platform Selection](#main-menu--platform-selection)
 - [Collections](#collections)
 - [Game List](#game-list)
@@ -118,6 +119,29 @@ Use left/right to cycle through the options for each platform. When you're happy
 save. Grout will create any new directories you selected.
 
 You can change these mappings later from [Settings](SETTINGS.md).
+
+---
+
+## Background Cache Sync
+
+Grout maintains a local cache of your RomM library data (platforms, games, and collections) to provide a fast,
+responsive browsing experience. This cache syncs automatically in the background each time you launch Grout.
+
+**How it works:**
+
+- On startup, Grout begins syncing in the background while you can immediately start browsing
+- A sync icon appears in the status bar during the sync process
+- Grout uses incremental updates, only fetching data that has changed since your last session
+- When complete, the sync icon updates to indicate success
+
+**First launch:**
+
+On your very first launch (after platform mapping), Grout builds the initial cache. This may take a moment
+depending on the size of your library.
+
+> [!TIP]
+> If you need to completely rebuild the cache from scratch, use **Rebuild Cache** in
+> [Advanced Settings](SETTINGS.md#rebuild-cache).
 
 ---
 

@@ -135,10 +135,15 @@ This sub-menu contains advanced configuration and system settings.
 Pre-cache artwork for all games across all mapped platforms. Grout scans your platforms, identifies
 games without cached artwork, and downloads cover art from RomM. Useful for pre-caching after adding new games.
 
-### Refresh Cache
+### Rebuild Cache
 
-Re-sync cached data from RomM. Select which caches to refresh: Games Cache (platform and ROM data)
-or Collections Cache. Shows when each cache was last refreshed.
+Completely rebuilds the local cache from scratch. This deletes the SQLite database and re-downloads all platform
+and game data from RomM. Use this if you're experiencing cache issues or want a clean slate.
+
+> [!NOTE]
+> Under normal operation, you shouldn't need to use this. Grout automatically syncs the cache in the background
+> each time you launch the app, using incremental updates to only fetch data that has changed since the last sync.
+> A sync icon appears in the status bar during this process.
 
 ### Download Timeout
 
@@ -164,7 +169,11 @@ Hides some of the more advanced settings for a simplified experience. When enabl
 
 ### Log Level
 
-Set to Debug if you're troubleshooting issues and want detailed logs. Otherwise, Error is fine.
+Controls the verbosity of Grout's log output:
+
+- **Debug** - Maximum detail, useful for troubleshooting issues
+- **Info** - Standard logging with sync completion summaries and key events
+- **Error** - Only log errors
 
 ---
 

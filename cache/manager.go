@@ -104,7 +104,7 @@ func newCacheManager(host romm.Host, config Config) (*Manager, error) {
 		stats:       &CacheStats{},
 	}
 
-	logger.Info("Cache manager initialized", "path", dbPath)
+	logger.Debug("Cache manager initialized", "path", dbPath)
 	return cm, nil
 }
 
