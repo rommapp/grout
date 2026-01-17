@@ -514,7 +514,7 @@ other = "Mappatura Directory ROM"
 hash = "sha1-4bbb632f02fd69807705c0179999c17d35c93b0f"
 other = "Collezioni"
 
-[refresh_cache_title]
+[rebuild_cache_title]
 hash = "sha1-820f6b0deff7fdc081825ab624ce289175235630"
 other = "Aggiorna Cache"
 
@@ -698,7 +698,7 @@ other = "Español"
 hash = "sha1-3831d4e3e5ace348ba6c68e683f7605e4e030a9f"
 other = "Livello Log"
 
-[settings_refresh_cache]
+[settings_rebuild_cache]
 hash = "sha1-820f6b0deff7fdc081825ab624ce289175235630"
 other = "Aggiorna cache"
 

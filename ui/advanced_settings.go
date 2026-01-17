@@ -20,7 +20,7 @@ type AdvancedSettingsInput struct {
 }
 
 type AdvancedSettingsOutput struct {
-	RefreshCacheClicked   bool
+	RebuildCacheClicked   bool
 	SyncArtworkClicked    bool
 	LastSelectedIndex     int
 	LastVisibleStartIndex int
@@ -70,9 +70,9 @@ func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (ScreenResult
 	if result.Action == gaba.ListActionSelected {
 		selectedText := items[result.Selected].Item.Text
 
-		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_refresh_cache", Other: "Refresh Cache"}, nil) {
-			output.RefreshCacheClicked = true
-			return withCode(output, constants.ExitCodeRefreshCache), nil
+		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_rebuild_cache", Other: "Rebuild Cache"}, nil) {
+			output.RebuildCacheClicked = true
+			return withCode(output, constants.ExitCodeRebuildCache), nil
 		}
 
 		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_sync_artwork", Other: "Preload Artwork"}, nil) {
@@ -99,7 +99,7 @@ func (s *AdvancedSettingsScreen) buildMenuItems(config *internal.Config) []gaba.
 			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
 		},
 		{
-			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_refresh_cache", Other: "Refresh Cache"}, nil)},
+			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_rebuild_cache", Other: "Rebuild Cache"}, nil)},
 			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
 		},
 		{
