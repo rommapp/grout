@@ -391,6 +391,10 @@ hash = "sha1-bd604d99e75e45d38bc7ac8fc714cde0097d901f"
 other = "Debug"
 
 [log_level_error]
+hash = "sha1-abc123"
+other = "Error"
+
+[log_level_info]
 hash = "sha1-7f2f6a15cf8da2b27e5a4af47b58e7ad71c0b3d9"
 other = "Erro"
 

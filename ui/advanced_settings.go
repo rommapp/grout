@@ -152,6 +152,7 @@ func (s *AdvancedSettingsScreen) buildMenuItems(config *internal.Config) []gaba.
 			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_log_level", Other: "Log Level"}, nil)},
 			Options: []gaba.Option{
 				{DisplayName: i18n.Localize(&goi18n.Message{ID: "log_level_debug", Other: "Debug"}, nil), Value: "DEBUG"},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "log_level_info", Other: "Info"}, nil), Value: "INFO"},
 				{DisplayName: i18n.Localize(&goi18n.Message{ID: "log_level_error", Other: "Error"}, nil), Value: "ERROR"},
 			},
 			SelectedOption: logLevelToIndex(config.LogLevel),
