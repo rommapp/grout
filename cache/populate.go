@@ -38,25 +38,34 @@ func (cm *Manager) populateCache(platforms []romm.Platform, progress *atomic.Flo
 		if lastRefresh, err := cm.GetLastRefreshTime(MetaKeyGamesRefreshedAt); err == nil {
 			updatedAfter = lastRefresh.Format(time.RFC3339)
 			logger.Debug("Using incremental cache update", "updated_after", updatedAfter)
+		}
 
-			// Fetch only updated platforms
+		// Fetch only updated platforms if we have a previous refresh time
+		if platformsRefresh, err := cm.GetLastRefreshTime(MetaKeyPlatformsRefreshedAt); err == nil {
 			client := romm.NewClientFromHost(cm.host, cm.config.GetApiTimeout())
-			updatedPlatforms, err := client.GetPlatforms(romm.GetPlatformsQuery{UpdatedAfter: updatedAfter})
+			updatedPlatforms, err := client.GetPlatforms(romm.GetPlatformsQuery{UpdatedAfter: platformsRefresh.Format(time.RFC3339)})
 			if err != nil {
 				logger.Error("Failed to fetch updated platforms", "error", err)
-			} else if len(updatedPlatforms) > 0 {
-				if err := cm.SavePlatforms(updatedPlatforms); err != nil {
-					logger.Error("Failed to save updated platforms", "error", err)
-				} else {
-					logger.Debug("Saved updated platforms", "count", len(updatedPlatforms))
+			} else {
+				if len(updatedPlatforms) > 0 {
+					if err := cm.SavePlatforms(updatedPlatforms); err != nil {
+						logger.Error("Failed to save updated platforms", "error", err)
+					} else {
+						logger.Debug("Saved updated platforms", "count", len(updatedPlatforms))
+					}
 				}
+				cm.RecordRefreshTime(MetaKeyPlatformsRefreshedAt)
 			}
+		} else {
+			// No previous platforms refresh time - record it now for future incremental syncs
+			cm.RecordRefreshTime(MetaKeyPlatformsRefreshedAt)
 		}
 	} else {
 		// Save all platforms on first run / empty cache
 		if err := cm.SavePlatforms(platforms); err != nil {
 			return stats, err
 		}
+		cm.RecordRefreshTime(MetaKeyPlatformsRefreshedAt)
 	}
 
 	totalExpectedGames := int64(0)
@@ -199,6 +208,17 @@ func (cm *Manager) fetchAndCacheCollectionsWithProgress(progress *atomic.Float64
 
 	client := romm.NewClientFromHost(cm.host, cm.config.GetApiTimeout())
 
+	var updatedAfter string
+	if lastRefresh, err := cm.GetLastRefreshTime(MetaKeyCollectionsRefreshedAt); err == nil {
+		updatedAfter = lastRefresh.Format(time.RFC3339)
+		logger.Debug("Using incremental collection update", "updated_after", updatedAfter)
+	}
+
+	var query romm.GetCollectionsQuery
+	if updatedAfter != "" {
+		query = romm.GetCollectionsQuery{UpdatedAfter: updatedAfter}
+	}
+
 	var allCollections []romm.Collection
 	var mu sync.Mutex
 	var wg sync.WaitGroup
@@ -206,7 +226,7 @@ func (cm *Manager) fetchAndCacheCollectionsWithProgress(progress *atomic.Float64
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		collections, err := client.GetCollections()
+		collections, err := client.GetCollections(query)
 		if err != nil {
 			logger.Error("Failed to fetch regular collections", "error", err)
 			return
@@ -219,7 +239,7 @@ func (cm *Manager) fetchAndCacheCollectionsWithProgress(progress *atomic.Float64
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		collections, err := client.GetSmartCollections()
+		collections, err := client.GetSmartCollections(query)
 		if err != nil {
 			logger.Error("Failed to fetch smart collections", "error", err)
 			return

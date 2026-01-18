@@ -52,9 +52,23 @@ func (v VirtualCollectionsQuery) Valid() bool {
 	return v.Type != ""
 }
 
-func (c *Client) GetCollections() ([]Collection, error) {
+type GetCollectionsQuery struct {
+	UpdatedAfter string `qs:"updated_after,omitempty"`
+}
+
+func (q GetCollectionsQuery) Valid() bool {
+	return q.UpdatedAfter != ""
+}
+
+func (c *Client) GetCollections(query ...GetCollectionsQuery) ([]Collection, error) {
 	var collections []Collection
-	err := c.doRequest("GET", endpointCollections, nil, nil, &collections)
+
+	var q GetCollectionsQuery
+	if len(query) > 0 {
+		q = query[0]
+	}
+
+	err := c.doRequest("GET", endpointCollections, q, nil, &collections)
 	return collections, err
 }
 
@@ -65,9 +79,15 @@ func (c *Client) GetCollection(id int) (Collection, error) {
 	return collection, err
 }
 
-func (c *Client) GetSmartCollections() ([]Collection, error) {
+func (c *Client) GetSmartCollections(query ...GetCollectionsQuery) ([]Collection, error) {
 	var collections []Collection
-	err := c.doRequest("GET", endpointSmartCollections, nil, nil, &collections)
+
+	var q GetCollectionsQuery
+	if len(query) > 0 {
+		q = query[0]
+	}
+
+	err := c.doRequest("GET", endpointSmartCollections, q, nil, &collections)
 	return collections, err
 }
 

@@ -251,6 +251,7 @@ func (cm *Manager) HasCollections() bool {
 }
 
 const (
+	MetaKeyPlatformsRefreshedAt   = "platforms_refreshed_at"
 	MetaKeyGamesRefreshedAt       = "games_refreshed_at"
 	MetaKeyCollectionsRefreshedAt = "collections_refreshed_at"
 )
@@ -307,7 +308,7 @@ func (cm *Manager) RecordRefreshTime(key string) error {
 func (cm *Manager) GetAllRefreshTimes() map[string]time.Time {
 	result := make(map[string]time.Time)
 
-	keys := []string{MetaKeyGamesRefreshedAt, MetaKeyCollectionsRefreshedAt}
+	keys := []string{MetaKeyPlatformsRefreshedAt, MetaKeyGamesRefreshedAt, MetaKeyCollectionsRefreshedAt}
 	for _, key := range keys {
 		if t, err := cm.GetLastRefreshTime(key); err == nil {
 			result[key] = t
