@@ -39,16 +39,24 @@ func (s *ArtworkSyncScreen) Execute(config internal.Config, host romm.Host) Artw
 func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 	logger := gaba.GetLogger()
 
-	client := romm.NewClientFromHost(input.Host, input.Config.ApiTimeout)
-	platforms, err := client.GetPlatforms()
-	if err != nil {
-		logger.Error("Failed to fetch platforms", "error", err)
-		gaba.ConfirmationMessage(
-			fmt.Sprintf("Failed to fetch platforms: %v", err),
-			ContinueFooter(),
-			gaba.MessageOptions{},
-		)
-		return
+	var platforms []romm.Platform
+	var err error
+
+	if cm := cache.GetCacheManager(); cm != nil {
+		platforms, err = cm.GetPlatforms()
+	}
+	if len(platforms) == 0 {
+		client := romm.NewClientFromHost(input.Host, input.Config.ApiTimeout)
+		platforms, err = client.GetPlatforms()
+		if err != nil {
+			logger.Error("Failed to fetch platforms", "error", err)
+			gaba.ConfirmationMessage(
+				fmt.Sprintf("Failed to fetch platforms: %v", err),
+				ContinueFooter(),
+				gaba.MessageOptions{},
+			)
+			return
+		}
 	}
 	romm.DisambiguatePlatformNames(platforms)
 

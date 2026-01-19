@@ -3,6 +3,7 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"grout/cache"
 	"grout/cfw"
 	"grout/internal"
 	"grout/internal/fileutil"
@@ -94,6 +95,13 @@ func (s *PlatformMappingScreen) Draw(input PlatformMappingInput) (ScreenResult[P
 }
 
 func (s *PlatformMappingScreen) fetchPlatforms(input PlatformMappingInput) ([]romm.Platform, error) {
+	if cm := cache.GetCacheManager(); cm != nil {
+		if platforms, err := cm.GetPlatforms(); err == nil && len(platforms) > 0 {
+			romm.DisambiguatePlatformNames(platforms)
+			return platforms, nil
+		}
+	}
+
 	client := romm.NewClientFromHost(input.Host, input.ApiTimeout)
 	platforms, err := client.GetPlatforms()
 	if err != nil {
