@@ -93,8 +93,6 @@ func (cm *Manager) SavePlatformGames(platformID int, games []romm.Rom) error {
 		return ErrNotInitialized
 	}
 
-	logger := gaba.GetLogger()
-
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 
@@ -143,7 +141,6 @@ func (cm *Manager) SavePlatformGames(platformID int, games []romm.Rom) error {
 		return newCacheError("save", "games", GetPlatformCacheKey(platformID), err)
 	}
 
-	logger.Debug("Saved platform games to cache", "platformID", platformID, "count", len(games))
 	return nil
 }
 

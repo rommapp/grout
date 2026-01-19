@@ -13,7 +13,9 @@ type CollectionsSettingsInput struct {
 	Config *internal.Config
 }
 
-type CollectionsSettingsOutput struct{}
+type CollectionsSettingsOutput struct {
+	SyncNeeded bool
+}
 
 type CollectionsSettingsScreen struct{}
 
@@ -24,6 +26,10 @@ func NewCollectionsSettingsScreen() *CollectionsSettingsScreen {
 func (s *CollectionsSettingsScreen) Draw(input CollectionsSettingsInput) (ScreenResult[CollectionsSettingsOutput], error) {
 	config := input.Config
 	output := CollectionsSettingsOutput{}
+
+	prevRegular := config.ShowRegularCollections
+	prevSmart := config.ShowSmartCollections
+	prevVirtual := config.ShowVirtualCollections
 
 	items := s.buildMenuItems(config)
 
@@ -51,6 +57,12 @@ func (s *CollectionsSettingsScreen) Draw(input CollectionsSettingsInput) (Screen
 	}
 
 	s.applySettings(config, result.Items)
+
+	if (!prevRegular && config.ShowRegularCollections) ||
+		(!prevSmart && config.ShowSmartCollections) ||
+		(!prevVirtual && config.ShowVirtualCollections) {
+		output.SyncNeeded = true
+	}
 
 	err = internal.SaveConfig(config)
 	if err != nil {

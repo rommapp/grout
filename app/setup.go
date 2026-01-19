@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"grout/cache"
 	"grout/cfw"
 	"grout/cfw/muos"
 	"grout/internal"
@@ -102,6 +103,8 @@ func setup() SetupResult {
 		if config == nil {
 			config = &internal.Config{
 				ShowRegularCollections: true,
+				ApiTimeout:             30 * time.Minute,
+				DownloadTimeout:        60 * time.Minute,
 			}
 		}
 		config.Language = selectedLanguage
@@ -120,11 +123,6 @@ func setup() SetupResult {
 		config.Hosts = loginConfig.Hosts
 		config.PlatformsBinding = loginConfig.PlatformsBinding
 		internal.SaveConfig(config)
-	} else if len(config.Hosts) > 0 {
-		// Load platform bindings from RomM server for existing config
-		if err := config.LoadPlatformsBinding(config.Hosts[0]); err != nil {
-			logger.Debug("Failed to load platform bindings", "error", err)
-		}
 	}
 
 	if config.LogLevel != "" {
@@ -179,6 +177,11 @@ func setup() SetupResult {
 
 	logger.Debug("Configuration Loaded!", "config", config.ToLoggable())
 
+	// Initialize cache manager early so platforms can be loaded from cache
+	if err := cache.InitCacheManager(config.Hosts[0], config); err != nil {
+		logger.Error("Failed to initialize cache manager", "error", err)
+	}
+
 	var platforms []romm.Platform
 	var loadErr error
 
@@ -190,6 +193,11 @@ func setup() SetupResult {
 			ImageWidth:  768,
 			ImageHeight: 540,
 		}, func() (interface{}, error) {
+			// Load platform bindings from RomM server (non-fatal if it fails)
+			if err := config.LoadPlatformsBinding(config.Hosts[0], config.ApiTimeout); err != nil {
+				logger.Debug("Failed to load platform bindings", "error", err)
+			}
+
 			var err error
 			platforms, err = internal.GetMappedPlatforms(config.Hosts[0], config.DirectoryMappings, config.ApiTimeout)
 			if err != nil {

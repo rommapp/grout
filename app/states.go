@@ -100,15 +100,30 @@ func buildFSM(config *internal.Config, c cfw.CFW, platforms []romm.Platform, qui
 	gaba.Set(fsm.Context(), platforms)
 	gaba.Set(fsm.Context(), nav)
 
-	// Initialize cache manager
-	if err := cache.InitCacheManager(config.Hosts[0], config); err != nil {
-		gaba.GetLogger().Error("Failed to initialize cache manager", "error", err)
-	}
-
-	// Start background cache sync
+	// Create background sync object (for status bar icon)
 	cacheSync = cache.NewBackgroundSync(platforms)
 	ui.AddStatusBarIcon(cacheSync.Icon())
-	cacheSync.Start()
+
+	// If no cache exists, show progress screen and build cache
+	// Otherwise start background sync for incremental updates
+	if cm := cache.GetCacheManager(); cm != nil && cm.IsFirstRun() {
+		progress := uatomic.NewFloat64(0)
+		gaba.ProcessMessage(
+			i18n.Localize(&goi18n.Message{ID: "cache_building", Other: "Building cache..."}, nil),
+			gaba.ProcessMessageOptions{
+				ShowThemeBackground: true,
+				ShowProgressBar:     true,
+				Progress:            progress,
+			},
+			func() (interface{}, error) {
+				_, err := cm.PopulateFullCacheWithProgress(platforms, progress)
+				return nil, err
+			},
+		)
+		cacheSync.SetSynced()
+	} else {
+		cacheSync.Start()
+	}
 
 	// Validate artwork cache in background
 	cache.RunArtworkValidation()
@@ -588,11 +603,16 @@ func buildFSM(config *internal.Config, c cfw.CFW, platforms []romm.Platform, qui
 		return result.Value, result.ExitCode
 	}).
 		OnWithHook(gaba.ExitCodeSuccess, settings, func(ctx *gaba.Context) error {
+			output, _ := gaba.Get[ui.CollectionsSettingsOutput](ctx)
 			config, _ := gaba.Get[*internal.Config](ctx)
 			host, _ := gaba.Get[romm.Host](ctx)
 			nav, _ := gaba.Get[*NavState](ctx)
 			nav.CollectionsSettingsPos = ListPosition{}
 			nav.ShowCollections = config.ShowCollections(host)
+
+			if output.SyncNeeded && cacheSync != nil {
+				cacheSync.SyncCollections()
+			}
 			return nil
 		}).
 		On(gaba.ExitCodeBack, settings)
@@ -675,6 +695,13 @@ func buildFSM(config *internal.Config, c cfw.CFW, platforms []romm.Platform, qui
 			output, _ := gaba.Get[ui.PlatformMappingOutput](ctx)
 			config, _ := gaba.Get[*internal.Config](ctx)
 			host, _ := gaba.Get[romm.Host](ctx)
+			oldPlatforms, _ := gaba.Get[[]romm.Platform](ctx)
+
+			// Track old platform IDs
+			oldPlatformIDs := make(map[int]bool)
+			for _, p := range oldPlatforms {
+				oldPlatformIDs[p.ID] = true
+			}
 
 			config.DirectoryMappings = output.Mappings
 			config.PlatformOrder = internal.PrunePlatformOrder(config.PlatformOrder, output.Mappings)
@@ -687,6 +714,21 @@ func buildFSM(config *internal.Config, c cfw.CFW, platforms []romm.Platform, qui
 				return err
 			}
 			gaba.Set(ctx, platforms)
+
+			// Find newly added platforms
+			var newPlatforms []romm.Platform
+			for _, p := range platforms {
+				if !oldPlatformIDs[p.ID] {
+					newPlatforms = append(newPlatforms, p)
+				}
+			}
+
+			// Sync games for new platforms
+			if len(newPlatforms) > 0 && cacheSync != nil {
+				gaba.GetLogger().Debug("Syncing games for new platforms", "count", len(newPlatforms))
+				cacheSync.SyncPlatforms(newPlatforms)
+			}
+
 			return nil
 		}).
 		On(gaba.ExitCodeBack, settings)
@@ -814,7 +856,10 @@ func buildFSM(config *internal.Config, c cfw.CFW, platforms []romm.Platform, qui
 		host, _ := gaba.Get[romm.Host](ctx)
 		config, _ := gaba.Get[*internal.Config](ctx)
 
-		// Delete entire cache folder
+		if cacheSync != nil {
+			cacheSync.Stop()
+		}
+
 		if err := cache.DeleteCacheFolder(); err != nil {
 			logger.Error("Failed to delete cache folder", "error", err)
 		}
@@ -851,6 +896,10 @@ func buildFSM(config *internal.Config, c cfw.CFW, platforms []romm.Platform, qui
 				return nil, err
 			},
 		)
+
+		if cacheSync != nil {
+			cacheSync.SetSynced()
+		}
 
 		logger.Info("Cache rebuild completed")
 		return struct{}{}, gaba.ExitCodeSuccess

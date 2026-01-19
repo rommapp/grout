@@ -4,7 +4,7 @@ import (
 	"database/sql"
 )
 
-const schemaVersion = 3
+const schemaVersion = 4
 
 func createTables(db *sql.DB) error {
 	tx, err := db.Begin()
@@ -180,6 +180,20 @@ func createTables(db *sql.DB) error {
 	}
 
 	_, err = tx.Exec(`CREATE INDEX IF NOT EXISTS idx_failed_lookups ON failed_lookups(platform_fs_slug, local_filename_no_ext)`)
+	if err != nil {
+		return err
+	}
+
+	// Track per-platform game sync status
+	_, err = tx.Exec(`
+		CREATE TABLE IF NOT EXISTS platform_sync_status (
+			platform_id INTEGER PRIMARY KEY,
+			last_successful_sync DATETIME,
+			last_attempt DATETIME,
+			games_synced INTEGER DEFAULT 0,
+			status TEXT DEFAULT 'pending'
+		)
+	`)
 	if err != nil {
 		return err
 	}

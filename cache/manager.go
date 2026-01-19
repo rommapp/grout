@@ -326,6 +326,36 @@ func (cm *Manager) PopulateFullCacheWithProgress(platforms []romm.Platform, prog
 	return cm.populateCache(platforms, progress)
 }
 
+func (cm *Manager) SyncCollectionsOnly() (int, error) {
+	if cm == nil || !cm.initialized {
+		return 0, ErrNotInitialized
+	}
+
+	return cm.fetchAndCacheCollectionsWithProgress(nil), nil
+}
+
+func (cm *Manager) SyncPlatformGames(platforms []romm.Platform) (int, error) {
+	if cm == nil || !cm.initialized {
+		return 0, ErrNotInitialized
+	}
+
+	logger := gaba.GetLogger()
+	totalGames := 0
+
+	for _, platform := range platforms {
+		if err := cm.fetchPlatformGames(platform, nil); err != nil {
+			logger.Error("Failed to sync platform games", "platform", platform.Name, "error", err)
+			cm.RecordPlatformSyncFailure(platform.ID)
+			continue
+		}
+		cm.RecordPlatformSyncSuccess(platform.ID, platform.ROMCount)
+		totalGames += platform.ROMCount
+		logger.Debug("Synced platform games", "platform", platform.Name)
+	}
+
+	return totalGames, nil
+}
+
 func getCacheDBPath() string {
 	wd, err := os.Getwd()
 	if err != nil {

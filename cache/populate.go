@@ -62,8 +62,19 @@ func (cm *Manager) populateCache(platforms []romm.Platform, progress *atomic.Flo
 		}
 	} else {
 		// Save all platforms on first run / empty cache
-		if err := cm.SavePlatforms(platforms); err != nil {
-			return stats, err
+		// Fetch all platforms from API, not just mapped ones
+		client := romm.NewClientFromHost(cm.host, cm.config.GetApiTimeout())
+		allPlatforms, err := client.GetPlatforms()
+		if err != nil {
+			logger.Error("Failed to fetch all platforms", "error", err)
+			// Fall back to saving just the mapped platforms
+			if err := cm.SavePlatforms(platforms); err != nil {
+				return stats, err
+			}
+		} else {
+			if err := cm.SavePlatforms(allPlatforms); err != nil {
+				return stats, err
+			}
 		}
 		cm.RecordRefreshTime(MetaKeyPlatformsRefreshedAt)
 	}
@@ -103,11 +114,14 @@ func (cm *Manager) populateCache(platforms []romm.Platform, progress *atomic.Flo
 
 			if err := cm.fetchPlatformGames(p, &fetchOpts{onProgress: updateProgress, updatedAfter: updatedAfter}); err != nil {
 				logger.Error("Failed to cache platform", "platform", p.Name, "error", err)
+				cm.RecordPlatformSyncFailure(p.ID)
 				errMu.Lock()
 				if firstErr == nil {
 					firstErr = err
 				}
 				errMu.Unlock()
+			} else {
+				cm.RecordPlatformSyncSuccess(p.ID, p.ROMCount)
 			}
 		}(platform)
 	}
@@ -139,8 +153,9 @@ func (cm *Manager) populateCache(platforms []romm.Platform, progress *atomic.Flo
 }
 
 type fetchOpts struct {
-	onProgress   func(count int)
-	updatedAfter string
+	onProgress    func(count int) // Called with count of games fetched (for batch progress)
+	onPctProgress *atomic.Float64 // Set with percentage 0.0-1.0 (for UI progress bars)
+	updatedAfter  string
 }
 
 func (cm *Manager) fetchPlatformGames(platform romm.Platform, opts *fetchOpts) error {
@@ -181,6 +196,13 @@ func (cm *Manager) fetchPlatformGames(platform romm.Platform, opts *fetchOpts) e
 		if opts.onProgress != nil && len(res.Items) > 0 {
 			opts.onProgress(len(res.Items))
 		}
+		if opts.onPctProgress != nil && expectedTotal > 0 {
+			pct := float64(len(allGames)) / float64(expectedTotal)
+			if pct > 1.0 {
+				pct = 1.0
+			}
+			opts.onPctProgress.Store(pct)
+		}
 
 		if len(allGames) >= expectedTotal || len(res.Items) == 0 || len(res.Items) < DefaultRomPageSize {
 			break
@@ -206,6 +228,18 @@ func (cm *Manager) fetchPlatformGames(platform romm.Platform, opts *fetchOpts) e
 func (cm *Manager) fetchAndCacheCollectionsWithProgress(progress *atomic.Float64) int {
 	logger := gaba.GetLogger()
 
+	showRegular := cm.config.GetShowCollections()
+	showSmart := cm.config.GetShowSmartCollections()
+	showVirtual := cm.config.GetShowVirtualCollections()
+
+	if !showRegular && !showSmart && !showVirtual {
+		logger.Debug("Skipping collection sync - no collection types enabled")
+		if progress != nil {
+			progress.Store(0.98)
+		}
+		return 0
+	}
+
 	client := romm.NewClientFromHost(cm.host, cm.config.GetApiTimeout())
 
 	var updatedAfter string
@@ -223,56 +257,84 @@ func (cm *Manager) fetchAndCacheCollectionsWithProgress(progress *atomic.Float64
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		collections, err := client.GetCollections(query)
-		if err != nil {
-			logger.Error("Failed to fetch regular collections", "error", err)
-			return
-		}
-		mu.Lock()
-		allCollections = append(allCollections, collections...)
-		mu.Unlock()
-	}()
+	// Calculate progress increment per collection type (90% to 92% range)
+	enabledCount := 0
+	if showRegular {
+		enabledCount++
+	}
+	if showSmart {
+		enabledCount++
+	}
+	if showVirtual {
+		enabledCount++
+	}
+	progressPerType := 0.02 / float64(enabledCount) // 2% divided among enabled types
+	completed := &atomic.Int32{}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		collections, err := client.GetSmartCollections(query)
-		if err != nil {
-			logger.Error("Failed to fetch smart collections", "error", err)
-			return
+	updateFetchProgress := func() {
+		if progress != nil {
+			done := completed.Add(1)
+			progress.Store(0.90 + float64(done)*progressPerType)
 		}
-		for i := range collections {
-			collections[i].IsSmart = true
-		}
-		mu.Lock()
-		allCollections = append(allCollections, collections...)
-		mu.Unlock()
-	}()
+	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		virtualCollections, err := client.GetVirtualCollections()
-		if err != nil {
-			logger.Error("Failed to fetch virtual collections", "error", err)
-			return
-		}
-		mu.Lock()
-		for _, vc := range virtualCollections {
-			allCollections = append(allCollections, vc.ToCollection())
-		}
-		mu.Unlock()
-	}()
+	if showRegular {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			collections, err := client.GetCollections(query)
+			if err != nil {
+				logger.Error("Failed to fetch regular collections", "error", err)
+				updateFetchProgress()
+				return
+			}
+			mu.Lock()
+			allCollections = append(allCollections, collections...)
+			mu.Unlock()
+			updateFetchProgress()
+		}()
+	}
+
+	if showSmart {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			collections, err := client.GetSmartCollections(query)
+			if err != nil {
+				logger.Error("Failed to fetch smart collections", "error", err)
+				updateFetchProgress()
+				return
+			}
+			for i := range collections {
+				collections[i].IsSmart = true
+			}
+			mu.Lock()
+			allCollections = append(allCollections, collections...)
+			mu.Unlock()
+			updateFetchProgress()
+		}()
+	}
+
+	if showVirtual {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			virtualCollections, err := client.GetVirtualCollections()
+			if err != nil {
+				logger.Error("Failed to fetch virtual collections", "error", err)
+				updateFetchProgress()
+				return
+			}
+			mu.Lock()
+			for _, vc := range virtualCollections {
+				allCollections = append(allCollections, vc.ToCollection())
+			}
+			mu.Unlock()
+			updateFetchProgress()
+		}()
+	}
 
 	wg.Wait()
-
-	// Update progress to 92% after fetching collection metadata, arbitrary I know
-	if progress != nil {
-		progress.Store(0.92)
-	}
 
 	if len(allCollections) == 0 {
 		return 0
@@ -341,77 +403,20 @@ func (cm *Manager) RefreshPlatformGamesWithProgress(platform romm.Platform, prog
 		return ErrNotInitialized
 	}
 
-	logger := gaba.GetLogger()
-	client := romm.NewClientFromHost(cm.host, cm.config.GetApiTimeout())
-
-	// Get the last refresh time for incremental updates
 	var updatedAfter string
 	if lastRefresh, err := cm.GetLastRefreshTime(MetaKeyGamesRefreshedAt); err == nil {
 		updatedAfter = lastRefresh.Format(time.RFC3339)
-		logger.Debug("Using incremental refresh", "updated_after", updatedAfter)
+		gaba.GetLogger().Debug("Using incremental refresh", "updated_after", updatedAfter)
 	}
 
-	var allGames []romm.Rom
-	offset := 0
-	expectedTotal := 0
-
-	for {
-		opt := romm.GetRomsQuery{
-			PlatformID:   platform.ID,
-			Offset:       offset,
-			Limit:        DefaultRomPageSize,
-			UpdatedAfter: updatedAfter,
-		}
-
-		res, err := client.GetRoms(opt)
-		if err != nil {
-			logger.Error("Failed to fetch games",
-				"platform", platform.Name,
-				"offset", offset,
-				"error", err)
-			return err
-		}
-
-		if offset == 0 {
-			expectedTotal = res.Total
-		}
-
-		allGames = append(allGames, res.Items...)
-
-		if progress != nil && expectedTotal > 0 {
-			pct := float64(len(allGames)) / float64(expectedTotal)
-			if pct > 1.0 {
-				pct = 1.0
-			}
-			progress.Store(pct)
-		}
-
-		// Terminate when: got all expected, empty batch, or partial page (last batch)
-		if len(allGames) >= expectedTotal || len(res.Items) == 0 || len(res.Items) < DefaultRomPageSize {
-			break
-		}
-
-		offset += len(res.Items)
-	}
-
-	if updatedAfter != "" {
-		logger.Info("Refreshed platform games (incremental)",
-			"platform", platform.Name,
-			"count", len(allGames),
-			"updated_after", updatedAfter)
-	} else {
-		logger.Info("Refreshed platform games",
-			"platform", platform.Name,
-			"count", len(allGames))
-	}
-
-	if err := cm.SavePlatformGames(platform.ID, allGames); err != nil {
-		return err
-	}
+	err := cm.fetchPlatformGames(platform, &fetchOpts{
+		onPctProgress: progress,
+		updatedAfter:  updatedAfter,
+	})
 
 	if progress != nil {
 		progress.Store(1.0)
 	}
 
-	return nil
+	return err
 }

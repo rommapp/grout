@@ -348,6 +348,12 @@ func (c Config) ShowCollections(host romm.Host) bool {
 		return false
 	}
 
+	// Check cache first
+	if cm := cache.GetCacheManager(); cm != nil && cm.HasCollections() {
+		return true
+	}
+
+	// Fallback to network check
 	rc := romm.NewClientFromHost(host, c.ApiTimeout)
 
 	if c.ShowRegularCollections {
