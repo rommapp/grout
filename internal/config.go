@@ -17,8 +17,9 @@ import (
 type ReleaseChannel string
 
 const (
-	ReleaseChannelStable ReleaseChannel = "stable"
-	ReleaseChannelBeta   ReleaseChannel = "beta"
+	ReleaseChannelMatchRomM ReleaseChannel = "match_romm"
+	ReleaseChannelStable    ReleaseChannel = "stable"
+	ReleaseChannelBeta      ReleaseChannel = "beta"
 )
 
 var kidModeEnabled atomic.Bool
@@ -138,7 +139,7 @@ func SaveConfig(config *Config) error {
 	}
 
 	if config.ReleaseChannel == "" {
-		config.ReleaseChannel = ReleaseChannelStable
+		config.ReleaseChannel = ReleaseChannelMatchRomM
 	}
 
 	gaba.SetRawLogLevel(config.LogLevel)

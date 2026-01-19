@@ -6,6 +6,7 @@ import (
 	"grout/cfw"
 	"grout/internal"
 	"grout/internal/stringutil"
+	"grout/romm"
 	"grout/update"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -18,6 +19,7 @@ import (
 type UpdateInput struct {
 	CFW            cfw.CFW
 	ReleaseChannel internal.ReleaseChannel
+	Host           *romm.Host
 }
 
 type UpdateOutput struct {
@@ -43,7 +45,7 @@ func (s *UpdateScreen) Draw(input UpdateInput) (ScreenResult[UpdateOutput], erro
 			ShowThemeBackground: true,
 		},
 		func() (interface{}, error) {
-			updateInfo, checkErr = update.CheckForUpdate(input.CFW, input.ReleaseChannel)
+			updateInfo, checkErr = update.CheckForUpdate(input.CFW, input.ReleaseChannel, input.Host)
 			return nil, checkErr
 		},
 	)

@@ -1,5 +1,7 @@
 package version
 
+import "os"
+
 var (
 	Version   = "dev"
 	GitCommit = "unknown"
@@ -13,8 +15,12 @@ type BuildInfo struct {
 }
 
 func Get() BuildInfo {
+	v := Version
+	if override := os.Getenv("GROUT_VERSION"); override != "" {
+		v = override
+	}
 	return BuildInfo{
-		Version:   Version,
+		Version:   v,
 		GitCommit: GitCommit,
 		BuildDate: BuildDate,
 	}

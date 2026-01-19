@@ -5,12 +5,14 @@ import (
 	"grout/cfw"
 	"grout/internal"
 	"grout/internal/constants"
+	"grout/romm"
 	"grout/version"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 
+	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"go.uber.org/atomic"
 )
 
@@ -32,7 +34,10 @@ func GetAssetName(c cfw.CFW) string {
 	}
 }
 
-func CheckForUpdate(c cfw.CFW, releaseChannel internal.ReleaseChannel) (*Info, error) {
+// CheckForUpdate checks for available updates based on the release channel.
+// For ReleaseChannelMatchRomM, the host parameter is required to fetch the RomM version.
+// For other channels, the host parameter is optional and ignored.
+func CheckForUpdate(c cfw.CFW, releaseChannel internal.ReleaseChannel, host *romm.Host) (*Info, error) {
 	currentVersion := version.Get().Version
 
 	if currentVersion == "dev" {
@@ -42,9 +47,33 @@ func CheckForUpdate(c cfw.CFW, releaseChannel internal.ReleaseChannel) (*Info, e
 		}, nil
 	}
 
-	release, err := FetchLatestRelease(releaseChannel)
-	if err != nil {
-		return nil, fmt.Errorf("failed to check for updates: %w", err)
+	var release *GitHubRelease
+	var err error
+
+	if releaseChannel == internal.ReleaseChannelMatchRomM {
+		if host == nil {
+			return nil, fmt.Errorf("host is required for Match RomM release channel")
+		}
+
+		// Fetch RomM version from heartbeat
+		client := romm.NewClientFromHost(*host)
+		heartbeat, err := client.GetHeartbeat()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get RomM version: %w", err)
+		}
+
+		gaba.GetLogger().Debug("fetched RomM version for update check", "version", heartbeat.System.Version)
+
+		// Find a Grout release matching the RomM version
+		release, err = FetchReleaseForRomMVersion(heartbeat.System.Version)
+		if err != nil {
+			return nil, fmt.Errorf("failed to find matching release: %w", err)
+		}
+	} else {
+		release, err = FetchLatestRelease(releaseChannel)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check for updates: %w", err)
+		}
 	}
 
 	info := &Info{

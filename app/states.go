@@ -146,9 +146,9 @@ func buildFSM(config *internal.Config, c cfw.CFW, platforms []romm.Platform, qui
 			})
 		}
 
-		// Start auto-update check on first platform menu view
 		autoUpdateOnce.Do(func() {
-			autoUpdate = update.NewAutoUpdate(currentCFW, config.ReleaseChannel)
+			host, _ := gaba.Get[romm.Host](ctx)
+			autoUpdate = update.NewAutoUpdate(currentCFW, config.ReleaseChannel, &host)
 			ui.AddStatusBarIcon(autoUpdate.Icon())
 			autoUpdate.Start()
 		})
@@ -661,6 +661,10 @@ func buildFSM(config *internal.Config, c cfw.CFW, platforms []romm.Platform, qui
 		nav.AdvancedSettingsPos.Index = result.Value.LastSelectedIndex
 		nav.AdvancedSettingsPos.VisibleStartIndex = result.Value.LastVisibleStartIndex
 
+		if result.ExitCode == gaba.ExitCodeSuccess && autoUpdate != nil {
+			autoUpdate.Recheck(config.ReleaseChannel)
+		}
+
 		return result.Value, result.ExitCode
 	}).
 		On(gaba.ExitCodeSuccess, settings).
@@ -958,11 +962,13 @@ func buildFSM(config *internal.Config, c cfw.CFW, platforms []romm.Platform, qui
 
 	gaba.AddState(fsm, updateCheck, func(ctx *gaba.Context) (ui.UpdateOutput, gaba.ExitCode) {
 		currentCFW, _ := gaba.Get[cfw.CFW](ctx)
+		host, _ := gaba.Get[romm.Host](ctx)
 
 		screen := ui.NewUpdateScreen()
 		result, err := screen.Draw(ui.UpdateInput{
 			CFW:            currentCFW,
 			ReleaseChannel: config.ReleaseChannel,
+			Host:           &host,
 		})
 
 		if err != nil {
