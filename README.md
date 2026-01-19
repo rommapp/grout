@@ -23,14 +23,13 @@ A RomM Client for <a href="https://muos.dev">muOS</a>, <a href="https://knulli.o
 
 ---
 
-> [!IMPORTANT]
-> Grout expects the latest stable version of RomM and is very aggressive in utilizing new features.
+> [!IMPORTANT]                                                                                                                                                                                                                                     
+> Grout aggressively adopts new RomM features.
 >
-> You can glean the required RomM version by looking at the version number for Grout. The first three values will match
-> the expected RomM release. The fourth value will be a patch version for Grout.
-> 
-> Grout may still function on an older version of RomM but support will not be provided.
-
+> The required RomM version matches the first three components of Grout's version number.                                                                                                                                                          
+> The fourth component is for Grout-specific patches.
+>
+> Grout may still function on older RomM versions, but support will not be provided.
 
 ---
 
