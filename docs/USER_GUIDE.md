@@ -153,6 +153,13 @@ You can change these mappings later from [Settings](SETTINGS.md).
 
 ## Background Cache Sync
 
+> [!INFO]
+> Grout currently does not gracefully handle deletions.
+> 
+> Deleted games, platforms and collections will continue to be shown until the [local cache is rebuilt](SETTINGS.md#rebuild-cache).
+> 
+> We are waiting for updated API endpoints that will allow Grout to remove deleted items from the cache without a rebuild. You can track the progress of this in [this issue](https://github.com/rommapp/grout/issues/83).
+
 Grout maintains a local cache of your RomM library data (platforms, games, and collections) to provide a fast,
 responsive browsing experience. This cache syncs automatically in the background each time you launch Grout.
 
