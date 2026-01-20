@@ -77,7 +77,11 @@ func (s *GameDetailsScreen) Draw(input GameDetailsInput) (ScreenResult[GameDetai
 	if hasMultipleFiles {
 		downloadButton = "X"
 	}
-	footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: downloadButton, HelpText: i18n.Localize(&goi18n.Message{ID: "button_download", Other: "Download"}, nil)})
+	downloadText := i18n.Localize(&goi18n.Message{ID: "button_download", Other: "Download"}, nil)
+	if input.Game.IsDownloaded(input.Config) {
+		downloadText = i18n.Localize(&goi18n.Message{ID: "button_redownload", Other: "Redownload"}, nil)
+	}
+	footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: downloadButton, HelpText: downloadText})
 
 	result, err := gaba.DetailScreen(input.Game.Name, options, footerItems)
 
