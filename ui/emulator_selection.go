@@ -33,11 +33,7 @@ type EmulatorSelectionOutput struct {
 
 type EmulatorSelectionScreen struct{}
 
-func NewEmulatorSelectionScreen() *EmulatorSelectionScreen {
-	return &EmulatorSelectionScreen{}
-}
-
-func (s *EmulatorSelectionScreen) Draw(input EmulatorSelectionInput) (ScreenResult[EmulatorSelectionOutput], error) {
+func (s *EmulatorSelectionScreen) Draw(input EmulatorSelectionInput) (EmulatorSelectionOutput, error) {
 	output := EmulatorSelectionOutput{
 		LastSelectedIndex:    input.LastSelectedIndex,
 		LastSelectedPosition: input.LastSelectedPosition,
@@ -82,7 +78,7 @@ func (s *EmulatorSelectionScreen) Draw(input EmulatorSelectionInput) (ScreenResu
 
 	title := i18n.Localize(&goi18n.Message{ID: "emulator_selection_title", Other: "Select {{.Platform}} Emulator"}, map[string]interface{}{"Platform": input.PlatformName})
 	options := gaba.DefaultListOptions(title, menuItems)
-	options.SmallTitle = true
+	options.UseSmallTitle = true
 	options.FooterHelpItems = footerItems
 	options.SelectedIndex = input.LastSelectedIndex
 	options.VisibleStartIndex = max(0, input.LastSelectedIndex-input.LastSelectedPosition)
@@ -91,9 +87,9 @@ func (s *EmulatorSelectionScreen) Draw(input EmulatorSelectionInput) (ScreenResu
 	sel, err := gaba.List(options)
 	if err != nil {
 		if errors.Is(err, gaba.ErrCancelled) {
-			return back(output), nil
+			return output, nil
 		}
-		return withCode(output, gaba.ExitCodeError), err
+		return output, err
 	}
 
 	switch sel.Action {
@@ -103,9 +99,9 @@ func (s *EmulatorSelectionScreen) Draw(input EmulatorSelectionInput) (ScreenResu
 		output.SelectedEmulator = selectedEmulator
 		output.LastSelectedIndex = sel.Selected[0]
 		output.LastSelectedPosition = sel.VisiblePosition
-		return success(output), nil
+		return output, nil
 
 	default:
-		return back(output), nil
+		return output, nil
 	}
 }

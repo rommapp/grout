@@ -3,7 +3,6 @@ package ui
 import (
 	"errors"
 	"grout/internal"
-	"grout/internal/constants"
 	"grout/romm"
 	"sync/atomic"
 
@@ -23,6 +22,7 @@ type PlatformSelectionInput struct {
 }
 
 type PlatformSelectionOutput struct {
+	Action               PlatformSelectionAction
 	SelectedPlatform     romm.Platform
 	LastSelectedIndex    int
 	LastSelectedPosition int
@@ -35,14 +35,15 @@ func NewPlatformSelectionScreen() *PlatformSelectionScreen {
 	return &PlatformSelectionScreen{}
 }
 
-func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (ScreenResult[PlatformSelectionOutput], error) {
+func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (PlatformSelectionOutput, error) {
 	output := PlatformSelectionOutput{
+		Action:               PlatformSelectionActionQuit,
 		LastSelectedIndex:    input.LastSelectedIndex,
 		LastSelectedPosition: input.LastSelectedPosition,
 	}
 
 	if len(input.Platforms) == 0 {
-		return withCode(output, gaba.ExitCode(404)), nil
+		return output, nil
 	}
 
 	var menuItems []gaba.MenuItem
@@ -143,9 +144,10 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (ScreenResu
 
 	if err != nil {
 		if errors.Is(err, gaba.ErrCancelled) {
-			return back(output), nil
+			output.Action = PlatformSelectionActionQuit
+			return output, nil
 		}
-		return withCode(output, gaba.ExitCodeError), err
+		return output, err
 	}
 
 	switch sel.Action {
@@ -157,21 +159,26 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (ScreenResu
 		output.LastSelectedPosition = sel.VisiblePosition
 
 		if platform.FSSlug == "collections" {
-			return withCode(output, constants.ExitCodeCollections), nil
+			output.Action = PlatformSelectionActionCollections
+			return output, nil
 		}
 
-		return success(output), nil
+		output.Action = PlatformSelectionActionSelected
+		return output, nil
 
 	case gaba.ListActionTriggered:
 		if input.QuitOnBack {
-			return withCode(output, gaba.ExitCodeAction), nil
+			output.Action = PlatformSelectionActionSettings
+			return output, nil
 		}
 
 	case gaba.ListActionSecondaryTriggered:
 		if input.QuitOnBack && input.ShowSaveSync != nil {
-			return withCode(output, constants.ExitCodeSaveSync), nil
+			output.Action = PlatformSelectionActionSaveSync
+			return output, nil
 		}
 	}
 
-	return withCode(output, gaba.ExitCodeBack), nil
+	output.Action = PlatformSelectionActionQuit
+	return output, nil
 }

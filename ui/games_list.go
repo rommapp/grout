@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"grout/cache"
 	"grout/internal"
-	"grout/internal/constants"
 	"grout/internal/stringutil"
 	"grout/romm"
 	"slices"
@@ -40,6 +39,7 @@ type GameListInput struct {
 }
 
 type GameListOutput struct {
+	Action               GameListAction
 	SelectedGames        []romm.Rom
 	Platform             romm.Platform
 	Collection           romm.Collection
@@ -60,7 +60,7 @@ func isCollectionSet(c romm.Collection) bool {
 	return c.ID != 0 || c.VirtualID != ""
 }
 
-func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput], error) {
+func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 	games := input.Games
 	hasBIOS := input.HasBIOS
 
@@ -68,7 +68,7 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 		loaded, err := s.loadGames(input)
 		if err != nil {
 			s.showErrorMessage(err)
-			return back(GameListOutput{}), nil
+			return GameListOutput{Action: GameListActionBack}, nil
 		}
 		games = loaded.games
 		hasBIOS = loaded.hasBIOS
@@ -79,6 +79,7 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 	}
 
 	output := GameListOutput{
+		Action:               GameListActionBack,
 		Platform:             input.Platform,
 		Collection:           input.Collection,
 		SearchFilter:         input.SearchFilter,
@@ -90,7 +91,7 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 
 	displayGames := stringutil.PrepareRomNames(games)
 
-	if input.Config.DownloadedGames == "filter" {
+	if input.Config.DownloadedGames == internal.DownloadedGamesModeFilter {
 		filteredGames := make([]romm.Rom, 0, len(displayGames))
 		for _, game := range displayGames {
 			if !game.IsDownloaded(*input.Config) {
@@ -118,14 +119,14 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 		if input.Platform.ID == 0 {
 			for i := range displayGames {
 				prefix := ""
-				if input.Config.DownloadedGames == "mark" && displayGames[i].IsDownloaded(*input.Config) {
+				if input.Config.DownloadedGames == internal.DownloadedGamesModeMark && displayGames[i].IsDownloaded(*input.Config) {
 					prefix = gabaconst.Download + " "
 				}
 				displayGames[i].DisplayName = fmt.Sprintf("%s[%s] %s", prefix, displayGames[i].PlatformFSSlug, displayGames[i].DisplayName)
 			}
 		} else {
 			displayName = fmt.Sprintf("%s - %s", input.Collection.Name, input.Platform.Name)
-			if input.Config.DownloadedGames == "mark" {
+			if input.Config.DownloadedGames == internal.DownloadedGamesModeMark {
 				for i := range displayGames {
 					if displayGames[i].IsDownloaded(*input.Config) {
 						displayGames[i].DisplayName = fmt.Sprintf("%s %s", gabaconst.Download, displayGames[i].DisplayName)
@@ -150,16 +151,16 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 					}
 				}
 
-				if input.Config.DownloadedGames == "mark" {
+				if input.Config.DownloadedGames == internal.DownloadedGamesModeMark {
 					if allDownloaded {
-						prefix = constants.MultipleDownloaded + " "
+						prefix = internal.MultipleDownloadedIcon + " "
 					} else if anyDownloaded {
 						prefix = gabaconst.Download + " "
 					}
 				}
-				prefix += constants.MultipleFiles + " "
+				prefix += internal.MultipleFilesIcon + " "
 			} else {
-				if input.Config.DownloadedGames == "mark" && game.IsDownloaded(*input.Config) {
+				if input.Config.DownloadedGames == internal.DownloadedGamesModeMark && game.IsDownloaded(*input.Config) {
 					prefix = gabaconst.Download + " "
 				}
 			}
@@ -184,15 +185,11 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 			s.showEmptyMessage(displayName, input.SearchFilter)
 		}
 		if input.SearchFilter != "" {
-			return withCode(output, constants.ExitCodeNoResults), nil
+			output.Action = GameListActionSearch
+			return output, nil
 		}
-		if isCollectionSet(input.Collection) && input.Platform.ID != 0 {
-			return withCode(output, constants.ExitCodeBackToCollectionPlatform), nil
-		}
-		if isCollectionSet(input.Collection) {
-			return withCode(output, constants.ExitCodeBackToCollection), nil
-		}
-		return back(output), nil
+		output.Action = GameListActionBack
+		return output, nil
 	}
 
 	menuItems := make([]gaba.MenuItem, len(displayGames))
@@ -211,8 +208,8 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 	}
 
 	options := gaba.DefaultListOptions(title, menuItems)
-	options.SmallTitle = true
-	options.EnableImages = input.Config.ShowBoxArt
+	options.UseSmallTitle = true
+	options.ShowImages = input.Config.ShowBoxArt
 	options.ActionButton = gabaconst.VirtualButtonX
 	options.MultiSelectButton = gabaconst.VirtualButtonSelect
 	options.DeselectAllButton = gabaconst.VirtualButtonL1
@@ -250,17 +247,13 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 				output.SearchFilter = ""
 				output.LastSelectedIndex = 0
 				output.LastSelectedPosition = 0
-				return withCode(output, constants.ExitCodeClearSearch), nil
+				output.Action = GameListActionClearSearch
+				return output, nil
 			}
-			if isCollectionSet(input.Collection) && input.Platform.ID != 0 {
-				return withCode(output, constants.ExitCodeBackToCollectionPlatform), nil
-			}
-			if isCollectionSet(input.Collection) {
-				return withCode(output, constants.ExitCodeBackToCollection), nil
-			}
-			return back(output), nil
+			output.Action = GameListActionBack
+			return output, nil
 		}
-		return withCode(output, gaba.ExitCodeError), err
+		return output, err
 	}
 
 	switch res.Action {
@@ -272,22 +265,20 @@ func (s *GameListScreen) Draw(input GameListInput) (ScreenResult[GameListOutput]
 		output.LastSelectedIndex = res.Selected[0]
 		output.LastSelectedPosition = res.VisiblePosition
 		output.SelectedGames = selectedGames
-		return success(output), nil
+		output.Action = GameListActionSelected
+		return output, nil
 
 	case gaba.ListActionTriggered:
-		return withCode(output, constants.ExitCodeSearch), nil
+		output.Action = GameListActionSearch
+		return output, nil
 
 	case gaba.ListActionSecondaryTriggered:
-		return withCode(output, constants.ExitCodeBIOS), nil
+		output.Action = GameListActionBIOS
+		return output, nil
 	}
 
-	if isCollectionSet(input.Collection) && input.Platform.ID != 0 {
-		return withCode(output, constants.ExitCodeBackToCollectionPlatform), nil
-	}
-	if isCollectionSet(input.Collection) {
-		return withCode(output, constants.ExitCodeBackToCollection), nil
-	}
-	return back(output), nil
+	output.Action = GameListActionBack
+	return output, nil
 }
 
 type loadGamesResult struct {
@@ -323,7 +314,7 @@ func (s *GameListScreen) loadGames(input GameListInput) (loadGamesResult, error)
 
 		if ft == ftPlatform {
 			cached, err = cm.GetPlatformGames(id)
-		} else if ft == ftCollection {
+		} else {
 			cached, err = cm.GetCollectionGames(collection)
 		}
 
@@ -426,7 +417,7 @@ func (s *GameListScreen) loadGames(input GameListInput) (loadGamesResult, error)
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				roms, err := fetchList(config, host, id, ft)
+				roms, err := fetchList(id, ft)
 				if err != nil {
 					logger.Error("Error downloading game list", "error", err)
 					gamesFetchErr = err
@@ -537,7 +528,7 @@ func (s *GameListScreen) showErrorMessage(err error) {
 	)
 }
 
-func fetchList(config *internal.Config, host romm.Host, queryID int, fetchType fetchType) ([]romm.Rom, error) {
+func fetchList(queryID int, fetchType fetchType) ([]romm.Rom, error) {
 	logger := gaba.GetLogger()
 	cm := cache.GetCacheManager()
 

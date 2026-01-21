@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"grout/cache"
 	"grout/internal"
-	"grout/internal/constants"
 	"grout/romm"
 	"slices"
 	"strings"
@@ -25,6 +24,7 @@ type CollectionSelectionInput struct {
 }
 
 type CollectionSelectionOutput struct {
+	Action               CollectionListAction
 	SelectedCollection   romm.Collection
 	SearchFilter         string
 	LastSelectedIndex    int
@@ -37,8 +37,9 @@ func NewCollectionSelectionScreen() *CollectionSelectionScreen {
 	return &CollectionSelectionScreen{}
 }
 
-func (s *CollectionSelectionScreen) Draw(input CollectionSelectionInput) (ScreenResult[CollectionSelectionOutput], error) {
+func (s *CollectionSelectionScreen) Draw(input CollectionSelectionInput) (CollectionSelectionOutput, error) {
 	output := CollectionSelectionOutput{
+		Action:               CollectionListActionBack,
 		SearchFilter:         input.SearchFilter,
 		LastSelectedIndex:    input.LastSelectedIndex,
 		LastSelectedPosition: input.LastSelectedPosition,
@@ -100,7 +101,7 @@ func (s *CollectionSelectionScreen) Draw(input CollectionSelectionInput) (Screen
 	}
 
 	if len(displayCollections) == 0 {
-		return withCode(output, gaba.ExitCode(404)), nil
+		return output, nil
 	}
 
 	var menuItems []gaba.MenuItem
@@ -138,11 +139,12 @@ func (s *CollectionSelectionScreen) Draw(input CollectionSelectionInput) (Screen
 				output.SearchFilter = ""
 				output.LastSelectedIndex = 0
 				output.LastSelectedPosition = 0
-				return withCode(output, constants.ExitCodeClearSearch), nil
+				output.Action = CollectionListActionClearSearch
+				return output, nil
 			}
-			return back(output), nil
+			return output, nil
 		}
-		return withCode(output, gaba.ExitCodeError), err
+		return output, err
 	}
 
 	switch sel.Action {
@@ -152,12 +154,14 @@ func (s *CollectionSelectionScreen) Draw(input CollectionSelectionInput) (Screen
 		output.SelectedCollection = collection
 		output.LastSelectedIndex = sel.Selected[0]
 		output.LastSelectedPosition = sel.VisiblePosition
-		return success(output), nil
+		output.Action = CollectionListActionSelected
+		return output, nil
 
 	case gaba.ListActionTriggered:
-		return withCode(output, constants.ExitCodeSearch), nil
+		output.Action = CollectionListActionSearch
+		return output, nil
 
 	default:
-		return withCode(output, gaba.ExitCodeBack), nil
+		return output, nil
 	}
 }

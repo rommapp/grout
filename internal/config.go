@@ -14,19 +14,12 @@ import (
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
 )
 
-type ReleaseChannel string
-
-const (
-	ReleaseChannelStable ReleaseChannel = "stable"
-	ReleaseChannelBeta   ReleaseChannel = "beta"
-)
-
 var kidModeEnabled atomic.Bool
 
 type Config struct {
 	Hosts                  []romm.Host                 `json:"hosts,omitempty"`
 	DirectoryMappings      map[string]DirectoryMapping `json:"directory_mappings,omitempty"`
-	SaveSyncMode           string                      `json:"save_sync_mode"`
+	SaveSyncMode           SaveSyncMode                `json:"save_sync_mode"`
 	SaveDirectoryMappings  map[string]string           `json:"save_directory_mappings,omitempty"`
 	GameSaveOverrides      map[int]string              `json:"game_save_overrides,omitempty"`
 	DownloadArt            bool                        `json:"download_art,omitempty"`
@@ -35,12 +28,12 @@ type Config struct {
 	ShowRegularCollections bool                        `json:"show_collections"`
 	ShowSmartCollections   bool                        `json:"show_smart_collections"`
 	ShowVirtualCollections bool                        `json:"show_virtual_collections"`
-	DownloadedGames        string                      `json:"downloaded_games,omitempty"`
+	DownloadedGames        DownloadedGamesMode         `json:"downloaded_games,omitempty"`
 	ApiTimeout             time.Duration               `json:"api_timeout"`
 	DownloadTimeout        time.Duration               `json:"download_timeout"`
-	LogLevel               string                      `json:"log_level,omitempty"`
+	LogLevel               LogLevel                    `json:"log_level,omitempty"`
 	Language               string                      `json:"language,omitempty"`
-	CollectionView         string                      `json:"collection_view,omitempty"`
+	CollectionView         CollectionView              `json:"collection_view,omitempty"`
 	KidMode                bool                        `json:"kid_mode,omitempty"`
 	ReleaseChannel         ReleaseChannel              `json:"release_channel,omitempty"`
 
@@ -102,15 +95,15 @@ func LoadConfig() (*Config, error) {
 	}
 
 	if config.DownloadedGames == "" {
-		config.DownloadedGames = "do_nothing"
+		config.DownloadedGames = DownloadedGamesModeDoNothing
 	}
 
 	if config.CollectionView == "" {
-		config.CollectionView = "platform"
+		config.CollectionView = CollectionViewPlatform
 	}
 
 	if config.SaveSyncMode == "" {
-		config.SaveSyncMode = "off"
+		config.SaveSyncMode = SaveSyncModeOff
 	}
 
 	return &config, nil
@@ -118,7 +111,7 @@ func LoadConfig() (*Config, error) {
 
 func SaveConfig(config *Config) error {
 	if config.LogLevel == "" {
-		config.LogLevel = "ERROR"
+		config.LogLevel = LogLevelError
 	}
 
 	if config.Language == "" {
@@ -126,22 +119,22 @@ func SaveConfig(config *Config) error {
 	}
 
 	if config.DownloadedGames == "" {
-		config.DownloadedGames = "do_nothing"
+		config.DownloadedGames = DownloadedGamesModeDoNothing
 	}
 
 	if config.CollectionView == "" {
-		config.CollectionView = "platform"
+		config.CollectionView = CollectionViewPlatform
 	}
 
 	if config.SaveSyncMode == "" {
-		config.SaveSyncMode = "off"
+		config.SaveSyncMode = SaveSyncModeOff
 	}
 
 	if config.ReleaseChannel == "" {
-		config.ReleaseChannel = ReleaseChannelStable
+		config.ReleaseChannel = ReleaseChannelMatchRomM
 	}
 
-	gaba.SetRawLogLevel(config.LogLevel)
+	gaba.SetRawLogLevel(string(config.LogLevel))
 
 	if err := i18n.SetWithCode(config.Language); err != nil {
 		gaba.GetLogger().Error("Failed to set language", "error", err, "language", config.Language)
@@ -161,76 +154,6 @@ func SaveConfig(config *Config) error {
 	return nil
 }
 
-// SortPlatformsByOrder sorts platforms based on the saved order in config.
-// If no order is saved, platforms are sorted alphabetically.
-func SortPlatformsByOrder(platforms []romm.Platform, order []string) []romm.Platform {
-	if len(order) == 0 {
-		// No saved order, return alphabetically sorted
-		return SortPlatformsAlphabetically(platforms)
-	}
-
-	// Create a map of fs_slug to platform for quick lookup
-	platformMap := make(map[string]romm.Platform)
-	for _, p := range platforms {
-		platformMap[p.FSSlug] = p
-	}
-
-	// Create result slice with platforms in saved order
-	var result []romm.Platform
-	usedSlugs := make(map[string]bool)
-
-	// Add platforms in saved order
-	for _, fsSlug := range order {
-		if platform, exists := platformMap[fsSlug]; exists {
-			result = append(result, platform)
-			usedSlugs[fsSlug] = true
-		}
-	}
-
-	// Add any new platforms that aren't in the saved order (alphabetically)
-	var newPlatforms []romm.Platform
-	for _, p := range platforms {
-		if !usedSlugs[p.FSSlug] {
-			newPlatforms = append(newPlatforms, p)
-		}
-	}
-	newPlatforms = SortPlatformsAlphabetically(newPlatforms)
-	result = append(result, newPlatforms...)
-
-	return result
-}
-
-// SortPlatformsAlphabetically sorts platforms by name
-func SortPlatformsAlphabetically(platforms []romm.Platform) []romm.Platform {
-	sorted := make([]romm.Platform, len(platforms))
-	copy(sorted, platforms)
-
-	for i := 0; i < len(sorted); i++ {
-		for j := i + 1; j < len(sorted); j++ {
-			if sorted[i].Name > sorted[j].Name {
-				sorted[i], sorted[j] = sorted[j], sorted[i]
-			}
-		}
-	}
-
-	return sorted
-}
-
-func PrunePlatformOrder(order []string, mappings map[string]DirectoryMapping) []string {
-	if len(order) == 0 {
-		return order
-	}
-
-	pruned := make([]string, 0, len(order))
-	for _, fsSlug := range order {
-		if _, exists := mappings[fsSlug]; exists {
-			pruned = append(pruned, fsSlug)
-		}
-	}
-
-	return pruned
-}
-
 func InitKidMode(config *Config) {
 	kidModeEnabled.Store(config.KidMode)
 }
@@ -241,35 +164,6 @@ func IsKidModeEnabled() bool {
 
 func SetKidMode(enabled bool) {
 	kidModeEnabled.Store(enabled)
-}
-
-func GetMappedPlatforms(host romm.Host, mappings map[string]DirectoryMapping, timeout ...time.Duration) ([]romm.Platform, error) {
-	var rommPlatforms []romm.Platform
-	var err error
-
-	if cm := cache.GetCacheManager(); cm != nil {
-		rommPlatforms, err = cm.GetPlatforms()
-	}
-	if len(rommPlatforms) == 0 {
-		c := romm.NewClientFromHost(host, timeout...)
-		rommPlatforms, err = c.GetPlatforms()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get platforms from RomM: %w", err)
-		}
-	}
-
-	romm.DisambiguatePlatformNames(rommPlatforms)
-
-	var platforms []romm.Platform
-
-	for _, platform := range rommPlatforms {
-		_, exists := mappings[platform.FSSlug]
-		if exists {
-			platforms = append(platforms, platform)
-		}
-	}
-
-	return platforms, nil
 }
 
 // LoadPlatformsBinding fetches the PLATFORMS_BINDING from the RomM server
@@ -290,7 +184,6 @@ func (c *Config) LoadPlatformsBinding(host romm.Host, timeout ...time.Duration) 
 	return nil
 }
 
-// To decouple a circular dependency
 func (c Config) GetApiTimeout() time.Duration    { return c.ApiTimeout }
 func (c Config) GetShowCollections() bool        { return c.ShowRegularCollections }
 func (c Config) GetShowSmartCollections() bool   { return c.ShowSmartCollections }

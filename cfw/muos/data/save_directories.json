@@ -1,0 +1,413 @@
+{
+  "3do": [
+    "file/Opera"
+  ],
+  "acpc": [
+    "file/CPC/GX4000 (Caprice)",
+    "file/CPC (CrocoDS)"
+  ],
+  "amiga": [
+    "file/PUAE 2021",
+    "file/Amiberry (External)",
+    "file/PUAE",
+    "file/PUAE Xtreme",
+    "file/UAE4ARM"
+  ],
+  "arcade": [
+    "file/FinalBurn Neo Amped",
+    "file/FB Alpha 2012 CPS-1",
+    "file/FB Alpha 2012 CPS-2",
+    "file/FB Alpha 2012 CPS-3",
+    "file/FB Alpha 2012 Neo Geo",
+    "file/FB Alpha 2012",
+    "file/FinalBurn Neo",
+    "file/MAME 2000",
+    "file/MAME 2003",
+    "file/MAME 2003-Midway",
+    "file/MAME 2003-Plus",
+    "file/MAME 2003-Xtreme",
+    "file/MAME 078 Plus",
+    "file/MAME 139",
+    "file/MAME 2010",
+    "file/MAME"
+  ],
+  "arduboy": [
+    "file/Ardens",
+    "file/Arduous"
+  ],
+  "atari-st": [
+    "file/Hatari",
+    "file/HatariB"
+  ],
+  "atari2600": [
+    "file/Stella",
+    "file/Stella 2014"
+  ],
+  "atari5200": [
+    "file/a5200",
+    "file/Atari 800"
+  ],
+  "atari7800": [
+    "file/ProSystem"
+  ],
+  "c128": [
+    "file/VICE x128"
+  ],
+  "c64": [
+    "file/VICE x64, fast",
+    "file/VICE x64sc, accurate",
+    "file/VICE xscpu64"
+  ],
+  "cave-story": [
+    "file/NXEngine"
+  ],
+  "cbm-ii": [
+    "file/VICE xcbm2",
+    "file/VICE xcmb5x0"
+  ],
+  "chailove": [
+    "file/ChaiLove"
+  ],
+  "chip-8": [
+    "file/JAXE"
+  ],
+  "colecovision": [
+    "file/Gearcoleco",
+    "file/blueMSX"
+  ],
+  "cpet": [
+    "file/VICE xpet"
+  ],
+  "dc": [
+    "file/Flycast VL",
+    "file/Flycast (External)",
+    "file/Flycast",
+    "file/Flycast Xtreme",
+    "file/Morpheuscast"
+  ],
+  "doom": [
+    "file/PrBoom"
+  ],
+  "dos": [
+    "file/DOSBox-Pure"
+  ],
+  "fairchild-channel-f": [
+    "file/FreeChaF"
+  ],
+  "famicom": [
+    "file/FCEUmm",
+    "file/BNES",
+    "file/Mesen",
+    "file/Nestopia",
+    "file/QuickNES"
+  ],
+  "fds": [
+    "file/FCEUmm",
+    "file/Mesen",
+    "file/Nestopia"
+  ],
+  "g-and-w": [
+    "file/Handheld Electronic"
+  ],
+  "galaksija": [
+    "file/Galaksija"
+  ],
+  "gamegear": [
+    "file/PicoDrive",
+    "file/Gearsystem",
+    "file/Genesis Plus GX"
+  ],
+  "gb": [
+    "file/Gambatte",
+    "file/DoubleCherryGB",
+    "file/FixGB",
+    "file/Gearboy",
+    "file/mGBA",
+    "file/SameBoy",
+    "file/TGB Dual",
+    "file/VBA-M"
+  ],
+  "gba": [
+    "file/gpSP",
+    "file/mGBA Rumble",
+    "file/mGBA",
+    "file/Beetle GBA",
+    "file/VBA-M",
+    "file/VBA-Next"
+  ],
+  "gbc": [
+    "file/Gambatte",
+    "file/DoubleCherryGB",
+    "file/FixGB",
+    "file/Gearboy",
+    "file/mGBA",
+    "file/SameBoy",
+    "file/TGB Dual",
+    "file/VBA-M"
+  ],
+  "genesis": [
+    "file/Genesis Plus GX",
+    "file/Genesis Plus GX Wide",
+    "file/PicoDrive"
+  ],
+  "intellivision": [
+    "file/FreeIntv"
+  ],
+  "j2me": [
+    "file/FreeJ2ME"
+  ],
+  "jaguar": [
+    "file/Virtual Jaguar"
+  ],
+  "karaoke": [
+    "file/PocketCDG"
+  ],
+  "lowres": [
+    "file/Lowres NX"
+  ],
+  "lua": [
+    "file/Lutro"
+  ],
+  "lynx": [
+    "file/Handy",
+    "file/Beetle Lynx"
+  ],
+  "media-player": [
+    "file/FFPlay",
+    "file/MPV",
+    "file/Live TV"
+  ],
+  "mega-duck-slash-cougar-boy": [
+    "file/SameDuck"
+  ],
+  "msx": [
+    "file/blueMSX",
+    "file/fMSX"
+  ],
+  "n64": [
+    "file/Mupen64Plus-Next",
+    "file/Mupen64Plus (External - GLideN64)",
+    "file/Mupen64Plus (External - Rice)",
+    "file/Mupen64Plus",
+    "file/ParaLLel N64"
+  ],
+  "naomi": [
+    "file/Flycast VL",
+    "file/Flycast (External)",
+    "file/Flycast",
+    "file/Flycast Xtreme",
+    "file/Morpheuscast"
+  ],
+  "nds": [
+    "drastic/backup",
+    "drastic-legacy/backup"
+  ],
+  "neo-geo-cd": [
+    "file/NeoCD"
+  ],
+  "neo-geo-pocket": [
+    "file/Beetle NeoPop",
+    "file/RACE"
+  ],
+  "neo-geo-pocket-color": [
+    "file/Beetle NeoPop",
+    "file/RACE"
+  ],
+  "neogeoaes": [
+    "file/FinalBurn Neo",
+    "file/FB Alpha 2012 Neo Geo",
+    "file/Geolith"
+  ],
+  "neogeomvs": [
+    "file/FinalBurn Neo",
+    "file/FB Alpha 2012 Neo Geo",
+    "file/Geolith"
+  ],
+  "nes": [
+    "file/FCEUmm",
+    "file/BNES",
+    "file/Mesen",
+    "file/Nestopia",
+    "file/QuickNES"
+  ],
+  "odyssey": [
+    "file/Odyssey2"
+  ],
+  "onscripter": [
+    "file/Onscripter",
+    "file/Onscripter-Yuri"
+  ],
+  "openbor": [
+    "file/OpenBOR7530 (External)",
+    "file/OpenBOR4432 (External)",
+    "file/OpenBOR6412 (External)",
+    "file/OpenBOR7142 (External)"
+  ],
+  "pc-8000": [
+    "file/QUASI8800"
+  ],
+  "pc-9800-series": [
+    "file/Neko Project II Kai",
+    "file/Neko Project II"
+  ],
+  "pc-fx": [
+    "file/Beetle PC-FX"
+  ],
+  "philips-cd-i": [
+    "file/SAME CDi"
+  ],
+  "pico": [
+    "file/PicoDrive",
+    "file/Genesis Plus GX",
+    "file/Genesis Plus GX Wide"
+  ],
+  "pico-8": [
+    "pico8"
+  ],
+  "pokemon-mini": [
+    "file/PokeMini"
+  ],
+  "ports": [
+    "file/External"
+  ],
+  "psp": [
+    "file/PPSSPP (External)",
+    "file/PPSSPP"
+  ],
+  "psx": [
+    "file/PCSX ReARMed",
+    "file/Beetle PSX",
+    "file/DuckStation",
+    "file/SwanStation"
+  ],
+  "quake": [
+    "file/TyrQuake"
+  ],
+  "rpg-maker": [
+    "file/EasyRPG"
+  ],
+  "saturn": [
+    "file/YabaSanshiro (External)",
+    "file/Beetle Saturn",
+    "file/YabaSanshiro",
+    "file/YabaSanshiro (External - No BIOS)",
+    "file/Yabause"
+  ],
+  "scummvm": [
+    "file/ScummVM (External)",
+    "file/ScummVM"
+  ],
+  "sega32": [
+    "file/PicoDrive"
+  ],
+  "segacd": [
+    "file/Genesis Plus GX",
+    "file/Genesis Plus GX Wide",
+    "file/PicoDrive"
+  ],
+  "sfam": [
+    "file/Snes9x",
+    "file/Beetle Supafaust",
+    "file/BSNES",
+    "file/BSNES 2014 Performance",
+    "file/BSNES C++98",
+    "file/BSNES Mercury",
+    "file/ChimeraSNES",
+    "file/Mesen-S",
+    "file/Snes9x 2002",
+    "file/Snes9x 2005",
+    "file/Snes9x 2005 Plus",
+    "file/Snes9x 2010",
+    "file/Snes9x Next"
+  ],
+  "sg1000": [
+    "file/Genesis Plus GX",
+    "file/blueMSX",
+    "file/Gearsystem"
+  ],
+  "sharp-x68000": [
+    "file/PX68k"
+  ],
+  "sms": [
+    "file/SMS Plus GX",
+    "file/Gearsystem",
+    "file/Genesis Plus GX",
+    "file/PicoDrive"
+  ],
+  "snes": [
+    "file/Snes9x",
+    "file/Beetle Supafaust",
+    "file/BSNES",
+    "file/BSNES 2014 Performance",
+    "file/BSNES C++98",
+    "file/BSNES Mercury",
+    "file/ChimeraSNES",
+    "file/Mesen-S",
+    "file/Snes9x 2002",
+    "file/Snes9x 2005",
+    "file/Snes9x 2005 Plus",
+    "file/Snes9x 2010",
+    "file/Snes9x Next"
+  ],
+  "supergrafx": [
+    "file/Beetle SuperGrafx",
+    "file/Geargrafx",
+    "file/Beetle PCE"
+  ],
+  "supervision": [
+    "file/Potator"
+  ],
+  "tg16": [
+    "file/Beetle PCE Fast",
+    "file/Beetle PCE"
+  ],
+  "ti-83": [
+    "file/Numero"
+  ],
+  "tic-80": [
+    "file/TIC-80"
+  ],
+  "turbografx-cd": [
+    "file/Beetle PCE Fast",
+    "file/Beetle PCE"
+  ],
+  "uzebox": [
+    "file/Uzem"
+  ],
+  "vectrex": [
+    "file/vecx"
+  ],
+  "vemulator": [
+    "file/VeMUlator"
+  ],
+  "vic-20": [
+    "file/VICE xvic"
+  ],
+  "vircon-32": [
+    "file/Vircon32"
+  ],
+  "virtualboy": [
+    "file/Beetle VB"
+  ],
+  "wasm-4": [
+    "file/WASM-4"
+  ],
+  "wolfenstein-3d": [
+    "file/ECWolf"
+  ],
+  "wonderswan": [
+    "file/Beetle Cygne"
+  ],
+  "wonderswan-color": [
+    "file/Beetle Cygne"
+  ],
+  "x1": [
+    "file/X Millennium"
+  ],
+  "zx81": [
+    "file/EightyOne"
+  ],
+  "zxs": [
+    "file/Fuse"
+  ]
+}

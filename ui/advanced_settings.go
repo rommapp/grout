@@ -3,7 +3,6 @@ package ui
 import (
 	"errors"
 	"grout/internal"
-	"grout/internal/constants"
 	"grout/romm"
 	"time"
 
@@ -20,6 +19,7 @@ type AdvancedSettingsInput struct {
 }
 
 type AdvancedSettingsOutput struct {
+	Action                AdvancedSettingsAction
 	RebuildCacheClicked   bool
 	SyncArtworkClicked    bool
 	LastSelectedIndex     int
@@ -32,9 +32,9 @@ func NewAdvancedSettingsScreen() *AdvancedSettingsScreen {
 	return &AdvancedSettingsScreen{}
 }
 
-func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (ScreenResult[AdvancedSettingsOutput], error) {
+func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (AdvancedSettingsOutput, error) {
 	config := input.Config
-	output := AdvancedSettingsOutput{}
+	output := AdvancedSettingsOutput{Action: AdvancedSettingsActionBack}
 
 	items := s.buildMenuItems(config)
 
@@ -49,7 +49,7 @@ func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (ScreenResult
 			InitialSelectedIndex: input.LastSelectedIndex,
 			VisibleStartIndex:    input.LastVisibleStartIndex,
 			StatusBar:            StatusBar(),
-			SmallTitle:           true,
+			UseSmallTitle:        true,
 		},
 		items,
 	)
@@ -61,10 +61,10 @@ func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (ScreenResult
 
 	if err != nil {
 		if errors.Is(err, gaba.ErrCancelled) {
-			return back(output), nil
+			return output, nil
 		}
 		gaba.GetLogger().Error("Advanced settings error", "error", err)
-		return withCode(output, gaba.ExitCodeError), err
+		return output, err
 	}
 
 	if result.Action == gaba.ListActionSelected {
@@ -72,12 +72,14 @@ func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (ScreenResult
 
 		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_rebuild_cache", Other: "Rebuild Cache"}, nil) {
 			output.RebuildCacheClicked = true
-			return withCode(output, constants.ExitCodeRebuildCache), nil
+			output.Action = AdvancedSettingsActionRebuildCache
+			return output, nil
 		}
 
 		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_sync_artwork", Other: "Preload Artwork"}, nil) {
 			output.SyncArtworkClicked = true
-			return withCode(output, constants.ExitCodeSyncArtwork), nil
+			output.Action = AdvancedSettingsActionSyncArtwork
+			return output, nil
 		}
 	}
 
@@ -86,10 +88,11 @@ func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (ScreenResult
 	err = internal.SaveConfig(config)
 	if err != nil {
 		gaba.GetLogger().Error("Error saving advanced settings", "error", err)
-		return withCode(output, gaba.ExitCodeError), err
+		return output, err
 	}
 
-	return success(output), nil
+	output.Action = AdvancedSettingsActionSaved
+	return output, nil
 }
 
 func (s *AdvancedSettingsScreen) buildMenuItems(config *internal.Config) []gaba.ItemWithOptions {
@@ -143,6 +146,7 @@ func (s *AdvancedSettingsScreen) buildMenuItems(config *internal.Config) []gaba.
 		{
 			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_release_channel", Other: "Release Channel"}, nil)},
 			Options: []gaba.Option{
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "release_match_romm", Other: "Match RomM"}, nil), Value: internal.ReleaseChannelMatchRomM},
 				{DisplayName: i18n.Localize(&goi18n.Message{ID: "release_stable", Other: "Stable"}, nil), Value: internal.ReleaseChannelStable},
 				{DisplayName: i18n.Localize(&goi18n.Message{ID: "release_beta", Other: "Beta"}, nil), Value: internal.ReleaseChannelBeta},
 			},
@@ -151,9 +155,9 @@ func (s *AdvancedSettingsScreen) buildMenuItems(config *internal.Config) []gaba.
 		{
 			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_log_level", Other: "Log Level"}, nil)},
 			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "log_level_debug", Other: "Debug"}, nil), Value: "DEBUG"},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "log_level_info", Other: "Info"}, nil), Value: "INFO"},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "log_level_error", Other: "Error"}, nil), Value: "ERROR"},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "log_level_debug", Other: "Debug"}, nil), Value: internal.LogLevelDebug},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "log_level_info", Other: "Info"}, nil), Value: internal.LogLevelInfo},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "log_level_error", Other: "Error"}, nil), Value: internal.LogLevelError},
 			},
 			SelectedOption: logLevelToIndex(config.LogLevel),
 		},
@@ -176,7 +180,7 @@ func (s *AdvancedSettingsScreen) applySettings(config *internal.Config, items []
 			}
 
 		case i18n.Localize(&goi18n.Message{ID: "settings_log_level", Other: "Log Level"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(string); ok {
+			if val, ok := item.Options[item.SelectedOption].Value.(internal.LogLevel); ok {
 				config.LogLevel = val
 			}
 

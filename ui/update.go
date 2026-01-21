@@ -6,6 +6,7 @@ import (
 	"grout/cfw"
 	"grout/internal"
 	"grout/internal/stringutil"
+	"grout/romm"
 	"grout/update"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -18,9 +19,11 @@ import (
 type UpdateInput struct {
 	CFW            cfw.CFW
 	ReleaseChannel internal.ReleaseChannel
+	Host           *romm.Host
 }
 
 type UpdateOutput struct {
+	Action          UpdateCheckAction
 	UpdatePerformed bool
 }
 
@@ -30,9 +33,9 @@ func NewUpdateScreen() *UpdateScreen {
 	return &UpdateScreen{}
 }
 
-func (s *UpdateScreen) Draw(input UpdateInput) (ScreenResult[UpdateOutput], error) {
+func (s *UpdateScreen) Draw(input UpdateInput) (UpdateOutput, error) {
 	logger := gaba.GetLogger()
-	output := UpdateOutput{}
+	output := UpdateOutput{Action: UpdateCheckActionComplete}
 
 	var updateInfo *update.Info
 	var checkErr error
@@ -43,7 +46,7 @@ func (s *UpdateScreen) Draw(input UpdateInput) (ScreenResult[UpdateOutput], erro
 			ShowThemeBackground: true,
 		},
 		func() (interface{}, error) {
-			updateInfo, checkErr = update.CheckForUpdate(input.CFW, input.ReleaseChannel)
+			updateInfo, checkErr = update.CheckForUpdate(input.CFW, input.ReleaseChannel, input.Host)
 			return nil, checkErr
 		},
 	)
@@ -62,7 +65,7 @@ func (s *UpdateScreen) Draw(input UpdateInput) (ScreenResult[UpdateOutput], erro
 			},
 			gaba.MessageOptions{},
 		)
-		return back(output), nil
+		return output, nil
 	}
 
 	if !updateInfo.UpdateAvailable {
@@ -73,7 +76,7 @@ func (s *UpdateScreen) Draw(input UpdateInput) (ScreenResult[UpdateOutput], erro
 			},
 			gaba.MessageOptions{},
 		)
-		return back(output), nil
+		return output, nil
 	}
 
 	updateMessage := fmt.Sprintf(
@@ -96,9 +99,9 @@ func (s *UpdateScreen) Draw(input UpdateInput) (ScreenResult[UpdateOutput], erro
 
 	if err != nil {
 		if errors.Is(err, gaba.ErrCancelled) {
-			return back(output), nil
+			return output, nil
 		}
-		return withCode(output, gaba.ExitCodeError), err
+		return output, err
 	}
 
 	progress := &atomic.Float64{}
@@ -131,7 +134,7 @@ func (s *UpdateScreen) Draw(input UpdateInput) (ScreenResult[UpdateOutput], erro
 			},
 			gaba.MessageOptions{},
 		)
-		return back(output), nil
+		return output, nil
 	}
 
 	gaba.ConfirmationMessage(
@@ -143,5 +146,5 @@ func (s *UpdateScreen) Draw(input UpdateInput) (ScreenResult[UpdateOutput], erro
 	)
 
 	output.UpdatePerformed = true
-	return withCode(output, gaba.ExitCodeSuccess), nil
+	return output, nil
 }

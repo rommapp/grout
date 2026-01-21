@@ -126,6 +126,10 @@ other = "Опции"
 hash = "sha1-1a2285d8881f226e13430515a9dd2b9fb6294200"
 other = "Выход"
 
+[button_redownload]
+hash = "sha1-3d0a3c6e0fd5672b0e3e33bbef33dff73a5f0a8c"
+other = "Скачать заново"
+
 [button_save_sync]
 hash = "sha1-905f63092ff26517a7aa8083857b3c8af9707002"
 other = "Синхр."

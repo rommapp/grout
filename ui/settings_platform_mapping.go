@@ -32,6 +32,7 @@ type PlatformMappingInput struct {
 }
 
 type PlatformMappingOutput struct {
+	Action   PlatformMappingAction
 	Mappings map[string]internal.DirectoryMapping
 }
 
@@ -41,20 +42,20 @@ func NewPlatformMappingScreen() *PlatformMappingScreen {
 	return &PlatformMappingScreen{}
 }
 
-func (s *PlatformMappingScreen) Draw(input PlatformMappingInput) (ScreenResult[PlatformMappingOutput], error) {
+func (s *PlatformMappingScreen) Draw(input PlatformMappingInput) (PlatformMappingOutput, error) {
 	logger := gaba.GetLogger()
-	output := PlatformMappingOutput{Mappings: make(map[string]internal.DirectoryMapping)}
+	output := PlatformMappingOutput{Action: PlatformMappingActionBack, Mappings: make(map[string]internal.DirectoryMapping)}
 
 	rommPlatforms, err := s.fetchPlatforms(input)
 	if err != nil {
 		logger.Error("Error fetching RomM Platforms", "error", err)
-		return withCode(output, gaba.ExitCodeError), err
+		return output, err
 	}
 
 	romDirectories, err := s.getRomDirectories(input.RomDirectory)
 	if err != nil {
 		logger.Error("Error fetching ROM directories", "error", err)
-		return withCode(output, gaba.ExitCodeBack), err
+		return output, err
 	}
 
 	mappingOptions := s.buildMappingOptions(rommPlatforms, romDirectories, input)
@@ -79,19 +80,20 @@ func (s *PlatformMappingScreen) Draw(input PlatformMappingInput) (ScreenResult[P
 
 	if err != nil {
 		if errors.Is(err, gaba.ErrCancelled) {
-			return back(PlatformMappingOutput{}), nil
+			return PlatformMappingOutput{Action: PlatformMappingActionBack}, nil
 		}
-		return withCode(PlatformMappingOutput{}, gaba.ExitCodeError), err
+		return output, err
 	}
 
 	output.Mappings = s.buildMappingsFromResult(result.Items)
 
 	if err := s.createDirectories(output.Mappings, input.RomDirectory, romDirectories); err != nil {
 		logger.Error("Error creating directories", "error", err)
-		return withCode(output, gaba.ExitCodeError), err
+		return output, err
 	}
 
-	return success(output), nil
+	output.Action = PlatformMappingActionSaved
+	return output, nil
 }
 
 func (s *PlatformMappingScreen) fetchPlatforms(input PlatformMappingInput) ([]romm.Platform, error) {

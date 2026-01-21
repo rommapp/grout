@@ -45,10 +45,10 @@ func (s *BIOSDownloadScreen) Execute(config internal.Config, host romm.Host, pla
 		return BIOSDownloadOutput{Platform: platform}
 	}
 
-	return result.Value
+	return result
 }
 
-func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDownloadOutput], error) {
+func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (BIOSDownloadOutput, error) {
 	logger := gaba.GetLogger()
 
 	output := BIOSDownloadOutput{
@@ -65,7 +65,7 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 			ContinueFooter(),
 			gaba.MessageOptions{},
 		)
-		return back(output), nil
+		return output, nil
 	}
 
 	if len(firmwareList) == 0 {
@@ -75,7 +75,7 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 			ContinueFooter(),
 			gaba.MessageOptions{},
 		)
-		return back(output), nil
+		return output, nil
 	}
 
 	logger.Debug("Fetched firmware from RomM", "count", len(firmwareList), "platform_id", input.Platform.ID)
@@ -192,8 +192,8 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 	}
 
 	options := gaba.DefaultListOptions(fmt.Sprintf("%s - BIOS", input.Platform.Name), menuItems)
-	options.SmallTitle = true
-	options.StartInMultiSelectMode = true
+	options.UseSmallTitle = true
+	options.InitialMultiSelectMode = true
 	options.FooterHelpItems = []gaba.FooterHelpItem{
 		FooterBack(),
 		{ButtonName: icons.Start, HelpText: i18n.Localize(&goi18n.Message{ID: "button_download", Other: "Download"}, nil), IsConfirmButton: true},
@@ -203,11 +203,11 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 	sel, err := gaba.List(options)
 	if err != nil {
 		logger.Error("BIOS selection failed", "error", err)
-		return back(output), err
+		return output, err
 	}
 
 	if sel.Action != gaba.ListActionSelected || len(sel.Selected) == 0 {
-		return back(output), nil
+		return output, nil
 	}
 
 	var selectedItems []firmwareWithMetadata
@@ -245,11 +245,11 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 	headers["Authorization"] = input.Host.BasicAuthHeader()
 
 	res, err := gaba.DownloadManager(downloads, headers, gaba.DownloadManagerOptions{
-		AutoContinue: true,
+		AutoContinueOnComplete: true,
 	})
 	if err != nil {
 		logger.Error("BIOS download failed", "error", err)
-		return back(output), err
+		return output, err
 	}
 
 	logger.Debug("Download results", "completed", len(res.Completed), "failed", len(res.Failed))
@@ -330,5 +330,5 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (ScreenResult[BIOSDow
 		)
 	}
 
-	return back(output), nil
+	return output, nil
 }

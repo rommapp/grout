@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"grout/internal"
-	"grout/internal/constants"
 	"os"
 	"strconv"
 	"strings"
@@ -24,8 +23,9 @@ type loginInput struct {
 }
 
 type loginOutput struct {
-	Host   romm.Host
-	Config *internal.Config
+	Host      romm.Host
+	Config    *internal.Config
+	Cancelled bool
 }
 
 type loginAttemptResult struct {
@@ -40,7 +40,7 @@ func newLoginScreen() *LoginScreen {
 	return &LoginScreen{}
 }
 
-func (s *LoginScreen) draw(input loginInput) (ScreenResult[loginOutput], error) {
+func (s *LoginScreen) draw(input loginInput) (loginOutput, error) {
 	host := input.ExistingHost
 
 	// SSL option visibility - only show when HTTPS is selected
@@ -180,7 +180,7 @@ func (s *LoginScreen) draw(input loginInput) (ScreenResult[loginOutput], error) 
 	)
 
 	if err != nil {
-		return withCode(loginOutput{}, gabagool.ExitCodeCancel), nil
+		return loginOutput{Cancelled: true}, nil
 	}
 
 	loginSettings := res.Items
@@ -198,7 +198,7 @@ func (s *LoginScreen) draw(input loginInput) (ScreenResult[loginOutput], error) 
 		InsecureSkipVerify: loginSettings[5].Options[loginSettings[5].SelectedOption].Value.(bool),
 	}
 
-	return success(loginOutput{Host: newHost}), nil
+	return loginOutput{Host: newHost}, nil
 }
 
 func LoginFlow(existingHost romm.Host) (*internal.Config, error) {
@@ -214,11 +214,11 @@ func LoginFlow(existingHost romm.Host) (*internal.Config, error) {
 			return nil, fmt.Errorf("unable to get login information: %w", err)
 		}
 
-		if result.ExitCode == gabagool.ExitCodeBack || result.ExitCode == gabagool.ExitCodeCancel {
+		if result.Cancelled {
 			os.Exit(1)
 		}
 
-		host := result.Value.Host
+		host := result.Host
 
 		loginResult := attemptLogin(host)
 
@@ -243,7 +243,7 @@ func LoginFlow(existingHost romm.Host) (*internal.Config, error) {
 }
 
 func attemptLogin(host romm.Host) loginAttemptResult {
-	validationClient := romm.NewClientFromHost(host, constants.ValidationTimeout)
+	validationClient := romm.NewClientFromHost(host, internal.ValidationTimeout)
 
 	result, _ := gabagool.ProcessMessage(
 		i18n.Localize(&goi18n.Message{ID: "login_validating", Other: "Validating connection..."}, nil),
@@ -254,7 +254,7 @@ func attemptLogin(host romm.Host) loginAttemptResult {
 				return classifyLoginError(err), nil
 			}
 
-			loginClient := romm.NewClientFromHost(host, constants.LoginTimeout)
+			loginClient := romm.NewClientFromHost(host, internal.LoginTimeout)
 			err = loginClient.Login(host.Username, host.Password)
 			if err != nil {
 				return classifyLoginError(err), nil

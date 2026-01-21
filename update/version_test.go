@@ -58,7 +58,7 @@ func TestCompareVersions(t *testing.T) {
 		{"2.0.0", "1.0.0", 1, "major version older"},
 		{"1.0.0", "1.0.0", 0, "same version"},
 
-		// Beta vs full release - THE KEY FIX
+		// Beta vs full release
 		{"v1.2.0-beta.1", "v1.2.0", -1, "beta should recognize full release as newer"},
 		{"v1.2.0", "v1.2.0-beta.1", 1, "full release should be newer than beta"},
 		{"1.2.0-beta.1", "1.2.0", -1, "beta should recognize full release as newer (no v prefix)"},

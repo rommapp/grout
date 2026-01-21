@@ -6,10 +6,8 @@ import (
 )
 
 var (
-	ErrNotInitialized  = errors.New("cache manager not initialized")
-	ErrCacheMiss       = errors.New("cache miss")
-	ErrDBClosed        = errors.New("database connection closed")
-	ErrInvalidCacheKey = errors.New("invalid cache key")
+	ErrNotInitialized = errors.New("cache manager not initialized")
+	ErrCacheMiss      = errors.New("cache miss")
 )
 
 type Error struct {

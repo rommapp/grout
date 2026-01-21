@@ -14,6 +14,7 @@ type GeneralSettingsInput struct {
 }
 
 type GeneralSettingsOutput struct {
+	Action GeneralSettingsAction
 	Config *internal.Config
 }
 
@@ -23,9 +24,9 @@ func NewGeneralSettingsScreen() *GeneralSettingsScreen {
 	return &GeneralSettingsScreen{}
 }
 
-func (s *GeneralSettingsScreen) Draw(input GeneralSettingsInput) (ScreenResult[GeneralSettingsOutput], error) {
+func (s *GeneralSettingsScreen) Draw(input GeneralSettingsInput) (GeneralSettingsOutput, error) {
 	config := input.Config
-	output := GeneralSettingsOutput{Config: config}
+	output := GeneralSettingsOutput{Action: GeneralSettingsActionBack, Config: config}
 
 	items := s.buildMenuItems(config)
 
@@ -34,17 +35,17 @@ func (s *GeneralSettingsScreen) Draw(input GeneralSettingsInput) (ScreenResult[G
 		gaba.OptionListSettings{
 			FooterHelpItems: OptionsListFooter(),
 			StatusBar:       StatusBar(),
-			SmallTitle:      true,
+			UseSmallTitle:   true,
 		},
 		items,
 	)
 
 	if err != nil {
 		if errors.Is(err, gaba.ErrCancelled) {
-			return back(output), nil
+			return output, nil
 		}
 		gaba.GetLogger().Error("General settings error", "error", err)
-		return withCode(output, gaba.ExitCodeError), err
+		return output, err
 	}
 
 	s.applySettings(config, result.Items)
@@ -52,10 +53,11 @@ func (s *GeneralSettingsScreen) Draw(input GeneralSettingsInput) (ScreenResult[G
 	err = internal.SaveConfig(config)
 	if err != nil {
 		gaba.GetLogger().Error("Error saving general settings", "error", err)
-		return withCode(output, gaba.ExitCodeError), err
+		return output, err
 	}
 
-	return success(output), nil
+	output.Action = GeneralSettingsActionSaved
+	return output, nil
 }
 
 func (s *GeneralSettingsScreen) buildMenuItems(config *internal.Config) []gaba.ItemWithOptions {
@@ -71,9 +73,9 @@ func (s *GeneralSettingsScreen) buildMenuItems(config *internal.Config) []gaba.I
 		{
 			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_downloaded_games", Other: "Downloaded Games"}, nil)},
 			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "downloaded_games_do_nothing", Other: "Do Nothing"}, nil), Value: "do_nothing"},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "downloaded_games_mark", Other: "Mark"}, nil), Value: "mark"},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "downloaded_games_filter", Other: "Filter"}, nil), Value: "filter"},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "downloaded_games_do_nothing", Other: "Do Nothing"}, nil), Value: internal.DownloadedGamesModeDoNothing},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "downloaded_games_mark", Other: "Mark"}, nil), Value: internal.DownloadedGamesModeMark},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "downloaded_games_filter", Other: "Filter"}, nil), Value: internal.DownloadedGamesModeFilter},
 			},
 			SelectedOption: downloadedGamesActionToIndex(config.DownloadedGames),
 		},
@@ -121,7 +123,7 @@ func (s *GeneralSettingsScreen) applySettings(config *internal.Config, items []g
 			}
 
 		case i18n.Localize(&goi18n.Message{ID: "settings_downloaded_games", Other: "Downloaded Games"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(string); ok {
+			if val, ok := item.Options[item.SelectedOption].Value.(internal.DownloadedGamesMode); ok {
 				config.DownloadedGames = val
 			}
 
@@ -143,13 +145,13 @@ func (s *GeneralSettingsScreen) applySettings(config *internal.Config, items []g
 	}
 }
 
-func downloadedGamesActionToIndex(action string) int {
+func downloadedGamesActionToIndex(action internal.DownloadedGamesMode) int {
 	switch action {
-	case "do_nothing":
+	case internal.DownloadedGamesModeDoNothing:
 		return 0
-	case "mark":
+	case internal.DownloadedGamesModeMark:
 		return 1
-	case "filter":
+	case internal.DownloadedGamesModeFilter:
 		return 2
 	default:
 		return 0

@@ -12,12 +12,10 @@ func LoadJSONMap[K comparable, V any](fs embed.FS, path string, overridePrefix s
 	var data []byte
 	var err error
 
-	// Check for override file in current working directory
 	overridePath := filepath.Join("overrides", overridePrefix, path)
 	if fileData, readErr := os.ReadFile(overridePath); readErr == nil {
 		data = fileData
 	} else {
-		// Fall back to embedded file
 		data, err = fs.ReadFile(path)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read %s: %w", path, err)

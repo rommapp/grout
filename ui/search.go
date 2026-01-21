@@ -13,7 +13,8 @@ type SearchInput struct {
 }
 
 type SearchOutput struct {
-	Query string
+	Action SearchAction
+	Query  string
 }
 
 type SearchScreen struct{}
@@ -22,15 +23,15 @@ func NewSearchScreen() *SearchScreen {
 	return &SearchScreen{}
 }
 
-func (s *SearchScreen) Draw(input SearchInput) (ScreenResult[SearchOutput], error) {
+func (s *SearchScreen) Draw(input SearchInput) (SearchOutput, error) {
 	res, err := gaba.Keyboard(input.InitialText, i18n.Localize(&goi18n.Message{ID: "help_exit_text", Other: "Press any button to close help"}, nil))
 	if err != nil {
 		if errors.Is(err, gaba.ErrCancelled) {
-			return back(SearchOutput{}), nil
+			return SearchOutput{Action: SearchActionCancel}, nil
 		}
 		gaba.GetLogger().Error("Error with keyboard", "error", err)
-		return withCode(SearchOutput{}, gaba.ExitCodeError), err
+		return SearchOutput{Action: SearchActionCancel}, err
 	}
 
-	return success(SearchOutput{Query: res.Text}), nil
+	return SearchOutput{Action: SearchActionApply, Query: res.Text}, nil
 }

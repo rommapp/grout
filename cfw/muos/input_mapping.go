@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
@@ -32,11 +31,9 @@ func DetectDevice() Device {
 	output, err := cmd.Output()
 
 	if err != nil || len(output) == 0 {
-		logger.Info("Device detection result", "device", DeviceAnbernic, "reason", "TRIMUI not found in input devices")
 		return DeviceAnbernic
 	}
 
-	logger.Info("Device detection result", "device", DeviceTrimui, "match", strings.TrimSpace(string(output)))
 	return DeviceTrimui
 }
 

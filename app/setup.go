@@ -130,7 +130,7 @@ func setup() SetupResult {
 	}
 
 	if config.LogLevel != "" {
-		gaba.SetRawLogLevel(config.LogLevel)
+		gaba.SetRawLogLevel(string(config.LogLevel))
 	}
 
 	if config.Language != "" && !isFirstLaunch {
@@ -173,8 +173,8 @@ func setup() SetupResult {
 			PlatformsBinding: config.PlatformsBinding,
 		})
 
-		if err == nil && result.ExitCode == gaba.ExitCodeSuccess {
-			config.DirectoryMappings = result.Value.Mappings
+		if err == nil && result.Action == ui.PlatformMappingActionSaved {
+			config.DirectoryMappings = result.Mappings
 			internal.SaveConfig(config)
 		}
 	}

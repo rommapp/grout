@@ -25,6 +25,7 @@ type CollectionPlatformSelectionInput struct {
 }
 
 type CollectionPlatformSelectionOutput struct {
+	Action               CollectionPlatformSelectionAction
 	SelectedPlatform     romm.Platform
 	Collection           romm.Collection
 	AllGames             []romm.Rom
@@ -38,9 +39,10 @@ func NewCollectionPlatformSelectionScreen() *CollectionPlatformSelectionScreen {
 	return &CollectionPlatformSelectionScreen{}
 }
 
-func (s *CollectionPlatformSelectionScreen) Draw(input CollectionPlatformSelectionInput) (ScreenResult[CollectionPlatformSelectionOutput], error) {
+func (s *CollectionPlatformSelectionScreen) Draw(input CollectionPlatformSelectionInput) (CollectionPlatformSelectionOutput, error) {
 	logger := gaba.GetLogger()
 	output := CollectionPlatformSelectionOutput{
+		Action:               CollectionPlatformSelectionActionBack,
 		Collection:           input.Collection,
 		LastSelectedIndex:    input.LastSelectedIndex,
 		LastSelectedPosition: input.LastSelectedPosition,
@@ -76,12 +78,12 @@ func (s *CollectionPlatformSelectionScreen) Draw(input CollectionPlatformSelecti
 					return nil, nil
 				},
 			)
-			return withCode(output, gaba.ExitCodeBack), nil
+			return output, nil
 		}
 	}
 
 	// Handle unified mode - skip platform selection and return all games
-	if input.Config.CollectionView == "unified" {
+	if input.Config.CollectionView == internal.CollectionViewUnified {
 		// Filter games to only include those with mapped platforms
 		filteredGames := make([]romm.Rom, 0)
 		for _, game := range allGames {
@@ -92,7 +94,8 @@ func (s *CollectionPlatformSelectionScreen) Draw(input CollectionPlatformSelecti
 
 		output.AllGames = filteredGames
 		output.SelectedPlatform = romm.Platform{ID: 0} // ID=0 signals unified mode
-		return success(output), nil
+		output.Action = CollectionPlatformSelectionActionSelected
+		return output, nil
 	}
 
 	platformMap := make(map[int]romm.Platform)
@@ -117,7 +120,7 @@ func (s *CollectionPlatformSelectionScreen) Draw(input CollectionPlatformSelecti
 				return nil, nil
 			},
 		)
-		return withCode(output, gaba.ExitCodeBack), nil
+		return output, nil
 	}
 
 	platforms := make([]romm.Platform, 0, len(platformMap))
@@ -155,7 +158,7 @@ func (s *CollectionPlatformSelectionScreen) Draw(input CollectionPlatformSelecti
 
 	title := i18n.Localize(&goi18n.Message{ID: "collection_platform_title", Other: "{{.Name}} - Platforms"}, map[string]interface{}{"Name": input.Collection.Name})
 	options := gaba.DefaultListOptions(title, menuItems)
-	options.SmallTitle = true
+	options.UseSmallTitle = true
 	options.FooterHelpItems = footerItems
 	options.SelectedIndex = input.LastSelectedIndex
 	options.VisibleStartIndex = max(0, input.LastSelectedIndex-input.LastSelectedPosition)
@@ -164,9 +167,9 @@ func (s *CollectionPlatformSelectionScreen) Draw(input CollectionPlatformSelecti
 	sel, err := gaba.List(options)
 	if err != nil {
 		if errors.Is(err, gaba.ErrCancelled) {
-			return back(output), nil
+			return output, nil
 		}
-		return withCode(output, gaba.ExitCodeError), err
+		return output, err
 	}
 
 	switch sel.Action {
@@ -177,9 +180,10 @@ func (s *CollectionPlatformSelectionScreen) Draw(input CollectionPlatformSelecti
 		output.AllGames = allGames
 		output.LastSelectedIndex = sel.Selected[0]
 		output.LastSelectedPosition = sel.VisiblePosition
-		return success(output), nil
+		output.Action = CollectionPlatformSelectionActionSelected
+		return output, nil
 
 	default:
-		return withCode(output, gaba.ExitCodeBack), nil
+		return output, nil
 	}
 }

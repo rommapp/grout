@@ -21,8 +21,37 @@ Grout attempts to be consistent with its controls. Here's a quick reference:
 
 ---
 
+## Status Bar Icons
+
+The status bar displays icons to indicate background activity. Here's what each icon means:
+
+### Cache Sync Icons
+
+These icons appear during the [background cache sync](#background-cache-sync) process:
+
+| Icon                                                                                    | Description                       |
+|-----------------------------------------------------------------------------------------|-----------------------------------|
+| ![Database Sync](../.github/resources/user_guide/statusbar_icons/Database%20Sync.png)   | Cache sync in progress            |
+| ![Database Check](../.github/resources/user_guide/statusbar_icons/Database%20Check.png) | Cache sync completed successfully |
+| ![Database Alert](../.github/resources/user_guide/statusbar_icons/Database%20Alert.png) | Cache sync encountered an error   |
+
+### Save Sync Icons
+
+These icons appear during [Save Sync](#save-sync) operations:
+
+| Icon                                                                                    | Description                                                         |
+|-----------------------------------------------------------------------------------------|---------------------------------------------------------------------|
+| ![Cloud Sync](../.github/resources/user_guide/statusbar_icons/Cloud%20Sync.png)         | Save sync in progress                                               |
+| ![Cloud Upload](../.github/resources/user_guide/statusbar_icons/Cloud%20Upload.png)     | Uploading saves to RomM                                             |
+| ![Cloud Download](../.github/resources/user_guide/statusbar_icons/Cloud%20Download.png) | Downloading saves from RomM                                         |
+| ![Cloud Check](../.github/resources/user_guide/statusbar_icons/Cloud%20Check.png)       | Save sync completed successfully                                    |
+| ![Cloud Alert](../.github/resources/user_guide/statusbar_icons/Cloud%20Alert.png)       | Save sync encountered an error, go check the log file for more info |
+
+---
+
 ## Table of Contents
 
+- [Status Bar Icons](#status-bar-icons)
 - [First Launch and Login](#first-launch-and-login)
 - [Platform Directory Mapping](#platform-directory-mapping)
 - [Background Cache Sync](#background-cache-sync)
@@ -123,6 +152,13 @@ You can change these mappings later from [Settings](SETTINGS.md).
 ---
 
 ## Background Cache Sync
+
+> [!WARNING]
+> Grout currently does not gracefully handle deletions.
+> 
+> Deleted games, platforms and collections will continue to be shown until the [local cache is rebuilt](SETTINGS.md#rebuild-cache).
+> 
+> We are waiting for updated API endpoints that will allow Grout to remove deleted items from the cache without a rebuild. You can track the progress of this in [this issue](https://github.com/rommapp/grout/issues/83).
 
 Grout maintains a local cache of your RomM library data (platforms, games, and collections) to provide a fast,
 responsive browsing experience. This cache syncs automatically in the background each time you launch Grout.

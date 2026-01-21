@@ -2,7 +2,6 @@ package ui
 
 import (
 	"errors"
-	"grout/internal/constants"
 	"grout/internal/imageutil"
 	"grout/romm"
 	"grout/version"
@@ -18,6 +17,7 @@ type InfoInput struct {
 }
 
 type InfoOutput struct {
+	Action          InfoAction
 	LogoutRequested bool
 }
 
@@ -27,8 +27,8 @@ func NewInfoScreen() *InfoScreen {
 	return &InfoScreen{}
 }
 
-func (s *InfoScreen) Draw(input InfoInput) (ScreenResult[InfoOutput], error) {
-	output := InfoOutput{}
+func (s *InfoScreen) Draw(input InfoInput) (InfoOutput, error) {
+	output := InfoOutput{Action: InfoActionBack}
 
 	sections := s.buildSections(input)
 
@@ -37,7 +37,8 @@ func (s *InfoScreen) Draw(input InfoInput) (ScreenResult[InfoOutput], error) {
 	options.ShowThemeBackground = false
 	options.ShowScrollbar = true
 	options.ActionButton = buttons.VirtualButtonX
-	options.EnableAction = true
+	options.AllowAction = true
+	options.ConfirmButton = buttons.VirtualButtonUnassigned
 
 	result, err := gaba.DetailScreen("", options, []gaba.FooterHelpItem{
 		{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_back", Other: "Back"}, nil)},
@@ -46,18 +47,19 @@ func (s *InfoScreen) Draw(input InfoInput) (ScreenResult[InfoOutput], error) {
 
 	if err != nil {
 		if errors.Is(err, gaba.ErrCancelled) {
-			return back(output), nil
+			return output, nil
 		}
 		gaba.GetLogger().Error("Info screen error", "error", err)
-		return withCode(output, gaba.ExitCodeError), err
+		return output, err
 	}
 
 	if result.Action == gaba.DetailActionTriggered {
 		output.LogoutRequested = true
-		return withCode(output, constants.ExitCodeLogoutConfirm), nil
+		output.Action = InfoActionLogout
+		return output, nil
 	}
 
-	return back(output), nil
+	return output, nil
 }
 
 func (s *InfoScreen) buildSections(input InfoInput) []gaba.Section {

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"grout/cfw"
 	"grout/internal"
-	"grout/internal/constants"
 	"grout/romm"
 	"sync/atomic"
 
@@ -26,6 +25,7 @@ type SettingsInput struct {
 }
 
 type SettingsOutput struct {
+	Action                     SettingsAction
 	Config                     *internal.Config
 	GeneralSettingsClicked     bool
 	InfoClicked                bool
@@ -68,12 +68,12 @@ var settingsOrder = []SettingType{
 	SettingCheckUpdates,
 }
 
-func (s *SettingsScreen) Draw(input SettingsInput) (ScreenResult[SettingsOutput], error) {
+func (s *SettingsScreen) Draw(input SettingsInput) (SettingsOutput, error) {
 	config := input.Config
-	output := SettingsOutput{Config: config}
+	output := SettingsOutput{Action: SettingsActionBack, Config: config}
 
 	visibility := &settingsVisibility{}
-	visibility.saveSyncSettings.Store(config.SaveSyncMode != "off")
+	visibility.saveSyncSettings.Store(config.SaveSyncMode != internal.SaveSyncModeOff)
 
 	items := s.buildMenuItems(config, visibility)
 
@@ -84,16 +84,16 @@ func (s *SettingsScreen) Draw(input SettingsInput) (ScreenResult[SettingsOutput]
 			InitialSelectedIndex: input.LastSelectedIndex,
 			VisibleStartIndex:    input.LastVisibleStartIndex,
 			StatusBar:            StatusBar(),
-			SmallTitle:           true,
+			UseSmallTitle:        true,
 		},
 		items,
 	)
 
 	if err != nil {
 		if errors.Is(err, gaba.ErrCancelled) {
-			return back(SettingsOutput{}), nil
+			return SettingsOutput{Action: SettingsActionBack}, nil
 		}
-		return withCode(SettingsOutput{}, gaba.ExitCodeError), err
+		return SettingsOutput{Action: SettingsActionBack}, err
 	}
 
 	output.LastSelectedIndex = result.Selected
@@ -107,42 +107,50 @@ func (s *SettingsScreen) Draw(input SettingsInput) (ScreenResult[SettingsOutput]
 
 		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_general", Other: "General"}, nil) {
 			output.GeneralSettingsClicked = true
-			return withCode(output, constants.ExitCodeGeneralSettings), nil
+			output.Action = SettingsActionGeneral
+			return output, nil
 		}
 
 		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_info", Other: "Grout Info"}, nil) {
 			output.InfoClicked = true
-			return withCode(output, constants.ExitCodeInfo), nil
+			output.Action = SettingsActionInfo
+			return output, nil
 		}
 
 		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_collections", Other: "Collections Settings"}, nil) {
 			output.CollectionsSettingsClicked = true
-			return withCode(output, constants.ExitCodeCollectionsSettings), nil
+			output.Action = SettingsActionCollections
+			return output, nil
 		}
 
 		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_edit_mappings", Other: "Directory Mappings"}, nil) {
 			output.DirectoryMappingsClicked = true
-			return withCode(output, constants.ExitCodeEditMappings), nil
+			output.Action = SettingsActionPlatformMapping
+			return output, nil
 		}
 
 		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_advanced", Other: "Advanced"}, nil) {
 			output.AdvancedSettingsClicked = true
-			return withCode(output, constants.ExitCodeAdvancedSettings), nil
+			output.Action = SettingsActionAdvanced
+			return output, nil
 		}
 
 		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_save_sync_settings", Other: "Save Sync Settings"}, nil) {
 			output.SaveSyncSettingsClicked = true
-			return withCode(output, constants.ExitCodeSaveSyncSettings), nil
+			output.Action = SettingsActionSaveSync
+			return output, nil
 		}
 
 		if selectedText == i18n.Localize(&goi18n.Message{ID: "update_check_for_updates", Other: "Check for Updates"}, nil) {
 			output.CheckUpdatesClicked = true
-			return withCode(output, constants.ExitCodeCheckUpdate), nil
+			output.Action = SettingsActionCheckUpdate
+			return output, nil
 		}
 	}
 
 	output.Config = config
-	return success(output), nil
+	output.Action = SettingsActionSaved
+	return output, nil
 }
 
 func (s *SettingsScreen) buildMenuItems(config *internal.Config, visibility *settingsVisibility) []gaba.ItemWithOptions {
@@ -177,13 +185,13 @@ func (s *SettingsScreen) buildMenuItem(settingType SettingType, config *internal
 		return gaba.ItemWithOptions{
 			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_save_sync", Other: "Save Sync"}, nil)},
 			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "save_sync_mode_off", Other: "Off"}, nil), Value: "off", OnUpdate: func(v interface{}) {
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "save_sync_mode_off", Other: "Off"}, nil), Value: internal.SaveSyncModeOff, OnUpdate: func(v interface{}) {
 					visibility.saveSyncSettings.Store(false)
 				}},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "save_sync_mode_manual", Other: "Manual"}, nil), Value: "manual", OnUpdate: func(v interface{}) {
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "save_sync_mode_manual", Other: "Manual"}, nil), Value: internal.SaveSyncModeManual, OnUpdate: func(v interface{}) {
 					visibility.saveSyncSettings.Store(true)
 				}},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "save_sync_mode_automatic", Other: "Automatic"}, nil), Value: "automatic", OnUpdate: func(v interface{}) {
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "save_sync_mode_automatic", Other: "Automatic"}, nil), Value: internal.SaveSyncModeAutomatic, OnUpdate: func(v interface{}) {
 					visibility.saveSyncSettings.Store(true)
 				}},
 			},
@@ -229,7 +237,7 @@ func (s *SettingsScreen) applySettings(config *internal.Config, items []gaba.Ite
 		text := item.Item.Text
 		switch text {
 		case i18n.Localize(&goi18n.Message{ID: "settings_save_sync", Other: "Save Sync"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(string); ok {
+			if val, ok := item.Options[item.SelectedOption].Value.(internal.SaveSyncMode); ok {
 				config.SaveSyncMode = val
 			}
 		}
@@ -243,25 +251,27 @@ func boolToIndex(b bool) int {
 	return 0
 }
 
-func logLevelToIndex(level string) int {
+func logLevelToIndex(level internal.LogLevel) int {
 	switch level {
-	case "DEBUG":
+	case internal.LogLevelDebug:
 		return 0
-	case "INFO":
+	case internal.LogLevelInfo:
 		return 1
-	case "ERROR":
+	case internal.LogLevelError:
 		return 2
 	default:
-		return 1 // Default to INFO
+		return 1
 	}
 }
 
 func releaseChannelToIndex(releaseChannel internal.ReleaseChannel) int {
 	switch releaseChannel {
-	case internal.ReleaseChannelStable:
+	case internal.ReleaseChannelMatchRomM:
 		return 0
-	case internal.ReleaseChannelBeta:
+	case internal.ReleaseChannelStable:
 		return 1
+	case internal.ReleaseChannelBeta:
+		return 2
 	default:
 		return 0
 	}
@@ -290,24 +300,24 @@ func languageToIndex(lang string) int {
 	}
 }
 
-func saveSyncModeToIndex(mode string) int {
+func saveSyncModeToIndex(mode internal.SaveSyncMode) int {
 	switch mode {
-	case "off":
+	case internal.SaveSyncModeOff:
 		return 0
-	case "manual":
+	case internal.SaveSyncModeManual:
 		return 1
-	case "automatic":
+	case internal.SaveSyncModeAutomatic:
 		return 2
 	default:
 		return 0
 	}
 }
 
-func collectionViewToIndex(view string) int {
+func collectionViewToIndex(view internal.CollectionView) int {
 	switch view {
-	case "platform":
+	case internal.CollectionViewPlatform:
 		return 0
-	case "unified":
+	case internal.CollectionViewUnified:
 		return 1
 	default:
 		return 0

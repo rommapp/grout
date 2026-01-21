@@ -15,24 +15,10 @@ func footerItem(button, msgID, fallback string) gaba.FooterHelpItem {
 }
 
 func FooterContinue() gaba.FooterHelpItem { return footerItem("A", "button_continue", "Continue") }
-func FooterSelect() gaba.FooterHelpItem   { return footerItem("A", "button_select", "Select") }
-func FooterConfirm() gaba.FooterHelpItem  { return footerItem("A", "button_confirm", "Confirm") }
 func FooterDownload() gaba.FooterHelpItem { return footerItem("A", "button_download", "Download") }
 func FooterBack() gaba.FooterHelpItem     { return footerItem("B", "button_back", "Back") }
 func FooterCancel() gaba.FooterHelpItem   { return footerItem("B", "button_cancel", "Cancel") }
-func FooterClose() gaba.FooterHelpItem    { return footerItem("B", "button_close", "Close") }
 func FooterQuit() gaba.FooterHelpItem     { return footerItem("B", "button_quit", "Quit") }
-func FooterSearch() gaba.FooterHelpItem   { return footerItem("X", "button_search", "Search") }
-func FooterSettings() gaba.FooterHelpItem { return footerItem("X", "button_settings", "Settings") }
-func FooterOptions() gaba.FooterHelpItem  { return footerItem("X", "button_options", "Options") }
-func FooterLogout() gaba.FooterHelpItem   { return footerItem("X", "button_logout", "Logout") }
-func FooterBIOS() gaba.FooterHelpItem     { return footerItem("Y", "button_bios", "BIOS") }
-func FooterSaveSync() gaba.FooterHelpItem { return footerItem("Y", "button_save_sync", "Sync") }
-func FooterMenu() gaba.FooterHelpItem     { return footerItem("Start", "button_menu", "Menu") }
-
-func FooterStartConfirm() gaba.FooterHelpItem {
-	return footerItem("Start", "button_confirm", "Confirm")
-}
 
 func FooterSave() gaba.FooterHelpItem {
 	return footerItem(icons.Start, "button_save", "Save")
@@ -48,8 +34,4 @@ func ContinueFooter() []gaba.FooterHelpItem {
 
 func OptionsListFooter() []gaba.FooterHelpItem {
 	return []gaba.FooterHelpItem{FooterCancel(), FooterCycle(), FooterSave()}
-}
-
-func BackSelectFooter() []gaba.FooterHelpItem {
-	return []gaba.FooterHelpItem{FooterBack(), FooterSelect()}
 }

@@ -20,6 +20,7 @@ type GameOptionsInput struct {
 }
 
 type GameOptionsOutput struct {
+	Action GameOptionsAction
 	Config *internal.Config
 }
 
@@ -29,15 +30,15 @@ func NewGameOptionsScreen() *GameOptionsScreen {
 	return &GameOptionsScreen{}
 }
 
-func (s *GameOptionsScreen) Draw(input GameOptionsInput) (ScreenResult[GameOptionsOutput], error) {
+func (s *GameOptionsScreen) Draw(input GameOptionsInput) (GameOptionsOutput, error) {
 	config := input.Config
-	output := GameOptionsOutput{Config: config}
+	output := GameOptionsOutput{Action: GameOptionsActionBack, Config: config}
 
 	items := s.buildMenuItems(config, input.Game)
 
 	if len(items) == 0 {
 		gaba.GetLogger().Warn("No options available for game")
-		return back(output), nil
+		return output, nil
 	}
 
 	title := i18n.Localize(&goi18n.Message{ID: "game_options_title", Other: "Game Options"}, nil)
@@ -48,17 +49,17 @@ func (s *GameOptionsScreen) Draw(input GameOptionsInput) (ScreenResult[GameOptio
 			FooterHelpItems:      OptionsListFooter(),
 			InitialSelectedIndex: 0,
 			StatusBar:            StatusBar(),
-			SmallTitle:           true,
+			UseSmallTitle:        true,
 		},
 		items,
 	)
 
 	if err != nil {
 		if errors.Is(err, gaba.ErrCancelled) {
-			return back(output), nil
+			return output, nil
 		}
 		gaba.GetLogger().Error("Game options screen error", "error", err)
-		return withCode(output, gaba.ExitCodeError), err
+		return output, err
 	}
 
 	s.applySettings(config, input.Game, result.Items)
@@ -66,10 +67,11 @@ func (s *GameOptionsScreen) Draw(input GameOptionsInput) (ScreenResult[GameOptio
 	err = internal.SaveConfig(config)
 	if err != nil {
 		gaba.GetLogger().Error("Error saving game options", "error", err)
-		return withCode(output, gaba.ExitCodeError), err
+		return output, err
 	}
 
-	return success(output), nil
+	output.Action = GameOptionsActionSaved
+	return output, nil
 }
 
 func (s *GameOptionsScreen) buildMenuItems(config *internal.Config, game romm.Rom) []gaba.ItemWithOptions {

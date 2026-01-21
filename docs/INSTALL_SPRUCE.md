@@ -1,15 +1,17 @@
 # Grout Installation Guide for Spruce
 
-This guide will help you install Grout on TrimUI devices running Spruce v4.
+This guide will help you install Grout on devices running Spruce v4.
 
 ## Tested Devices
 
 Grout has been tested on the following devices running Spruce:
 
-| Manufacturer | Device  | Compatibility |
-|--------------|---------|---------------|
-| Miyoo        | Flip V2 | Yes           |
-| Miyoo        | A30     | No            |
+| Manufacturer  | Device    | Compatibility |
+|---------------|-----------|---------------|
+| TrimUI        | Brick     | Yes           |
+| TrimUI        | Smart Pro | Yes           |
+| Miyoo         | Flip V2   | Yes           |
+| Miyoo         | A30       | No            |
 
 ## Prerequisites
 

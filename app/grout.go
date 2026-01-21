@@ -24,21 +24,19 @@ func main() {
 	quitOnBack := len(config.Hosts) == 1
 	showCollections := config.ShowCollections(config.Hosts[0])
 
-	fsm := buildFSM(config, currentCFW, platforms, quitOnBack, showCollections)
-
-	if err := fsm.Run(); err != nil {
-		logger.Error("FSM error", "error", err)
+	if err := runWithRouter(config, currentCFW, platforms, quitOnBack, showCollections); err != nil {
+		logger.Error("Router error", "error", err)
 	}
 }
 
 func cleanup() {
-	if autoSync != nil && autoSync.IsRunning() {
+	if currentAppState != nil && currentAppState.AutoSync != nil && currentAppState.AutoSync.IsRunning() {
 		gaba.GetLogger().Info("Waiting for auto-sync to complete before exiting...")
 		gaba.ProcessMessage(
 			i18n.Localize(&goi18n.Message{ID: "auto_sync_waiting", Other: "Waiting for save sync to complete..."}, nil),
 			gaba.ProcessMessageOptions{},
 			func() (interface{}, error) {
-				autoSync.Wait()
+				currentAppState.AutoSync.Wait()
 				return nil, nil
 			},
 		)

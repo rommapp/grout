@@ -171,7 +171,7 @@ func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 	headers["Authorization"] = input.Host.BasicAuthHeader()
 
 	res, err := gaba.DownloadManager(downloads, headers, gaba.DownloadManagerOptions{
-		AutoContinue: true,
+		AutoContinueOnComplete: true,
 	})
 	if err != nil {
 		logger.Error("Artwork download failed", "error", err)

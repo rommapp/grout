@@ -22,10 +22,10 @@ type Manager struct {
 	config      Config
 	initialized bool
 
-	stats *CacheStats
+	stats *Stats
 }
 
-type CacheStats struct {
+type Stats struct {
 	mu         sync.Mutex
 	Hits       int64
 	Misses     int64
@@ -33,21 +33,21 @@ type CacheStats struct {
 	LastAccess time.Time
 }
 
-func (s *CacheStats) recordHit() {
+func (s *Stats) recordHit() {
 	s.mu.Lock()
 	s.Hits++
 	s.LastAccess = time.Now()
 	s.mu.Unlock()
 }
 
-func (s *CacheStats) recordMiss() {
+func (s *Stats) recordMiss() {
 	s.mu.Lock()
 	s.Misses++
 	s.LastAccess = time.Now()
 	s.mu.Unlock()
 }
 
-func (s *CacheStats) recordError() {
+func (s *Stats) recordError() {
 	s.mu.Lock()
 	s.Errors++
 	s.mu.Unlock()
@@ -101,7 +101,7 @@ func newCacheManager(host romm.Host, config Config) (*Manager, error) {
 		host:        host,
 		config:      config,
 		initialized: true,
-		stats:       &CacheStats{},
+		stats:       &Stats{},
 	}
 
 	logger.Debug("Cache manager initialized", "path", dbPath)

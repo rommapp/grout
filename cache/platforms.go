@@ -3,6 +3,7 @@ package cache
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"grout/romm"
 	"time"
 
@@ -133,7 +134,7 @@ func (cm *Manager) HasBIOS(platformID int) (bool, bool) {
 		SELECT has_bios FROM bios_availability WHERE platform_id = ?
 	`, platformID).Scan(&hasBIOS)
 
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return false, false
 	}
 	if err != nil {

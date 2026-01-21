@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"grout/cache"
 	"grout/internal"
-	constants2 "grout/internal/constants"
 	"grout/internal/fileutil"
 	"grout/internal/imageutil"
 	"grout/internal/stringutil"
@@ -33,6 +32,7 @@ type GameDetailsInput struct {
 }
 
 type GameDetailsOutput struct {
+	Action            GameDetailsAction
 	DownloadRequested bool
 	SelectedFileID    int
 	Game              romm.Rom
@@ -45,9 +45,10 @@ func NewGameDetailsScreen() *GameDetailsScreen {
 	return &GameDetailsScreen{}
 }
 
-func (s *GameDetailsScreen) Draw(input GameDetailsInput) (ScreenResult[GameDetailsOutput], error) {
+func (s *GameDetailsScreen) Draw(input GameDetailsInput) (GameDetailsOutput, error) {
 	logger := gaba.GetLogger()
 	output := GameDetailsOutput{
+		Action:   GameDetailsActionBack,
 		Game:     input.Game,
 		Platform: input.Platform,
 	}
@@ -64,7 +65,7 @@ func (s *GameDetailsScreen) Draw(input GameDetailsInput) (ScreenResult[GameDetai
 	}
 	if !internal.IsKidModeEnabled() {
 		options.ActionButton = constants.VirtualButtonY
-		options.EnableAction = true
+		options.AllowAction = true
 	}
 
 	footerItems := []gaba.FooterHelpItem{
@@ -77,19 +78,24 @@ func (s *GameDetailsScreen) Draw(input GameDetailsInput) (ScreenResult[GameDetai
 	if hasMultipleFiles {
 		downloadButton = "X"
 	}
-	footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: downloadButton, HelpText: i18n.Localize(&goi18n.Message{ID: "button_download", Other: "Download"}, nil)})
+	downloadText := i18n.Localize(&goi18n.Message{ID: "button_download", Other: "Download"}, nil)
+	if input.Game.IsDownloaded(input.Config) {
+		downloadText = i18n.Localize(&goi18n.Message{ID: "button_redownload", Other: "Redownload"}, nil)
+	}
+	footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: downloadButton, HelpText: downloadText})
 
 	result, err := gaba.DetailScreen(input.Game.Name, options, footerItems)
 
 	if err != nil {
 		if errors.Is(err, gaba.ErrCancelled) {
-			return back(output), nil
+			return output, nil
 		}
 		logger.Error("Detail screen error", "error", err)
-		return withCode(output, gaba.ExitCodeError), err
+		return output, err
 	}
 
 	if result.Action == gaba.DetailActionConfirmed {
+		output.Action = GameDetailsActionDownload
 		output.DownloadRequested = true
 		// Check if a specific file was selected from the dropdown
 		for _, selection := range result.DropdownSelections {
@@ -100,14 +106,15 @@ func (s *GameDetailsScreen) Draw(input GameDetailsInput) (ScreenResult[GameDetai
 				break
 			}
 		}
-		return withCode(output, constants2.ExitCodeDownloadRequested), nil
+		return output, nil
 	}
 
 	if result.Action == gaba.DetailActionTriggered {
-		return withCode(output, constants2.ExitCodeGameOptions), nil
+		output.Action = GameDetailsActionOptions
+		return output, nil
 	}
 
-	return back(output), nil
+	return output, nil
 }
 
 func (s *GameDetailsScreen) buildSections(input GameDetailsInput) []gaba.Section {
@@ -297,7 +304,7 @@ func (s *GameDetailsScreen) fetchImageFromURL(host romm.Host, imageURL string) [
 
 	req.SetBasicAuth(host.Username, host.Password)
 
-	client := &http.Client{Timeout: constants2.DefaultHTTPTimeout}
+	client := &http.Client{Timeout: internal.DefaultHTTPTimeout}
 	resp, err := client.Do(req)
 	if err != nil {
 		logger.Warn("Failed to fetch image", "url", imageURL, "error", err)
