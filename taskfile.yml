@@ -63,6 +63,7 @@ tasks:
       - mkdir -p build/muOS/Grout/lib
       - cp build/grout scripts/muOS/mux_launch.sh README.md LICENSE build/muOS/Grout
       - cp -R build/lib/* build/muOS/Grout/lib/
+      - cp -R scripts/muOS/resources build/muOS/Grout/
       - cd build/muOS && zip -r ../Grout.muxapp Grout
     silent: true
 
