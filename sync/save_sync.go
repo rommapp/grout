@@ -27,21 +27,21 @@ type SaveSync struct {
 	GameBase string
 	Local    *LocalSave
 	Remote   romm.Save
-	Action   SyncAction
+	Action   Action
 }
 
-type SyncAction string
+type Action string
 
 const (
-	Download SyncAction = "DOWNLOAD"
-	Upload   SyncAction = "UPLOAD"
-	Skip     SyncAction = "SKIP"
+	Download Action = "DOWNLOAD"
+	Upload   Action = "UPLOAD"
+	Skip     Action = "SKIP"
 )
 
-type SyncResult struct {
+type Result struct {
 	GameName       string
 	RomDisplayName string
-	Action         SyncAction
+	Action         Action
 	Success        bool
 	Error          string
 	Err            error
@@ -84,7 +84,7 @@ type MatchAttemptResult struct {
 	MatchesAttempted  []string
 }
 
-func (s *SaveSync) Execute(host romm.Host, config *internal.Config) SyncResult {
+func (s *SaveSync) Execute(host romm.Host, config *internal.Config) Result {
 	logger := gaba.GetLogger()
 
 	displayName := s.RomName
@@ -92,7 +92,7 @@ func (s *SaveSync) Execute(host romm.Host, config *internal.Config) SyncResult {
 		displayName = strings.TrimSuffix(displayName, filepath.Ext(displayName))
 	}
 
-	result := SyncResult{
+	result := Result{
 		GameName:       s.GameBase,
 		RomDisplayName: displayName,
 		Action:         s.Action,

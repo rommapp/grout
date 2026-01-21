@@ -119,7 +119,7 @@ func CompareVersions(current, latest string) int {
 		// Current is prerelease, latest is full release - latest is newer
 		return -1
 	}
-	if currentHasPrerelease && latestHasPrerelease {
+	if currentHasPrerelease {
 		// Both are prereleases - compare prerelease strings lexicographically
 		// For simplicity, we'll just do a string comparison
 		// In practice, this handles cases like "beta.1" vs "beta.2"

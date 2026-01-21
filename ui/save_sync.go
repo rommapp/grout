@@ -61,7 +61,7 @@ func (s *SaveSyncScreen) Draw(input SaveSyncInput) (SaveSyncOutput, error) {
 		return scanResult{Syncs: syncs, Unmatched: unmatched, FuzzyMatches: fuzzyMatches}, nil
 	})
 
-	var results []sync.SyncResult
+	var results []sync.Result
 	var unmatched []sync.UnmatchedSave
 
 	if scan, ok := scanData.(scanResult); ok {
@@ -101,7 +101,7 @@ func (s *SaveSyncScreen) Draw(input SaveSyncInput) (SaveSyncOutput, error) {
 			}
 		}
 
-		results = make([]sync.SyncResult, 0, len(syncs))
+		results = make([]sync.Result, 0, len(syncs))
 
 		if len(syncs) > 0 {
 			progress := &atomic.Float64{}

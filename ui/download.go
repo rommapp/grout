@@ -27,7 +27,7 @@ import (
 	"go.uber.org/atomic"
 )
 
-type downloadInput struct {
+type DownloadInput struct {
 	Config         internal.Config
 	Host           romm.Host
 	Platform       romm.Platform
@@ -37,7 +37,7 @@ type downloadInput struct {
 	SelectedFileID int
 }
 
-type downloadOutput struct {
+type DownloadOutput struct {
 	DownloadedGames []romm.Rom
 	Platform        romm.Platform
 	AllGames        []romm.Rom
@@ -56,8 +56,8 @@ func NewDownloadScreen() *DownloadScreen {
 	return &DownloadScreen{}
 }
 
-func (s *DownloadScreen) Execute(config internal.Config, host romm.Host, platform romm.Platform, selectedGames []romm.Rom, allGames []romm.Rom, searchFilter string, selectedFileID int) downloadOutput {
-	result, err := s.draw(downloadInput{
+func (s *DownloadScreen) Execute(config internal.Config, host romm.Host, platform romm.Platform, selectedGames []romm.Rom, allGames []romm.Rom, searchFilter string, selectedFileID int) DownloadOutput {
+	result, err := s.draw(DownloadInput{
 		Config:         config,
 		Host:           host,
 		Platform:       platform,
@@ -69,7 +69,7 @@ func (s *DownloadScreen) Execute(config internal.Config, host romm.Host, platfor
 
 	if err != nil {
 		gaba.GetLogger().Error("Download failed", "error", err)
-		return downloadOutput{
+		return DownloadOutput{
 			AllGames:     allGames,
 			Platform:     platform,
 			SearchFilter: searchFilter,
@@ -83,10 +83,10 @@ func (s *DownloadScreen) Execute(config internal.Config, host romm.Host, platfor
 	return result
 }
 
-func (s *DownloadScreen) draw(input downloadInput) (downloadOutput, error) {
+func (s *DownloadScreen) draw(input DownloadInput) (DownloadOutput, error) {
 	logger := gaba.GetLogger()
 
-	output := downloadOutput{
+	output := DownloadOutput{
 		Platform:     input.Platform,
 		AllGames:     input.AllGames,
 		SearchFilter: input.SearchFilter,

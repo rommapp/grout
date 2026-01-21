@@ -33,10 +33,6 @@ type EmulatorSelectionOutput struct {
 
 type EmulatorSelectionScreen struct{}
 
-func NewEmulatorSelectionScreen() *EmulatorSelectionScreen {
-	return &EmulatorSelectionScreen{}
-}
-
 func (s *EmulatorSelectionScreen) Draw(input EmulatorSelectionInput) (EmulatorSelectionOutput, error) {
 	output := EmulatorSelectionOutput{
 		LastSelectedIndex:    input.LastSelectedIndex,

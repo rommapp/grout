@@ -772,14 +772,6 @@ func RecordFailedLookup(fsSlug, localFilename string) error {
 	return cm.RecordFailedLookup(fsSlug, localFilename)
 }
 
-func ShouldAttemptLookup(fsSlug, localFilename string) bool {
-	cm := GetCacheManager()
-	if cm == nil {
-		return true
-	}
-	return cm.ShouldAttemptLookup(fsSlug, localFilename)
-}
-
 func ShouldAttemptLookupWithNextRetry(fsSlug, localFilename string) (bool, time.Time) {
 	cm := GetCacheManager()
 	if cm == nil {

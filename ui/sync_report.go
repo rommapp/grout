@@ -13,7 +13,7 @@ import (
 )
 
 type syncReportInput struct {
-	Results   []sync.SyncResult
+	Results   []sync.Result
 	Unmatched []sync.UnmatchedSave
 }
 
@@ -55,7 +55,7 @@ func (s *SyncReportScreen) draw(input syncReportInput) (syncReportOutput, error)
 	return output, nil
 }
 
-func (s *SyncReportScreen) buildSections(results []sync.SyncResult, unmatched []sync.UnmatchedSave) []gaba.Section {
+func (s *SyncReportScreen) buildSections(results []sync.Result, unmatched []sync.UnmatchedSave) []gaba.Section {
 	logger := gaba.GetLogger()
 	logger.Debug("Building sync report", "totalResults", len(results), "unmatched", len(unmatched))
 

@@ -126,29 +126,8 @@ const (
 	LogoutConfirmationActionCancel
 )
 
-type SaveSyncAction int
-
-const (
-	SaveSyncActionComplete SaveSyncAction = iota
-	SaveSyncActionBack
-)
-
-type BIOSDownloadAction int
-
-const (
-	BIOSDownloadActionComplete BIOSDownloadAction = iota
-	BIOSDownloadActionBack
-)
-
-type ArtworkSyncAction int
-
-const (
-	ArtworkSyncActionComplete ArtworkSyncAction = iota
-)
-
 type UpdateCheckAction int
 
 const (
 	UpdateCheckActionComplete UpdateCheckAction = iota
-	UpdateCheckActionBack
 )

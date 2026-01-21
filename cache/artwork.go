@@ -99,16 +99,6 @@ func isValidPNG(path string) bool {
 	return err == nil
 }
 
-func GetRomsWithArtwork(roms []romm.Rom) []romm.Rom {
-	var withArtwork []romm.Rom
-	for _, rom := range roms {
-		if HasArtworkURL(rom) {
-			withArtwork = append(withArtwork, rom)
-		}
-	}
-	return withArtwork
-}
-
 func GetMissingArtwork(roms []romm.Rom) []romm.Rom {
 	var missing []romm.Rom
 	for _, rom := range roms {

@@ -95,9 +95,9 @@ func (a *AutoSync) run() {
 			logger.Debug("AutoSync: No syncs needed")
 		}
 		return
-	} else {
-		logger.Debug("AutoSync: Found syncs", "count", len(syncs))
 	}
+
+	logger.Debug("AutoSync: Found syncs", "count", len(syncs))
 
 	hadError := false
 

@@ -43,7 +43,7 @@ func (lrf LocalRomFile) baseName() string {
 	return strings.TrimSuffix(lrf.FileName, filepath.Ext(lrf.FileName))
 }
 
-func (lrf LocalRomFile) syncAction() SyncAction {
+func (lrf LocalRomFile) syncAction() Action {
 	hasLocal := lrf.SaveFile != nil
 	baseName := lrf.baseName()
 
@@ -54,7 +54,7 @@ func (lrf LocalRomFile) syncAction() SyncAction {
 		return Skip
 	case hasLocal && !hasRemote:
 		return Upload
-	case !hasLocal && hasRemote:
+	case !hasLocal:
 		return Download
 	}
 

@@ -23,11 +23,6 @@ func mustLoadJSONMap[K comparable, V any](path string) map[K]V {
 var LibretroCoreToBIOS = mustLoadJSONMap[string, CoreBIOS]("data/core_requirements.json")
 var PlatformToLibretroCores = mustLoadJSONMap[string, []string]("data/platform_cores.json")
 
-// CoreBIOSSubdirectories maps Libretro core names (without _libretro suffix)
-// to their required BIOS subdirectory within the system BIOS directory.
-// Cores not in this map use the root BIOS directory.
-var CoreBIOSSubdirectories = mustLoadJSONMap[string, string]("data/core_subdirectories.json")
-
 // File represents a single BIOS/firmware file requirement
 type File struct {
 	FileName     string // e.g., "gba_bios.bin"

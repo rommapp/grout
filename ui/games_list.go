@@ -314,7 +314,7 @@ func (s *GameListScreen) loadGames(input GameListInput) (loadGamesResult, error)
 
 		if ft == ftPlatform {
 			cached, err = cm.GetPlatformGames(id)
-		} else if ft == ftCollection {
+		} else {
 			cached, err = cm.GetCollectionGames(collection)
 		}
 
@@ -417,7 +417,7 @@ func (s *GameListScreen) loadGames(input GameListInput) (loadGamesResult, error)
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				roms, err := fetchList(config, host, id, ft)
+				roms, err := fetchList(id, ft)
 				if err != nil {
 					logger.Error("Error downloading game list", "error", err)
 					gamesFetchErr = err
@@ -528,7 +528,7 @@ func (s *GameListScreen) showErrorMessage(err error) {
 	)
 }
 
-func fetchList(config *internal.Config, host romm.Host, queryID int, fetchType fetchType) ([]romm.Rom, error) {
+func fetchList(queryID int, fetchType fetchType) ([]romm.Rom, error) {
 	logger := gaba.GetLogger()
 	cm := cache.GetCacheManager()
 
