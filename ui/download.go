@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"grout/cfw"
+	"grout/cfw/knulli"
 	"grout/cfw/muos"
 	"grout/internal"
 	"grout/internal/fileutil"
@@ -50,6 +51,18 @@ type artDownload struct {
 	URL      string
 	Location string
 	GameName string
+}
+
+func (a artDownload) GetURL() string {
+	return a.URL
+}
+
+func (a artDownload) GetLocation() string {
+	return a.Location
+}
+
+func (a artDownload) GetGameName() string {
+	return a.GameName
 }
 
 func NewDownloadScreen() *DownloadScreen {
@@ -301,6 +314,12 @@ func (s *DownloadScreen) draw(input downloadInput) (ScreenResult[downloadOutput]
 
 		if err != nil {
 			logger.Warn("Art download process encountered an error", "error", err)
+		}
+	}
+
+	if cfw.GetCFW() == cfw.Knulli {
+		if err := knulli.AddGamesToGamelist(downloadedGames, artDownloads); err != nil {
+			logger.Warn("Failed to refresh Knulli database", "error", err)
 		}
 	}
 

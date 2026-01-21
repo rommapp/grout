@@ -5,6 +5,7 @@ go 1.24.2
 require (
 	github.com/BrandonKowalski/certifiable v1.3.0
 	github.com/BrandonKowalski/gabagool/v2 v2.6.3
+	github.com/beevik/etree v1.6.0
 	github.com/bodgit/sevenzip v1.6.1
 	github.com/nicksnyder/go-i18n/v2 v2.6.1
 	github.com/piglig/go-qr v0.2.6
@@ -18,7 +19,6 @@ require (
 require (
 	github.com/BurntSushi/toml v1.6.0 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
-	github.com/beevik/etree v1.6.0 // indirect
 	github.com/bodgit/plumbing v1.3.0 // indirect
 	github.com/bodgit/windows v1.0.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
