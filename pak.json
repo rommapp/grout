@@ -3,7 +3,7 @@
   "version": "v1.4.2",
   "type": "TOOL",
   "description": "A RomM client for NextUI, muOS, Knulli, and Spruce v4.",
-  "author": "K-Wall",
+  "author": "The RomM Team",
   "repo_url": "https://github.com/rommapp/grout",
   "release_filename": "Grout.pak.zip",
   "changelog": {

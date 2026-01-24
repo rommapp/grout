@@ -15,8 +15,8 @@ const (
 	flagPath               = "./knulli_restart_request"
 )
 
-func FirstLaunchSetup(romDir string) {
-	path := filepath.Join(romDir, "tools", "gamelist.xml")
+func AddToToolsGameList() {
+	path := filepath.Join(GetRomDirectory(), "tools", "gamelist.xml")
 	gaba.GetLogger().Debug("using filepath for knulli gamelist.xml", "path", path)
 	gl := gamelist.New()
 
@@ -35,6 +35,15 @@ func FirstLaunchSetup(romDir string) {
 		} else {
 			gaba.GetLogger().Debug("gamelist.xml file is empty", "path", path)
 		}
+	}
+
+	if gl.GameContainsElements(GroutEntryGameListName, []string{
+		gamelist.PathElement, gamelist.DescElement,
+		gamelist.ImageElement, gamelist.DeveloperElement,
+		gamelist.PlayersElement, gamelist.GenreElement,
+	}) {
+		gaba.GetLogger().Debug("gamelist.xml already contains Grout entry, skipping addition", "path", path)
+		return
 	}
 
 	gl.AdddOrUpdateEntry(GroutEntryGameListName, map[string]string{

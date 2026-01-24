@@ -1,56 +1,46 @@
 version: '3'
 
+vars:
+  IMAGE_NAME: grout-build
+  CONTAINER_NAME: grout-extract
+  LABEL: app.romm.grout.build=true
+
 tasks:
+
   build:
     desc: Build for ARM64
     cmds:
       - rm -rf build
-      - docker buildx build --platform=linux/arm64 --build-arg GITHUB_ACTIONS=false -t retro-console-arm64 -f Dockerfile .
+      - docker buildx build --platform=linux/arm64 --build-arg GITHUB_ACTIONS=false --label {{.LABEL}} -t {{.IMAGE_NAME}} -f Dockerfile .
     silent: true
 
   build-local:
     desc: Build for ARM64 using local gabagool workspace
     cmds:
       - rm -rf build
-      - echo "Building with local gabagool workspace..."
-      - cd .. && docker buildx build --platform=linux/arm64 --build-arg USE_LOCAL_GABAGOOL=true --build-arg GITHUB_ACTIONS=false -f grout/Dockerfile -t retro-console-arm64 .
+      - cd .. && docker buildx build --platform=linux/arm64 --build-arg USE_LOCAL_GABAGOOL=true --build-arg GITHUB_ACTIONS=false --label {{.LABEL}} -f grout/Dockerfile -t {{.IMAGE_NAME}} .
     silent: true
-
-  all:
-    desc: Build and package for all platforms
-    cmds:
-      - task: build
-      - task: extract
-      - task: package-next
-      - task: package-muos
-      - task: package-knulli
-      - task: package-spruce
-
-  all-local:
-    desc: Build (with local gabagool) and package for all platforms
-    cmds:
-      - task: build-local
-      - task: extract
-      - task: package-next
-      - task: package-muos
-      - task: package-knulli
-      - task: package-spruce
 
   extract:
     desc: Extract binary and libraries from Docker image
     cmds:
-      - mkdir -p build
       - mkdir -p build/lib
-      - docker rm extract || true
-      - docker create --name extract retro-console-arm64
-      - docker cp extract:/build/grout build/grout
-      - docker cp extract:/usr/lib/aarch64-linux-gnu/libSDL2_gfx-1.0.so.0.0.2 build/lib/libSDL2_gfx-1.0.so.0
+      - docker rm {{.CONTAINER_NAME}} 2>/dev/null || true
+      - docker create --name {{.CONTAINER_NAME}} --label {{.LABEL}} {{.IMAGE_NAME}}
+      - docker cp {{.CONTAINER_NAME}}:/build/grout build/grout
+      - docker cp {{.CONTAINER_NAME}}:/usr/lib/aarch64-linux-gnu/libSDL2_gfx-1.0.so.0.0.2 build/lib/libSDL2_gfx-1.0.so.0
+      - docker rm {{.CONTAINER_NAME}}
+    silent: true
+
+  package:
+    desc: Package for all platforms
+    deps: [package-next, package-muos, package-knulli, package-spruce]
     silent: true
 
   package-next:
     desc: Package for NextUI
     cmds:
-      - rm -rf build/Grout.pak || true
+      - rm -rf build/Grout.pak
       - mkdir -p build/Grout.pak/lib
       - cp build/grout scripts/NextUI/launch.sh README.md LICENSE pak.json build/Grout.pak
       - cp -R build/lib/* build/Grout.pak/lib/
@@ -59,17 +49,18 @@ tasks:
   package-muos:
     desc: Package for muOS
     cmds:
-      - rm -rf build/muOS build/Grout.muxapp || true
+      - rm -rf build/muOS build/Grout.muxapp
       - mkdir -p build/muOS/Grout/lib
       - cp build/grout scripts/muOS/mux_launch.sh README.md LICENSE build/muOS/Grout
       - cp -R build/lib/* build/muOS/Grout/lib/
+      - cp -R scripts/muOS/resources build/muOS/Grout/
       - cd build/muOS && zip -r ../Grout.muxapp Grout
     silent: true
 
   package-knulli:
     desc: Package for Knulli
     cmds:
-      - rm -rf build/Knulli || true
+      - rm -rf build/Knulli
       - mkdir -p build/Knulli/Grout/lib
       - cp build/grout scripts/Knulli/Grout.sh scripts/Knulli/logo.png README.md LICENSE build/Knulli/Grout
       - cp -R build/lib/* build/Knulli/Grout/lib/
@@ -78,33 +69,51 @@ tasks:
   package-spruce:
     desc: Package for Spruce
     cmds:
-      - rm -rf build/Spruce || true
+      - rm -rf build/Spruce
       - mkdir -p build/Spruce/Grout/grout/lib
       - cp scripts/Spruce/* README.md LICENSE build/Spruce/Grout
       - cp build/grout build/Spruce/Grout/grout
       - cp -R build/lib/* build/Spruce/Grout/grout/lib/
     silent: true
 
+  all:
+    desc: Build and package for all platforms
+    cmds:
+      - task: build
+      - task: extract
+      - task: package
+      - task: docker-clean
+    silent: true
+
+  all-local:
+    desc: Build (with local gabagool) and package for all platforms
+    cmds:
+      - task: build-local
+      - task: extract
+      - task: package
+      - task: docker-clean
+    silent: true
+
   adb-next:
     desc: Deploy to NextUI device via ADB
     cmds:
-      - adb shell rm -rf /mnt/SDCARD/Tools/tg5040/Grout.pak || true
+      - adb shell rm -rf /mnt/SDCARD/Tools/tg5040/Grout.pak
       - adb push build/Grout.pak /mnt/SDCARD/Tools/tg5040
       - adb push config-platformless.json /mnt/SDCARD/Tools/tg5040/Grout.pak/config.json
     silent: true
 
   adb-muos-sd1:
-    desc: Deploy to muOS device via ADB to SD1
+    desc: Deploy to muOS device via ADB (SD1)
     cmds:
-      - adb shell rm -rf /mnt/mmc/MUOS/application/Grout || true
+      - adb shell rm -rf /mnt/mmc/MUOS/application/Grout
       - adb push build/muOS/Grout /mnt/mmc/MUOS/application
       - adb push config-platformless.json /mnt/mmc/MUOS/application/Grout/config.json
     silent: true
 
   adb-muos-sd2:
-    desc: Deploy to muOS device via ADB to SD2
+    desc: Deploy to muOS device via ADB (SD2)
     cmds:
-      - adb shell rm -rf /mnt/sdcard/MUOS/application/Grout || true
+      - adb shell rm -rf /mnt/sdcard/MUOS/application/Grout
       - adb push build/muOS/Grout /mnt/sdcard/MUOS/application
       - adb push config-platformless.json /mnt/sdcard/MUOS/application/Grout/config.json
     silent: true
@@ -112,51 +121,32 @@ tasks:
   adb-knulli:
     desc: Deploy to Knulli device via ADB
     cmds:
-      - adb shell rm -rf /userdata/roms/ports/Grout || true
+      - adb shell rm -rf /userdata/roms/ports/Grout
       - adb push build/Knulli/Grout /userdata/roms/ports
       - adb push config-platformless.json /userdata/roms/ports/Grout/config.json
     silent: true
 
-  mp4-to-webp:
-    desc: ffmpeg conversion for mp4 to webp
-    interactive: true
-    prompt: true
+  i18n:
+    desc: Extract messages and find missing translations
     cmds:
-      - |
-        read -p "Enter MP4 input path: " INPUT_PATH
-        read -p "Enter WEBP output path (e.g., /path/to/output.webp): " OUTPUT_PATH
-
-        # Add .webp extension if not present
-        if [[ ! "$OUTPUT_PATH" =~ \.webp$ ]]; then
-          OUTPUT_PATH="${OUTPUT_PATH}.webp"
-        fi
-
-        ffmpeg -i "$INPUT_PATH" -vcodec libwebp -filter:v fps=fps=20 -lossless 0  -compression_level 3 -q:v 70 -loop 0 -preset picture -an -vsync 0 -s 1024:768 "$OUTPUT_PATH"
-
-  resize-user-guide-images:
-    desc: Resize user guide images to 1024px width
-    cmds:
-      - |
-        cd .github/resources/user_guide
-        for img in *.png; do
-          sips -Z 1024 "$img" --out "$img"
-        done
-        echo "All user guide images resized to 1024px width"
+      - task: i18n:extract
+      - task: i18n:merge
+    silent: true
 
   i18n:extract:
-    desc: Extract i18n messages from source code to active.en.toml
-    silent: true
+    desc: Extract i18n messages from source code
     cmds:
       - goi18n extract -format=toml -outdir=resources/locales .
-      - echo "Extracted messages to resources/locales/active.en.toml"
+    silent: true
 
   i18n:merge:
     desc: Find missing translations for all locales
-    silent: true
+    vars:
+      LANGS: es fr de it pt ja ru
     cmds:
       - mkdir -p translations_todo
       - |
-        for lang in es fr de it pt ja ru; do
+        for lang in {{.LANGS}}; do
           goi18n merge -sourceLanguage en -outdir resources/locales -format toml \
             resources/locales/active.en.toml resources/locales/active.${lang}.toml
           if [ -f resources/locales/translate.${lang}.toml ]; then
@@ -171,22 +161,50 @@ tasks:
           echo "All translations are complete!"
           rmdir translations_todo 2>/dev/null || true
         else
-          echo ""
           echo "Translation files needing work are in translations_todo/"
         fi
-
-  i18n:
-    desc: Extract messages and find missing translations
-    cmds:
-      - task: i18n:extract
-      - task: i18n:merge
+    silent: true
 
   lint:
     desc: Run Go code style checks (fmt, vet, staticcheck)
     cmds:
-      - echo "Running go fmt..."
       - go fmt ./...
-      - echo "Running go vet..."
       - go vet ./...
-      - echo "Running staticcheck..."
       - staticcheck ./...
+    silent: true
+
+  mp4-to-webp:
+    desc: Convert MP4 to WebP (interactive)
+    interactive: true
+    cmds:
+      - |
+        read -p "Enter MP4 input path: " INPUT_PATH
+        read -p "Enter WEBP output path: " OUTPUT_PATH
+        [[ ! "$OUTPUT_PATH" =~ \.webp$ ]] && OUTPUT_PATH="${OUTPUT_PATH}.webp"
+        ffmpeg -i "$INPUT_PATH" -vcodec libwebp -filter:v fps=fps=20 -lossless 0 -compression_level 3 -q:v 70 -loop 0 -preset picture -an -vsync 0 -s 1024:768 "$OUTPUT_PATH"
+
+  resize-user-guide-images:
+    desc: Resize user guide images to 1024px width
+    dir: .github/resources/user_guide
+    cmds:
+      - for img in *.png; do sips -Z 1024 "$img" --out "$img"; done
+    silent: true
+
+  clean:
+    desc: Remove build artifacts
+    cmds:
+      - rm -rf build
+    silent: true
+
+  docker-clean:
+    desc: Remove grout Docker containers and images (preserves quasimodo base)
+    cmds:
+      - docker rm $(docker ps -aq --filter "label={{.LABEL}}") 2>/dev/null || true
+      - docker rmi $(docker images -q --filter "label={{.LABEL}}") 2>/dev/null || true
+      - docker builder prune -f --filter "label={{.LABEL}}" 2>/dev/null || true
+    silent: true
+
+  clean-all:
+    desc: Remove build artifacts and Docker images
+    deps: [clean, docker-clean]
+    silent: true

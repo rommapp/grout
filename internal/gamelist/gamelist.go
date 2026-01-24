@@ -64,6 +64,31 @@ func (gl *GameList) Contains(element, value string) bool {
 	return false
 }
 
+func (gl *GameList) GetGameElementByName(name string) *etree.Element {
+	root := gl.document.SelectElement(GameListElement)
+	games := root.SelectElements(GameElement)
+	for _, game := range games {
+		nameElement := game.FindElement(NameElement)
+		if nameElement != nil && nameElement.Text() == name {
+			return game
+		}
+	}
+	return nil
+}
+
+func (gl *GameList) GameContainsElements(name string, elements []string) bool {
+	e := gl.GetGameElementByName(name)
+	if e == nil {
+		return false
+	}
+	for _, element := range elements {
+		if e.FindElement(element) == nil {
+			return false
+		}
+	}
+	return true
+}
+
 func (gl *GameList) Save(filepath string) error {
 	gl.document.Indent(4)
 	if err := gl.document.WriteToFile(filepath); err != nil {
@@ -82,22 +107,18 @@ func (gl *GameList) AddGameEntry(info map[string]string) {
 }
 
 func (gl *GameList) AdddOrUpdateEntry(name string, info map[string]string) {
-	root := gl.document.SelectElement(GameListElement)
-	games := root.SelectElements(GameElement)
-	for _, game := range games {
-		nameElement := game.FindElement(NameElement)
-		if nameElement != nil && nameElement.Text() == name {
-			// Update existing entry
-			for key, value := range info {
-				if element := game.FindElement(key); element != nil {
-					element.SetText(value)
-				} else {
-					game.CreateElement(key).SetText(value)
-				}
-			}
-			return
+	game := gl.GetGameElementByName(name)
+	if game == nil {
+		gl.AddGameEntry(info)
+		return
+	}
+
+	for key, value := range info {
+		if element := game.FindElement(key); element != nil {
+			element.SetText(value)
+		} else {
+			game.CreateElement(key).SetText(value)
 		}
 	}
-	// Add new entry
-	gl.AddGameEntry(info)
+
 }

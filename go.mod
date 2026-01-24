@@ -1,6 +1,6 @@
 module grout
 
-go 1.24.2
+go 1.25.6
 
 require (
 	github.com/BrandonKowalski/certifiable v1.3.0

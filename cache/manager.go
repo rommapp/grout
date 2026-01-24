@@ -120,6 +120,30 @@ func (cm *Manager) Close() error {
 	return cm.db.Close()
 }
 
+// enableBulkLoadMode optimizes SQLite for bulk inserts by reducing durability
+func (cm *Manager) enableBulkLoadMode() {
+	if cm == nil || cm.db == nil {
+		return
+	}
+	cm.db.Exec("PRAGMA synchronous = OFF")
+	cm.db.Exec("PRAGMA journal_mode = OFF")
+	cm.db.Exec("PRAGMA cache_size = 100000")
+	cm.db.Exec("PRAGMA temp_store = MEMORY")
+	cm.db.Exec("PRAGMA locking_mode = EXCLUSIVE")
+}
+
+// disableBulkLoadMode restores normal SQLite durability settings
+func (cm *Manager) disableBulkLoadMode() {
+	if cm == nil || cm.db == nil {
+		return
+	}
+	cm.db.Exec("PRAGMA locking_mode = NORMAL")
+	cm.db.Exec("PRAGMA journal_mode = WAL")
+	cm.db.Exec("PRAGMA synchronous = NORMAL")
+	cm.db.Exec("PRAGMA temp_store = DEFAULT")
+	cm.db.Exec("PRAGMA cache_size = -2000")
+}
+
 func (cm *Manager) IsFirstRun() bool {
 	if cm == nil || !cm.initialized {
 		return true
@@ -266,8 +290,8 @@ func (cm *Manager) SetMetadata(key, value string) error {
 
 	_, err := cm.db.Exec(`
 		INSERT OR REPLACE INTO cache_metadata (key, value, updated_at)
-		VALUES (?, ?, CURRENT_TIMESTAMP)
-	`, key, value)
+		VALUES (?, ?, ?)
+	`, key, value, nowUTC())
 	if err != nil {
 		return newCacheError("set_metadata", key, "", err)
 	}
@@ -302,7 +326,7 @@ func (cm *Manager) GetLastRefreshTime(key string) (time.Time, error) {
 }
 
 func (cm *Manager) RecordRefreshTime(key string) error {
-	return cm.SetMetadata(key, time.Now().Format(time.RFC3339))
+	return cm.SetMetadata(key, nowUTC())
 }
 
 func (cm *Manager) GetAllRefreshTimes() map[string]time.Time {
@@ -331,7 +355,7 @@ func (cm *Manager) SyncCollectionsOnly() (int, error) {
 		return 0, ErrNotInitialized
 	}
 
-	return cm.fetchAndCacheCollectionsWithProgress(nil), nil
+	return cm.fetchAndCacheCollectionsWithProgress(nil, 0.0, 1.0), nil
 }
 
 func (cm *Manager) SyncPlatformGames(platforms []romm.Platform) (int, error) {

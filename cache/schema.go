@@ -2,9 +2,15 @@ package cache
 
 import (
 	"database/sql"
+	"time"
 )
 
-const schemaVersion = 4
+const schemaVersion = 5
+
+// nowUTC returns the current UTC time formatted as RFC3339 for consistent datetime storage
+func nowUTC() string {
+	return time.Now().UTC().Format(time.RFC3339)
+}
 
 func createTables(db *sql.DB) error {
 	tx, err := db.Begin()
@@ -17,7 +23,7 @@ func createTables(db *sql.DB) error {
 		CREATE TABLE IF NOT EXISTS cache_metadata (
 			key TEXT PRIMARY KEY,
 			value TEXT NOT NULL,
-			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+			updated_at TEXT NOT NULL
 		)
 	`)
 	if err != nil {
@@ -35,8 +41,8 @@ func createTables(db *sql.DB) error {
 			rom_count INTEGER DEFAULT 0,
 			has_bios INTEGER DEFAULT 0,
 			data_json TEXT NOT NULL,
-			updated_at DATETIME,
-			cached_at DATETIME DEFAULT CURRENT_TIMESTAMP
+			updated_at TEXT,
+			cached_at TEXT NOT NULL
 		)
 	`)
 	if err != nil {
@@ -57,8 +63,8 @@ func createTables(db *sql.DB) error {
 			name TEXT NOT NULL,
 			rom_count INTEGER DEFAULT 0,
 			data_json TEXT NOT NULL,
-			updated_at DATETIME,
-			cached_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at TEXT,
+			cached_at TEXT NOT NULL,
 			UNIQUE(romm_id, type),
 			UNIQUE(virtual_id)
 		)
@@ -84,8 +90,8 @@ func createTables(db *sql.DB) error {
 			md5_hash TEXT DEFAULT '',
 			sha1_hash TEXT DEFAULT '',
 			data_json TEXT NOT NULL,
-			updated_at DATETIME,
-			cached_at DATETIME DEFAULT CURRENT_TIMESTAMP
+			updated_at TEXT,
+			cached_at TEXT NOT NULL
 		)
 	`)
 	if err != nil {
@@ -137,7 +143,7 @@ func createTables(db *sql.DB) error {
 		CREATE TABLE IF NOT EXISTS bios_availability (
 			platform_id INTEGER PRIMARY KEY,
 			has_bios INTEGER NOT NULL DEFAULT 0,
-			checked_at DATETIME DEFAULT CURRENT_TIMESTAMP
+			checked_at TEXT NOT NULL
 		)
 	`)
 	if err != nil {
@@ -153,7 +159,7 @@ func createTables(db *sql.DB) error {
 			local_filename_no_ext TEXT NOT NULL,
 			rom_id INTEGER NOT NULL,
 			rom_name TEXT NOT NULL,
-			matched_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			matched_at TEXT NOT NULL,
 			UNIQUE(platform_fs_slug, local_filename_no_ext)
 		)
 	`)
@@ -171,7 +177,7 @@ func createTables(db *sql.DB) error {
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			platform_fs_slug TEXT NOT NULL,
 			local_filename_no_ext TEXT NOT NULL,
-			last_attempt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			last_attempt TEXT NOT NULL,
 			UNIQUE(platform_fs_slug, local_filename_no_ext)
 		)
 	`)
@@ -188,8 +194,8 @@ func createTables(db *sql.DB) error {
 	_, err = tx.Exec(`
 		CREATE TABLE IF NOT EXISTS platform_sync_status (
 			platform_id INTEGER PRIMARY KEY,
-			last_successful_sync DATETIME,
-			last_attempt DATETIME,
+			last_successful_sync TEXT,
+			last_attempt TEXT,
 			games_synced INTEGER DEFAULT 0,
 			status TEXT DEFAULT 'pending'
 		)
@@ -200,8 +206,8 @@ func createTables(db *sql.DB) error {
 
 	_, err = tx.Exec(`
 		INSERT OR REPLACE INTO cache_metadata (key, value, updated_at)
-		VALUES ('schema_version', ?, CURRENT_TIMESTAMP)
-	`, schemaVersion)
+		VALUES ('schema_version', ?, ?)
+	`, schemaVersion, nowUTC())
 	if err != nil {
 		return err
 	}
