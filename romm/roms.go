@@ -5,6 +5,7 @@ import (
 	"grout/internal/fileutil"
 	"net/url"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"time"
 
@@ -252,4 +253,18 @@ func (r Rom) IsFileDownloaded(resolver PlatformDirResolver, fileName string) boo
 	romDirectory := resolver.GetPlatformRomDirectory(platform)
 	filePath := filepath.Join(romDirectory, fileName)
 	return fileutil.FileExists(filePath)
+}
+
+func (r Rom) MaxPlayerCount() int {
+	maxPlayers := 1
+	if r.Metadatum.GameModes != nil && len(r.Metadatum.GameModes) > 0 {
+		if slices.Contains(r.Metadatum.GameModes, "Multiplayer") {
+			maxPlayers = 4
+		}
+		if slices.Contains(r.Metadatum.GameModes, "Co-operative") {
+			maxPlayers = 2
+		}
+	}
+
+	return maxPlayers
 }

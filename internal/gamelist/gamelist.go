@@ -18,6 +18,11 @@ const (
 	PublisherElement   = "publisher"
 	RatingElement      = "rating"
 	MD5Element         = "md5"
+	VideoElement       = "video"
+	MarqueeElement     = "marquee"
+	ThumbnailElement   = "thumbnail"
+	LangElement        = "lang"
+	RegionElement      = "region"
 )
 
 type GameList struct {

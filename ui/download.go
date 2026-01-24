@@ -53,15 +53,15 @@ type artDownload struct {
 	GameName string
 }
 
-func (a artDownload) GetURL() string {
+func (a *artDownload) GetURL() string {
 	return a.URL
 }
 
-func (a artDownload) GetLocation() string {
+func (a *artDownload) GetLocation() string {
 	return a.Location
 }
 
-func (a artDownload) GetGameName() string {
+func (a *artDownload) GetGameName() string {
 	return a.GameName
 }
 
@@ -318,7 +318,13 @@ func (s *DownloadScreen) draw(input DownloadInput) (DownloadOutput, error) {
 	}
 
 	if cfw.GetCFW() == cfw.Knulli {
-		if err := knulli.AddGamesToGamelist(downloadedGames, artDownloads); err != nil {
+		// art.Location for Knulli gamelist image
+		//artDir := config.GetArtDirectory(gamePlatform)
+		//artFileName := g.FsNameNoExt + ".png"
+		//artLocation := filepath.Join(artDir, artFileName)
+		// romdir
+		var gamelistInputs []knulli.GameListEntryInput
+		if err := knulli.AddGamesToGamelist(input.Config, downloadedGames, artDownloads); err != nil {
 			logger.Warn("Failed to refresh Knulli database", "error", err)
 		}
 	}
