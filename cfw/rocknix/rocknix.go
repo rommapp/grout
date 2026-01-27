@@ -18,7 +18,7 @@ func GetBasePath() string {
 	if basePath := os.Getenv("BASE_PATH"); basePath != "" {
 		return basePath
 	}
-	return "/games-external"
+	return "/storage/games-external"
 }
 
 func GetRomDirectory() string {
