@@ -1,0 +1,200 @@
+# Dockerfile for Miyoo Mini Plus - Complete SDL2 Toolchain Build
+# Builds steward-fu's SDL2 + all dependencies from source
+# Cross-compiles grout for ARM32 Cortex-A7
+#
+# IMPORTANT: Must be built with --platform=linux/amd64 because the
+# Miyoo Mini toolchain is compiled for x86_64 Linux hosts
+
+FROM --platform=linux/amd64 golang:1.24-bookworm AS builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    git \
+    build-essential \
+    autoconf \
+    automake \
+    libtool \
+    pkg-config \
+    cmake \
+    jq \
+    libfreetype6-dev \
+    libpng-dev \
+    libjpeg-dev \
+    zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and install Miyoo Mini toolchain
+# The tarball contains 'mini' and 'prebuilt' directories that need to be at /opt
+WORKDIR /tmp
+RUN wget -q https://github.com/steward-fu/website/releases/download/miyoo-mini/mini_toolchain-v1.0.tar.gz \
+    && tar xf mini_toolchain-v1.0.tar.gz \
+    && mv mini /opt/ \
+    && mv prebuilt /opt/ \
+    && rm mini_toolchain-v1.0.tar.gz \
+    && /opt/mini/bin/arm-linux-gnueabihf-gcc --version
+
+# Set up cross-compilation environment (matching steward-fu's Makefile)
+ENV CROSS=/opt/mini/bin/arm-linux-gnueabihf-
+ENV CC=${CROSS}gcc
+ENV CXX=${CROSS}g++
+ENV AR=${CROSS}ar
+ENV AS=${CROSS}as
+ENV LD=${CROSS}ld
+ENV STRIP=${CROSS}strip
+ENV PATH="/opt/mini/bin:${PATH}"
+ENV SYSROOT=/opt/mini/arm-linux-gnueabihf/sysroot
+
+# Clone steward-fu's SDL2 repository
+WORKDIR /build
+RUN git clone --depth 1 https://github.com/steward-fu/sdl2.git sdl2-miyoo
+
+# Build SwiftShader GPU libraries (libEGL.so, libGLESv2.so)
+WORKDIR /build/sdl2-miyoo
+RUN make cfg && make gpu
+
+# Build SDL2 for Miyoo Mini
+RUN make sdl2
+
+# Create output directories
+RUN mkdir -p /output/lib /output/include
+
+# Copy SDL2 libraries and headers
+RUN cp sdl2/build/.libs/libSDL2-2.0.so.0* /output/lib/ \
+    && cp swiftshader/build/libEGL.so /output/lib/ \
+    && cp swiftshader/build/libGLESv2.so /output/lib/ \
+    && mkdir -p /output/include/SDL2 \
+    && cp -r sdl2/include/*.h /output/include/SDL2/ \
+    && cp sdl2/build/SDL_config.h /output/include/SDL2/ || true
+
+# Copy MI hardware libraries
+RUN cp mini/lib/*.so /output/lib/
+
+# Build SDL2_image (shared library)
+WORKDIR /build/deps
+RUN wget -q https://github.com/libsdl-org/SDL_image/releases/download/release-2.8.1/SDL2_image-2.8.1.tar.gz \
+    && tar xf SDL2_image-2.8.1.tar.gz \
+    && cd SDL2_image-2.8.1 \
+    && ./configure \
+        --host=arm-linux-gnueabihf \
+        --prefix=/output \
+        SDL_CFLAGS="-I/output/include/SDL2" \
+        SDL_LIBS="-L/output/lib -lSDL2" \
+        CFLAGS="-I/output/include/SDL2" \
+        LDFLAGS="-L/output/lib -Wl,-rpath,/output/lib" \
+        --disable-sdltest \
+        --disable-jpg-shared \
+        --disable-png-shared \
+        --disable-webp \
+    && make -C . libSDL2_image.la \
+    && make install-libLTLIBRARIES \
+    && make install-pkgconfigDATA \
+    && mkdir -p /output/include/SDL2 \
+    && cp include/SDL_image.h /output/include/SDL2/
+
+# Build SDL2_ttf (shared library)
+RUN wget -q https://github.com/libsdl-org/SDL_ttf/releases/download/release-2.20.2/SDL2_ttf-2.20.2.tar.gz \
+    && tar xf SDL2_ttf-2.20.2.tar.gz \
+    && cd SDL2_ttf-2.20.2 \
+    && ./configure \
+        --host=arm-linux-gnueabihf \
+        --prefix=/output \
+        SDL_CFLAGS="-I/output/include/SDL2" \
+        SDL_LIBS="-L/output/lib -lSDL2" \
+        CFLAGS="-I/output/include/SDL2" \
+        LDFLAGS="-L/output/lib -Wl,-rpath,/output/lib" \
+        --disable-sdltest \
+        --disable-freetype-builtin \
+        --disable-harfbuzz \
+    && make -j$(nproc) \
+    && make install-libLTLIBRARIES install-libSDL2_ttfincludeHEADERS || make install
+
+# Build SDL2_gfx (shared library) from original ferzkopp.net source
+RUN wget -q https://www.ferzkopp.net/Software/SDL2_gfx/SDL2_gfx-1.0.4.tar.gz \
+    && tar xf SDL2_gfx-1.0.4.tar.gz \
+    && cd SDL2_gfx-1.0.4 \
+    && ./configure \
+        --host=arm-linux-gnueabihf \
+        --prefix=/output \
+        SDL_CFLAGS="-I/output/include/SDL2" \
+        SDL_LIBS="-L/output/lib -lSDL2" \
+        CFLAGS="-I/output/include/SDL2" \
+        LDFLAGS="-L/output/lib -Wl,-rpath,/output/lib" \
+        --disable-sdltest \
+        --disable-mmx \
+    && make -j$(nproc) \
+    && make install
+
+# Verify libraries are built
+RUN echo "=== Built SDL2 Libraries ===" && ls -la /output/lib/libSDL2*
+
+# Now build grout with Go cross-compilation
+WORKDIR /grout
+
+ARG USE_LOCAL_GABAGOOL=false
+
+COPY go*.mod go*.sum* go*.work* ./
+COPY . .
+
+# Handle workspace builds
+RUN if [ -d "grout" ] && [ "$USE_LOCAL_GABAGOOL" = "true" ]; then \
+        echo "=== Reorganizing for workspace build ==="; \
+        cd /; \
+        mv /grout /workspace-temp; \
+        mkdir -p /workspace; \
+        mv /workspace-temp /workspace/parent; \
+        ln -s /workspace/parent/grout /grout; \
+        cd /grout; \
+    fi
+
+# Download Go dependencies
+RUN if [ "$USE_LOCAL_GABAGOOL" = "true" ]; then \
+        if [ ! -f "go.work" ]; then \
+            echo "ERROR: go.work not found!"; \
+            exit 1; \
+        fi; \
+        echo "=== Building with local gabagool workspace ==="; \
+        go work sync; \
+    else \
+        echo "=== Building with remote gabagool from go.mod ==="; \
+        rm -f go.work go.work.sum; \
+        GOWORK=off go mod download; \
+    fi
+
+ARG GITHUB_ACTIONS=false
+
+# Cross-compile grout for ARM32 with CGO using Miyoo toolchain
+RUN BUILD_TYPE="Dev"; \
+    if [ "$GITHUB_ACTIONS" = "true" ]; then BUILD_TYPE="Release"; fi; \
+    VERSION=$(jq -r '.version // "dev"' pak.json 2>/dev/null || echo "dev"); \
+    GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown"); \
+    BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ); \
+    LDFLAGS="-X 'grout/version.Version=$VERSION' \
+             -X 'grout/version.GitCommit=$GIT_COMMIT' \
+             -X 'grout/version.BuildDate=$BUILD_DATE' \
+             -X 'grout/version.BuildType=$BUILD_TYPE'"; \
+    echo "=== Cross-compiling grout for Miyoo Mini Plus (ARM32) ==="; \
+    export CGO_ENABLED=1; \
+    export GOOS=linux; \
+    export GOARCH=arm; \
+    export GOARM=7; \
+    export CC=arm-linux-gnueabihf-gcc; \
+    export CXX=arm-linux-gnueabihf-g++; \
+    export CGO_CFLAGS="-I/output/include/SDL2 -I/output/include -I${SYSROOT}/usr/include"; \
+    export CGO_LDFLAGS="-L/output/lib -L${SYSROOT}/usr/lib -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_gfx"; \
+    export PKG_CONFIG_PATH="/output/lib/pkgconfig"; \
+    if [ "$USE_LOCAL_GABAGOOL" = "true" ]; then \
+        go build -gcflags="all=-N -l" -ldflags "$LDFLAGS" -v -o grout ./app; \
+    else \
+        GOWORK=off go build -gcflags="all=-N -l" -ldflags "$LDFLAGS" -v -o grout ./app; \
+    fi
+
+# Copy final binary to output
+RUN cp /grout/grout /output/
+
+# List final outputs
+RUN echo "=== Final Build Outputs ===" \
+    && echo "Binary:" && ls -la /output/grout \
+    && echo "Libraries:" && ls -la /output/lib/
+
+CMD ["/bin/bash"]
