@@ -1,6 +1,6 @@
 {
   "name": "Grout",
-  "version": "v1.4.2",
+  "version": " v4.6.0.0",
   "type": "TOOL",
   "description": "A RomM client for NextUI, muOS, Knulli, and Spruce v4.",
   "author": "The RomM Team",
@@ -24,7 +24,8 @@
     "v1.3.9": "Tried to be cute with pagination and lost. Fix for Grout not retrieving large ROM collections.",
     "v1.4.0": "Spruce v4 support (thanks @pawndev!), select / deselect all and fix for input mapping regression.",
     "v1.4.1": "New local cache for a sweet sweet performance boost",
-    "v1.4.2": "Fix for incorrect PICO-8 mapping."
+    "v1.4.2": "Fix for incorrect PICO-8 mapping.",
+    " v4.6.0.0": "Changelog will be added."
   },
   "screenshots": [],
   "platforms": [
