@@ -119,7 +119,8 @@ func (s *PlatformMappingScreen) getRomDirectories(romDir string) ([]os.DirEntry,
 		gaba.ConfirmationMessage(i18n.Localize(&goi18n.Message{ID: "platform_mapping_directory_not_found", Other: "ROM Directory Could Not Be Found!"}, nil), []gaba.FooterHelpItem{
 			FooterQuit(),
 		}, gaba.MessageOptions{})
-		return nil, fmt.Errorf("failed to read ROM directory: %w", err)
+		gaba.GetLogger().Error("failed to read ROM directory: %w", err)
+		os.Exit(1)
 	}
 
 	return fileutil.FilterHiddenDirectories(entries), nil
