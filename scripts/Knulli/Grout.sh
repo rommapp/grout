@@ -1,10 +1,10 @@
 #!/bin/bash
-APP_DIR="$(dirname "$0")"
+CUR_DIR="$(dirname "$0")"
 FLAG_FILE="./knulli_restart_request"
-cd "$APP_DIR" || exit 1
+cd "$CUR_DIR" || exit 1
 
 export CFW=KNULLI
-export LD_LIBRARY_PATH=$APP_DIR/lib
+export LD_LIBRARY_PATH=$CUR_DIR/lib:$LD_LIBRARY_PATH
 
 ./grout
 

@@ -4,7 +4,9 @@ import (
 	"errors"
 	"grout/cache"
 	"grout/cfw"
+	"grout/cfw/knulli"
 	"grout/cfw/muos"
+	"grout/cfw/rocknix"
 	"grout/internal"
 	"grout/internal/environment"
 	"grout/internal/fileutil"
@@ -82,12 +84,19 @@ func setup() SetupResult {
 		log.Fatalf("Failed to initialize i18n: %v", err)
 	}
 
+	if cfw.GetCFW() == cfw.Knulli {
+		knulli.AddToToolsGameList()
+	}
+
+	if cfw.GetCFW() == cfw.ROCKNIX {
+		rocknix.AddToPortsGameList()
+	}
+
 	config, err := internal.LoadConfig()
 	isFirstLaunch := err != nil || (len(config.Hosts) == 0 && config.Language == "")
 
 	if isFirstLaunch {
 		logger.Debug("First launch detected, showing language selection")
-		cfw.FirstLaunchSetup()
 		languageScreen := ui.NewLanguageSelectionScreen()
 		selectedLanguage, langErr := languageScreen.Draw()
 		if langErr != nil {

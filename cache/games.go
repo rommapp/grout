@@ -112,7 +112,7 @@ func (cm *Manager) SavePlatformGames(platformID int, games []romm.Rom) error {
 	}
 	defer stmt.Close()
 
-	now := time.Now()
+	now := nowUTC()
 	for _, game := range games {
 		dataJSON, err := json.Marshal(game)
 		if err != nil {
@@ -604,8 +604,8 @@ func (cm *Manager) SaveFilenameMapping(fsSlug, localFilename string, romID int, 
 
 	_, err := cm.db.Exec(`
 		INSERT OR REPLACE INTO filename_mappings (platform_fs_slug, local_filename_no_ext, rom_id, rom_name, matched_at)
-		VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-	`, fsSlug, key, romID, romName)
+		VALUES (?, ?, ?, ?, ?)
+	`, fsSlug, key, romID, romName, nowUTC())
 
 	if err != nil {
 		return newCacheError("save", "filename_mapping", fmt.Sprintf("%s/%s", fsSlug, key), err)
@@ -682,8 +682,8 @@ func (cm *Manager) RecordFailedLookup(fsSlug, localFilename string) error {
 
 	_, err := cm.db.Exec(`
 		INSERT OR REPLACE INTO failed_lookups (platform_fs_slug, local_filename_no_ext, last_attempt)
-		VALUES (?, ?, CURRENT_TIMESTAMP)
-	`, fsSlug, key)
+		VALUES (?, ?, ?)
+	`, fsSlug, key, nowUTC())
 
 	if err != nil {
 		return newCacheError("save", "failed_lookup", fmt.Sprintf("%s/%s", fsSlug, key), err)

@@ -6,7 +6,7 @@
   <br />
   <img src=".github/resources/logotipo.png" height="45px" width="auto" alt="romm grout logotype">
     <h3 style="font-size: 25px;">
-A RomM Client for <a href="https://muos.dev">muOS</a>, <a href="https://knulli.org">Knulli</a>, <a href="https://spruceui.github.io/">Spruce (v4)</a> and <a href="https://nextui.loveretro.games">NextUI</a>.
+A RomM Client for <a href="https://muos.dev">muOS</a>, <a href="https://knulli.org">Knulli</a>, <a href="https://rocknix.org">ROCKNIX</a>, <a href="https://spruceui.github.io/">Spruce (v4)</a> and <a href="https://nextui.loveretro.games">NextUI</a>.
     </h3>
 
 <br>
@@ -26,7 +26,8 @@ A RomM Client for <a href="https://muos.dev">muOS</a>, <a href="https://knulli.o
 > [!IMPORTANT]                                                                                                                                                                                                                                     
 > Grout aggressively adopts new RomM features.
 >
-> The required RomM version matches the first three components of Grout's version number.                                                                                                                                                          
+> The required RomM version matches the first three components of Grout's version
+> number.                                                                                                                                                          
 > The fourth component is for Grout-specific patches.
 >
 > Grout may still function on older RomM versions, but support will not be provided.
@@ -63,6 +64,14 @@ Interested in contributing? Check out the [Development Guide](.github/DEVELOPMEN
 ## Need Help? Found a Bug? Have an Idea?
 
 Please [create an issue](https://github.com/rommapp/grout/issues/new/choose) and fill out the template completely.
+
+---
+
+## Contributors
+
+Grout is built by the community for the community. Thank you to everyone who has helped make this project better!
+
+See the full list of [Contributors](.github/CONTRIBUTORS.md).
 
 ---
 

@@ -9,10 +9,11 @@ import (
 type CFW string
 
 const (
-	NextUI CFW = "NEXTUI"
-	MuOS   CFW = "MUOS"
-	Knulli CFW = "KNULLI"
-	Spruce CFW = "SPRUCE"
+	NextUI  CFW = "NEXTUI"
+	MuOS    CFW = "MUOS"
+	Knulli  CFW = "KNULLI"
+	Spruce  CFW = "SPRUCE"
+	ROCKNIX CFW = "ROCKNIX"
 )
 
 func GetCFW() CFW {
@@ -20,11 +21,11 @@ func GetCFW() CFW {
 	cfw := CFW(cfwEnv)
 
 	switch cfw {
-	case MuOS, NextUI, Knulli, Spruce:
+	case MuOS, NextUI, Knulli, Spruce, ROCKNIX:
 		return cfw
 	default:
 		log.SetOutput(os.Stderr)
-		log.Fatalf("Unsupported CFW: '%s'. Valid options: NextUI, muOS, Knulli, Spruce", cfwEnv)
+		log.Fatalf("Unsupported CFW: '%s'. Valid options: NextUI, muOS, Knulli, Spruce, ROCKNIX", cfwEnv)
 		return ""
 	}
 }

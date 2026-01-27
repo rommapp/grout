@@ -49,8 +49,7 @@ Game Options.
 
 **Grout Info** - View version information, build details, server connection info, and the GitHub repository QR code.
 
-**Check for Updates** - Will allow Grout to update itself. This feature is only present on muOS and Knulli as NextUI has
-the Pak Store.
+**Check for Updates** - Will allow Grout to update itself.
 
 ---
 

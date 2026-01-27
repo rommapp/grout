@@ -4,6 +4,7 @@ import (
 	"grout/cfw/knulli"
 	"grout/cfw/muos"
 	"grout/cfw/nextui"
+	"grout/cfw/rocknix"
 	"grout/cfw/spruce"
 	"strings"
 )
@@ -18,6 +19,7 @@ func buildPlatformAliasMap() map[string][]string {
 		knulli.Platforms,
 		muos.Platforms,
 		nextui.Platforms,
+		rocknix.Platforms,
 		spruce.Platforms,
 	}
 
@@ -110,6 +112,8 @@ func GetPlatformMap(c CFW) map[string][]string {
 		return knulli.Platforms
 	case Spruce:
 		return spruce.Platforms
+	case ROCKNIX:
+		return rocknix.Platforms
 	default:
 		return nil
 	}

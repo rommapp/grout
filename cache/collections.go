@@ -117,10 +117,11 @@ func (cm *Manager) SaveCollections(collections []romm.Collection) error {
 	}
 	defer tx.Rollback()
 
+	now := nowUTC()
 	stmt, err := tx.Prepare(`
 		INSERT OR REPLACE INTO collections
 		(romm_id, virtual_id, type, name, rom_count, data_json, updated_at, cached_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	`)
 	if err != nil {
 		return newCacheError("save", "collections", "", err)
@@ -159,6 +160,7 @@ func (cm *Manager) SaveCollections(collections []romm.Collection) error {
 			c.ROMCount,
 			string(dataJSON),
 			c.UpdatedAt,
+			now,
 		)
 		if err != nil {
 			return newCacheError("save", "collections", c.Name, err)

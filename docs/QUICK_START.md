@@ -7,7 +7,7 @@ Get up and running with Grout in 5 steps.
 Make sure you have:
 
 - A RomM server running and accessible
-- A compatible device running muOS, Knulli, Spruce v4 or NextUI
+- A compatible device running muOS, Knulli, ROCKNIX, Spruce v4 or NextUI
 - Your device connected to Wi-Fi
 
 ---
@@ -20,6 +20,7 @@ Choose your platform:
 
 - [muOS Installation](INSTALL_MUOS.md)
 - [Knulli Installation](INSTALL_KNULLI.md)
+- [ROCKNIX Installation](INSTALL_ROCKNIX.md)
 - [Spruce Installation](INSTALL_SPRUCE.md)
 - [NextUI Installation](INSTALL_NEXTUI.md)
 

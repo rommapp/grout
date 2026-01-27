@@ -1,8 +1,8 @@
 #!/bin/sh
-PAK_DIR="$(dirname "$0")"
-cd "$PAK_DIR" || exit 1
+CUR_DIR="$(dirname "$0")"
+cd "$CUR_DIR" || exit 1
 
 export CFW=NEXTUI
-export LD_LIBRARY_PATH=/usr/trimui/lib:$PAK_DIR/lib
+export LD_LIBRARY_PATH=$CUR_DIR/lib:$LD_LIBRARY_PATH
 
 ./grout

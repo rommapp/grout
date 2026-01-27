@@ -4,6 +4,7 @@ import (
 	"grout/cfw/knulli"
 	"grout/cfw/muos"
 	"grout/cfw/nextui"
+	"grout/cfw/rocknix"
 	"grout/cfw/spruce"
 )
 
@@ -18,6 +19,8 @@ func EmulatorFolderMap(c CFW) map[string][]string {
 		return knulli.Platforms // Knulli uses platforms map for save directories
 	case Spruce:
 		return spruce.SaveDirectories
+	case ROCKNIX:
+		return rocknix.Platforms // ROCKNIX stores saves alongside ROMs
 	default:
 		return nil
 	}

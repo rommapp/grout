@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"grout/romm"
-	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
@@ -83,7 +82,7 @@ func (cm *Manager) SavePlatforms(platforms []romm.Platform) error {
 	}
 	defer stmt.Close()
 
-	now := time.Now()
+	now := nowUTC()
 	for _, p := range platforms {
 		dataJSON, err := json.Marshal(p)
 		if err != nil {
@@ -159,8 +158,8 @@ func (cm *Manager) SetBIOSAvailability(platformID int, hasBIOS bool) error {
 
 	_, err := cm.db.Exec(`
 		INSERT OR REPLACE INTO bios_availability (platform_id, has_bios, checked_at)
-		VALUES (?, ?, CURRENT_TIMESTAMP)
-	`, platformID, biosInt)
+		VALUES (?, ?, ?)
+	`, platformID, biosInt, nowUTC())
 
 	if err != nil {
 		return newCacheError("save", "bios", "", err)
@@ -178,11 +177,12 @@ func (cm *Manager) RecordPlatformSyncSuccess(platformID int, gamesCount int) err
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 
+	now := nowUTC()
 	_, err := cm.db.Exec(`
 		INSERT OR REPLACE INTO platform_sync_status
 		(platform_id, last_successful_sync, last_attempt, games_synced, status)
-		VALUES (?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'success')
-	`, platformID, gamesCount)
+		VALUES (?, ?, ?, ?, 'success')
+	`, platformID, now, now, gamesCount)
 
 	if err != nil {
 		return newCacheError("save", "platform_sync_status", "", err)
@@ -201,13 +201,14 @@ func (cm *Manager) RecordPlatformSyncFailure(platformID int) error {
 	defer cm.mu.Unlock()
 
 	// Use INSERT OR REPLACE but preserve last_successful_sync if it exists
+	now := nowUTC()
 	_, err := cm.db.Exec(`
 		INSERT INTO platform_sync_status (platform_id, last_attempt, status)
-		VALUES (?, CURRENT_TIMESTAMP, 'failed')
+		VALUES (?, ?, 'failed')
 		ON CONFLICT(platform_id) DO UPDATE SET
-			last_attempt = CURRENT_TIMESTAMP,
+			last_attempt = ?,
 			status = 'failed'
-	`, platformID)
+	`, platformID, now, now)
 
 	if err != nil {
 		return newCacheError("save", "platform_sync_status", "", err)

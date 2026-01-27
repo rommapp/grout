@@ -1,4 +1,4 @@
-package knulli
+package rocknix
 
 import (
 	"fmt"
@@ -12,12 +12,12 @@ import (
 
 const (
 	GroutEntryGameListName = "Grout"
-	flagPath               = "./knulli_restart_request"
+	flagPath               = "./rocknix_restart_request"
 )
 
-func FirstLaunchSetup(romDir string) {
-	path := filepath.Join(romDir, "tools", "gamelist.xml")
-	gaba.GetLogger().Debug("using filepath for knulli gamelist.xml", "path", path)
+func AddToPortsGameList() {
+	path := filepath.Join(GetRomDirectory(), "ports", "gamelist.xml")
+	gaba.GetLogger().Debug("using filepath for rocknix gamelist.xml", "path", path)
 	gl := gamelist.New()
 
 	if fileutil.FileExists(path) {
@@ -29,12 +29,21 @@ func FirstLaunchSetup(romDir string) {
 		if len(data) > 0 {
 			gaba.GetLogger().Debug("Found gamelist.xml file", "data", string(data))
 			if err := gl.Parse(data); err != nil {
-				gaba.GetLogger().Debug("Knulli gamelist.xml not found or can't be parsed, skipping grout entry check", "path", path, "error", err)
+				gaba.GetLogger().Debug("ROCKNIX gamelist.xml not found or can't be parsed, skipping grout entry check", "path", path, "error", err)
 				return
 			}
 		} else {
 			gaba.GetLogger().Debug("gamelist.xml file is empty", "path", path)
 		}
+	}
+
+	if gl.GameContainsElements(GroutEntryGameListName, []string{
+		gamelist.PathElement, gamelist.DescElement,
+		gamelist.ImageElement, gamelist.DeveloperElement,
+		gamelist.PlayersElement, gamelist.GenreElement,
+	}) {
+		gaba.GetLogger().Debug("gamelist.xml already contains Grout entry, skipping addition", "path", path)
+		return
 	}
 
 	gl.AdddOrUpdateEntry(GroutEntryGameListName, map[string]string{
@@ -57,10 +66,7 @@ func FirstLaunchSetup(romDir string) {
 	err := ScheduleESRestart()
 	if err != nil {
 		gaba.GetLogger().Debug("Unable to schedule ES restart", "error", err)
-		return
 	}
-
-	return
 }
 
 func ScheduleESRestart() error {
