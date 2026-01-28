@@ -42,9 +42,6 @@
   "cave-story": [
     "cavestory"
   ],
-  "cbm-ii": [],
-  "chailove": [],
-  "chip-8": [],
   "colecovision": [
     "colecovision"
   ],
@@ -53,10 +50,6 @@
   ],
   "dc": [
     "dreamcast"
-  ],
-  "doom": [
-    "prboom",
-    "gzdoom"
   ],
   "dos": [
     "dos"
@@ -96,17 +89,9 @@
   "jaguar": [
     "jaguar"
   ],
-  "karaoke": [],
-  "lowres": [
-    "lowresnx"
-  ],
-  "lua": [
-    "lutro"
-  ],
   "lynx": [
     "lynx"
   ],
-  "media-player": [],
   "mega-duck-slash-cougar-boy": [
     "megaduck"
   ],
@@ -118,11 +103,6 @@
   ],
   "n64": [
     "n64"
-  ],
-  "naomi": [
-    "naomi",
-    "naomi2",
-    "atomiswave"
   ],
   "nds": [
     "nds"
@@ -148,7 +128,6 @@
   "odyssey": [
     "odyssey2"
   ],
-  "onscripter": [],
   "openbor": [
     "openbor"
   ],
@@ -173,9 +152,6 @@
   "pokemon-mini": [
     "pokemini"
   ],
-  "ports": [
-    "ports"
-  ],
   "ps2": [
     "ps2"
   ],
@@ -186,17 +162,8 @@
     "psx",
     "ps1"
   ],
-  "quake": [
-    "tyrquake"
-  ],
-  "rpg-maker": [
-    "easyrpg"
-  ],
   "saturn": [
     "saturn"
-  ],
-  "scummvm": [
-    "scummvm"
   ],
   "sega32": [
     "sega32x"
@@ -228,34 +195,20 @@
   "tg16": [
     "pcengine"
   ],
-  "ti-83": [],
   "tic-80": [
     "tic80"
   ],
   "turbografx-cd": [
     "pcenginecd"
   ],
-  "uzebox": [
-    "uzebox"
-  ],
   "vectrex": [
     "vectrex"
   ],
-  "vemulator": [],
   "vic-20": [
     "c20"
   ],
-  "vircon-32": [
-    "vircon32"
-  ],
   "virtualboy": [
     "virtualboy"
-  ],
-  "wasm-4": [
-    "wasm4"
-  ],
-  "wolfenstein-3d": [
-    "ecwolf"
   ],
   "wonderswan": [
     "wswan"

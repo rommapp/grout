@@ -17,7 +17,7 @@ import (
 var embeddedFiles embed.FS
 
 func mustLoadJSONMap[K comparable, V any](path string) map[K]V {
-	return jsonutil.MustLoadJSONMap[K, V](embeddedFiles, path, "")
+	return jsonutil.MustLoadJSONMap[K, V](embeddedFiles, path)
 }
 
 var LibretroCoreToBIOS = mustLoadJSONMap[string, CoreBIOS]("data/core_requirements.json")

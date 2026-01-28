@@ -11,7 +11,7 @@ import (
 var embeddedFiles embed.FS
 
 var (
-	Platforms = jsonutil.MustLoadJSONMap[string, []string](embeddedFiles, "data/platforms.json", "cfw/knulli")
+	Platforms = jsonutil.MustLoadJSONMap[string, []string](embeddedFiles, "data/platforms.json")
 )
 
 func GetBasePath() string {

@@ -201,6 +201,12 @@ tasks:
       - for img in *.png; do sips -Z 1024 "$img" --out "$img"; done
     silent: true
 
+  gen-platforms:
+    desc: Generate platforms.json from markdown docs
+    cmds:
+      - go run tools/gen-platforms/main.go
+    silent: true
+
   clean:
     desc: Remove build artifacts
     cmds:
@@ -218,4 +224,11 @@ tasks:
   clean-all:
     desc: Remove build artifacts and Docker images
     deps: [clean, docker-clean]
+    silent: true
+
+  hooks-setup:
+    desc: Install git hooks for development
+    cmds:
+      - git config core.hooksPath .githooks
+      - echo "Git hooks installed from .githooks/"
     silent: true

@@ -80,7 +80,7 @@ func transitionPlatformSelection(ctx *transitionContext, result any) (router.Scr
 	}
 
 	pushInput := ui.PlatformSelectionInput{
-		Platforms:       ctx.state.Platforms,
+		Platforms:       &ctx.state.Platforms,
 		QuitOnBack:      ctx.quitOnBack,
 		ShowCollections: ctx.showCollections,
 		ShowSaveSync:    computeShowSaveSync(ctx.state),
@@ -499,7 +499,7 @@ func transitionLogoutConfirmation(ctx *transitionContext, result any) (router.Sc
 		handleLogout(ctx.state)
 		ctx.stack.Clear()
 		return ScreenPlatformSelection, ui.PlatformSelectionInput{
-			Platforms:       ctx.state.Platforms,
+			Platforms:       &ctx.state.Platforms,
 			QuitOnBack:      ctx.quitOnBack,
 			ShowCollections: ctx.state.Config.ShowCollections(ctx.state.Host),
 			ShowSaveSync:    computeShowSaveSync(ctx.state),

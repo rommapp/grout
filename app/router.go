@@ -28,7 +28,7 @@ func runWithRouter(config *internal.Config, currentCFW cfw.CFW, platforms []romm
 	r := buildRouter(state, quitOnBack, showCollections)
 
 	initialInput := ui.PlatformSelectionInput{
-		Platforms:       platforms,
+		Platforms:       &state.Platforms,
 		QuitOnBack:      quitOnBack,
 		ShowCollections: showCollections,
 		ShowSaveSync:    computeShowSaveSync(state),

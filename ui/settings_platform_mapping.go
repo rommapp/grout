@@ -16,6 +16,7 @@ import (
 	"grout/romm"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
+	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
 	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
@@ -62,6 +63,7 @@ func (s *PlatformMappingScreen) Draw(input PlatformMappingInput) (PlatformMappin
 
 	footerItems := []gaba.FooterHelpItem{
 		FooterCycle(),
+		FooterSelect(),
 		FooterSave(),
 	}
 	if !input.HideBackButton {
@@ -74,6 +76,7 @@ func (s *PlatformMappingScreen) Draw(input PlatformMappingInput) (PlatformMappin
 			FooterHelpItems:   footerItems,
 			DisableBackButton: input.HideBackButton,
 			StatusBar:         StatusBar(),
+			ListPickerButton:  constants.VirtualButtonA,
 		},
 		mappingOptions,
 	)
@@ -222,6 +225,29 @@ func (s *PlatformMappingScreen) buildPlatformOptions(
 	// Only auto-select create option on first run (not return visits)
 	if !hasExistingMappings && selectedIndex == 0 && createOptionAdded && input.AutoSelect {
 		selectedIndex = 1
+	}
+
+	// Check if existing mapping is a custom value (not matched by any predefined option)
+	isCustomValue := hasExistingMappings && platformHasMapping && existingMapping.RelativePath != "" && selectedIndex == 0
+	customDisplayName := i18n.Localize(&goi18n.Message{ID: "platform_mapping_custom", Other: "Custom..."}, nil)
+	customValue := ""
+
+	if isCustomValue {
+		customDisplayName = existingMapping.RelativePath
+		customValue = existingMapping.RelativePath
+	}
+
+	// Add custom input option at the end
+	options = append(options, gaba.Option{
+		DisplayName:    customDisplayName,
+		Value:          customValue,
+		Type:           gaba.OptionTypeKeyboard,
+		KeyboardPrompt: customValue, // Prepopulate keyboard with existing value
+	})
+
+	// Select custom option if it has a value
+	if isCustomValue {
+		selectedIndex = len(options) - 1
 	}
 
 	return options, selectedIndex

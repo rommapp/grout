@@ -16,6 +16,7 @@ func footerItem(button, msgID, fallback string) gaba.FooterHelpItem {
 
 func FooterContinue() gaba.FooterHelpItem { return footerItem("A", "button_continue", "Continue") }
 func FooterDownload() gaba.FooterHelpItem { return footerItem("A", "button_download", "Download") }
+func FooterSelect() gaba.FooterHelpItem   { return footerItem("A", "button_select", "Select") }
 func FooterBack() gaba.FooterHelpItem     { return footerItem("B", "button_back", "Back") }
 func FooterCancel() gaba.FooterHelpItem   { return footerItem("B", "button_cancel", "Cancel") }
 func FooterQuit() gaba.FooterHelpItem     { return footerItem("B", "button_quit", "Quit") }

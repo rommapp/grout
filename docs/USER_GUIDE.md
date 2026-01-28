@@ -2,6 +2,34 @@
 
 This guide walks you through using Grout to download games from your RomM instance.
 
+## Table of Contents
+
+- [Button Reference](#button-reference)
+- [Status Bar Icons](#status-bar-icons)
+- [First Launch and Login](#first-launch-and-login)
+- [Platform Directory Mapping](#platform-directory-mapping)
+- [Background Cache Sync](#background-cache-sync)
+- [Main Menu - Platform Selection](#main-menu--platform-selection)
+- [Collections](#collections)
+- [Game List](#game-list)
+- [Search](#search)
+- [Game Details](#game-details)
+- [Downloading Games](#downloading-games)
+- [BIOS Files](#bios-files)
+- [Settings](#settings)
+- [Save Sync](#save-sync)
+- [Platform Mappings Reference](#platform-mappings-reference)
+- [Advanced Configuration](#advanced-configuration)
+
+**See Also:**
+
+- [Quick Start Guide](QUICK_START.md) - Get up and running in 5 steps
+- [Settings Reference](SETTINGS.md) - Complete settings documentation
+- [Save Sync Guide](SAVE_SYNC.md) - Detailed save synchronization guide
+- [Platform Mappings](#platform-mappings-reference) - CFW-specific folder names
+
+---
+
 ## Button Reference
 
 Grout attempts to be consistent with its controls. Here's a quick reference:
@@ -46,31 +74,6 @@ These icons appear during [Save Sync](#save-sync) operations:
 | ![Cloud Download](../.github/resources/user_guide/statusbar_icons/Cloud%20Download.png) | Downloading saves from RomM                                         |
 | ![Cloud Check](../.github/resources/user_guide/statusbar_icons/Cloud%20Check.png)       | Save sync completed successfully                                    |
 | ![Cloud Alert](../.github/resources/user_guide/statusbar_icons/Cloud%20Alert.png)       | Save sync encountered an error, go check the log file for more info |
-
----
-
-## Table of Contents
-
-- [Status Bar Icons](#status-bar-icons)
-- [First Launch and Login](#first-launch-and-login)
-- [Platform Directory Mapping](#platform-directory-mapping)
-- [Background Cache Sync](#background-cache-sync)
-- [Main Menu - Platform Selection](#main-menu--platform-selection)
-- [Collections](#collections)
-- [Game List](#game-list)
-- [Search](#search)
-- [Game Details](#game-details)
-- [Downloading Games](#downloading-games)
-- [BIOS Files](#bios-files)
-- [Settings](#settings)
-- [Save Sync](#save-sync)
-- [Advanced Configuration](#advanced-configuration)
-
-**See Also:**
-
-- [Quick Start Guide](QUICK_START.md) - Get up and running in 5 steps
-- [Settings Reference](SETTINGS.md) - Complete settings documentation
-- [Save Sync Guide](SAVE_SYNC.md) - Detailed save synchronization guide
 
 ---
 
@@ -140,12 +143,21 @@ You'll see a list of all platforms from your RomM instance. For each one, you ca
 - **Create {Directory Name}** – Create a new directory for this platform. Grout will automatically suggest directory
   names that match your custom firmware's expected structure.
 - **/{Existing Directory}** – Map to an existing directory on your device.
+- **Custom...** – Enter a custom folder name using the on-screen keyboard. Use this when your folder structure doesn't
+  match Grout's suggestions.
 
 Grout tries to be smart about this. If you already have a directory that matches the platform name, it'll be
 pre-selected. If not, it'll suggest creating one with the correct name for your firmware.
 
-Use left/right to cycle through the options for each platform. When you're happy with your mappings, press `Start` to
-save. Grout will create any new directories you selected.
+**Navigation:**
+
+- `Left/Right` to cycle through options for the selected platform
+- `A` to open a list picker showing all available options at once
+- `Up/Down` to move between platforms
+- `Start` to save your mappings
+
+When you select **Custom...**, an on-screen keyboard appears where you can type your desired folder name. If you return
+to this screen later, any custom folder names you entered will be remembered and shown in place of "Custom...".
 
 You can change these mappings later from [Settings](SETTINGS.md).
 
@@ -155,10 +167,12 @@ You can change these mappings later from [Settings](SETTINGS.md).
 
 > [!WARNING]
 > Grout currently does not gracefully handle deletions.
-> 
-> Deleted games, platforms and collections will continue to be shown until the [local cache is rebuilt](SETTINGS.md#rebuild-cache).
-> 
-> We are waiting for updated API endpoints that will allow Grout to remove deleted items from the cache without a rebuild. You can track the progress of this in [this issue](https://github.com/rommapp/grout/issues/83).
+>
+> Deleted games, platforms and collections will continue to be shown until
+> the [local cache is rebuilt](SETTINGS.md#rebuild-cache).
+>
+> We are waiting for updated API endpoints that will allow Grout to remove deleted items from the cache without a
+> rebuild. You can track the progress of this in [this issue](https://github.com/rommapp/grout/issues/83).
 
 Grout maintains a local cache of your RomM library data (platforms, games, and collections) to provide a fast,
 responsive browsing experience. This cache syncs automatically in the background each time you launch Grout.
@@ -286,9 +300,6 @@ To clear a search and return to the full list, press `B`.
 
 ## Game Details
 
-> [!TIP]
-> This screen will only show if you've enabled "Game Details" in Settings.
-
 ![Grout preview, game details](../.github/resources/user_guide/game_details.png "Grout preview, game details")
 
 You'll see:
@@ -320,13 +331,13 @@ different revisions (Rev A, Rev B). When a game has multiple versions available:
 
 ### Game Options
 
-> [!IMPORTANT]
-> **Kids Mode Impact:** When Kids Mode is enabled, the Game Options screen is hidden.
-> See [Settings Reference](SETTINGS.md#kids-mode) to learn how to temporarily or permanently disable Kids Mode.
-
 - **Save Directory** – Choose which emulator's save folder this game should use. This overrides the platform-wide
   setting configured in Save Sync Mappings. When changed, Grout automatically moves existing save files to the new
   location. This is useful when you use different emulators for specific games within the same platform.
+
+> [!IMPORTANT]
+> **Kids Mode Impact:** When Kids Mode is enabled, the Game Options screen is hidden.
+> See [Settings Reference](SETTINGS.md#kids-mode) to learn how to temporarily or permanently disable Kids Mode.
 
 ---
 
@@ -424,12 +435,14 @@ For complete documentation including sync logic, per-game settings, and troubles
 
 ---
 
-## Advanced Configuration
+## Platform Mappings Reference
 
-### Override Files
+Grout uses platform mappings to determine where to save downloaded games on your device. Each Custom Firmware (CFW) uses
+different folder naming conventions. Use these references to see the exact folder names used by your CFW:
 
-For advanced users and developers, Grout supports overriding embedded configuration files with local copies. This allows
-you to test new platform mappings, add custom BIOS requirements, or modify input mappings without recompiling the
-application.
+- [KNULLI](platforms/KNULLI.md) - ES-DE style folder names (e.g., `gb`, `snes`, `psx`)
+- [muOS](platforms/MUOS.md) - Mixed short codes and descriptive names (e.g., `gb`, `Nintendo Game Boy`)
+- [NextUI](platforms/NEXTUI.md) - Descriptive names with tags (e.g., `Game Boy (GB)`)
+- [ROCKNIX](platforms/ROCKNIX.md) - ES-DE style folder names (e.g., `gb`, `snes`, `psx`)
+- [Spruce](platforms/SPRUCE.md) - Uppercase short codes (e.g., `GB`, `SFC`, `PS`)
 
-For complete documentation on how to use override files, see [OVERRIDES.md](OVERRIDES.md).

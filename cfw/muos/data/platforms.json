@@ -53,15 +53,6 @@
   "cave-story": [
     "Cave Story"
   ],
-  "cbm-ii": [
-    "Commodore CBM-II"
-  ],
-  "chailove": [
-    "ChaiLove"
-  ],
-  "chip-8": [
-    "CHIP-8"
-  ],
   "colecovision": [
     "ColecoVision"
   ],
@@ -72,10 +63,6 @@
     "dc",
     "dreamcast",
     "Sega Dreamcast"
-  ],
-  "doom": [
-    "doom",
-    "Doom"
   ],
   "dos": [
     "dos",
@@ -136,20 +123,9 @@
     "jaguar",
     "Atari Jaguar"
   ],
-  "lowres": [
-    "lowresnx",
-    "Lowres NX"
-  ],
-  "lua": [
-    "Lua Engine"
-  ],
   "lynx": [
     "lynx",
     "Atari Lynx"
-  ],
-  "media-player": [
-    "iptv",
-    "Media Player"
   ],
   "mega-duck-slash-cougar-boy": [
     "megaduck",
@@ -163,11 +139,6 @@
   "n64": [
     "n64",
     "Nintendo N64"
-  ],
-  "naomi": [
-    "naomi",
-    "atomiswave",
-    "Sega Atomiswave Naomi"
   ],
   "nds": [
     "ds",
@@ -203,9 +174,6 @@
     "odyssey2",
     "Magnavox Odyssey - VideoPac"
   ],
-  "onscripter": [
-    "Onscripter"
-  ],
   "openbor": [
     "openbor",
     "OpenBOR"
@@ -236,9 +204,6 @@
     "pokemini",
     "Nintendo Pokemon Mini"
   ],
-  "ports": [
-    "External - Ports"
-  ],
   "psp": [
     "psp",
     "Sony Playstation Portable"
@@ -249,20 +214,9 @@
     "psx",
     "Sony Playstation"
   ],
-  "quake": [
-    "Quake"
-  ],
-  "rpg-maker": [
-    "easyrpg",
-    "RPG Maker 2000 - 2003"
-  ],
   "saturn": [
     "saturn",
     "Sega Saturn"
-  ],
-  "scummvm": [
-    "scummvm",
-    "ScummVM"
   ],
   "sega32": [
     "sega32x",
@@ -312,9 +266,6 @@
     "turbografx",
     "NEC PC Engine"
   ],
-  "ti-83": [
-    "Texas Instruments TI-83"
-  ],
   "tic-80": [
     "tic80",
     "TIC-80"
@@ -325,32 +276,16 @@
     "turbografxcd",
     "NEC PC Engine CD"
   ],
-  "uzebox": [
-    "Uzebox"
-  ],
   "vectrex": [
     "vectrex",
     "GCE - Vectrex"
   ],
-  "vemulator": [
-    "VeMUlator"
-  ],
   "vic-20": [
     "Commodore VIC-20"
-  ],
-  "vircon-32": [
-    "Vircon32"
   ],
   "virtualboy": [
     "vb",
     "Nintendo Virtual Boy"
-  ],
-  "wasm-4": [
-    "wasm4",
-    "WASM-4"
-  ],
-  "wolfenstein-3d": [
-    "Wolfenstein 3D"
   ],
   "wonderswan": [
     "ws",

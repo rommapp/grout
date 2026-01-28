@@ -24,9 +24,6 @@
   "atari-st": [
     "atarist"
   ],
-  "atari800": [
-    "atari800"
-  ],
   "atari2600": [
     "atari2600"
   ],
@@ -36,44 +33,27 @@
   "atari7800": [
     "atari7800"
   ],
+  "atari800": [
+    "atari800"
+  ],
   "c128": [
     "c128"
-  ],
-  "c64": [
-    "c64"
   ],
   "c16": [
     "c16"
   ],
-  "cps1": [
-    "cps1"
-  ],
-  "cps2": [
-    "cps2"
-  ],
-  "cps3": [
-    "cps3"
+  "c64": [
+    "c64"
   ],
   "cave-story": [],
-  "cbm-ii": [],
-  "chailove": [],
-  "chip-8": [
-    "chip-8"
-  ],
   "colecovision": [
     "coleco"
-  ],
-  "vic20": [
-    "vic20"
   ],
   "cpet": [
     "pet"
   ],
   "dc": [
     "dreamcast"
-  ],
-  "doom": [
-    "doom"
   ],
   "dos": [
     "pc"
@@ -115,20 +95,11 @@
   "jaguar": [
     "atarijaguar"
   ],
-  "karaoke": [],
-  "lowres": [],
-  "lua": [],
   "lynx": [
     "atarilynx"
   ],
-  "media-player": [
-    "mplayer"
-  ],
   "mega-duck-slash-cougar-boy": [
     "megaduck"
-  ],
-  "moto": [
-    "moto"
   ],
   "msx": [
     "msx",
@@ -136,10 +107,6 @@
   ],
   "n64": [
     "n64"
-  ],
-  "naomi": [
-    "naomi",
-    "atomiswave"
   ],
   "nds": [
     "nds",
@@ -163,15 +130,14 @@
   "nes": [
     "nes"
   ],
+  "ngc": [
+    "gamecube"
+  ],
   "odyssey": [
     "odyssey"
   ],
-  "onscripter": [],
   "openbor": [
     "openbor"
-  ],
-  "palm": [
-    "palm"
   ],
   "pc-8000": [
     "pc88"
@@ -194,9 +160,6 @@
   "pokemon-mini": [
     "pokemini"
   ],
-  "ports": [
-    "ports"
-  ],
   "ps2": [
     "ps2"
   ],
@@ -209,15 +172,8 @@
   "psx": [
     "psx"
   ],
-  "quake": [],
-  "rpg-maker": [
-    "easyrpg"
-  ],
   "saturn": [
     "saturn"
-  ],
-  "scummvm": [
-    "scummvm"
   ],
   "sega32": [
     "sega32x"
@@ -251,32 +207,24 @@
     "tg16",
     "tg16cd"
   ],
-  "ti-83": [],
   "tic-80": [
     "tic-80"
   ],
   "turbografx-cd": [
     "pcenginecd"
   ],
-  "uzebox": [
-    "uzebox"
-  ],
   "vectrex": [
     "vectrex"
   ],
-  "vemulator": [],
   "vic-20": [],
-  "vircon-32": [
-    "vircon32"
+  "vic20": [
+    "vic20"
   ],
   "videopac": [
     "videopac"
   ],
   "virtualboy": [
     "virtualboy"
-  ],
-  "wasm-4": [
-    "wasm4"
   ],
   "wii": [
     "wii",
@@ -288,7 +236,6 @@
   "windows": [
     "windows"
   ],
-  "wolfenstein-3d": [],
   "wonderswan": [
     "wonderswan"
   ],
@@ -297,9 +244,6 @@
   ],
   "x1": [
     "x1"
-  ],
-  "xbox": [
-    "xbox"
   ],
   "zx81": [
     "zx81"

@@ -506,6 +506,10 @@ other = "Attivato"
 hash = "sha1-d4f6486d8141fda18c9d6fc9d7c7680c3c385efa"
 other = "Crea '{{.Name}}'"
 
+[platform_mapping_custom]
+hash = "sha1-7c51e189fe1f7a6a88f22d27fc93e2f2ac206bf2"
+other = "Personalizzato..."
+
 [platform_mapping_directory_not_found]
 hash = "sha1-3bd6a65131dbb1c33d58f84bca777b8a9c971c85"
 other = "Directory ROM non trovata!"

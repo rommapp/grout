@@ -13,7 +13,7 @@ import (
 )
 
 type PlatformSelectionInput struct {
-	Platforms            []romm.Platform
+	Platforms            *[]romm.Platform // Pointer to allow dynamic updates from state
 	QuitOnBack           bool
 	ShowCollections      bool
 	ShowSaveSync         *atomic.Bool // nil = hidden, otherwise controls visibility dynamically
@@ -42,9 +42,10 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (PlatformSe
 		LastSelectedPosition: input.LastSelectedPosition,
 	}
 
-	if len(input.Platforms) == 0 {
+	if input.Platforms == nil || len(*input.Platforms) == 0 {
 		return output, nil
 	}
+	platforms := *input.Platforms
 
 	var menuItems []gaba.MenuItem
 
@@ -58,7 +59,7 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (PlatformSe
 		})
 	}
 
-	for _, platform := range input.Platforms {
+	for _, platform := range platforms {
 		menuItems = append(menuItems, gaba.MenuItem{
 			Text:     platform.Name,
 			Selected: false,
@@ -121,9 +122,9 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (PlatformSe
 	}
 
 	if sel != nil && len(sel.Items) > 0 {
-		if len(sel.Items)-startIndex == len(input.Platforms) {
-			for i := 0; i < len(input.Platforms); i++ {
-				originalPlatform := input.Platforms[i]
+		if len(sel.Items)-startIndex == len(platforms) {
+			for i := 0; i < len(platforms); i++ {
+				originalPlatform := platforms[i]
 				returnedPlatform := sel.Items[i+startIndex].Metadata.(romm.Platform)
 				if originalPlatform.FSSlug != returnedPlatform.FSSlug {
 					platformsReordered = true
