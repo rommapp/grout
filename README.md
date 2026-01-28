@@ -55,9 +55,14 @@ A RomM Client for <a href="https://muos.dev">muOS</a>, <a href="https://knulli.o
 
 ---
 
-## Development
+## Development & Contributing
 
-Interested in contributing? Check out the [Development Guide](docs/DEVELOPMENT.md) to get started.
+Interested in contributing? We'd love your help!
+
+| Guide                                              | Description                                      |
+|----------------------------------------------------|--------------------------------------------------|
+| [Development Guide](docs/DEVELOPMENT.md)           | Set up your local environment and build Grout    |
+| [Contributing Guide](.github/CONTRIBUTING.md)      | How to contribute code, translations, and more   |
 
 ---
 

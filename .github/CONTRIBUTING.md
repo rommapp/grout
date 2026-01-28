@@ -19,7 +19,7 @@ Not a developer? There are many ways to help improve Grout!
 
 Help make Grout accessible to more users by translating it into your language. Translation files are located in `resources/locales/`. 
 
-See the [Development Guide](../docs/DEVELOPMENT.md#internationalization-i18n) for details on the i18n workflow.
+See the [Development Guide](/docs/DEVELOPMENT.md#internationalization-i18n) for details on the i18n workflow.
 
 ### Testing & Bug Reports
 
@@ -51,7 +51,7 @@ Help keep CFW platform directory mappings current:
 
 ## Getting Started (Developers)
 
-1. Read the [Development Guide](../docs/DEVELOPMENT.md) for setup instructions
+1. Read the [Development Guide](/docs/DEVELOPMENT.md) for setup instructions
 2. Fork and clone the repository
 3. Create a feature branch from `main` with a descriptive name (e.g., `feature/add-search-filter`)
 4. Make your changes
