@@ -1,6 +1,6 @@
 {
   "name": "Grout",
-  "version": "v4.6.0.1",
+  "version": "v4.6.1.0",
   "type": "TOOL",
   "description": "A RomM client for NextUI, muOS, Knulli, and Spruce v4.",
   "author": "The RomM Team",
@@ -26,7 +26,8 @@
     "v1.4.1": "New local cache for a sweet sweet performance boost",
     "v1.4.2": "Fix for incorrect PICO-8 mapping.",
     "v4.6.0.0": "Bunch of great changes by even greater people <3",
-    "v4.6.0.1": "Add missing NDS .dsv save file extension"
+    "v4.6.0.1": "Add missing NDS .dsv save file extension",
+    "v4.6.1.0": "Added custom platform mapping entry via keyboard"
   },
   "screenshots": [],
   "platforms": [
