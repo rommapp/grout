@@ -1,3 +1,25 @@
+# v4.6.1.0
+
+## New Features
+
+- **Custom Platform Mapping Entry**: Enter custom folder names for platform mappings using the on-screen keyboard when your folder structure doesn't match Grout's suggestions (#103)
+
+## Documentation
+
+- Added per-CFW platform mapping reference tables for Knulli, muOS, NextUI, ROCKNIX, and Spruce
+  - Non-technical users can now contribute mapping corrections by editing these simple markdown tables
+- Fixed broken documentation links
+
+## Bug Fixes
+
+- Fixed issues with platform mapping validation (#101, #102)
+
+## Internal
+
+- Added pre-commit hook to remove replace directives from go.mod
+
+---
+
 # v4.6.0.0
 
 > [!IMPORTANT]
