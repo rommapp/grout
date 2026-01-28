@@ -54,18 +54,6 @@ type artDownload struct {
 	GameName string
 }
 
-func (a *artDownload) GetURL() string {
-	return a.URL
-}
-
-func (a *artDownload) GetLocation() string {
-	return a.Location
-}
-
-func (a *artDownload) GetGameName() string {
-	return a.GameName
-}
-
 func NewDownloadScreen() *DownloadScreen {
 	return &DownloadScreen{}
 }
@@ -274,7 +262,7 @@ func (s *DownloadScreen) draw(input DownloadInput) (DownloadOutput, error) {
 								logger.Warn("Failed to remove archive file after extraction", "path", archivePath, "error", err)
 							}
 
-							// TODO: Update gamelist entry to point to extracted file
+							// TODO: Update gamelist entry to point to extracted file(s)
 							//for i, game := range gamelistEntries {
 							//	if game.Game.ID == g.ID {
 							//		gamelistEntries[i].GamePath = filepath.Join(romDirectory, g.Files[0].FileNameNoExt)

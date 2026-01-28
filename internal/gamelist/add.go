@@ -30,7 +30,7 @@ func (gl *GameList) AddRomGame(entry RomGameEntry) {
 	gameMetadata[DescElement] = entry.Game.Summary
 	gameMetadata[MD5Element] = entry.Game.Md5Hash
 	if entry.Game.Metadatum.AverageRating != 0 {
-		gameMetadata[RatingElement] = fmt.Sprintf("%.1f", entry.Game.Metadatum.AverageRating/100*5)
+		gameMetadata[RatingElement] = fmt.Sprintf("%.1f", entry.Game.Metadatum.AverageRating/100)
 	}
 
 	if entry.Game.Metadatum.FirstReleaseDate != 0 {
