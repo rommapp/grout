@@ -1,0 +1,15 @@
+#!/bin/sh
+# Pre-commit hook to strip local replace directives from go.mod
+
+if [ -f "go.mod" ]; then
+    # Check for replace directives pointing to local paths (starting with / or ./ or ../)
+    if grep -qE '^replace .* => (/|\.\.?/)' go.mod; then
+        echo "Removing local replace directive(s) from go.mod..."
+        sed -i.bak '/^replace .* => \/\|^replace .* => \.\.\?\//'d go.mod
+        rm -f go.mod.bak
+        go mod tidy
+        git add go.mod go.sum
+    fi
+fi
+
+exit 0

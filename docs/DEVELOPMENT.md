@@ -32,8 +32,9 @@ brew install sdl2 sdl2_image sdl2_ttf sdl2_gfx
 ## Getting Started
 
 1. Clone the [Grout](https://github.com/rommapp/grout) repository.
-2. Make a copy of `.env.dev` and save it as `.env` in the root of the cloned repository.
-3. Fill out the `.env` file. Here are descriptions of the various values you can set.
+2. Run `task hooks-setup` to install git hooks.
+3. Make a copy of `.env.dev` and save it as `.env` in the root of the cloned repository.
+4. Fill out the `.env` file. Here are descriptions of the various values you can set.
     - `ENVIRONMENT=DEV` (mandatory), this will disable some Gabagool features behind the scenes
     - `WINDOW_WIDTH` (optional)
     - `WINDOW_HEIGHT` (optional)
@@ -41,7 +42,7 @@ brew install sdl2 sdl2_image sdl2_ttf sdl2_gfx
     - `CFW` [MUOS | KNULLI | SPRUCE | NEXTUI] (mandatory), this controls how Grout interacts with and places files
     - `BASE_PATH` (mandatory), this acts as the root path like you would have on a handheld (e.g. `/mmc/sdcard` on
       muOS). Have the subdirectory structure of this path match the CFW you are working on.
-4. Run / Debug `app/grout.go`, making sure to reference the `.env` file in your run configuration.
+5. Run / Debug `app/grout.go`, making sure to reference the `.env` file in your run configuration.
 
 ---
 

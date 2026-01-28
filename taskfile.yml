@@ -225,3 +225,10 @@ tasks:
     desc: Remove build artifacts and Docker images
     deps: [clean, docker-clean]
     silent: true
+
+  hooks-setup:
+    desc: Install git hooks for development
+    cmds:
+      - git config core.hooksPath .githooks
+      - echo "Git hooks installed from .githooks/"
+    silent: true
