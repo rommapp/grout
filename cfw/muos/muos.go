@@ -18,9 +18,9 @@ const (
 )
 
 var (
-	Platforms       = jsonutil.MustLoadJSONMap[string, []string](embeddedFiles, "data/platforms.json", "cfw/muos")
-	SaveDirectories = jsonutil.MustLoadJSONMap[string, []string](embeddedFiles, "data/save_directories.json", "cfw/muos")
-	ArtDirectories  = jsonutil.MustLoadJSONMap[string, string](embeddedFiles, "data/art_directories.json", "cfw/muos")
+	Platforms       = jsonutil.MustLoadJSONMap[string, []string](embeddedFiles, "data/platforms.json")
+	SaveDirectories = jsonutil.MustLoadJSONMap[string, []string](embeddedFiles, "data/save_directories.json")
+	ArtDirectories  = jsonutil.MustLoadJSONMap[string, string](embeddedFiles, "data/art_directories.json")
 )
 
 func GetBasePath() string {

@@ -57,7 +57,7 @@ A RomM Client for <a href="https://muos.dev">muOS</a>, <a href="https://knulli.o
 
 ## Development
 
-Interested in contributing? Check out the [Development Guide](.github/DEVELOPMENT.md) to get started.
+Interested in contributing? Check out the [Development Guide](docs/DEVELOPMENT.md) to get started.
 
 ---
 

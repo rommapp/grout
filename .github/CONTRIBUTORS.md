@@ -16,4 +16,4 @@ Thank you to everyone who has contributed to Grout!
 
 ---
 
-Want to contribute? Check out the [Development Guide](DEVELOPMENT.md) to get started!
+Want to contribute? Check out the [Development Guide](../docs/DEVELOPMENT.md) to get started!

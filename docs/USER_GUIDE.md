@@ -64,6 +64,7 @@ These icons appear during [Save Sync](#save-sync) operations:
 - [BIOS Files](#bios-files)
 - [Settings](#settings)
 - [Save Sync](#save-sync)
+- [Platform Mappings Reference](#platform-mappings-reference)
 - [Advanced Configuration](#advanced-configuration)
 
 **See Also:**
@@ -71,6 +72,7 @@ These icons appear during [Save Sync](#save-sync) operations:
 - [Quick Start Guide](QUICK_START.md) - Get up and running in 5 steps
 - [Settings Reference](SETTINGS.md) - Complete settings documentation
 - [Save Sync Guide](SAVE_SYNC.md) - Detailed save synchronization guide
+- [Platform Mappings](#platform-mappings-reference) - CFW-specific folder names
 
 ---
 
@@ -155,10 +157,12 @@ You can change these mappings later from [Settings](SETTINGS.md).
 
 > [!WARNING]
 > Grout currently does not gracefully handle deletions.
-> 
-> Deleted games, platforms and collections will continue to be shown until the [local cache is rebuilt](SETTINGS.md#rebuild-cache).
-> 
-> We are waiting for updated API endpoints that will allow Grout to remove deleted items from the cache without a rebuild. You can track the progress of this in [this issue](https://github.com/rommapp/grout/issues/83).
+>
+> Deleted games, platforms and collections will continue to be shown until
+> the [local cache is rebuilt](SETTINGS.md#rebuild-cache).
+>
+> We are waiting for updated API endpoints that will allow Grout to remove deleted items from the cache without a
+> rebuild. You can track the progress of this in [this issue](https://github.com/rommapp/grout/issues/83).
 
 Grout maintains a local cache of your RomM library data (platforms, games, and collections) to provide a fast,
 responsive browsing experience. This cache syncs automatically in the background each time you launch Grout.
@@ -424,12 +428,14 @@ For complete documentation including sync logic, per-game settings, and troubles
 
 ---
 
-## Advanced Configuration
+## Platform Mappings Reference
 
-### Override Files
+Grout uses platform mappings to determine where to save downloaded games on your device. Each Custom Firmware (CFW) uses
+different folder naming conventions. Use these references to see the exact folder names used by your CFW:
 
-For advanced users and developers, Grout supports overriding embedded configuration files with local copies. This allows
-you to test new platform mappings, add custom BIOS requirements, or modify input mappings without recompiling the
-application.
+- [KNULLI](platforms/KNULLI.md) - ES-DE style folder names (e.g., `gb`, `snes`, `psx`)
+- [muOS](platforms/MUOS.md) - Mixed short codes and descriptive names (e.g., `gb`, `Nintendo Game Boy`)
+- [NextUI](platforms/NEXTUI.md) - Descriptive names with tags (e.g., `Game Boy (GB)`)
+- [ROCKNIX](platforms/ROCKNIX.md) - ES-DE style folder names (e.g., `gb`, `snes`, `psx`)
+- [Spruce](platforms/SPRUCE.md) - Uppercase short codes (e.g., `GB`, `SFC`, `PS`)
 
-For complete documentation on how to use override files, see [OVERRIDES.md](OVERRIDES.md).

@@ -183,7 +183,6 @@
 - **Collection View Modes**: View collections unified (all games together) or by platform
 - **Collection Search**: Search functionality added to collection selection screen
 - **Info Screen**: New info screen for version and build details
-- **Override Files**: Advanced users can override embedded JSON configuration files for custom platform mappings and BIOS requirements
 
 ## UX Improvements
 
