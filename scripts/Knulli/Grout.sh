@@ -1,6 +1,6 @@
 #!/bin/bash
 CUR_DIR="$(dirname "$0")"
-FLAG_FILE="./knulli_restart_request"
+FLAG_FILE="./es_restart_request"
 cd "$CUR_DIR" || exit 1
 
 export CFW=KNULLI

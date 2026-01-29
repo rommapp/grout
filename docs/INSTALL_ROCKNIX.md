@@ -19,7 +19,7 @@ _Please help verify compatibility on other devices by reporting your results!_
 2. Download the [latest Grout release](https://github.com/rommapp/grout/releases/latest/download/Grout-ROCKNIX.zip) for
    ROCKNIX.
 3. Unzip the downloaded archive.
-4. Copy the Grout folder and `Grout.sh` to your Tools directory (`/games-external/roms/ports`)
+4. Copy the Grout folder and `Grout.sh` to your Ports directory (single sdcard setup: `/games-internal/roms/ports`, two sdcard setup: `/games-external/roms/ports`)
 5. On the main ROCKNIX menu, press `start`, navigate to `Game Settings`, and select `Update Gameslist`.
 6. Launch Grout from the `Ports` menu and enjoy!
 
@@ -38,7 +38,7 @@ Grout has a built-in update mechanism. To update Grout, launch the application a
 select `Check for Updates`. If a new version is available, follow the on-screen prompts to download and install the update.
 
 ### Manual update
-To update Grout, simply download the latest release and replace the existing Grout folder in your Tools directory (`/games-external/roms/ports`). If you
+To update Grout, simply download the latest release and replace the existing Grout folder in your Tools directory (single sdcard setup: `/games-internal/roms/ports`, two sdcard setup: `/games-external/roms/ports`). If you
 have made any custom configurations, ensure to back them up before replacing the folder. Be sure to keep the `config.json`
 file if you do not want to authenticate again, and configure platforms folder mappings again.
 

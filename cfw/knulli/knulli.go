@@ -36,3 +36,7 @@ func GetBaseSavePath() string {
 func GetArtDirectory(romDir string) string {
 	return filepath.Join(romDir, "images")
 }
+
+func GetGroutGamelist() string {
+	return filepath.Join(GetRomDirectory(), "tools", "gamelist.xml")
+}

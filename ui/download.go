@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"grout/cfw"
-	"grout/cfw/knulli"
 	"grout/cfw/muos"
 	"grout/internal"
+	"grout/internal/emulationstation"
 	"grout/internal/fileutil"
 	"grout/internal/gamelist"
 	"grout/internal/imageutil"
@@ -331,14 +331,14 @@ func (s *DownloadScreen) draw(input DownloadInput) (DownloadOutput, error) {
 		}
 	}
 
-	if cfw.GetCFW() == cfw.Knulli {
+	if cfw.GetCFW() == cfw.Knulli || cfw.GetCFW() == cfw.ROCKNIX {
 		if err := gamelist.AddRomGamesToGamelist(gamelistEntries); err != nil {
-			logger.Warn("Failed to refresh Knulli database", "error", err)
+			logger.Warn("Failed to refresh ES database", "error", err)
 		}
 
-		err := knulli.ScheduleESRestart()
+		err := emulationstation.ScheduleESRestart()
 		if err != nil {
-			logger.Warn("Failed to restart Knulli database", "error", err)
+			logger.Warn("Failed to restart ES database", "error", err)
 		}
 	}
 

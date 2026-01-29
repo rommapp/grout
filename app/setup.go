@@ -4,7 +4,6 @@ import (
 	"errors"
 	"grout/cache"
 	"grout/cfw"
-	"grout/cfw/knulli"
 	"grout/cfw/muos"
 	"grout/internal"
 	"grout/internal/environment"
@@ -83,14 +82,7 @@ func setup() SetupResult {
 		log.Fatalf("Failed to initialize i18n: %v", err)
 	}
 
-	if cfw.GetCFW() == cfw.Knulli {
-		knulli.AddToToolsGameList()
-	}
-
-	// TODO: Enable gamelist management for ROCKNIX once tested
-	// if cfw.GetCFW() == cfw.ROCKNIX {
-	// 	rocknix.AddToPortsGameList()
-	// }
+	cfw.AddGroutToGamelist(currentCFW)
 
 	config, err := internal.LoadConfig()
 	isFirstLaunch := err != nil || (len(config.Hosts) == 0 && config.Language == "")
