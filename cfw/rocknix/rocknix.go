@@ -18,7 +18,7 @@ func GetBasePath() string {
 	if basePath := os.Getenv("BASE_PATH"); basePath != "" {
 		return basePath
 	}
-	return "/storage/games-external"
+	return "/storage"
 }
 
 func GetRomDirectory() string {
@@ -36,4 +36,8 @@ func GetBaseSavePath() string {
 
 func GetArtDirectory(romDir string) string {
 	return filepath.Join(romDir, "images")
+}
+
+func GetGroutGamelist() string {
+	return filepath.Join(GetRomDirectory(), "ports", "gamelist.xml")
 }

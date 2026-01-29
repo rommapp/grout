@@ -1,6 +1,6 @@
 #!/bin/bash
 CUR_DIR="$(dirname "$0")"
-FLAG_FILE="./rocknix_restart_request"
+FLAG_FILE="./es_restart_request"
 cd "$CUR_DIR/Grout" || exit 1
 
 export CFW=ROCKNIX
@@ -11,7 +11,8 @@ export FLIP_FACE_BUTTONS=1
 
 if [ -f "$FLAG_FILE" ]; then
     rm -f "$FLAG_FILE"
-    batocera-es-swissknife --restart
+    killall emulationstation
+    # or `systemctl restart essway`
 fi
 
 exit 0
