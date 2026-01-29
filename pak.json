@@ -31,7 +31,8 @@
   },
   "screenshots": [],
   "platforms": [
-    "tg5040"
+    "tg5040",
+    "tg5050"
   ],
   "launch": "launch.sh"
 }
