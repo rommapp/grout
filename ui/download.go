@@ -7,7 +7,9 @@ import (
 	"grout/cfw"
 	"grout/cfw/muos"
 	"grout/internal"
+	"grout/internal/emulationstation"
 	"grout/internal/fileutil"
+	"grout/internal/gamelist"
 	"grout/internal/imageutil"
 	"grout/romm"
 	_ "image/gif"
@@ -92,7 +94,7 @@ func (s *DownloadScreen) draw(input DownloadInput) (DownloadOutput, error) {
 		SearchFilter: input.SearchFilter,
 	}
 
-	downloads, artDownloads := s.buildDownloads(input.Config, input.Host, input.Platform, input.SelectedGames, input.SelectedFileID)
+	downloads, artDownloads, gamelistEntries := s.buildDownloads(input.Config, input.Host, input.Platform, input.SelectedGames, input.SelectedFileID)
 
 	headers := make(map[string]string)
 	headers["Authorization"] = input.Host.BasicAuthHeader()
@@ -244,11 +246,18 @@ func (s *DownloadScreen) draw(input DownloadInput) (DownloadOutput, error) {
 						func() (interface{}, error) {
 							logger.Debug("Extracting single-file ROM", "game", g.Name, "file", archivePath)
 
+							var archiveFiles []string
 							var extractErr error
 							if ext == ".7z" {
-								extractErr = fileutil.Un7zip(archivePath, romDirectory, progress)
+								archiveFiles, extractErr = fileutil.SevenZipFileNames(archivePath)
+								if extractErr == nil {
+									extractErr = fileutil.Un7zip(archivePath, romDirectory, progress)
+								}
 							} else {
-								extractErr = fileutil.Unzip(archivePath, romDirectory, progress)
+								archiveFiles, extractErr = fileutil.ZipFileNames(archivePath)
+								if extractErr == nil {
+									extractErr = fileutil.Unzip(archivePath, romDirectory, progress)
+								}
 							}
 
 							if extractErr != nil {
@@ -258,6 +267,24 @@ func (s *DownloadScreen) draw(input DownloadInput) (DownloadOutput, error) {
 
 							if err := os.Remove(archivePath); err != nil {
 								logger.Warn("Failed to remove archive file after extraction", "path", archivePath, "error", err)
+							}
+
+							if len(archiveFiles) > 0 {
+								gamePath := archiveFiles[0]
+								if len(archiveFiles) > 1 {
+									for _, f := range archiveFiles {
+										if strings.ToLower(filepath.Ext(f)) == ".m3u" {
+											gamePath = f
+											break
+										}
+									}
+								}
+								for i, entry := range gamelistEntries {
+									if entry.Game.ID == g.ID {
+										gamelistEntries[i].GamePath = filepath.Join(romDirectory, gamePath)
+										break
+									}
+								}
 							}
 
 							return nil, nil
@@ -304,15 +331,34 @@ func (s *DownloadScreen) draw(input DownloadInput) (DownloadOutput, error) {
 		}
 	}
 
+	if cfw.GetCFW() == cfw.Knulli || cfw.GetCFW() == cfw.ROCKNIX {
+		if err := gamelist.AddRomGamesToGamelist(gamelistEntries); err != nil {
+			logger.Warn("Failed to refresh ES database", "error", err)
+		}
+
+		err := emulationstation.ScheduleESRestart()
+		if err != nil {
+			logger.Warn("Failed to restart ES database", "error", err)
+		}
+	}
+
 	output.DownloadedGames = downloadedGames
 	return output, nil
 }
 
-func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, platform romm.Platform, games []romm.Rom, selectedFileID int) ([]gaba.Download, []artDownload) {
+func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, platform romm.Platform, games []romm.Rom, selectedFileID int) ([]gaba.Download, []artDownload, []gamelist.RomGameEntry) {
 	downloads := make([]gaba.Download, 0, len(games))
 	artDownloads := make([]artDownload, 0, len(games))
+	gamesSummaries := make([]gamelist.RomGameEntry, 0, len(games))
 
 	for _, g := range games {
+		gamelistRomEntry := gamelist.RomGameEntry{
+			Game:         &g,
+			ArtLocation:  "",
+			GamePath:     "",
+			RomDirectory: "",
+			Platform:     &platform,
+		}
 		gamePlatform := platform
 		if platform.ID == 0 && g.PlatformID != 0 {
 			gamePlatform = romm.Platform{
@@ -323,6 +369,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 		}
 
 		romDirectory := config.GetPlatformRomDirectory(gamePlatform)
+		gamelistRomEntry.RomDirectory = romDirectory
 		downloadLocation := ""
 
 		sourceURL := ""
@@ -345,6 +392,8 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 			downloadLocation = filepath.Join(romDirectory, fileToDownload.FileName)
 			sourceURL, _ = url.JoinPath(host.URL(), "/api/roms/", strconv.Itoa(g.ID), "content", fileToDownload.FileName)
 		}
+
+		gamelistRomEntry.GamePath = downloadLocation
 
 		downloads = append(downloads, gaba.Download{
 			URL:         sourceURL,
@@ -369,6 +418,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 
 			baseURL := host.URL() + coverPath
 			artURL := strings.ReplaceAll(baseURL, " ", "%20")
+			gamelistRomEntry.ArtLocation = artLocation
 
 			artDownloads = append(artDownloads, artDownload{
 				URL:      artURL,
@@ -376,9 +426,10 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 				GameName: g.Name,
 			})
 		}
+		gamesSummaries = append(gamesSummaries, gamelistRomEntry)
 	}
 
-	return downloads, artDownloads
+	return downloads, artDownloads, gamesSummaries
 }
 
 func (s *DownloadScreen) downloadArt(artDownloads []artDownload, downloadedGames []romm.Rom, headers map[string]string, progress *atomic.Float64, insecureSkipVerify bool) {

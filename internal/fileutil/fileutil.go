@@ -186,6 +186,38 @@ func Un7zip(archivePath string, destDir string, progress *atomic.Float64) error 
 	return nil
 }
 
+func ZipFileNames(zipPath string) ([]string, error) {
+	reader, err := zip.OpenReader(zipPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open zip file: %w", err)
+	}
+	defer reader.Close()
+
+	var names []string
+	for _, file := range reader.File {
+		if !file.FileInfo().IsDir() {
+			names = append(names, file.Name)
+		}
+	}
+	return names, nil
+}
+
+func SevenZipFileNames(archivePath string) ([]string, error) {
+	reader, err := sevenzip.OpenReader(archivePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open 7z file: %w", err)
+	}
+	defer reader.Close()
+
+	var names []string
+	for _, file := range reader.File {
+		if !file.FileInfo().IsDir() {
+			names = append(names, file.Name)
+		}
+	}
+	return names, nil
+}
+
 func FileExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
