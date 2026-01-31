@@ -344,6 +344,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 			}
 			downloadLocation = filepath.Join(romDirectory, fileToDownload.FileName)
 			sourceURL, _ = url.JoinPath(host.URL(), "/api/roms/", strconv.Itoa(g.ID), "content", fileToDownload.FileName)
+			sourceURL += "?" + url.Values{"file_ids": {strconv.Itoa(fileToDownload.ID)}}.Encode()
 		}
 
 		downloads = append(downloads, gaba.Download{
