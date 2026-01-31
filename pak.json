@@ -1,6 +1,6 @@
 {
   "name": "Grout",
-  "version": "v4.6.1.1",
+  "version": "v4.6.1.2",
   "type": "TOOL",
   "description": "A RomM client for NextUI, muOS, Knulli, and Spruce v4.",
   "author": "The RomM Team",
@@ -28,7 +28,8 @@
     "v4.6.0.0": "Bunch of great changes by even greater people <3",
     "v4.6.0.1": "Add missing NDS .dsv save file extension",
     "v4.6.1.0": "Added custom platform mapping entry via keyboard",
-    "v4.6.1.1": "Add game information to corresponding gamelist.xml for ROCKNIX and Knulli - @pawndev"
+    "v4.6.1.1": "Add game information to corresponding gamelist.xml for ROCKNIX and Knulli - @pawndev",
+    "v4.6.1.2": "Fix for games with multiple downloads"
   },
   "screenshots": [],
   "platforms": [
