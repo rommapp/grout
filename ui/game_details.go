@@ -22,6 +22,7 @@ import (
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
 	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
+	"go.uber.org/atomic"
 )
 
 type GameDetailsInput struct {
@@ -53,13 +54,53 @@ func (s *GameDetailsScreen) Draw(input GameDetailsInput) (GameDetailsOutput, err
 		Platform: input.Platform,
 	}
 
+	hasMultipleFiles := input.Game.HasNestedSingleFile && len(input.Game.Files) > 1
+	downloadText := i18n.Localize(&goi18n.Message{ID: "button_download", Other: "Download"}, nil)
+	redownloadText := i18n.Localize(&goi18n.Message{ID: "button_redownload", Other: "Redownload"}, nil)
+
+	// Determine initial download text based on first file
+	initialDownloadText := downloadText
+	if input.Game.IsDownloaded(input.Config) {
+		initialDownloadText = redownloadText
+	}
+
+	// Create dynamic help text for multi-file games
+	var dynamicDownloadText *atomic.String
+	if hasMultipleFiles {
+		dynamicDownloadText = atomic.NewString(initialDownloadText)
+	}
+
 	sections := s.buildSections(input)
+
+	// Set OnChange callback for the file version dropdown to update footer dynamically
+	if hasMultipleFiles && dynamicDownloadText != nil {
+		romDirectory := input.Config.GetPlatformRomDirectory(input.Platform)
+		for i := range sections {
+			if sections[i].DropdownID == "file_version" {
+				sections[i].OnChange = func(option gaba.DropdownOption) {
+					if fileID, err := strconv.Atoi(option.Value); err == nil {
+						for _, file := range input.Game.Files {
+							if file.ID == fileID {
+								filePath := filepath.Join(romDirectory, file.FileName)
+								if fileutil.FileExists(filePath) {
+									dynamicDownloadText.Store(redownloadText)
+								} else {
+									dynamicDownloadText.Store(downloadText)
+								}
+								return
+							}
+						}
+					}
+				}
+				break
+			}
+		}
+	}
 
 	options := gaba.DefaultInfoScreenOptions()
 	options.Sections = sections
 	options.ShowThemeBackground = false
 	options.ShowScrollbar = true
-	hasMultipleFiles := input.Game.HasNestedSingleFile && len(input.Game.Files) > 1
 	if hasMultipleFiles {
 		options.ConfirmButton = constants.VirtualButtonX
 	}
@@ -68,21 +109,23 @@ func (s *GameDetailsScreen) Draw(input GameDetailsInput) (GameDetailsOutput, err
 		options.AllowAction = true
 	}
 
+	downloadButton := "A"
+	if hasMultipleFiles {
+		downloadButton = "X"
+	}
+
+	// Build footer items
 	footerItems := []gaba.FooterHelpItem{
 		{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_back", Other: "Back"}, nil)},
 	}
 	if !internal.IsKidModeEnabled() {
 		footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: "Y", HelpText: i18n.Localize(&goi18n.Message{ID: "button_options", Other: "Options"}, nil)})
 	}
-	downloadButton := "A"
-	if hasMultipleFiles {
-		downloadButton = "X"
-	}
-	downloadText := i18n.Localize(&goi18n.Message{ID: "button_download", Other: "Download"}, nil)
-	if input.Game.IsDownloaded(input.Config) {
-		downloadText = i18n.Localize(&goi18n.Message{ID: "button_redownload", Other: "Redownload"}, nil)
-	}
-	footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: downloadButton, HelpText: downloadText})
+	footerItems = append(footerItems, gaba.FooterHelpItem{
+		ButtonName:      downloadButton,
+		HelpText:        initialDownloadText,
+		HelpTextDynamic: dynamicDownloadText,
+	})
 
 	result, err := gaba.DetailScreen(input.Game.Name, options, footerItems)
 
