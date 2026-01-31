@@ -35,6 +35,7 @@ type GameOptionsAction int
 
 const (
 	GameOptionsActionSaved GameOptionsAction = iota
+	GameOptionsActionShowQR
 	GameOptionsActionBack
 )
 

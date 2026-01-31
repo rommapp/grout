@@ -36,6 +36,8 @@ func buildTransitionFunc(state *AppState, quitOnBack bool, showCollections bool)
 			return transitionGameDetails(ctx, result)
 		case ScreenGameOptions:
 			return transitionGameOptions(ctx, result)
+		case ScreenGameQR:
+			return popOrExit(stack)
 		case ScreenCollectionList:
 			return transitionCollectionList(ctx, result)
 		case ScreenCollectionPlatformSelection:
@@ -275,6 +277,7 @@ func transitionGameDetails(ctx *transitionContext, result any) (router.Screen, a
 		}, nil)
 		return ScreenGameOptions, ui.GameOptionsInput{
 			Config: ctx.state.Config,
+			Host:   ctx.state.Host,
 			Game:   r.Game,
 		}
 
@@ -290,6 +293,19 @@ func transitionGameOptions(ctx *transitionContext, result any) (router.Screen, a
 	if r.Config != nil {
 		ctx.state.Config = r.Config
 	}
+
+	if r.Action == ui.GameOptionsActionShowQR {
+		ctx.stack.Push(ScreenGameOptions, ui.GameOptionsInput{
+			Config: ctx.state.Config,
+			Host:   r.Host,
+			Game:   r.Game,
+		}, nil)
+		return ScreenGameQR, ui.GameQRInput{
+			Host: r.Host,
+			Game: r.Game,
+		}
+	}
+
 	return popOrExit(ctx.stack)
 }
 

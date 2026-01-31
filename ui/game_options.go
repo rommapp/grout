@@ -16,12 +16,15 @@ import (
 
 type GameOptionsInput struct {
 	Config *internal.Config
+	Host   romm.Host
 	Game   romm.Rom
 }
 
 type GameOptionsOutput struct {
 	Action GameOptionsAction
 	Config *internal.Config
+	Host   romm.Host
+	Game   romm.Rom
 }
 
 type GameOptionsScreen struct{}
@@ -32,14 +35,16 @@ func NewGameOptionsScreen() *GameOptionsScreen {
 
 func (s *GameOptionsScreen) Draw(input GameOptionsInput) (GameOptionsOutput, error) {
 	config := input.Config
-	output := GameOptionsOutput{Action: GameOptionsActionBack, Config: config}
+	output := GameOptionsOutput{Action: GameOptionsActionBack, Config: config, Host: input.Host, Game: input.Game}
 
 	items := s.buildMenuItems(config, input.Game)
 
-	if len(items) == 0 {
-		gaba.GetLogger().Warn("No options available for game")
-		return output, nil
-	}
+	showQRText := i18n.Localize(&goi18n.Message{ID: "game_options_show_qr", Other: "Show QR Code"}, nil)
+	items = append(items, gaba.ItemWithOptions{
+		Item:           gaba.MenuItem{Text: showQRText},
+		Options:        []gaba.Option{{DisplayName: "", Value: "show_qr", Type: gaba.OptionTypeClickable}},
+		SelectedOption: 0,
+	})
 
 	title := i18n.Localize(&goi18n.Message{ID: "game_options_title", Other: "Game Options"}, nil)
 
@@ -60,6 +65,16 @@ func (s *GameOptionsScreen) Draw(input GameOptionsInput) (GameOptionsOutput, err
 		}
 		gaba.GetLogger().Error("Game options screen error", "error", err)
 		return output, err
+	}
+
+	if result.Action == gaba.ListActionSelected {
+		if result.Selected >= 0 && result.Selected < len(result.Items) {
+			selectedItem := result.Items[result.Selected]
+			if selectedItem.Item.Text == showQRText {
+				output.Action = GameOptionsActionShowQR
+				return output, nil
+			}
+		}
 	}
 
 	s.applySettings(config, input.Game, result.Items)

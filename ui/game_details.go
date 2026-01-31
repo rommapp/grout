@@ -277,20 +277,6 @@ func (s *GameDetailsScreen) buildSections(input GameDetailsInput) []gaba.Section
 		}))
 	}
 
-	qrcode, err := imageutil.CreateTempQRCode(game.GetGamePage(input.Host), 256)
-	if err == nil {
-		sections = append(sections, gaba.NewImageSection(
-			i18n.Localize(&goi18n.Message{ID: "game_details_qr_section", Other: "RomM Game Listing"}, nil),
-			qrcode,
-			int32(256),
-			int32(256),
-			constants.TextAlignCenter,
-		))
-
-	} else {
-		logger.Error("Unable to generate QR code", "error", err)
-	}
-
 	return sections
 }
 

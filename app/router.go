@@ -111,6 +111,11 @@ func registerScreens(r *router.Router, state *AppState) {
 		return screen.Draw(input.(ui.GameOptionsInput))
 	})
 
+	r.Register(ScreenGameQR, func(input any) (any, error) {
+		screen := ui.NewGameQRScreen()
+		return screen.Draw(input.(ui.GameQRInput))
+	})
+
 	r.Register(ScreenSearch, func(input any) (any, error) {
 		screen := ui.NewSearchScreen()
 		return screen.Draw(input.(ui.SearchInput))

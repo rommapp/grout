@@ -12,6 +12,7 @@ const (
 	ScreenGameList
 	ScreenGameDetails
 	ScreenGameOptions
+	ScreenGameQR
 	ScreenSearch
 	ScreenCollectionList
 	ScreenCollectionPlatformSelection
