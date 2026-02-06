@@ -7,7 +7,6 @@ import (
 	"grout/cfw"
 	"grout/cfw/muos"
 	"grout/internal"
-	"grout/internal/emulationstation"
 	"grout/internal/fileutil"
 	"grout/internal/gamelist"
 	"grout/internal/imageutil"
@@ -331,16 +330,7 @@ func (s *DownloadScreen) draw(input DownloadInput) (DownloadOutput, error) {
 		}
 	}
 
-	if cfw.GetCFW() == cfw.Knulli || cfw.GetCFW() == cfw.ROCKNIX {
-		if err := gamelist.AddRomGamesToGamelist(gamelistEntries); err != nil {
-			logger.Warn("Failed to refresh ES database", "error", err)
-		}
-
-		err := emulationstation.ScheduleESRestart()
-		if err != nil {
-			logger.Warn("Failed to restart ES database", "error", err)
-		}
-	}
+	cfw.FillGamesMetadata(gamelistEntries)
 
 	output.DownloadedGames = downloadedGames
 	return output, nil

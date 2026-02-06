@@ -67,3 +67,11 @@ func GetArtDirectory(platformFSSlug, platformName string) string {
 	}
 	return filepath.Join(GetInfoDirectory(), "catalogue", systemName, "box")
 }
+
+func GetTextDirectory(platformFSSlug, platformName string) string {
+	systemName, exists := ArtDirectories[platformFSSlug]
+	if !exists {
+		systemName = platformName
+	}
+	return filepath.Join(GetInfoDirectory(), "catalogue", systemName, "text")
+}

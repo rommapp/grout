@@ -2,6 +2,7 @@ package cfw
 
 import (
 	"grout/cfw/knulli"
+	"grout/cfw/muos"
 	"grout/cfw/rocknix"
 	"grout/internal/emulationstation"
 	"grout/internal/gamelist"
@@ -26,4 +27,20 @@ func AddGroutToGamelist(c CFW) {
 		return
 	}
 	scheduleESRestart()
+}
+
+func FillGamesMetadata(entries []gamelist.RomGameEntry) {
+	logger := gaba.GetLogger()
+	switch GetCFW() {
+	case Knulli, ROCKNIX:
+		if err := gamelist.AddRomGamesToGamelist(entries); err != nil {
+			logger.Warn("Failed to refresh ES database", "error", err)
+		}
+	case MuOS:
+		for _, entry := range entries {
+			muos.AddGameDescription(entry)
+		}
+	default:
+		return
+	}
 }
