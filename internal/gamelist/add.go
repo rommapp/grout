@@ -3,6 +3,7 @@ package gamelist
 import (
 	"fmt"
 	"grout/internal/fileutil"
+	"grout/internal/stringutil"
 	"grout/romm"
 	"os"
 	"strings"
@@ -26,7 +27,7 @@ type RomGameEntry struct {
 
 func (gl *GameList) AddRomGame(entry RomGameEntry) {
 	gameMetadata := make(map[string]string)
-	gameMetadata[NameElement] = entry.Game.DisplayName
+	gameMetadata[NameElement] = stringutil.PrepareRomName(entry.Game.Name, entry.Game.Regions)
 	gameMetadata[DescElement] = entry.Game.Summary
 	gameMetadata[MD5Element] = entry.Game.Md5Hash
 	if entry.Game.Metadatum.AverageRating != 0 {

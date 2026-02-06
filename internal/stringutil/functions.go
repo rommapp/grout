@@ -97,16 +97,7 @@ func nameCleaner(name string, stripTag bool) (string, string) {
 
 func PrepareRomNames(games []romm.Rom) []romm.Rom {
 	for i := range games {
-		regions := strings.Join(games[i].Regions, ", ")
-
-		cleanedName, _ := nameCleaner(games[i].Name, true)
-		games[i].DisplayName = cleanedName
-
-		if len(regions) > 0 {
-			dn := fmt.Sprintf("%s (%s)", cleanedName, regions)
-			games[i].DisplayName = dn
-		}
-
+		games[i].DisplayName = PrepareRomName(games[i].Name, games[i].Regions)
 	}
 
 	slices.SortFunc(games, func(a, b romm.Rom) int {
@@ -114,6 +105,20 @@ func PrepareRomNames(games []romm.Rom) []romm.Rom {
 	})
 
 	return games
+}
+
+func PrepareRomName(name string, regions []string) string {
+	r := strings.Join(regions, ", ")
+
+	cleanedName, _ := nameCleaner(name, true)
+	displayName := cleanedName
+
+	if len(regions) > 0 {
+		dn := fmt.Sprintf("%s (%s)", cleanedName, r)
+		displayName = dn
+	}
+
+	return displayName
 }
 
 // stripDiacritics removes accents and diacritical marks from a string.
