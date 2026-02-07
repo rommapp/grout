@@ -2,13 +2,16 @@ package romm
 
 import (
 	"fmt"
+	"grout/internal/artutil"
 	"grout/internal/fileutil"
 	"net/url"
 	"path/filepath"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
+	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/sonh/qs"
 )
 
@@ -24,53 +27,55 @@ type PaginatedRoms struct {
 }
 
 type Rom struct {
-	ID                  int    `json:"id,omitempty"`
-	GameListID          any    `json:"gamelist_id,omitempty"`
-	PlatformID          int    `json:"platform_id,omitempty"`
-	PlatformSlug        string `json:"platform_slug,omitempty"`
-	PlatformFSSlug      string `json:"platform_fs_slug,omitempty"`
-	PlatformCustomName  string `json:"platform_custom_name,omitempty"`
-	PlatformDisplayName string `json:"platform_display_name,omitempty"`
-	FsName              string `json:"fs_name,omitempty"`
-	FsNameNoTags        string `json:"fs_name_no_tags,omitempty"`
-	FsNameNoExt         string `json:"fs_name_no_ext,omitempty"`
-	FsExtension         string `json:"fs_extension,omitempty"`
-	FsPath              string `json:"fs_path,omitempty"`
-	FsSizeBytes         int    `json:"fs_size_bytes,omitempty"`
-	Name                string `json:"name,omitempty"`
-	DisplayName         string
-	Slug                string       `json:"slug,omitempty"`
-	Summary             string       `json:"summary,omitempty"`
-	AlternativeNames    []string     `json:"alternative_names,omitempty"`
-	Metadatum           RomMetadata  `json:"metadatum,omitempty"`
-	PathCoverSmall      string       `json:"path_cover_small,omitempty"`
-	PathCoverLarge      string       `json:"path_cover_large,omitempty"`
-	URLCover            string       `json:"url_cover,omitempty"`
-	HasManual           bool         `json:"has_manual,omitempty"`
-	PathManual          string       `json:"path_manual,omitempty"`
-	URLManual           string       `json:"url_manual,omitempty"`
-	UserScreenshots     []Screenshot `json:"user_screenshots,omitempty"`
-	UserSaves           []Save       `json:"user_saves,omitempty"`
-	MergedScreenshots   []string     `json:"merged_screenshots,omitempty"`
-	IsIdentifying       bool         `json:"is_identifying,omitempty"`
-	IsUnidentified      bool         `json:"is_unidentified,omitempty"`
-	IsIdentified        bool         `json:"is_identified,omitempty"`
-	Revision            string       `json:"revision,omitempty"`
-	Regions             []string     `json:"regions,omitempty"`
-	Languages           []string     `json:"languages,omitempty"`
-	Tags                []any        `json:"tags,omitempty"`
-	CrcHash             string       `json:"crc_hash,omitempty"`
-	Md5Hash             string       `json:"md5_hash,omitempty"`
-	Sha1Hash            string       `json:"sha1_hash,omitempty"`
-	HasSimpleSingleFile bool         `json:"has_simple_single_file,omitempty"`
-	HasNestedSingleFile bool         `json:"has_nested_single_file,omitempty"`
-	HasMultipleFiles    bool         `json:"has_multiple_files,omitempty"`
-	Files               []RomFile    `json:"files,omitempty"`
-	FullPath            string       `json:"full_path,omitempty"`
-	CreatedAt           time.Time    `json:"created_at,omitempty"`
-	UpdatedAt           time.Time    `json:"updated_at,omitempty"`
-	MissingFromFs       bool         `json:"missing_from_fs,omitempty"`
-	Siblings            []any        `json:"siblings,omitempty"`
+	ID                    int            `json:"id,omitempty"`
+	GameListID            any            `json:"gamelist_id,omitempty"`
+	PlatformID            int            `json:"platform_id,omitempty"`
+	PlatformSlug          string         `json:"platform_slug,omitempty"`
+	PlatformFSSlug        string         `json:"platform_fs_slug,omitempty"`
+	PlatformCustomName    string         `json:"platform_custom_name,omitempty"`
+	PlatformDisplayName   string         `json:"platform_display_name,omitempty"`
+	FsName                string         `json:"fs_name,omitempty"`
+	FsNameNoTags          string         `json:"fs_name_no_tags,omitempty"`
+	FsNameNoExt           string         `json:"fs_name_no_ext,omitempty"`
+	FsExtension           string         `json:"fs_extension,omitempty"`
+	FsPath                string         `json:"fs_path,omitempty"`
+	FsSizeBytes           int            `json:"fs_size_bytes,omitempty"`
+	Name                  string         `json:"name,omitempty"`
+	DisplayName           string         `json:"-"`
+	Slug                  string         `json:"slug,omitempty"`
+	ScreenScraperID       int            `json:"ss_id,omitempty"`
+	Summary               string         `json:"summary,omitempty"`
+	AlternativeNames      []string       `json:"alternative_names,omitempty"`
+	Metadatum             RomMetadata    `json:"metadatum,omitempty"`
+	PathCoverSmall        string         `json:"path_cover_small,omitempty"`
+	PathCoverLarge        string         `json:"path_cover_large,omitempty"`
+	URLCover              string         `json:"url_cover,omitempty"`
+	HasManual             bool           `json:"has_manual,omitempty"`
+	PathManual            string         `json:"path_manual,omitempty"`
+	URLManual             string         `json:"url_manual,omitempty"`
+	UserScreenshots       []Screenshot   `json:"user_screenshots,omitempty"`
+	UserSaves             []Save         `json:"user_saves,omitempty"`
+	MergedScreenshots     []string       `json:"merged_screenshots,omitempty"`
+	IsIdentifying         bool           `json:"is_identifying,omitempty"`
+	IsUnidentified        bool           `json:"is_unidentified,omitempty"`
+	IsIdentified          bool           `json:"is_identified,omitempty"`
+	Revision              string         `json:"revision,omitempty"`
+	Regions               []string       `json:"regions,omitempty"`
+	Languages             []string       `json:"languages,omitempty"`
+	Tags                  []any          `json:"tags,omitempty"`
+	CrcHash               string         `json:"crc_hash,omitempty"`
+	Md5Hash               string         `json:"md5_hash,omitempty"`
+	Sha1Hash              string         `json:"sha1_hash,omitempty"`
+	HasSimpleSingleFile   bool           `json:"has_simple_single_file,omitempty"`
+	HasNestedSingleFile   bool           `json:"has_nested_single_file,omitempty"`
+	HasMultipleFiles      bool           `json:"has_multiple_files,omitempty"`
+	Files                 []RomFile      `json:"files,omitempty"`
+	FullPath              string         `json:"full_path,omitempty"`
+	CreatedAt             time.Time      `json:"created_at,omitempty"`
+	UpdatedAt             time.Time      `json:"updated_at,omitempty"`
+	MissingFromFs         bool           `json:"missing_from_fs,omitempty"`
+	Siblings              []any          `json:"siblings,omitempty"`
+	ScreenScraperMetadata ScreenScrapper `json:"ss_metadata,omitempty"`
 }
 
 type Screenshot struct {
@@ -267,4 +272,42 @@ func (r Rom) MaxPlayerCount() int {
 	}
 
 	return maxPlayers
+}
+
+func (r Rom) GetArtworkURL(kind artutil.ArtKind, host Host) string {
+	var coverURL string
+	logger := gaba.GetLogger()
+	logger.Debug("Getting artwork URL for ROM", "romID", r.ID, "romName", r.Name, "artKind", kind)
+
+	if kind == artutil.ArtKindBox2D {
+		if r.ScreenScraperMetadata.Box2DURL != "" {
+			coverURL = r.ScreenScraperMetadata.Box2DURL
+		}
+	} else if kind == artutil.ArtKindBox3D {
+		if r.ScreenScraperMetadata.Box3DPath != "" {
+			coverURL = host.URL() + r.ScreenScraperMetadata.Box3DPath
+		} else if r.ScreenScraperMetadata.Box3DURL != "" {
+			coverURL = r.ScreenScraperMetadata.Box3DURL
+		}
+	} else if kind == artutil.ArtKindMixImage {
+		if r.ScreenScraperMetadata.MiximagePath != "" {
+			coverURL = host.URL() + r.ScreenScraperMetadata.MiximagePath
+		} else if r.ScreenScraperMetadata.MiximageURL != "" {
+			coverURL = r.ScreenScraperMetadata.MiximageURL
+		}
+	}
+
+	if kind == artutil.ArtKindDefault || coverURL == "" {
+		if r.PathCoverSmall != "" {
+			coverURL = host.URL() + r.PathCoverSmall
+		} else if r.PathCoverLarge != "" {
+			coverURL = host.URL() + r.PathCoverLarge
+		} else if r.URLCover != "" {
+			coverURL = r.URLCover
+		}
+	}
+
+	logger.Debug("Using cover URL", "url", coverURL)
+
+	return strings.ReplaceAll(coverURL, " ", "%20")
 }

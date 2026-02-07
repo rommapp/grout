@@ -6,7 +6,6 @@ import (
 	"grout/internal"
 	"grout/internal/imageutil"
 	"grout/romm"
-	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -125,14 +124,12 @@ func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 	var downloads []gaba.Download
 	romsByLocation := make(map[string]romm.Rom)
 
-	baseURL := input.Host.URL()
 	for _, rom := range allMissingArtwork {
-		coverPath := cache.GetArtworkCoverPath(rom)
-		if coverPath == "" {
+		downloadURL := cache.GetArtworkCoverPath(rom, input.Config.ArtKind, input.Host)
+		if downloadURL == "" {
 			continue
 		}
 
-		downloadURL := strings.ReplaceAll(baseURL+coverPath, " ", "%20")
 		cachePath := cache.GetArtworkCachePath(rom.PlatformFSSlug, rom.ID)
 
 		cache.EnsureArtworkCacheDir(rom.PlatformFSSlug)

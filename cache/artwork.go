@@ -2,6 +2,7 @@ package cache
 
 import (
 	"fmt"
+	"grout/internal/artutil"
 	"grout/internal/fileutil"
 	"grout/internal/imageutil"
 	"grout/romm"
@@ -11,7 +12,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
@@ -116,21 +116,15 @@ func HasArtworkURL(rom romm.Rom) bool {
 	return rom.PathCoverSmall != "" || rom.PathCoverLarge != "" || rom.URLCover != ""
 }
 
-func GetArtworkCoverPath(rom romm.Rom) string {
-	if rom.PathCoverSmall != "" {
-		return rom.PathCoverSmall
-	}
-	if rom.PathCoverLarge != "" {
-		return rom.PathCoverLarge
-	}
-	return rom.URLCover
+func GetArtworkCoverPath(rom romm.Rom, artkind artutil.ArtKind, host romm.Host) string {
+	return rom.GetArtworkURL(artkind, host)
 }
 
-func DownloadAndCacheArtwork(rom romm.Rom, host romm.Host) error {
+func DownloadAndCacheArtwork(rom romm.Rom, kind artutil.ArtKind, host romm.Host) error {
 	logger := gaba.GetLogger()
 
-	coverPath := GetArtworkCoverPath(rom)
-	if coverPath == "" {
+	artURL := GetArtworkCoverPath(rom, kind, host)
+	if artURL == "" {
 		return nil // No artwork available
 	}
 
@@ -139,9 +133,6 @@ func DownloadAndCacheArtwork(rom romm.Rom, host romm.Host) error {
 	}
 
 	cachePath := GetArtworkCachePath(rom.PlatformFSSlug, rom.ID)
-
-	artURL := host.URL() + coverPath
-	artURL = strings.ReplaceAll(artURL, " ", "%20")
 
 	req, err := http.NewRequest("GET", artURL, nil)
 	if err != nil {
@@ -192,7 +183,7 @@ func DownloadAndCacheArtwork(rom romm.Rom, host romm.Host) error {
 	return nil
 }
 
-func SyncArtworkInBackground(host romm.Host, games []romm.Rom) {
+func SyncArtworkInBackground(artkind artutil.ArtKind, host romm.Host, games []romm.Rom) {
 	logger := gaba.GetLogger()
 
 	missing := GetMissingArtwork(games)
@@ -201,7 +192,7 @@ func SyncArtworkInBackground(host romm.Host, games []romm.Rom) {
 	}
 
 	for _, rom := range missing {
-		if err := DownloadAndCacheArtwork(rom, host); err != nil {
+		if err := DownloadAndCacheArtwork(rom, artkind, host); err != nil {
 			logger.Debug("Failed to download artwork", "rom", rom.Name, "error", err)
 		}
 	}

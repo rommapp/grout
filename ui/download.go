@@ -408,21 +408,11 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 			artFileName := g.FsNameNoExt + ".png"
 			artLocation := filepath.Join(artDir, artFileName)
 
-			var coverPath string
-			if g.PathCoverSmall != "" {
-				coverPath = g.PathCoverSmall
-			} else if g.PathCoverLarge != "" {
-				coverPath = g.PathCoverLarge
-			} else if g.URLCover != "" {
-				coverPath = g.URLCover
-			}
-
-			baseURL := host.URL() + coverPath
-			artURL := strings.ReplaceAll(baseURL, " ", "%20")
+			coverURL := g.GetArtworkURL(config.ArtKind, host)
 			gamelistRomEntry.ArtLocation = artLocation
 
 			artDownloads = append(artDownloads, artDownload{
-				URL:      artURL,
+				URL:      coverURL,
 				Location: artLocation,
 				GameName: g.Name,
 			})

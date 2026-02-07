@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"grout/cache"
 	"grout/cfw"
+	"grout/internal/artutil"
 	"grout/romm"
 	"os"
 	"sync/atomic"
@@ -36,6 +37,7 @@ type Config struct {
 	CollectionView         CollectionView              `json:"collection_view,omitempty"`
 	KidMode                bool                        `json:"kid_mode,omitempty"`
 	ReleaseChannel         ReleaseChannel              `json:"release_channel,omitempty"`
+	ArtKind                artutil.ArtKind             `json:"art_kind,omitempty"`
 
 	PlatformOrder []string `json:"platform_order,omitempty"`
 
@@ -60,6 +62,7 @@ func (c Config) ToLoggable() any {
 		"download_timeout":        c.DownloadTimeout,
 		"unzip_downloads":         c.UnzipDownloads,
 		"download_art":            c.DownloadArt,
+		"art_kind":                c.ArtKind,
 		"show_box_art":            c.ShowBoxArt,
 		"save_directory_mappings": c.SaveDirectoryMappings,
 		"game_save_overrides":     c.GameSaveOverrides,
@@ -106,6 +109,10 @@ func LoadConfig() (*Config, error) {
 		config.SaveSyncMode = SaveSyncModeOff
 	}
 
+	if config.ArtKind == "" {
+		config.ArtKind = artutil.ArtKindDefault
+	}
+
 	return &config, nil
 }
 
@@ -132,6 +139,10 @@ func SaveConfig(config *Config) error {
 
 	if config.ReleaseChannel == "" {
 		config.ReleaseChannel = ReleaseChannelMatchRomM
+	}
+
+	if config.ArtKind == "" {
+		config.ArtKind = artutil.ArtKindDefault
 	}
 
 	gaba.SetRawLogLevel(string(config.LogLevel))

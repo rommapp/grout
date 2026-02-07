@@ -165,7 +165,7 @@ func (s *GameDetailsScreen) buildSections(input GameDetailsInput) []gaba.Section
 	game := input.Game
 	logger := gaba.GetLogger()
 
-	coverImagePath := s.getCoverImagePath(input.Host, game)
+	coverImagePath := s.getCoverImagePath(input.Config, input.Host, game)
 	if coverImagePath != "" {
 		sections = append(sections, gaba.NewImageSection("", coverImagePath, 640, 480, constants.TextAlignCenter))
 	} else {
@@ -281,7 +281,7 @@ func (s *GameDetailsScreen) buildSections(input GameDetailsInput) []gaba.Section
 }
 
 // getCoverImagePath returns the path to the cover image, using cache if available
-func (s *GameDetailsScreen) getCoverImagePath(host romm.Host, game romm.Rom) string {
+func (s *GameDetailsScreen) getCoverImagePath(config *internal.Config, host romm.Host, game romm.Rom) string {
 	logger := gaba.GetLogger()
 
 	// First, check if artwork is in the cache
@@ -291,19 +291,7 @@ func (s *GameDetailsScreen) getCoverImagePath(host romm.Host, game romm.Rom) str
 		return cachePath
 	}
 
-	// Not in cache, fetch from server
-	var coverPath string
-	if game.PathCoverLarge != "" {
-		coverPath = game.PathCoverLarge
-	} else if game.PathCoverSmall != "" {
-		coverPath = game.PathCoverSmall
-	} else if game.URLCover != "" {
-		coverPath = game.URLCover
-	} else {
-		return ""
-	}
-
-	coverURL := host.URL() + coverPath
+	coverURL := game.GetArtworkURL(config.ArtKind, host)
 	imageData := s.fetchImageFromURL(host, coverURL)
 
 	// Cache the artwork for future use and return cache path

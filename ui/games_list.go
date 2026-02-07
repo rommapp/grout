@@ -74,7 +74,7 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 		hasBIOS = loaded.hasBIOS
 
 		if input.Config.ShowBoxArt {
-			go cache.SyncArtworkInBackground(input.Host, games)
+			go cache.SyncArtworkInBackground(input.Config.ArtKind, input.Host, games)
 		}
 	}
 

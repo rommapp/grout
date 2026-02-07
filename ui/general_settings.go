@@ -3,6 +3,8 @@ package ui
 import (
 	"errors"
 	"grout/internal"
+	"grout/internal/artutil"
+	"sync/atomic"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
@@ -61,6 +63,13 @@ func (s *GeneralSettingsScreen) Draw(input GeneralSettingsInput) (GeneralSetting
 }
 
 func (s *GeneralSettingsScreen) buildMenuItems(config *internal.Config) []gaba.ItemWithOptions {
+	showArtKind := atomic.Bool{}
+	showArtKind.Store(config.DownloadArt)
+
+	downloadArtUpdateFunc := func(val interface{}) {
+		showArtKind.Store(val.(bool))
+	}
+
 	return []gaba.ItemWithOptions{
 		{
 			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_box_art", Other: "Box Art"}, nil)},
@@ -80,20 +89,31 @@ func (s *GeneralSettingsScreen) buildMenuItems(config *internal.Config) []gaba.I
 			SelectedOption: downloadedGamesActionToIndex(config.DownloadedGames),
 		},
 		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_art", Other: "Download Art"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_true", Other: "True"}, nil), Value: true},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_false", Other: "False"}, nil), Value: false},
-			},
-			SelectedOption: boolToIndex(!config.DownloadArt),
-		},
-		{
 			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_compressed_downloads", Other: "Archived Downloads"}, nil)},
 			Options: []gaba.Option{
 				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_compressed_downloads_uncompress", Other: "Uncompress"}, nil), Value: true},
 				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_compressed_downloads_do_nothing", Other: "Do Nothing"}, nil), Value: false},
 			},
 			SelectedOption: boolToIndex(!config.UnzipDownloads),
+		},
+		{
+			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_art", Other: "Download Art"}, nil)},
+			Options: []gaba.Option{
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_true", Other: "True"}, nil), Value: true, OnUpdate: downloadArtUpdateFunc},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_false", Other: "False"}, nil), Value: false, OnUpdate: downloadArtUpdateFunc},
+			},
+			SelectedOption: boolToIndex(!config.DownloadArt),
+		},
+		{
+			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind", Other: "Download Art Kind"}, nil)},
+			Options: []gaba.Option{
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_default", Other: "Default"}, nil), Value: artutil.ArtKindDefault},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_box2d", Other: "Box2D"}, nil), Value: artutil.ArtKindBox2D},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_box3d", Other: "Box3D"}, nil), Value: artutil.ArtKindBox3D},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_miximage", Other: "MixImage"}, nil), Value: artutil.ArtKindMixImage},
+			},
+			SelectedOption: boxArtToIndex(config.ArtKind),
+			VisibleWhen:    &showArtKind,
 		},
 		{
 			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_language", Other: "Language"}, nil)},
@@ -130,6 +150,10 @@ func (s *GeneralSettingsScreen) applySettings(config *internal.Config, items []g
 		case i18n.Localize(&goi18n.Message{ID: "settings_download_art", Other: "Download Art"}, nil):
 			if val, ok := item.Options[item.SelectedOption].Value.(bool); ok {
 				config.DownloadArt = val
+			}
+		case i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind", Other: "Download Art Kind"}, nil):
+			if val, ok := item.Options[item.SelectedOption].Value.(artutil.ArtKind); ok {
+				config.ArtKind = val
 			}
 
 		case i18n.Localize(&goi18n.Message{ID: "settings_compressed_downloads", Other: "Archived Downloads"}, nil):

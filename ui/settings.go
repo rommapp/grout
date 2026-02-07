@@ -4,6 +4,7 @@ import (
 	"errors"
 	"grout/cfw"
 	"grout/internal"
+	"grout/internal/artutil"
 	"grout/romm"
 	"sync/atomic"
 
@@ -272,6 +273,21 @@ func releaseChannelToIndex(releaseChannel internal.ReleaseChannel) int {
 		return 1
 	case internal.ReleaseChannelBeta:
 		return 2
+	default:
+		return 0
+	}
+}
+
+func boxArtToIndex(boxArt artutil.ArtKind) int {
+	switch boxArt {
+	case artutil.ArtKindDefault:
+		return 0
+	case artutil.ArtKindBox2D:
+		return 1
+	case artutil.ArtKindBox3D:
+		return 2
+	case artutil.ArtKindMixImage:
+		return 3
 	default:
 		return 0
 	}
