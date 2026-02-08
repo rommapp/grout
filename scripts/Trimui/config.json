@@ -3,5 +3,5 @@
   "icon": "grout.png",
   "iconsel":"grout.png",
   "launch": "launch.sh",
-  "description": "A RomM client for NextUI, muOS, spruce, knulli and trimui"
+  "description": "A RomM client for NextUI, muOS, Spruce v4, Knulli and TrimUI"
 }
