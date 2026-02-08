@@ -5,7 +5,7 @@
 # IMPORTANT: Must be built with --platform=linux/amd64 because the
 # Miyoo Mini toolchain is compiled for x86_64 Linux hosts
 
-FROM --platform=linux/amd64 golang:1.24-bookworm AS builder
+FROM --platform=linux/amd64 golang:1.25-bookworm AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
