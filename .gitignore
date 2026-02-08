@@ -7,6 +7,7 @@
 
 # Build
 build/
+build32/
 build-miyoo/
 grout
 app/app

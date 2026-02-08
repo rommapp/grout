@@ -15,6 +15,13 @@ tasks:
       - docker buildx build {{.NO_CACHE}} --platform=linux/arm64 --build-arg GITHUB_ACTIONS=false --label {{.LABEL}} -t {{.IMAGE_NAME}} -f Dockerfile .
     silent: true
 
+  build-32:
+    desc: Build for ARM32
+    cmds:
+      - rm -rf build
+      - docker buildx build {{.NO_CACHE}} --platform=linux/arm64 --build-arg GITHUB_ACTIONS=false --label {{.LABEL}} -t {{.IMAGE_NAME}} -f Dockerfile.miyoo-full .
+    silent: true
+
   build-local:
     desc: Build for ARM64 using local gabagool workspace
     cmds:
@@ -30,6 +37,17 @@ tasks:
       - docker create --name {{.CONTAINER_NAME}} --label {{.LABEL}} {{.IMAGE_NAME}}
       - docker cp {{.CONTAINER_NAME}}:/build/grout build/grout
       - docker cp {{.CONTAINER_NAME}}:/usr/lib/aarch64-linux-gnu/libSDL2_gfx-1.0.so.0.0.2 build/lib/libSDL2_gfx-1.0.so.0
+      - docker rm {{.CONTAINER_NAME}}
+    silent: true
+
+  extract-32:
+    desc: Extract binary and libraries from Docker image
+    cmds:
+      - mkdir -p build32/lib
+      - docker rm {{.CONTAINER_NAME}} 2>/dev/null || true
+      - docker create --name {{.CONTAINER_NAME}} --label {{.LABEL}} {{.IMAGE_NAME}}
+      - docker cp {{.CONTAINER_NAME}}:/output/grout build32/grout
+      - docker cp {{.CONTAINER_NAME}}:/output/lib build32/lib
       - docker rm {{.CONTAINER_NAME}}
     silent: true
 
