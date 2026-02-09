@@ -126,9 +126,10 @@ tasks:
     desc: Package for Trimui
     cmds:
       - rm -rf build/Trimui
-      - mkdir -p build/Trimui/Grout/lib
-      - cp build/grout scripts/Trimui/launch.sh scripts/Trimui/grout.png README.md LICENSE build/Trimui/Grout
-      - cp -R build/lib/* build/Trimui/Grout/lib/
+      - mkdir -p build/Trimui/Grout/grout/lib
+      - cp scripts/Trimui/* README.md LICENSE build/Trimui/Grout
+      - cp build/grout build/Trimui/Grout/grout
+      - cp -R build/lib/* build/Trimui/Grout/grout/lib/
     silent: true
 
   all:
