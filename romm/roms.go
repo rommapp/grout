@@ -39,7 +39,7 @@ type Rom struct {
 	FsNameNoExt           string         `json:"fs_name_no_ext,omitempty"`
 	FsExtension           string         `json:"fs_extension,omitempty"`
 	FsPath                string         `json:"fs_path,omitempty"`
-	FsSizeBytes           int            `json:"fs_size_bytes,omitempty"`
+	FsSizeBytes           int64          `json:"fs_size_bytes,omitempty"`
 	Name                  string         `json:"name,omitempty"`
 	DisplayName           string         `json:"-"`
 	Slug                  string         `json:"slug,omitempty"`
@@ -104,7 +104,7 @@ type RomFile struct {
 	RomID         int       `json:"rom_id,omitempty"`
 	FileName      string    `json:"file_name,omitempty"`
 	FilePath      string    `json:"file_path,omitempty"`
-	FileSizeBytes int       `json:"file_size_bytes,omitempty"`
+	FileSizeBytes int64     `json:"file_size_bytes,omitempty"`
 	FullPath      string    `json:"full_path,omitempty"`
 	CreatedAt     time.Time `json:"created_at,omitempty"`
 	UpdatedAt     time.Time `json:"updated_at,omitempty"`

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"grout/cache"
 	"grout/cfw"
+	"grout/cfw/allium"
 	"grout/cfw/muos"
 	"grout/internal"
 	"grout/internal/environment"
@@ -32,17 +33,24 @@ func setup() SetupResult {
 	currentCFW := cfw.GetCFW()
 	gaba.SetLogFilename("grout.log")
 
-	if currentCFW == cfw.MuOS && !environment.IsDevelopment() {
+	if !environment.IsDevelopment() {
 		if cwd, err := os.Getwd(); err == nil {
 			cwdMappingPath := filepath.Join(cwd, "input_mapping.json")
 			if fileutil.FileExists(cwdMappingPath) {
 				os.Setenv("INPUT_MAPPING_PATH", cwdMappingPath)
 			} else {
-				mappingBytes, err := muos.GetInputMappingBytes()
-				if err == nil {
+				var mappingBytes []byte
+				var mappingErr error
+				switch currentCFW {
+				case cfw.MuOS:
+					mappingBytes, mappingErr = muos.GetInputMappingBytes()
+				case cfw.Allium:
+					mappingBytes, mappingErr = allium.GetInputMappingBytes()
+				}
+				if mappingBytes != nil && mappingErr == nil {
 					gaba.SetInputMappingBytes(mappingBytes)
-				} else {
-					gaba.GetLogger().Error("Unable to read input mapping file", "error", err)
+				} else if mappingErr != nil {
+					gaba.GetLogger().Error("Unable to read input mapping file", "error", mappingErr)
 				}
 			}
 		}

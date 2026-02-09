@@ -1,6 +1,7 @@
 package cfw
 
 import (
+	"grout/cfw/allium"
 	"grout/cfw/knulli"
 	"grout/cfw/muos"
 	"grout/cfw/nextui"
@@ -21,6 +22,8 @@ func EmulatorFolderMap(c CFW) map[string][]string {
 		return spruce.SaveDirectories
 	case ROCKNIX:
 		return rocknix.Platforms // ROCKNIX stores saves alongside ROMs
+	case Allium:
+		return allium.SaveDirectories
 	default:
 		return nil
 	}

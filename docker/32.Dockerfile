@@ -1,15 +1,4 @@
-# Dockerfile for Miyoo Mini Plus (ARM32 Cortex-A7)
-# Cross-compiles grout for armv7 with hard float
-FROM golang:1.25-bullseye
-
-# Install SDL2 development libraries (ARM32 versions via multiarch)
-RUN apt-get update && apt-get install -y \
-    libsdl2-dev \
-    libsdl2-ttf-dev \
-    libsdl2-image-dev \
-    libsdl2-gfx-dev \
-    jq \
-    && rm -rf /var/lib/apt/lists/*
+FROM ghcr.io/brandonkowalski/quasimodo:latest
 
 WORKDIR /build
 

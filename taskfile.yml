@@ -12,21 +12,28 @@ tasks:
     desc: Build for ARM64
     cmds:
       - rm -rf build
-      - docker buildx build {{.NO_CACHE}} --platform=linux/arm64 --build-arg GITHUB_ACTIONS=false --label {{.LABEL}} -t {{.IMAGE_NAME}} -f Dockerfile .
+      - docker buildx build {{.NO_CACHE}} --platform=linux/arm64 --build-arg GITHUB_ACTIONS=false --label {{.LABEL}} -t {{.IMAGE_NAME}} -f docker/Dockerfile .
     silent: true
 
   build-32:
     desc: Build for ARM32
     cmds:
       - rm -rf build
-      - docker buildx build {{.NO_CACHE}} --platform=linux/arm64 --build-arg GITHUB_ACTIONS=false --label {{.LABEL}} -t {{.IMAGE_NAME}} -f Dockerfile.miyoo-full .
+      - docker buildx build {{.NO_CACHE}} --platform=linux/arm/v7 --build-arg GITHUB_ACTIONS=false --label {{.LABEL}} -t {{.IMAGE_NAME}} -f docker/32.Dockerfile .
     silent: true
 
   build-local:
     desc: Build for ARM64 using local gabagool workspace
     cmds:
       - rm -rf build
-      - cd .. && docker buildx build {{.NO_CACHE}} --platform=linux/arm64 --build-arg USE_LOCAL_GABAGOOL=true --build-arg GITHUB_ACTIONS=false --label {{.LABEL}} -f grout/Dockerfile -t {{.IMAGE_NAME}} .
+      - cd .. && docker buildx build {{.NO_CACHE}} --platform=linux/arm64 --build-arg USE_LOCAL_GABAGOOL=true --build-arg GITHUB_ACTIONS=false --label {{.LABEL}} -f grout/docker/Dockerfile -t {{.IMAGE_NAME}} .
+    silent: true
+
+  build-32-local:
+    desc: Build for ARM32 using local gabagool workspace
+    cmds:
+      - rm -rf build
+      - cd .. && docker buildx build {{.NO_CACHE}} --platform=linux/arm/v7 --build-arg USE_LOCAL_GABAGOOL=true --build-arg GITHUB_ACTIONS=false --label {{.LABEL}} -f grout/docker/32.Dockerfile -t {{.IMAGE_NAME}} .
     silent: true
 
   extract:
@@ -46,14 +53,14 @@ tasks:
       - mkdir -p build32/lib
       - docker rm {{.CONTAINER_NAME}} 2>/dev/null || true
       - docker create --name {{.CONTAINER_NAME}} --label {{.LABEL}} {{.IMAGE_NAME}}
-      - docker cp {{.CONTAINER_NAME}}:/output/grout build32/grout
-      - docker cp {{.CONTAINER_NAME}}:/output/lib build32/lib
+      - docker cp {{.CONTAINER_NAME}}:/build/grout build32/grout
+#      - docker cp {{.CONTAINER_NAME}}:/usr/lib/arm-linux-gnueabihf/libSDL2_gfx-1.0.so.0.0.2 build32/lib/libSDL2_gfx-1.0.so.0 # TODO replace with custom SDL build for Miyoo
       - docker rm {{.CONTAINER_NAME}}
     silent: true
 
   package:
     desc: Package for all platforms
-    deps: [package-next, package-muos, package-knulli, package-spruce, package-rocknix, package-trimui]
+    deps: [ package-next, package-muos, package-knulli, package-spruce, package-rocknix, package-trimui, package-allium ]
     silent: true
 
   package-next:
@@ -95,6 +102,16 @@ tasks:
       - cp -R build/lib/* build/Spruce/Grout/grout/lib/
     silent: true
 
+  package-allium:
+    desc: Package for Allium
+    cmds:
+      - rm -rf build/Allium
+      - mkdir -p build/Allium/Grout.pak/grout/lib
+      - cp -R scripts/Allium/* build/Allium/Grout.pak
+      - cp build32/grout README.md LICENSE build/Allium/Grout.pak/grout
+#      - cp -R build/lib/* build/Allium/Grout.pak/grout/lib/ # Come back for these libs
+    silent: true
+
   package-rocknix:
     desc: Package for ROCKNIX
     cmds:
@@ -119,6 +136,8 @@ tasks:
     cmds:
       - task: build
       - task: extract
+      - task: build-32
+      - task: extract-32
       - task: package
       - task: docker-clean
     silent: true
@@ -128,6 +147,8 @@ tasks:
     cmds:
       - task: build-local
       - task: extract
+      - task: build-32-local
+      - task: extract-32
       - task: package
       - task: docker-clean
     silent: true
@@ -250,7 +271,7 @@ tasks:
 
   clean-all:
     desc: Remove build artifacts and Docker images
-    deps: [clean, docker-clean]
+    deps: [ clean, docker-clean ]
     silent: true
 
   hooks-setup:

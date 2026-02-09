@@ -1,6 +1,7 @@
 package cfw
 
 import (
+	"grout/cfw/allium"
 	"grout/cfw/knulli"
 	"grout/cfw/muos"
 	"grout/cfw/nextui"
@@ -25,6 +26,8 @@ func GetRomDirectory() string {
 		return rocknix.GetRomDirectory()
 	case Trimui:
 		return trimui.GetRomDirectory()
+	case Allium:
+		return allium.GetRomDirectory()
 	}
 	return ""
 }
@@ -53,6 +56,8 @@ func GetBIOSDirectory() string {
 		return rocknix.GetBIOSDirectory()
 	case Trimui:
 		return trimui.GetBIOSDirectory()
+	case Allium:
+		return allium.GetBIOSDirectory()
 	}
 	return ""
 }
@@ -91,6 +96,8 @@ func GetArtDirectory(romDir string, platformFSSlug, platformName string) string 
 		return rocknix.GetArtDirectory(romDir)
 	case Trimui:
 		return trimui.GetArtDirectory(platformFSSlug, platformName)
+	case Allium:
+		return allium.GetArtDirectory(romDir)
 	default:
 		return ""
 	}
@@ -111,6 +118,8 @@ func BaseSavePath() string {
 		return rocknix.GetBaseSavePath()
 	case Trimui:
 		return trimui.GetBaseSavePath()
+	case Allium:
+		return allium.GetBaseSavePath()
 	}
 	return ""
 }

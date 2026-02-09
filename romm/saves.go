@@ -18,7 +18,7 @@ type Save struct {
 	FileNameNoExt  string    `json:"file_name_no_ext"`
 	FileExtension  string    `json:"file_extension"`
 	FilePath       string    `json:"file_path"`
-	FileSizeBytes  int       `json:"file_size_bytes"`
+	FileSizeBytes  int64     `json:"file_size_bytes"`
 	FullPath       string    `json:"full_path"`
 	DownloadPath   string    `json:"download_path"`
 	MissingFromFs  bool      `json:"missing_from_fs"`
@@ -34,7 +34,7 @@ type Save struct {
 		FileNameNoExt  string    `json:"file_name_no_ext"`
 		FileExtension  string    `json:"file_extension"`
 		FilePath       string    `json:"file_path"`
-		FileSizeBytes  int       `json:"file_size_bytes"`
+		FileSizeBytes  int64     `json:"file_size_bytes"`
 		FullPath       string    `json:"full_path"`
 		DownloadPath   string    `json:"download_path"`
 		MissingFromFs  bool      `json:"missing_from_fs"`

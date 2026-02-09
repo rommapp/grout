@@ -15,6 +15,7 @@ const (
 	Spruce  CFW = "SPRUCE"
 	ROCKNIX CFW = "ROCKNIX"
 	Trimui  CFW = "TRIMUI"
+	Allium  CFW = "ALLIUM"
 )
 
 func GetCFW() CFW {
@@ -22,11 +23,11 @@ func GetCFW() CFW {
 	cfw := CFW(cfwEnv)
 
 	switch cfw {
-	case MuOS, NextUI, Knulli, Spruce, ROCKNIX, Trimui:
+	case MuOS, NextUI, Knulli, Spruce, ROCKNIX, Trimui, Allium:
 		return cfw
 	default:
 		log.SetOutput(os.Stderr)
-		log.Fatalf("Unsupported CFW: '%s'. Valid options: NextUI, muOS, Knulli, Spruce, ROCKNIX, Trimui", cfwEnv)
+		log.Fatalf("Unsupported CFW: '%s'. Valid options: NextUI, muOS, Knulli, Spruce, ROCKNIX, Trimui, Allium", cfwEnv)
 		return ""
 	}
 }

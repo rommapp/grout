@@ -1,0 +1,188 @@
+{
+  "3do": [],
+  "3ds": [],
+  "acpc": [
+    "CPC"
+  ],
+  "amiga": [
+    "AMIGA"
+  ],
+  "arcade": [
+    "ARCADE"
+  ],
+  "arduboy": [
+    "ARDUBOY"
+  ],
+  "atari-st": [
+    "ATARIST"
+  ],
+  "atari2600": [
+    "ATARI"
+  ],
+  "atari5200": [
+    "FIFTYTWOHUNDRED"
+  ],
+  "atari7800": [
+    "SEVENTYEIGHTHUNDRED"
+  ],
+  "c128": [],
+  "c64": [
+    "COMMODORE"
+  ],
+  "cave-story": [],
+  "colecovision": [
+    "COLECO"
+  ],
+  "cpet": [],
+  "dc": [
+    "DC"
+  ],
+  "dos": [],
+  "fairchild-channel-f": [
+    "FAIRCHILD"
+  ],
+  "famicom": [
+    "FC"
+  ],
+  "fds": [
+    "FDS"
+  ],
+  "g-and-w": [
+    "GW"
+  ],
+  "galaksija": [],
+  "gamegear": [
+    "GG"
+  ],
+  "gb": [
+    "GB"
+  ],
+  "gba": [
+    "GBA"
+  ],
+  "gbc": [
+    "GBC"
+  ],
+  "genesis": [
+    "MD"
+  ],
+  "intellivision": [
+    "INTELLIVISION"
+  ],
+  "j2me": [],
+  "jaguar": [],
+  "lynx": [
+    "LYNX"
+  ],
+  "mega-duck-slash-cougar-boy": [],
+  "msx": [
+    "MSX"
+  ],
+  "n64": [
+    "N64"
+  ],
+  "nds": [
+    "NDS"
+  ],
+  "neo-geo-cd": [
+    "NEOCD"
+  ],
+  "neo-geo-pocket": [
+    "NGP"
+  ],
+  "neo-geo-pocket-color": [
+    "NGPC"
+  ],
+  "neogeoaes": [],
+  "neogeomvs": [],
+  "nes": [
+    "FC"
+  ],
+  "odyssey": [
+    "ODYSSEY"
+  ],
+  "openbor": [
+    "OPENBOR"
+  ],
+  "pc-8000": [],
+  "pc-9800-series": [],
+  "pc-fx": [],
+  "philips-cd-i": [],
+  "pico": [
+    "PICO8",
+    "FAKE08"
+  ],
+  "pico-8": [
+    "PICO8",
+    "FAKE08"
+  ],
+  "pokemon-mini": [
+    "POKE"
+  ],
+  "ps2": [
+    "PS2"
+  ],
+  "psp": [
+    "PSP"
+  ],
+  "psx": [
+    "PS"
+  ],
+  "saturn": [],
+  "sega32": [
+    "THIRTYTWOX"
+  ],
+  "segacd": [
+    "SEGACD"
+  ],
+  "sfam": [
+    "SFC"
+  ],
+  "sg1000": [
+    "SEGASGONE"
+  ],
+  "sharp-x68000": [
+    "X68000"
+  ],
+  "sms": [
+    "MS"
+  ],
+  "snes": [
+    "SFC"
+  ],
+  "supergrafx": [
+    "SGFX"
+  ],
+  "supervision": [
+    "SUPERVISION"
+  ],
+  "tg16": [
+    "PCE"
+  ],
+  "tic-80": [
+    "TIC"
+  ],
+  "turbografx-cd": [
+    "PCECD"
+  ],
+  "vectrex": [
+    "VECTREX"
+  ],
+  "vic-20": [
+    "VIC20"
+  ],
+  "virtualboy": [
+    "VB"
+  ],
+  "wonderswan": [
+    "WS"
+  ],
+  "wonderswan-color": [
+    "WSC"
+  ],
+  "x1": [],
+  "zx81": [],
+  "zxs": [
+    "ZXS"
+  ]
+}
