@@ -1,6 +1,6 @@
 {
   "name": "Grout",
-  "version": "v4.6.1.5",
+  "version": "v4.6.1.6",
   "type": "TOOL",
   "description": "A RomM client for NextUI, muOS, Knulli, and Spruce v4.",
   "author": "The RomM Team",
@@ -32,7 +32,8 @@
     "v4.6.1.2": "Fix for games with multiple downloads",
     "v4.6.1.3": "Move QR code to its own screen for better performance.",
     "v4.6.1.4": "Added support for TrimUI Stock OS. Thanks @malkavi",
-    "v4.6.1.5": "Fix for collections not appearing on main menu immediately after enabling"
+    "v4.6.1.5": "Fix for collections not appearing on main menu immediately after enabling",
+    "v4.6.1.6": "Bug fix for BIOS download folder discrepancy when info metadata not present"
   },
   "screenshots": [],
   "platforms": [
