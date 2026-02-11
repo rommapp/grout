@@ -71,6 +71,7 @@ nav:
       - ROCKNIX: getting-started/install-rocknix.md
       - Spruce: getting-started/install-spruce.md
       - NextUI: getting-started/install-nextui.md
+      - TrimUI: getting-started/install-trimui.md
   - Usage:
       - User Guide: usage/guide.md
       - Settings Reference: usage/settings.md

@@ -15,7 +15,7 @@ hide:
 
 Download and manage games from your [RomM](https://romm.app) instance directly on your retro doo-dad.
 
-[muOS](getting-started/install-muos.md) · [Knulli](getting-started/install-knulli.md) · [ROCKNIX](getting-started/install-rocknix.md) · [Spruce](getting-started/install-spruce.md) · [NextUI](getting-started/install-nextui.md)
+[muOS](getting-started/install-muos.md) · [Knulli](getting-started/install-knulli.md) · [ROCKNIX](getting-started/install-rocknix.md) · [Spruce](getting-started/install-spruce.md) · [NextUI](getting-started/install-nextui.md) · [TrimUI](getting-started/install-trimui.md)
 
 [:octicons-rocket-16: Get Started](getting-started/index.md){ .md-button .md-button--primary }
 [:octicons-book-16: User Guide](usage/guide.md){ .md-button }
