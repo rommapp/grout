@@ -80,7 +80,7 @@ Grout is built by the community for the community.
 
 Thank you to everyone who has helped make this project better!
 
-See the full list of [Contributors](.github/CONTRIBUTORS.md).
+See the full list of [Contributors](https://grout.romm.app/contributing/kudos/).
 
 ---
 
