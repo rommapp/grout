@@ -6,7 +6,6 @@
       {
         "FileName": "grom.bin",
         "RelativePath": "grom.bin",
-        "MD5Hash": "0cd5946c6473e42e8e4c2137785e427f",
         "Optional": false
       }
     ]
@@ -18,7 +17,6 @@
       {
         "FileName": "5200.rom",
         "RelativePath": "5200.rom",
-        "MD5Hash": "281f20ea4320404ec820fb7ec0693b38",
         "Optional": true
       }
     ]
@@ -30,43 +28,36 @@
       {
         "FileName": "5200.rom",
         "RelativePath": "5200.rom",
-        "MD5Hash": "281f20ea4320404ec820fb7ec0693b38",
         "Optional": true
       },
       {
         "FileName": "ATARIBAS.ROM",
         "RelativePath": "ATARIBAS.ROM",
-        "MD5Hash": "0bac0c6a50104045d902df4503a4c30b",
         "Optional": true
       },
       {
         "FileName": "ATARIOSA.ROM",
         "RelativePath": "ATARIOSA.ROM",
-        "MD5Hash": "eb1f32f5d9f382db1bbfb8d7f9cb343a",
         "Optional": true
       },
       {
         "FileName": "ATARIOSB.ROM",
         "RelativePath": "ATARIOSB.ROM",
-        "MD5Hash": "a3e8d617c95d08031fe1b20d541434b2",
         "Optional": true
       },
       {
         "FileName": "ATARIXL.ROM",
         "RelativePath": "ATARIXL.ROM",
-        "MD5Hash": "06daac977823773a3eea3422fd26a703",
         "Optional": true
       },
       {
         "FileName": "BB01R4_OS.ROM",
         "RelativePath": "BB01R4_OS.ROM",
-        "MD5Hash": "b7a2a04677d34f069eeb643d5238bf86",
         "Optional": true
       },
       {
         "FileName": "XEGAME.ROM",
         "RelativePath": "XEGAME.ROM",
-        "MD5Hash": "d7eb37aec6960cba36bc500e0e5d00bc",
         "Optional": true
       }
     ]
@@ -78,49 +69,41 @@
       {
         "FileName": "B11M_BOS.ROM",
         "RelativePath": "bk/B11M_BOS.ROM",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "B11M_EXT.ROM",
         "RelativePath": "bk/B11M_EXT.ROM",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "BAS11M_0.ROM",
         "RelativePath": "bk/BAS11M_0.ROM",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "BAS11M_1.ROM",
         "RelativePath": "bk/BAS11M_1.ROM",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "DISK_327.ROM",
         "RelativePath": "bk/DISK_327.ROM",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "BASIC10.ROM",
         "RelativePath": "bk/BASIC10.ROM",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "FOCAL10.ROM",
         "RelativePath": "bk/FOCAL10.ROM",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "MONIT10.ROM",
         "RelativePath": "bk/MONIT10.ROM",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -132,7 +115,6 @@
       {
         "FileName": "rom.db",
         "RelativePath": "rom.db",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -144,13 +126,11 @@
       {
         "FileName": "msxromdb.xml",
         "RelativePath": "Databases/msxromdb.xml",
-        "MD5Hash": "",
         "Optional": false
       },
       {
         "FileName": "MSX.rom",
         "RelativePath": "Machines/Shared Roms/MSX.rom",
-        "MD5Hash": "",
         "Optional": false
       }
     ]
@@ -162,121 +142,101 @@
       {
         "FileName": "dsp1.data.rom",
         "RelativePath": "dsp1.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1.program.rom",
         "RelativePath": "dsp1.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1b.data.rom",
         "RelativePath": "dsp1b.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1b.program.rom",
         "RelativePath": "dsp1b.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp2.data.rom",
         "RelativePath": "dsp2.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp2.program.rom",
         "RelativePath": "dsp2.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp3.data.rom",
         "RelativePath": "dsp3.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp3.program.rom",
         "RelativePath": "dsp3.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp4.data.rom",
         "RelativePath": "dsp4.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp4.program.rom",
         "RelativePath": "dsp4.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "cx4.data.rom",
         "RelativePath": "cx4.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st010.data.rom",
         "RelativePath": "st010.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st010.program.rom",
         "RelativePath": "st010.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st011.data.rom",
         "RelativePath": "st011.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st011.program.rom",
         "RelativePath": "st011.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st018.data.rom",
         "RelativePath": "st018.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st018.program.rom",
         "RelativePath": "st018.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "SGB1.sfc",
         "RelativePath": "SGB1.sfc",
-        "MD5Hash": "b15ddb15721c657d82c5bab6db982ee9",
         "Optional": true
       },
       {
         "FileName": "SGB2.sfc",
         "RelativePath": "SGB2.sfc",
-        "MD5Hash": "8ecd73eb4edf7ed7e81aef1be80031d5",
         "Optional": true
       },
       {
         "FileName": "BS-X.bin",
         "RelativePath": "BS-X.bin",
-        "MD5Hash": "fed4d8242cfbed61343d53d48432aced",
         "Optional": true
       }
     ]
@@ -288,97 +248,81 @@
       {
         "FileName": "dsp1.data.rom",
         "RelativePath": "dsp1.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1.program.rom",
         "RelativePath": "dsp1.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1b.data.rom",
         "RelativePath": "dsp1b.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1b.program.rom",
         "RelativePath": "dsp1b.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp2.data.rom",
         "RelativePath": "dsp2.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp2.program.rom",
         "RelativePath": "dsp2.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp3.data.rom",
         "RelativePath": "dsp3.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp3.program.rom",
         "RelativePath": "dsp3.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp4.data.rom",
         "RelativePath": "dsp4.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp4.program.rom",
         "RelativePath": "dsp4.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st010.data.rom",
         "RelativePath": "st010.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st010.program.rom",
         "RelativePath": "st010.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st011.data.rom",
         "RelativePath": "st011.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st011.program.rom",
         "RelativePath": "st011.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st018.data.rom",
         "RelativePath": "st018.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st018.program.rom",
         "RelativePath": "st018.program.rom",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -390,109 +334,91 @@
       {
         "FileName": "dsp1.data.rom",
         "RelativePath": "dsp1.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1.program.rom",
         "RelativePath": "dsp1.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1b.data.rom",
         "RelativePath": "dsp1b.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1b.program.rom",
         "RelativePath": "dsp1b.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp2.data.rom",
         "RelativePath": "dsp2.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp2.program.rom",
         "RelativePath": "dsp2.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp3.data.rom",
         "RelativePath": "dsp3.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp3.program.rom",
         "RelativePath": "dsp3.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp4.data.rom",
         "RelativePath": "dsp4.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp4.program.rom",
         "RelativePath": "dsp4.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "cx4.data.rom",
         "RelativePath": "cx4.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st010.data.rom",
         "RelativePath": "st010.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st010.program.rom",
         "RelativePath": "st010.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st011.data.rom",
         "RelativePath": "st011.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st011.program.rom",
         "RelativePath": "st011.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st018.data.rom",
         "RelativePath": "st018.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st018.program.rom",
         "RelativePath": "st018.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "sgb.boot.rom",
         "RelativePath": "sgb.boot.rom",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -504,109 +430,91 @@
       {
         "FileName": "dsp1.data.rom",
         "RelativePath": "dsp1.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1.program.rom",
         "RelativePath": "dsp1.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1b.data.rom",
         "RelativePath": "dsp1b.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1b.program.rom",
         "RelativePath": "dsp1b.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp2.data.rom",
         "RelativePath": "dsp2.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp2.program.rom",
         "RelativePath": "dsp2.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp3.data.rom",
         "RelativePath": "dsp3.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp3.program.rom",
         "RelativePath": "dsp3.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp4.data.rom",
         "RelativePath": "dsp4.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp4.program.rom",
         "RelativePath": "dsp4.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "cx4.data.rom",
         "RelativePath": "cx4.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st010.data.rom",
         "RelativePath": "st010.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st010.program.rom",
         "RelativePath": "st010.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st011.data.rom",
         "RelativePath": "st011.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st011.program.rom",
         "RelativePath": "st011.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st018.data.rom",
         "RelativePath": "st018.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st018.program.rom",
         "RelativePath": "st018.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "sgb.boot.rom",
         "RelativePath": "sgb.boot.rom",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -618,103 +526,86 @@
       {
         "FileName": "dsp1.data.rom",
         "RelativePath": "dsp1.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1.program.rom",
         "RelativePath": "dsp1.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1b.data.rom",
         "RelativePath": "dsp1b.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1b.program.rom",
         "RelativePath": "dsp1b.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp2.data.rom",
         "RelativePath": "dsp2.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp2.program.rom",
         "RelativePath": "dsp2.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp3.data.rom",
         "RelativePath": "dsp3.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp3.program.rom",
         "RelativePath": "dsp3.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp4.data.rom",
         "RelativePath": "dsp4.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp4.program.rom",
         "RelativePath": "dsp4.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st010.data.rom",
         "RelativePath": "st010.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st010.program.rom",
         "RelativePath": "st010.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st011.data.rom",
         "RelativePath": "st011.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st011.program.rom",
         "RelativePath": "st011.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st018.data.rom",
         "RelativePath": "st018.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st018.program.rom",
         "RelativePath": "st018.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "sgb.boot.rom",
         "RelativePath": "sgb.boot.rom",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -726,115 +617,96 @@
       {
         "FileName": "dsp1.data.rom",
         "RelativePath": "dsp1.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1.program.rom",
         "RelativePath": "dsp1.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1b.data.rom",
         "RelativePath": "dsp1b.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1b.program.rom",
         "RelativePath": "dsp1b.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp2.data.rom",
         "RelativePath": "dsp2.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp2.program.rom",
         "RelativePath": "dsp2.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp3.data.rom",
         "RelativePath": "dsp3.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp3.program.rom",
         "RelativePath": "dsp3.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp4.data.rom",
         "RelativePath": "dsp4.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp4.program.rom",
         "RelativePath": "dsp4.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "cx4.data.rom",
         "RelativePath": "cx4.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st010.data.rom",
         "RelativePath": "st010.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st010.program.rom",
         "RelativePath": "st010.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st011.data.rom",
         "RelativePath": "st011.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st011.program.rom",
         "RelativePath": "st011.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st018.data.rom",
         "RelativePath": "st018.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st018.program.rom",
         "RelativePath": "st018.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "SGB1.sfc",
         "RelativePath": "SGB1.sfc",
-        "MD5Hash": "b15ddb15721c657d82c5bab6db982ee9",
         "Optional": true
       },
       {
         "FileName": "SGB2.sfc",
         "RelativePath": "SGB2.sfc",
-        "MD5Hash": "8ecd73eb4edf7ed7e81aef1be80031d5",
         "Optional": true
       }
     ]
@@ -846,109 +718,91 @@
       {
         "FileName": "dsp1.data.rom",
         "RelativePath": "dsp1.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1.program.rom",
         "RelativePath": "dsp1.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1b.data.rom",
         "RelativePath": "dsp1b.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1b.program.rom",
         "RelativePath": "dsp1b.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp2.data.rom",
         "RelativePath": "dsp2.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp2.program.rom",
         "RelativePath": "dsp2.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp3.data.rom",
         "RelativePath": "dsp3.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp3.program.rom",
         "RelativePath": "dsp3.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp4.data.rom",
         "RelativePath": "dsp4.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp4.program.rom",
         "RelativePath": "dsp4.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "cx4.data.rom",
         "RelativePath": "cx4.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st010.data.rom",
         "RelativePath": "st010.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st010.program.rom",
         "RelativePath": "st010.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st011.data.rom",
         "RelativePath": "st011.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st011.program.rom",
         "RelativePath": "st011.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st018.data.rom",
         "RelativePath": "st018.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st018.program.rom",
         "RelativePath": "st018.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "sgb.boot.rom",
         "RelativePath": "sgb.boot.rom",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -960,109 +814,91 @@
       {
         "FileName": "dsp1.data.rom",
         "RelativePath": "dsp1.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1.program.rom",
         "RelativePath": "dsp1.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1b.data.rom",
         "RelativePath": "dsp1b.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1b.program.rom",
         "RelativePath": "dsp1b.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp2.data.rom",
         "RelativePath": "dsp2.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp2.program.rom",
         "RelativePath": "dsp2.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp3.data.rom",
         "RelativePath": "dsp3.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp3.program.rom",
         "RelativePath": "dsp3.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp4.data.rom",
         "RelativePath": "dsp4.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp4.program.rom",
         "RelativePath": "dsp4.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "cx4.data.rom",
         "RelativePath": "cx4.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st010.data.rom",
         "RelativePath": "st010.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st010.program.rom",
         "RelativePath": "st010.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st011.data.rom",
         "RelativePath": "st011.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st011.program.rom",
         "RelativePath": "st011.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st018.data.rom",
         "RelativePath": "st018.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st018.program.rom",
         "RelativePath": "st018.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "sgb.boot.rom",
         "RelativePath": "sgb.boot.rom",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -1074,103 +910,86 @@
       {
         "FileName": "dsp1.data.rom",
         "RelativePath": "dsp1.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1.program.rom",
         "RelativePath": "dsp1.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1b.data.rom",
         "RelativePath": "dsp1b.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1b.program.rom",
         "RelativePath": "dsp1b.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp2.data.rom",
         "RelativePath": "dsp2.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp2.program.rom",
         "RelativePath": "dsp2.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp3.data.rom",
         "RelativePath": "dsp3.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp3.program.rom",
         "RelativePath": "dsp3.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp4.data.rom",
         "RelativePath": "dsp4.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp4.program.rom",
         "RelativePath": "dsp4.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st010.data.rom",
         "RelativePath": "st010.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st010.program.rom",
         "RelativePath": "st010.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st011.data.rom",
         "RelativePath": "st011.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st011.program.rom",
         "RelativePath": "st011.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st018.data.rom",
         "RelativePath": "st018.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st018.program.rom",
         "RelativePath": "st018.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "sgb.boot.rom",
         "RelativePath": "sgb.boot.rom",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -1182,7 +1001,6 @@
       {
         "FileName": "cdimono1.zip",
         "RelativePath": "cdimono1.zip",
-        "MD5Hash": "",
         "Optional": false
       }
     ]
@@ -1194,19 +1012,16 @@
       {
         "FileName": "firmware.bin",
         "RelativePath": "firmware.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "bios7.bin",
         "RelativePath": "bios7.bin",
-        "MD5Hash": "df692a80a5b1bc90728bc3dfc76cd948",
         "Optional": true
       },
       {
         "FileName": "bios9.bin",
         "RelativePath": "bios9.bin",
-        "MD5Hash": "a392174eb3e572fed6447e956bde4b25",
         "Optional": true
       }
     ]
@@ -1218,19 +1033,16 @@
       {
         "FileName": "firmware.bin",
         "RelativePath": "firmware.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "bios7.bin",
         "RelativePath": "bios7.bin",
-        "MD5Hash": "df692a80a5b1bc90728bc3dfc76cd948",
         "Optional": true
       },
       {
         "FileName": "bios9.bin",
         "RelativePath": "bios9.bin",
-        "MD5Hash": "a392174eb3e572fed6447e956bde4b25",
         "Optional": true
       }
     ]
@@ -1242,7 +1054,6 @@
       {
         "FileName": "codehandler.bin",
         "RelativePath": "dolphin-emu/Sys/codehandler.bin",
-        "MD5Hash": "",
         "Optional": false
       }
     ]
@@ -1254,61 +1065,51 @@
       {
         "FileName": "MT32_CONTROL.ROM",
         "RelativePath": "MT32_CONTROL.ROM",
-        "MD5Hash": "5626206284b22c2734f3e9efefcd2675",
         "Optional": true
       },
       {
         "FileName": "MT32_PCM.ROM",
         "RelativePath": "MT32_PCM.ROM",
-        "MD5Hash": "89e42e386e82e0cacb4a2704a03706ca",
         "Optional": true
       },
       {
         "FileName": "CM32L_CONTROL.ROM",
         "RelativePath": "CM32L_CONTROL.ROM",
-        "MD5Hash": "bfff32b6144c1d706109accb6e6b1113",
         "Optional": true
       },
       {
         "FileName": "CM32L_PCM.ROM",
         "RelativePath": "CM32L_PCM.ROM",
-        "MD5Hash": "08cdcfa0ed93e9cb16afa76e6ac5f0a4",
         "Optional": true
       },
       {
         "FileName": "libbass.so",
         "RelativePath": "libbass.so",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "libbassmidi.so",
         "RelativePath": "libbassmidi.so",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "bass.dll",
         "RelativePath": "bass.dll",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "bassmidi.dll",
         "RelativePath": "bassmidi.dll",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "libbass.dylib",
         "RelativePath": "libbass.dylib",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "libbassmidi.dylib",
         "RelativePath": "libbassmidi.dylib",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -1320,19 +1121,16 @@
       {
         "FileName": "scph5500.bin",
         "RelativePath": "scph5500.bin",
-        "MD5Hash": "8dd7d5296a650fac7319bce665a6a53c",
         "Optional": false
       },
       {
         "FileName": "scph5501.bin",
         "RelativePath": "scph5501.bin",
-        "MD5Hash": "490f666e1afb15b7362b406ed1cea246",
         "Optional": false
       },
       {
         "FileName": "scph5502.bin",
         "RelativePath": "scph5502.bin",
-        "MD5Hash": "32736f17079d0b2b7024407c39bd3050",
         "Optional": false
       }
     ]
@@ -1344,7 +1142,6 @@
       {
         "FileName": "ecwolf.pk3",
         "RelativePath": "ecwolf.pk3",
-        "MD5Hash": "c011b428819eea4a80b455c245a5a04d",
         "Optional": false
       }
     ]
@@ -1356,7 +1153,6 @@
       {
         "FileName": "upd7801g.s01",
         "RelativePath": "upd7801g.s01",
-        "MD5Hash": "635a978fd40db9a18ee44eff449fc126",
         "Optional": false
       }
     ]
@@ -1368,7 +1164,6 @@
       {
         "FileName": "dmg_boot.bin",
         "RelativePath": "dmg_boot.bin",
-        "MD5Hash": "32fbbd84168d3482956eb3c5051637f5",
         "Optional": false
       }
     ]
@@ -1380,7 +1175,6 @@
       {
         "FileName": "bios.sms",
         "RelativePath": "bios.sms",
-        "MD5Hash": "840481177270d5642a14ca71ee72844c",
         "Optional": false
       }
     ]
@@ -1392,133 +1186,111 @@
       {
         "FileName": "exos21.rom",
         "RelativePath": "ep128emu/roms/exos21.rom",
-        "MD5Hash": "f36f24cbb87745fbd2714e4df881db09",
         "Optional": true
       },
       {
         "FileName": "basic21.rom",
         "RelativePath": "ep128emu/roms/basic21.rom",
-        "MD5Hash": "e972fe42b398c9ff1d93ff014786aec6",
         "Optional": true
       },
       {
         "FileName": "exdos13.rom",
         "RelativePath": "ep128emu/roms/exdos13.rom",
-        "MD5Hash": "ddff70c014d1958dc75378b6c9aab6f8",
         "Optional": true
       },
       {
         "FileName": "exos20.rom",
         "RelativePath": "ep128emu/roms/exos20.rom",
-        "MD5Hash": "5ad3baaad3b5156d6b60b34229a676fb",
         "Optional": true
       },
       {
         "FileName": "basic20.rom",
         "RelativePath": "ep128emu/roms/basic20.rom",
-        "MD5Hash": "8e18edce4a7acb2c33cc0ab18f988482",
         "Optional": true
       },
       {
         "FileName": "epfileio.rom",
         "RelativePath": "ep128emu/roms/epfileio.rom",
-        "MD5Hash": "a68ebcbc73a4d2178d755b7755bf18fe",
         "Optional": true
       },
       {
         "FileName": "exos24uk.rom",
         "RelativePath": "ep128emu/roms/exos24uk.rom",
-        "MD5Hash": "55af78f877a21ca45eb2df68a74fcc60",
         "Optional": true
       },
       {
         "FileName": "hun.rom",
         "RelativePath": "ep128emu/roms/hun.rom",
-        "MD5Hash": "22167938f142c222f40992839aa21a06",
         "Optional": true
       },
       {
         "FileName": "epd19hft.rom",
         "RelativePath": "ep128emu/roms/epd19hft.rom",
-        "MD5Hash": "12cfc9c7e48c8a16c2e09edbd926d467",
         "Optional": true
       },
       {
         "FileName": "zt19hfnt.rom",
         "RelativePath": "ep128emu/roms/zt19hfnt.rom",
-        "MD5Hash": "653daaf7b9b29c2c4e577f489580f247",
         "Optional": true
       },
       {
         "FileName": "brd.rom",
         "RelativePath": "ep128emu/roms/brd.rom",
-        "MD5Hash": "6af0402906944fd134004b85097c8524",
         "Optional": true
       },
       {
         "FileName": "zt19uk.rom",
         "RelativePath": "ep128emu/roms/zt19uk.rom",
-        "MD5Hash": "228540b6be83ae2acd7569c8ff0f91d0",
         "Optional": true
       },
       {
         "FileName": "tvc22_sys.rom",
         "RelativePath": "ep128emu/roms/tvc22_sys.rom",
-        "MD5Hash": "8c54285f541930cde766069942bad0f2",
         "Optional": true
       },
       {
         "FileName": "tvc22_ext.rom",
         "RelativePath": "ep128emu/roms/tvc22_ext.rom",
-        "MD5Hash": "5ce95a26ceed5bec73995d83568da9cf",
         "Optional": true
       },
       {
         "FileName": "tvcfileio.rom",
         "RelativePath": "ep128emu/roms/tvcfileio.rom",
-        "MD5Hash": "a2cf86ba8e7fc58b242137fe59036832",
         "Optional": true
       },
       {
         "FileName": "tvc_dos12d.rom",
         "RelativePath": "ep128emu/roms/tvc_dos12d.rom",
-        "MD5Hash": "88dc7876d584f90e4106f91444ab23b7",
         "Optional": true
       },
       {
         "FileName": "cpc464.rom",
         "RelativePath": "ep128emu/roms/cpc464.rom",
-        "MD5Hash": "a993f85b88ac4350cf4d41554e87fe4f",
         "Optional": true
       },
       {
         "FileName": "cpc664.rom",
         "RelativePath": "ep128emu/roms/cpc664.rom",
-        "MD5Hash": "5a384a2310f472c7857888371c00ed66",
         "Optional": true
       },
       {
         "FileName": "cpc6128.rom",
         "RelativePath": "ep128emu/roms/cpc6128.rom",
-        "MD5Hash": "b96280dc6c95a48857b4b8eb931533ae",
         "Optional": true
       },
       {
         "FileName": "cpc_amsdos.rom",
         "RelativePath": "ep128emu/roms/cpc_amsdos.rom",
-        "MD5Hash": "25629dfe870d097469c217b95fdc1c95",
         "Optional": true
       },
       {
         "FileName": "zx128.rom",
         "RelativePath": "ep128emu/roms/zx128.rom",
-        "MD5Hash": "85fede415f4294cc777517d7eada482e",
         "Optional": true
       },
       {
         "FileName": "zx48.rom",
         "RelativePath": "ep128emu/roms/zx48.rom",
-        "MD5Hash": "4c42a2f075212361c3117015b107ff68",
         "Optional": true
       }
     ]
@@ -1530,139 +1302,116 @@
       {
         "FileName": "neogeo.zip",
         "RelativePath": "fbneo/neogeo.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "neocdz.zip",
         "RelativePath": "fbneo/neocdz.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "decocass.zip",
         "RelativePath": "fbneo/decocass.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "isgsm.zip",
         "RelativePath": "fbneo/isgsm.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "midssio.zip",
         "RelativePath": "fbneo/midssio.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "nmk004.zip",
         "RelativePath": "fbneo/nmk004.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "pgm.zip",
         "RelativePath": "fbneo/pgm.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "skns.zip",
         "RelativePath": "fbneo/skns.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "ym2608.zip",
         "RelativePath": "fbneo/ym2608.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "cchip.zip",
         "RelativePath": "fbneo/cchip.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "bubsys.zip",
         "RelativePath": "fbneo/bubsys.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "namcoc69.zip",
         "RelativePath": "fbneo/namcoc69.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "namcoc70.zip",
         "RelativePath": "fbneo/namcoc70.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "namcoc75.zip",
         "RelativePath": "fbneo/namcoc75.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "coleco.zip",
         "RelativePath": "fbneo/coleco.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "fdsbios.zip",
         "RelativePath": "fbneo/fdsbios.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "msx.zip",
         "RelativePath": "fbneo/msx.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "ngp.zip",
         "RelativePath": "fbneo/ngp.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "spectrum.zip",
         "RelativePath": "fbneo/spectrum.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "spec128.zip",
         "RelativePath": "fbneo/spec128.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "spec1282a.zip",
         "RelativePath": "fbneo/spec1282a.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "channelf.zip",
         "RelativePath": "fbneo/channelf.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "hiscore.dat",
         "RelativePath": "fbneo/hiscore.dat",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -1674,7 +1423,6 @@
       {
         "FileName": "hiscore.dat",
         "RelativePath": "fbneo/hiscore.dat",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -1686,19 +1434,16 @@
       {
         "FileName": "neogeo.zip",
         "RelativePath": "fbneo/neogeo.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "neocdz.zip",
         "RelativePath": "fbneo/neocdz.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "hiscore.dat",
         "RelativePath": "fbneo/hiscore.dat",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -1710,19 +1455,16 @@
       {
         "FileName": "disksys.rom",
         "RelativePath": "disksys.rom",
-        "MD5Hash": "ca30b50f880eb660a320674ed365ef7a",
         "Optional": true
       },
       {
         "FileName": "nes.pal",
         "RelativePath": "nes.pal",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "gamegenie.nes",
         "RelativePath": "gamegenie.nes",
-        "MD5Hash": "7f98d77d7a094ad7d069b74bd553ec98",
         "Optional": true
       }
     ]
@@ -1734,7 +1476,6 @@
       {
         "FileName": "gbc_bios.bin",
         "RelativePath": "gbc_bios.bin",
-        "MD5Hash": "dbfce9db9deaa2567f6a84fde55f9680",
         "Optional": true
       }
     ]
@@ -1746,7 +1487,6 @@
       {
         "FileName": "disksys.rom",
         "RelativePath": "disksys.rom",
-        "MD5Hash": "ca30b50f880eb660a320674ed365ef7a",
         "Optional": true
       }
     ]
@@ -1758,49 +1498,41 @@
       {
         "FileName": "dc_boot.bin",
         "RelativePath": "dc/dc_boot.bin",
-        "MD5Hash": "e10c53c2f8b90bab96ead2d368858623",
         "Optional": true
       },
       {
         "FileName": "naomi.zip",
         "RelativePath": "dc/naomi.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "naomi2.zip",
         "RelativePath": "dc/naomi2.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "hod2bios.zip",
         "RelativePath": "dc/hod2bios.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "f355dlx.zip",
         "RelativePath": "dc/f355dlx.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "f355bios.zip",
         "RelativePath": "dc/f355bios.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "airlbios.zip",
         "RelativePath": "dc/airlbios.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "awbios.zip",
         "RelativePath": "dc/awbios.zip",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -1812,49 +1544,41 @@
       {
         "FileName": "dc_boot.bin",
         "RelativePath": "dc/dc_boot.bin",
-        "MD5Hash": "e10c53c2f8b90bab96ead2d368858623",
         "Optional": true
       },
       {
         "FileName": "naomi.zip",
         "RelativePath": "dc/naomi.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "naomi2.zip",
         "RelativePath": "dc/naomi2.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "hod2bios.zip",
         "RelativePath": "dc/hod2bios.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "f355dlx.zip",
         "RelativePath": "dc/f355dlx.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "f355bios.zip",
         "RelativePath": "dc/f355bios.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "airlbios.zip",
         "RelativePath": "dc/airlbios.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "awbios.zip",
         "RelativePath": "dc/awbios.zip",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -1866,61 +1590,51 @@
       {
         "FileName": "MSX.ROM",
         "RelativePath": "MSX.ROM",
-        "MD5Hash": "364a1a579fe5cb8dba54519bcfcdac0d",
         "Optional": false
       },
       {
         "FileName": "MSX2.ROM",
         "RelativePath": "MSX2.ROM",
-        "MD5Hash": "ec3a01c91f24fbddcbcab0ad301bc9ef",
         "Optional": false
       },
       {
         "FileName": "MSX2EXT.ROM",
         "RelativePath": "MSX2EXT.ROM",
-        "MD5Hash": "2183c2aff17cf4297bdb496de78c2e8a",
         "Optional": false
       },
       {
         "FileName": "MSX2P.ROM",
         "RelativePath": "MSX2P.ROM",
-        "MD5Hash": "847cc025ffae665487940ff2639540e5",
         "Optional": false
       },
       {
         "FileName": "MSX2PEXT.ROM",
         "RelativePath": "MSX2PEXT.ROM",
-        "MD5Hash": "7c8243c71d8f143b2531f01afa6a05dc",
         "Optional": false
       },
       {
         "FileName": "DISK.ROM",
         "RelativePath": "DISK.ROM",
-        "MD5Hash": "80dcd1ad1a4cf65d64b7ba10504e8190",
         "Optional": true
       },
       {
         "FileName": "FMPAC.ROM",
         "RelativePath": "FMPAC.ROM",
-        "MD5Hash": "6f69cc8b5ed761b03afd78000dfb0e19",
         "Optional": true
       },
       {
         "FileName": "MSXDOS2.ROM",
         "RelativePath": "MSXDOS2.ROM",
-        "MD5Hash": "6418d091cd6907bbcf940324339e43bb",
         "Optional": true
       },
       {
         "FileName": "PAINTER.ROM",
         "RelativePath": "PAINTER.ROM",
-        "MD5Hash": "403cdea1cbd2bb24fae506941f8f655e",
         "Optional": true
       },
       {
         "FileName": "KANJI.ROM",
         "RelativePath": "KANJI.ROM",
-        "MD5Hash": "febe8782b466d7c3b16de6d104826b34",
         "Optional": true
       }
     ]
@@ -1932,19 +1646,16 @@
       {
         "FileName": "sl31253.bin",
         "RelativePath": "sl31253.bin",
-        "MD5Hash": "ac9804d4c0e9d07e33472e3726ed15c3",
         "Optional": false
       },
       {
         "FileName": "sl31254.bin",
         "RelativePath": "sl31254.bin",
-        "MD5Hash": "da98f4bb3242ab80d76629021bb27585",
         "Optional": false
       },
       {
         "FileName": "sl90025.bin",
         "RelativePath": "sl90025.bin",
-        "MD5Hash": "95d339631d867c8f1d15a5f2ec26069d",
         "Optional": false
       }
     ]
@@ -1956,13 +1667,11 @@
       {
         "FileName": "exec.bin",
         "RelativePath": "exec.bin",
-        "MD5Hash": "62e761035cb657903761800f4437b8af",
         "Optional": false
       },
       {
         "FileName": "grom.bin",
         "RelativePath": "grom.bin",
-        "MD5Hash": "0cd5946c6473e42e8e4c2137785e427f",
         "Optional": false
       }
     ]
@@ -1974,7 +1683,6 @@
       {
         "FileName": "freej2me-lr.jar",
         "RelativePath": "freej2me-lr.jar",
-        "MD5Hash": "",
         "Optional": false
       }
     ]
@@ -1986,73 +1694,62 @@
       {
         "FileName": "128p-0.rom",
         "RelativePath": "fuse/128p-0.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "128p-1.rom",
         "RelativePath": "fuse/128p-1.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "trdos.rom",
         "RelativePath": "fuse/trdos.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "gluck.rom",
         "RelativePath": "fuse/gluck.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "256s-0.rom",
         "RelativePath": "fuse/256s-0.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "256s-1.rom",
         "RelativePath": "fuse/256s-1.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "256s-2.rom",
         "RelativePath": "fuse/256s-2.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "256s-3.rom",
         "RelativePath": "fuse/256s-3.rom",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
   },
   "galaksija": {
     "CoreName": "galaksija_libretro",
-    "DisplayName": "Elektronika Inženjering - Galaksija (Galaksija)",
+    "DisplayName": "Elektronika In\u017eenjering - Galaksija (Galaksija)",
     "Files": [
       {
         "FileName": "CHRGEN.BIN",
         "RelativePath": "galaksija/CHRGEN.BIN",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "ROM1.BIN",
         "RelativePath": "galaksija/ROM1.BIN",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "ROM2.BIN",
         "RelativePath": "galaksija/ROM2.BIN",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -2064,13 +1761,11 @@
       {
         "FileName": "gb_bios.bin",
         "RelativePath": "gb_bios.bin",
-        "MD5Hash": "32fbbd84168d3482956eb3c5051637f5",
         "Optional": true
       },
       {
         "FileName": "gbc_bios.bin",
         "RelativePath": "gbc_bios.bin",
-        "MD5Hash": "dbfce9db9deaa2567f6a84fde55f9680",
         "Optional": true
       }
     ]
@@ -2082,7 +1777,6 @@
       {
         "FileName": "colecovision.rom",
         "RelativePath": "colecovision.rom",
-        "MD5Hash": "2c66f5911e5b42b8ebe113403548eee7",
         "Optional": false
       }
     ]
@@ -2094,73 +1788,61 @@
       {
         "FileName": "bios_MD.bin",
         "RelativePath": "bios_MD.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "bios_CD_E.bin",
         "RelativePath": "bios_CD_E.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "bios_CD_U.bin",
         "RelativePath": "bios_CD_U.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "bios_CD_J.bin",
         "RelativePath": "bios_CD_J.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "bios_E.sms",
         "RelativePath": "bios_E.sms",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "bios_U.sms",
         "RelativePath": "bios_U.sms",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "bios_J.sms",
         "RelativePath": "bios_J.sms",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "bios.gg",
         "RelativePath": "bios.gg",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "sk.bin",
         "RelativePath": "sk.bin",
-        "MD5Hash": "4ea493ea4e9f6c9ebfccbdb15110367e",
         "Optional": true
       },
       {
         "FileName": "sk2chip.bin",
         "RelativePath": "sk2chip.bin",
-        "MD5Hash": "b4e76e416b887f4e7413ba76fa735f16",
         "Optional": true
       },
       {
         "FileName": "areplay.bin",
         "RelativePath": "areplay.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "ggenie.bin",
         "RelativePath": "ggenie.bin",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -2172,73 +1854,61 @@
       {
         "FileName": "bios_MD.bin",
         "RelativePath": "bios_MD.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "bios_CD_E.bin",
         "RelativePath": "bios_CD_E.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "bios_CD_U.bin",
         "RelativePath": "bios_CD_U.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "bios_CD_J.bin",
         "RelativePath": "bios_CD_J.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "bios_E.sms",
         "RelativePath": "bios_E.sms",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "bios_U.sms",
         "RelativePath": "bios_U.sms",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "bios_J.sms",
         "RelativePath": "bios_J.sms",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "bios.gg",
         "RelativePath": "bios.gg",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "sk.bin",
         "RelativePath": "sk.bin",
-        "MD5Hash": "4ea493ea4e9f6c9ebfccbdb15110367e",
         "Optional": true
       },
       {
         "FileName": "sk2chip.bin",
         "RelativePath": "sk2chip.bin",
-        "MD5Hash": "b4e76e416b887f4e7413ba76fa735f16",
         "Optional": true
       },
       {
         "FileName": "areplay.bin",
         "RelativePath": "areplay.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "ggenie.bin",
         "RelativePath": "ggenie.bin",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -2250,13 +1920,11 @@
       {
         "FileName": "aes.zip",
         "RelativePath": "aes.zip",
-        "MD5Hash": "",
         "Optional": false
       },
       {
         "FileName": "neogeo.zip",
         "RelativePath": "neogeo.zip",
-        "MD5Hash": "",
         "Optional": false
       }
     ]
@@ -2268,7 +1936,6 @@
       {
         "FileName": "gba_bios.bin",
         "RelativePath": "gba_bios.bin",
-        "MD5Hash": "a860e8c0b6d573d191e4ec7db1b1e4f6",
         "Optional": false
       }
     ]
@@ -2280,7 +1947,6 @@
       {
         "FileName": "lynxboot.img",
         "RelativePath": "lynxboot.img",
-        "MD5Hash": "fcd403db69f54290b51035d82f835e7b",
         "Optional": true
       }
     ]
@@ -2292,7 +1958,6 @@
       {
         "FileName": "tos.img",
         "RelativePath": "tos.img",
-        "MD5Hash": "c1c57ce48e8ee4135885cee9e63a68a2",
         "Optional": false
       }
     ]
@@ -2304,127 +1969,106 @@
       {
         "FileName": "dsp1.data.rom",
         "RelativePath": "dsp1.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1.program.rom",
         "RelativePath": "dsp1.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1b.data.rom",
         "RelativePath": "dsp1b.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1b.program.rom",
         "RelativePath": "dsp1b.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp2.data.rom",
         "RelativePath": "dsp2.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp2.program.rom",
         "RelativePath": "dsp2.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp3.data.rom",
         "RelativePath": "dsp3.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp3.program.rom",
         "RelativePath": "dsp3.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp4.data.rom",
         "RelativePath": "dsp4.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp4.program.rom",
         "RelativePath": "dsp4.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "cx4.data.rom",
         "RelativePath": "cx4.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st010.data.rom",
         "RelativePath": "st010.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st010.program.rom",
         "RelativePath": "st010.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st011.data.rom",
         "RelativePath": "st011.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st011.program.rom",
         "RelativePath": "st011.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st018.data.rom",
         "RelativePath": "st018.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st018.program.rom",
         "RelativePath": "st018.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "sgb1.boot.rom",
         "RelativePath": "SGB1.sfc/sgb1.boot.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "program.rom",
         "RelativePath": "SGB1.sfc/program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "sgb2.boot.rom",
         "RelativePath": "SGB2.sfc/sgb2.boot.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "program.rom",
         "RelativePath": "SGB2.sfc/program.rom",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -2436,127 +2080,106 @@
       {
         "FileName": "dsp1.data.rom",
         "RelativePath": "dsp1.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1.program.rom",
         "RelativePath": "dsp1.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1b.data.rom",
         "RelativePath": "dsp1b.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1b.program.rom",
         "RelativePath": "dsp1b.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp2.data.rom",
         "RelativePath": "dsp2.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp2.program.rom",
         "RelativePath": "dsp2.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp3.data.rom",
         "RelativePath": "dsp3.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp3.program.rom",
         "RelativePath": "dsp3.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp4.data.rom",
         "RelativePath": "dsp4.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp4.program.rom",
         "RelativePath": "dsp4.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "cx4.data.rom",
         "RelativePath": "cx4.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st010.data.rom",
         "RelativePath": "st010.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st010.program.rom",
         "RelativePath": "st010.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st011.data.rom",
         "RelativePath": "st011.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st011.program.rom",
         "RelativePath": "st011.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st018.data.rom",
         "RelativePath": "st018.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st018.program.rom",
         "RelativePath": "st018.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "sgb1.boot.rom",
         "RelativePath": "SGB1.sfc/sgb1.boot.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "program.rom",
         "RelativePath": "SGB1.sfc/program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "sgb2.boot.rom",
         "RelativePath": "SGB2.sfc/sgb2.boot.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "program.rom",
         "RelativePath": "SGB2.sfc/program.rom",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -2568,7 +2191,6 @@
       {
         "FileName": "lynxboot.img",
         "RelativePath": "lynxboot.img",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -2580,13 +2202,11 @@
       {
         "FileName": "coleco.rom",
         "RelativePath": "coleco.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "bioscv.rom",
         "RelativePath": "bioscv.rom",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -2598,25 +2218,21 @@
       {
         "FileName": "saturn_bios.bin",
         "RelativePath": "kronos/saturn_bios.bin",
-        "MD5Hash": "af5828fdff51384f99b3c4926be27762",
         "Optional": false
       },
       {
         "FileName": "stvbios.zip",
         "RelativePath": "kronos/stvbios.zip",
-        "MD5Hash": "",
         "Optional": false
       },
       {
         "FileName": "mpr-18811-mx.ic1",
         "RelativePath": "mpr-18811-mx.ic1",
-        "MD5Hash": "255113ba943c92a54facd25a10fd780c",
         "Optional": true
       },
       {
         "FileName": "mpr-19367-mx.ic1",
         "RelativePath": "mpr-19367-mx.ic1",
-        "MD5Hash": "1cd19988d1d72a3e7caa0b73234c96b4",
         "Optional": true
       }
     ]
@@ -2628,7 +2244,6 @@
       {
         "FileName": "gba_bios.bin",
         "RelativePath": "gba_bios.bin",
-        "MD5Hash": "a860e8c0b6d573d191e4ec7db1b1e4f6",
         "Optional": true
       }
     ]
@@ -2640,7 +2255,6 @@
       {
         "FileName": "lynxboot.img",
         "RelativePath": "lynxboot.img",
-        "MD5Hash": "fcd403db69f54290b51035d82f835e7b",
         "Optional": false
       }
     ]
@@ -2652,25 +2266,21 @@
       {
         "FileName": "syscard3.pce",
         "RelativePath": "syscard3.pce",
-        "MD5Hash": "38179df8f4ac870017db21ebcbf53114",
         "Optional": true
       },
       {
         "FileName": "syscard2.pce",
         "RelativePath": "syscard2.pce",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "syscard1.pce",
         "RelativePath": "syscard1.pce",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "gexpress.pce",
         "RelativePath": "gexpress.pce",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -2682,25 +2292,21 @@
       {
         "FileName": "syscard3.pce",
         "RelativePath": "syscard3.pce",
-        "MD5Hash": "38179df8f4ac870017db21ebcbf53114",
         "Optional": true
       },
       {
         "FileName": "syscard2.pce",
         "RelativePath": "syscard2.pce",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "syscard1.pce",
         "RelativePath": "syscard1.pce",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "gexpress.pce",
         "RelativePath": "gexpress.pce",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -2712,7 +2318,6 @@
       {
         "FileName": "pcfx.rom",
         "RelativePath": "pcfx.rom",
-        "MD5Hash": "08e36edbea28a017f79f8d4f7ff9b6d7",
         "Optional": false
       }
     ]
@@ -2724,31 +2329,26 @@
       {
         "FileName": "scph5500.bin",
         "RelativePath": "scph5500.bin",
-        "MD5Hash": "8dd7d5296a650fac7319bce665a6a53c",
         "Optional": false
       },
       {
         "FileName": "scph5501.bin",
         "RelativePath": "scph5501.bin",
-        "MD5Hash": "490f666e1afb15b7362b406ed1cea246",
         "Optional": false
       },
       {
         "FileName": "scph5502.bin",
         "RelativePath": "scph5502.bin",
-        "MD5Hash": "32736f17079d0b2b7024407c39bd3050",
         "Optional": false
       },
       {
         "FileName": "psxonpsp660.bin",
         "RelativePath": "psxonpsp660.bin",
-        "MD5Hash": "c53ca5908936d412331790f4426c6c33",
         "Optional": true
       },
       {
         "FileName": "ps1_rom.bin",
         "RelativePath": "ps1_rom.bin",
-        "MD5Hash": "81bbe60ba7a3d1cea1d48c14cbcc647b",
         "Optional": true
       }
     ]
@@ -2760,31 +2360,26 @@
       {
         "FileName": "scph5500.bin",
         "RelativePath": "scph5500.bin",
-        "MD5Hash": "8dd7d5296a650fac7319bce665a6a53c",
         "Optional": false
       },
       {
         "FileName": "scph5501.bin",
         "RelativePath": "scph5501.bin",
-        "MD5Hash": "490f666e1afb15b7362b406ed1cea246",
         "Optional": false
       },
       {
         "FileName": "scph5502.bin",
         "RelativePath": "scph5502.bin",
-        "MD5Hash": "32736f17079d0b2b7024407c39bd3050",
         "Optional": false
       },
       {
         "FileName": "psxonpsp660.bin",
         "RelativePath": "psxonpsp660.bin",
-        "MD5Hash": "c53ca5908936d412331790f4426c6c33",
         "Optional": true
       },
       {
         "FileName": "ps1_rom.bin",
         "RelativePath": "ps1_rom.bin",
-        "MD5Hash": "81bbe60ba7a3d1cea1d48c14cbcc647b",
         "Optional": true
       }
     ]
@@ -2796,25 +2391,21 @@
       {
         "FileName": "sega_101.bin",
         "RelativePath": "sega_101.bin",
-        "MD5Hash": "85ec9ca47d8f6807718151cbcca8b964",
         "Optional": false
       },
       {
         "FileName": "mpr-17933.bin",
         "RelativePath": "mpr-17933.bin",
-        "MD5Hash": "3240872c70984b6cbfda1586cab68dbe",
         "Optional": false
       },
       {
         "FileName": "mpr-18811-mx.ic1",
         "RelativePath": "mpr-18811-mx.ic1",
-        "MD5Hash": "255113ba943c92a54facd25a10fd780c",
         "Optional": true
       },
       {
         "FileName": "mpr-19367-mx.ic1",
         "RelativePath": "mpr-19367-mx.ic1",
-        "MD5Hash": "1cd19988d1d72a3e7caa0b73234c96b4",
         "Optional": true
       }
     ]
@@ -2826,25 +2417,21 @@
       {
         "FileName": "syscard3.pce",
         "RelativePath": "syscard3.pce",
-        "MD5Hash": "38179df8f4ac870017db21ebcbf53114",
         "Optional": true
       },
       {
         "FileName": "syscard2.pce",
         "RelativePath": "syscard2.pce",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "syscard1.pce",
         "RelativePath": "syscard1.pce",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "gexpress.pce",
         "RelativePath": "gexpress.pce",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -2856,49 +2443,41 @@
       {
         "FileName": "firmware.bin",
         "RelativePath": "firmware.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "bios7.bin",
         "RelativePath": "bios7.bin",
-        "MD5Hash": "df692a80a5b1bc90728bc3dfc76cd948",
         "Optional": true
       },
       {
         "FileName": "bios9.bin",
         "RelativePath": "bios9.bin",
-        "MD5Hash": "a392174eb3e572fed6447e956bde4b25",
         "Optional": true
       },
       {
         "FileName": "dsi_firmware.bin",
         "RelativePath": "dsi_firmware.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsi_bios7.bin",
         "RelativePath": "dsi_bios7.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsi_bios9.bin",
         "RelativePath": "dsi_bios9.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsi_nand.bin",
         "RelativePath": "dsi_nand.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsi_sd_card.bin",
         "RelativePath": "dsi_sd_card.bin",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -2910,43 +2489,36 @@
       {
         "FileName": "firmware.bin",
         "RelativePath": "firmware.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "bios7.bin",
         "RelativePath": "bios7.bin",
-        "MD5Hash": "df692a80a5b1bc90728bc3dfc76cd948",
         "Optional": true
       },
       {
         "FileName": "bios9.bin",
         "RelativePath": "bios9.bin",
-        "MD5Hash": "a392174eb3e572fed6447e956bde4b25",
         "Optional": true
       },
       {
         "FileName": "dsi_firmware.bin",
         "RelativePath": "dsi_firmware.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsi_bios7.bin",
         "RelativePath": "dsi_bios7.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsi_bios9.bin",
         "RelativePath": "dsi_bios9.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsi_nand.bin",
         "RelativePath": "dsi_nand.bin",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -2958,7 +2530,6 @@
       {
         "FileName": "disksys.rom",
         "RelativePath": "disksys.rom",
-        "MD5Hash": "ca30b50f880eb660a320674ed365ef7a",
         "Optional": true
       }
     ]
@@ -2970,127 +2541,106 @@
       {
         "FileName": "dsp1.data.rom",
         "RelativePath": "dsp1.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1.program.rom",
         "RelativePath": "dsp1.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1b.data.rom",
         "RelativePath": "dsp1b.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp1b.program.rom",
         "RelativePath": "dsp1b.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp2.data.rom",
         "RelativePath": "dsp2.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp2.program.rom",
         "RelativePath": "dsp2.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp3.data.rom",
         "RelativePath": "dsp3.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp3.program.rom",
         "RelativePath": "dsp3.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp4.data.rom",
         "RelativePath": "dsp4.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dsp4.program.rom",
         "RelativePath": "dsp4.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st010.data.rom",
         "RelativePath": "st010.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st010.program.rom",
         "RelativePath": "st010.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st011.data.rom",
         "RelativePath": "st011.data.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "st011.program.rom",
         "RelativePath": "st011.program.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dmg_boot.bin",
         "RelativePath": "dmg_boot.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "cgb_boot.bin",
         "RelativePath": "cgb_boot.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "sgb_boot.bin",
         "RelativePath": "sgb_boot.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "sgb2_boot.bin",
         "RelativePath": "sgb2_boot.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "SGB1.sfc",
         "RelativePath": "SGB1.sfc",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "SGB2.sfc",
         "RelativePath": "SGB2.sfc",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "BS-X.bin",
         "RelativePath": "BS-X.bin",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -3102,25 +2652,21 @@
       {
         "FileName": "gba_bios.bin",
         "RelativePath": "gba_bios.bin",
-        "MD5Hash": "a860e8c0b6d573d191e4ec7db1b1e4f6",
         "Optional": true
       },
       {
         "FileName": "gb_bios.bin",
         "RelativePath": "gb_bios.bin",
-        "MD5Hash": "32fbbd84168d3482956eb3c5051637f5",
         "Optional": true
       },
       {
         "FileName": "gbc_bios.bin",
         "RelativePath": "gbc_bios.bin",
-        "MD5Hash": "dbfce9db9deaa2567f6a84fde55f9680",
         "Optional": true
       },
       {
         "FileName": "sgb_bios.bin",
         "RelativePath": "sgb_bios.bin",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -3132,7 +2678,6 @@
       {
         "FileName": "MacII.ROM",
         "RelativePath": "MacII.ROM",
-        "MD5Hash": "66223be1497460f1e60885eeb35e03cc",
         "Optional": false
       }
     ]
@@ -3144,19 +2689,16 @@
       {
         "FileName": "Standard",
         "RelativePath": "mkxp-z/RTP/Standard",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "RPGVX",
         "RelativePath": "mkxp-z/RTP/RPGVX",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "RPGVXAce",
         "RelativePath": "mkxp-z/RTP/RPGVXAce",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -3168,31 +2710,26 @@
       {
         "FileName": "palmos40-en-m500.rom",
         "RelativePath": "palmos40-en-m500.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "palmos41-en-m515.rom",
         "RelativePath": "palmos41-en-m515.rom",
-        "MD5Hash": "",
         "Optional": false
       },
       {
         "FileName": "palmos52-en-t3.rom",
         "RelativePath": "palmos52-en-t3.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "palmos60-en-t3.rom",
         "RelativePath": "palmos60-en-t3.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "bootloader-dbvz.rom",
         "RelativePath": "bootloader-dbvz.rom",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -3204,7 +2741,6 @@
       {
         "FileName": "IPL.n64",
         "RelativePath": "Mupen64plus/IPL.n64",
-        "MD5Hash": "8d3d9f294b6e174bc7b1d2fd1c727530",
         "Optional": true
       }
     ]
@@ -3216,7 +2752,6 @@
       {
         "FileName": "IPL.n64",
         "RelativePath": "Mupen64plus/IPL.n64",
-        "MD5Hash": "8d3d9f294b6e174bc7b1d2fd1c727530",
         "Optional": true
       }
     ]
@@ -3228,7 +2763,6 @@
       {
         "FileName": "IPL.n64",
         "RelativePath": "Mupen64plus/IPL.n64",
-        "MD5Hash": "8d3d9f294b6e174bc7b1d2fd1c727530",
         "Optional": true
       }
     ]
@@ -3240,7 +2774,6 @@
       {
         "FileName": "IPL.n64",
         "RelativePath": "Mupen64plus/IPL.n64",
-        "MD5Hash": "8d3d9f294b6e174bc7b1d2fd1c727530",
         "Optional": true
       }
     ]
@@ -3252,73 +2785,61 @@
       {
         "FileName": "neocd_f.rom",
         "RelativePath": "neocd/neocd_f.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "neocd_sf.rom",
         "RelativePath": "neocd/neocd_sf.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "front-sp1.bin",
         "RelativePath": "neocd/front-sp1.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "neocd_t.rom",
         "RelativePath": "neocd/neocd_t.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "neocd_st.rom",
         "RelativePath": "neocd/neocd_st.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "top-sp1.bin",
         "RelativePath": "neocd/top-sp1.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "neocd_z.rom",
         "RelativePath": "neocd/neocd_z.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "neocd_sz.rom",
         "RelativePath": "neocd/neocd_sz.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "neocd.bin",
         "RelativePath": "neocd/neocd.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "ng-lo.rom",
         "RelativePath": "neocd/ng-lo.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "000-lo.lo",
         "RelativePath": "neocd/000-lo.lo",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "uni-bioscd.rom",
         "RelativePath": "neocd/uni-bioscd.rom",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -3330,7 +2851,6 @@
       {
         "FileName": "disksys.rom",
         "RelativePath": "disksys.rom",
-        "MD5Hash": "ca30b50f880eb660a320674ed365ef7a",
         "Optional": true
       }
     ]
@@ -3342,31 +2862,26 @@
       {
         "FileName": "firmware.bin",
         "RelativePath": "firmware.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "bios7.bin",
         "RelativePath": "bios7.bin",
-        "MD5Hash": "df692a80a5b1bc90728bc3dfc76cd948",
         "Optional": true
       },
       {
         "FileName": "bios9.bin",
         "RelativePath": "bios9.bin",
-        "MD5Hash": "a392174eb3e572fed6447e956bde4b25",
         "Optional": true
       },
       {
         "FileName": "gba_bios.bin",
         "RelativePath": "gba_bios.bin",
-        "MD5Hash": "a860e8c0b6d573d191e4ec7db1b1e4f6",
         "Optional": true
       },
       {
         "FileName": "nds_sd_card.bin",
         "RelativePath": "nds_sd_card.bin",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -3378,67 +2893,56 @@
       {
         "FileName": "font.bmp",
         "RelativePath": "np2kai/font.bmp",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "FONT.ROM",
         "RelativePath": "np2kai/FONT.ROM",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "bios.rom",
         "RelativePath": "np2kai/bios.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "itf.rom",
         "RelativePath": "np2kai/itf.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "sound.rom",
         "RelativePath": "np2kai/sound.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "2608_BD.WAV",
         "RelativePath": "np2kai/2608_BD.WAV",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "2608_SD.WAV",
         "RelativePath": "np2kai/2608_SD.WAV",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "2608_TOP.WAV",
         "RelativePath": "np2kai/2608_TOP.WAV",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "2608_HH.WAV",
         "RelativePath": "np2kai/2608_HH.WAV",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "2608_TOM.WAV",
         "RelativePath": "np2kai/2608_TOM.WAV",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "2608_RIM.WAV",
         "RelativePath": "np2kai/2608_RIM.WAV",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -3450,19 +2954,16 @@
       {
         "FileName": "ti83se.rom",
         "RelativePath": "ti83se.rom",
-        "MD5Hash": "c6ff8204c5c81b7be34614dbbd690c8b",
         "Optional": true
       },
       {
         "FileName": "ti83plus.rom",
         "RelativePath": "ti83plus.rom",
-        "MD5Hash": "8011181f810b5ec4e9d6a03f0e14257a",
         "Optional": true
       },
       {
         "FileName": "ti83.rom",
         "RelativePath": "ti83.rom",
-        "MD5Hash": "d4448d09bbfde687c04f9e3310e023ab",
         "Optional": true
       }
     ]
@@ -3474,25 +2975,21 @@
       {
         "FileName": "o2rom.bin",
         "RelativePath": "o2rom.bin",
-        "MD5Hash": "562d5ebf9e030a40d6fabfc2f33139fd",
         "Optional": false
       },
       {
         "FileName": "c52.bin",
         "RelativePath": "c52.bin",
-        "MD5Hash": "f1071cdb0b6b10dde94d3bc8a6146387",
         "Optional": false
       },
       {
         "FileName": "g7400.bin",
         "RelativePath": "g7400.bin",
-        "MD5Hash": "c500ff71236068e0dc0d0603d265ae76",
         "Optional": false
       },
       {
         "FileName": "jopac.bin",
         "RelativePath": "jopac.bin",
-        "MD5Hash": "279008e4a0db2dc5f1c048853b033828",
         "Optional": false
       }
     ]
@@ -3504,79 +3001,66 @@
       {
         "FileName": "panafz1.bin",
         "RelativePath": "panafz1.bin",
-        "MD5Hash": "f47264dd47fe30f73ab3c010015c155b",
         "Optional": true
       },
       {
         "FileName": "panafz10.bin",
         "RelativePath": "panafz10.bin",
-        "MD5Hash": "51f2f43ae2f3508a14d9f56597e2d3ce",
         "Optional": true
       },
       {
         "FileName": "panafz10-norsa.bin",
         "RelativePath": "panafz10-norsa.bin",
-        "MD5Hash": "1477bda80dc33731a65468c1f5bcbee9",
         "Optional": true
       },
       {
         "FileName": "panafz10e-anvil.bin",
         "RelativePath": "panafz10e-anvil.bin",
-        "MD5Hash": "a48e6746bd7edec0f40cff078f0bb19f",
         "Optional": true
       },
       {
         "FileName": "panafz10e-anvil-norsa.bin",
         "RelativePath": "panafz10e-anvil-norsa.bin",
-        "MD5Hash": "cf11bbb5a16d7af9875cca9de9a15e09",
         "Optional": true
       },
       {
         "FileName": "goldstar.bin",
         "RelativePath": "goldstar.bin",
-        "MD5Hash": "8639fd5e549bd6238cfee79e3e749114",
         "Optional": true
       },
       {
         "FileName": "sanyotry.bin",
         "RelativePath": "sanyotry.bin",
-        "MD5Hash": "35fa1a1ebaaeea286dc5cd15487c13ea",
         "Optional": true
       },
       {
         "FileName": "3do_arcade_saot.bin",
         "RelativePath": "3do_arcade_saot.bin",
-        "MD5Hash": "8970fc987ab89a7f64da9f8a8c4333ff",
         "Optional": true
       },
       {
         "FileName": "panafz1-kanji.bin",
         "RelativePath": "panafz1-kanji.bin",
-        "MD5Hash": "b8dc97f778a6245c58e064b0312e8281",
         "Optional": true
       },
       {
         "FileName": "panafz10ja-anvil-kanji.bin",
         "RelativePath": "panafz10ja-anvil-kanji.bin",
-        "MD5Hash": "428577250f43edc902ea239c50d2240d",
         "Optional": true
       },
       {
         "FileName": "panafz1j.bin",
         "RelativePath": "panafz1j.bin",
-        "MD5Hash": "a496cfdded3da562759be3561317b605",
         "Optional": true
       },
       {
         "FileName": "panafz1j-norsa.bin",
         "RelativePath": "panafz1j-norsa.bin",
-        "MD5Hash": "f6c71de7470d16abe4f71b1444883dc8",
         "Optional": true
       },
       {
         "FileName": "panafz1j-kanji.bin",
         "RelativePath": "panafz1j-kanji.bin",
-        "MD5Hash": "c23fb5d5e6bb1c240d02cf968972be37",
         "Optional": true
       }
     ]
@@ -3588,7 +3072,6 @@
       {
         "FileName": "64DD_IPL.bin",
         "RelativePath": "64DD_IPL.bin",
-        "MD5Hash": "8d3d9f294b6e174bc7b1d2fd1c727530",
         "Optional": true
       }
     ]
@@ -3600,7 +3083,6 @@
       {
         "FileName": "64DD_IPL.bin",
         "RelativePath": "64DD_IPL.bin",
-        "MD5Hash": "8d3d9f294b6e174bc7b1d2fd1c727530",
         "Optional": true
       }
     ]
@@ -3612,19 +3094,16 @@
       {
         "FileName": "scph5500.bin",
         "RelativePath": "scph5500.bin",
-        "MD5Hash": "8dd7d5296a650fac7319bce665a6a53c",
         "Optional": true
       },
       {
         "FileName": "scph5501.bin",
         "RelativePath": "scph5501.bin",
-        "MD5Hash": "490f666e1afb15b7362b406ed1cea246",
         "Optional": true
       },
       {
         "FileName": "scph5502.bin",
         "RelativePath": "scph5502.bin",
-        "MD5Hash": "32736f17079d0b2b7024407c39bd3050",
         "Optional": true
       }
     ]
@@ -3636,13 +3115,11 @@
       {
         "FileName": "bios",
         "RelativePath": "pcsx2/bios",
-        "MD5Hash": "",
         "Optional": false
       },
       {
         "FileName": "GameIndex.yaml",
         "RelativePath": "pcsx2/resources/GameIndex.yaml",
-        "MD5Hash": "",
         "Optional": false
       }
     ]
@@ -3654,25 +3131,21 @@
       {
         "FileName": "scph5500.bin",
         "RelativePath": "scph5500.bin",
-        "MD5Hash": "8dd7d5296a650fac7319bce665a6a53c",
         "Optional": true
       },
       {
         "FileName": "scph5501.bin",
         "RelativePath": "scph5501.bin",
-        "MD5Hash": "490f666e1afb15b7362b406ed1cea246",
         "Optional": true
       },
       {
         "FileName": "scph5502.bin",
         "RelativePath": "scph5502.bin",
-        "MD5Hash": "32736f17079d0b2b7024407c39bd3050",
         "Optional": true
       },
       {
         "FileName": "psxonpsp660.bin",
         "RelativePath": "psxonpsp660.bin",
-        "MD5Hash": "c53ca5908936d412331790f4426c6c33",
         "Optional": true
       }
     ]
@@ -3684,19 +3157,16 @@
       {
         "FileName": "scph5500.bin",
         "RelativePath": "scph5500.bin",
-        "MD5Hash": "8dd7d5296a650fac7319bce665a6a53c",
         "Optional": true
       },
       {
         "FileName": "scph5501.bin",
         "RelativePath": "scph5501.bin",
-        "MD5Hash": "490f666e1afb15b7362b406ed1cea246",
         "Optional": true
       },
       {
         "FileName": "scph5502.bin",
         "RelativePath": "scph5502.bin",
-        "MD5Hash": "32736f17079d0b2b7024407c39bd3050",
         "Optional": true
       }
     ]
@@ -3708,19 +3178,16 @@
       {
         "FileName": "scph5500.bin",
         "RelativePath": "scph5500.bin",
-        "MD5Hash": "8dd7d5296a650fac7319bce665a6a53c",
         "Optional": true
       },
       {
         "FileName": "scph5501.bin",
         "RelativePath": "scph5501.bin",
-        "MD5Hash": "490f666e1afb15b7362b406ed1cea246",
         "Optional": true
       },
       {
         "FileName": "scph5502.bin",
         "RelativePath": "scph5502.bin",
-        "MD5Hash": "32736f17079d0b2b7024407c39bd3050",
         "Optional": true
       }
     ]
@@ -3732,19 +3199,16 @@
       {
         "FileName": "bios_CD_E.bin",
         "RelativePath": "bios_CD_E.bin",
-        "MD5Hash": "e66fa1dc5820d254611fdcdba0662372",
         "Optional": true
       },
       {
         "FileName": "bios_CD_U.bin",
         "RelativePath": "bios_CD_U.bin",
-        "MD5Hash": "2efd74e3232ff260e371b99f84024f7f",
         "Optional": true
       },
       {
         "FileName": "bios_CD_J.bin",
         "RelativePath": "bios_CD_J.bin",
-        "MD5Hash": "278a9397d192149e84e820ac621a8edd",
         "Optional": true
       }
     ]
@@ -3756,7 +3220,6 @@
       {
         "FileName": "bios.min",
         "RelativePath": "bios.min",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -3768,7 +3231,6 @@
       {
         "FileName": "ppge_atlas.zim",
         "RelativePath": "PPSSPP/ppge_atlas.zim",
-        "MD5Hash": "866855cc330b9b95cc69135fb7b41d38",
         "Optional": false
       }
     ]
@@ -3780,7 +3242,6 @@
       {
         "FileName": "7800 BIOS (U).rom",
         "RelativePath": "7800 BIOS (U).rom",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -3792,73 +3253,61 @@
       {
         "FileName": "kick33180.A500",
         "RelativePath": "kick33180.A500",
-        "MD5Hash": "85ad74194e87c08904327de1a9443b7a",
         "Optional": true
       },
       {
         "FileName": "kick34005.A500",
         "RelativePath": "kick34005.A500",
-        "MD5Hash": "82a21c1890cae844b3df741f2762d48d",
         "Optional": false
       },
       {
         "FileName": "kick37175.A500",
         "RelativePath": "kick37175.A500",
-        "MD5Hash": "dc10d7bdd1b6f450773dfb558477c230",
         "Optional": true
       },
       {
         "FileName": "kick37350.A600",
         "RelativePath": "kick37350.A600",
-        "MD5Hash": "465646c9b6729f77eea5314d1f057951",
         "Optional": true
       },
       {
         "FileName": "kick40063.A600",
         "RelativePath": "kick40063.A600",
-        "MD5Hash": "e40a5dfb3d017ba8779faba30cbd1c8e",
         "Optional": true
       },
       {
         "FileName": "kick39106.A1200",
         "RelativePath": "kick39106.A1200",
-        "MD5Hash": "b7cc148386aa631136f510cd29e42fc3",
         "Optional": true
       },
       {
         "FileName": "kick40068.A1200",
         "RelativePath": "kick40068.A1200",
-        "MD5Hash": "646773759326fbac3b2311fd8c8793ee",
         "Optional": false
       },
       {
         "FileName": "kick39106.A4000",
         "RelativePath": "kick39106.A4000",
-        "MD5Hash": "9b8bdd5a3fd32c2a5a6f5b1aefc799a5",
         "Optional": true
       },
       {
         "FileName": "kick40068.A4000",
         "RelativePath": "kick40068.A4000",
-        "MD5Hash": "9bdedde6a4f33555b4a270c8ca53297d",
         "Optional": true
       },
       {
         "FileName": "kick34005.CDTV",
         "RelativePath": "kick34005.CDTV",
-        "MD5Hash": "89da1838a24460e4b93f4f0c5d92d48d",
         "Optional": true
       },
       {
         "FileName": "kick40060.CD32",
         "RelativePath": "kick40060.CD32",
-        "MD5Hash": "5f8924d013dd57a89cf349f4cdedc6b1",
         "Optional": false
       },
       {
         "FileName": "kick40060.CD32.ext",
         "RelativePath": "kick40060.CD32.ext",
-        "MD5Hash": "bb72565701b1b6faece07d68ea5da639",
         "Optional": false
       }
     ]
@@ -3870,73 +3319,61 @@
       {
         "FileName": "kick33180.A500",
         "RelativePath": "kick33180.A500",
-        "MD5Hash": "85ad74194e87c08904327de1a9443b7a",
         "Optional": true
       },
       {
         "FileName": "kick34005.A500",
         "RelativePath": "kick34005.A500",
-        "MD5Hash": "82a21c1890cae844b3df741f2762d48d",
         "Optional": false
       },
       {
         "FileName": "kick37175.A500",
         "RelativePath": "kick37175.A500",
-        "MD5Hash": "dc10d7bdd1b6f450773dfb558477c230",
         "Optional": true
       },
       {
         "FileName": "kick37350.A600",
         "RelativePath": "kick37350.A600",
-        "MD5Hash": "465646c9b6729f77eea5314d1f057951",
         "Optional": true
       },
       {
         "FileName": "kick40063.A600",
         "RelativePath": "kick40063.A600",
-        "MD5Hash": "e40a5dfb3d017ba8779faba30cbd1c8e",
         "Optional": true
       },
       {
         "FileName": "kick39106.A1200",
         "RelativePath": "kick39106.A1200",
-        "MD5Hash": "b7cc148386aa631136f510cd29e42fc3",
         "Optional": true
       },
       {
         "FileName": "kick40068.A1200",
         "RelativePath": "kick40068.A1200",
-        "MD5Hash": "646773759326fbac3b2311fd8c8793ee",
         "Optional": false
       },
       {
         "FileName": "kick39106.A4000",
         "RelativePath": "kick39106.A4000",
-        "MD5Hash": "9b8bdd5a3fd32c2a5a6f5b1aefc799a5",
         "Optional": true
       },
       {
         "FileName": "kick40068.A4000",
         "RelativePath": "kick40068.A4000",
-        "MD5Hash": "9bdedde6a4f33555b4a270c8ca53297d",
         "Optional": true
       },
       {
         "FileName": "kick34005.CDTV",
         "RelativePath": "kick34005.CDTV",
-        "MD5Hash": "89da1838a24460e4b93f4f0c5d92d48d",
         "Optional": true
       },
       {
         "FileName": "kick40060.CD32",
         "RelativePath": "kick40060.CD32",
-        "MD5Hash": "5f8924d013dd57a89cf349f4cdedc6b1",
         "Optional": false
       },
       {
         "FileName": "kick40060.CD32.ext",
         "RelativePath": "kick40060.CD32.ext",
-        "MD5Hash": "bb72565701b1b6faece07d68ea5da639",
         "Optional": false
       }
     ]
@@ -3948,19 +3385,16 @@
       {
         "FileName": "iplrom.dat",
         "RelativePath": "keropi/iplrom.dat",
-        "MD5Hash": "",
         "Optional": false
       },
       {
         "FileName": "cgrom.dat",
         "RelativePath": "keropi/cgrom.dat",
-        "MD5Hash": "",
         "Optional": false
       },
       {
         "FileName": "iplrom30.dat",
         "RelativePath": "keropi/iplrom30.dat",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -3972,61 +3406,51 @@
       {
         "FileName": "n88.rom",
         "RelativePath": "quasi88/n88.rom",
-        "MD5Hash": "",
         "Optional": false
       },
       {
         "FileName": "n88_0.rom",
         "RelativePath": "quasi88/n88_0.rom",
-        "MD5Hash": "",
         "Optional": false
       },
       {
         "FileName": "n88_1.rom",
         "RelativePath": "quasi88/n88_1.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "n88_2.rom",
         "RelativePath": "quasi88/n88_2.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "n88_3.rom",
         "RelativePath": "quasi88/n88_3.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "n88n.rom",
         "RelativePath": "quasi88/n88n.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "disk.rom",
         "RelativePath": "quasi88/disk.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "n88knj1.rom",
         "RelativePath": "quasi88/n88knj1.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "n88knj2.rom",
         "RelativePath": "quasi88/n88knj2.rom",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "n88jisho.rom",
         "RelativePath": "quasi88/n88jisho.rom",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -4038,13 +3462,11 @@
       {
         "FileName": "boot.bin",
         "RelativePath": "dc/boot.bin",
-        "MD5Hash": "e10c53c2f8b90bab96ead2d368858623",
         "Optional": false
       },
       {
         "FileName": "flash.bin",
         "RelativePath": "dc/flash.bin",
-        "MD5Hash": "0a93f7940c455905bea6e392dfde92a4",
         "Optional": false
       }
     ]
@@ -4056,19 +3478,16 @@
       {
         "FileName": "cdimono1.zip",
         "RelativePath": "same_cdi/bios/cdimono1.zip",
-        "MD5Hash": "",
         "Optional": false
       },
       {
         "FileName": "cdimono2.zip",
         "RelativePath": "same_cdi/bios/cdimono2.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "cdibios.zip",
         "RelativePath": "same_cdi/bios/cdibios.zip",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -4080,13 +3499,11 @@
       {
         "FileName": "dmg_boot.bin",
         "RelativePath": "dmg_boot.bin",
-        "MD5Hash": "32fbbd84168d3482956eb3c5051637f5",
         "Optional": true
       },
       {
         "FileName": "cgb_boot.bin",
         "RelativePath": "cgb_boot.bin",
-        "MD5Hash": "dbfce9db9deaa2567f6a84fde55f9680",
         "Optional": true
       }
     ]
@@ -4098,235 +3515,196 @@
       {
         "FileName": "scummclassic.zip",
         "RelativePath": "scummvm/theme/scummclassic.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "scummmodern.zip",
         "RelativePath": "scummvm/theme/scummmodern.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "scummremastered.zip",
         "RelativePath": "scummvm/theme/scummremastered.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "residualvm.zip",
         "RelativePath": "scummvm/theme/residualvm.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "gui-icons.dat",
         "RelativePath": "scummvm/theme/gui-icons.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "shaders.dat",
         "RelativePath": "scummvm/theme/shaders.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "translations.dat",
         "RelativePath": "scummvm/theme/translations.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "achievements.dat",
         "RelativePath": "scummvm/extra/achievements.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "encoding.dat",
         "RelativePath": "scummvm/extra/encoding.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "freescape.dat",
         "RelativePath": "scummvm/extra/freescape.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "grim-patch.lab",
         "RelativePath": "scummvm/extra/grim-patch.lab",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "monkey4-patch.m4b",
         "RelativePath": "scummvm/extra/monkey4-patch.m4b",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "myst3.dat",
         "RelativePath": "scummvm/extra/myst3.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "fonts.dat",
         "RelativePath": "scummvm/extra/fonts.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "macgui.dat",
         "RelativePath": "scummvm/extra/macgui.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "access.dat",
         "RelativePath": "scummvm/extra/access.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "cryo.dat",
         "RelativePath": "scummvm/extra/cryo.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "cryomni3d.dat",
         "RelativePath": "scummvm/extra/cryomni3d.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "drascula.dat",
         "RelativePath": "scummvm/extra/drascula.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "hadesch_translations.dat",
         "RelativePath": "scummvm/extra/hadesch_translations.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "hugo.dat",
         "RelativePath": "scummvm/extra/hugo.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "kyra.dat",
         "RelativePath": "scummvm/extra/kyra.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "lure.dat",
         "RelativePath": "scummvm/extra/lure.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "macventure.dat",
         "RelativePath": "scummvm/extra/macventure.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "mort.dat",
         "RelativePath": "scummvm/extra/mort.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "nancy.dat",
         "RelativePath": "scummvm/extra/nancy.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "neverhood.dat",
         "RelativePath": "scummvm/extra/neverhood.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "queen.tbl",
         "RelativePath": "scummvm/extra/queen.tbl",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "sky.cpt",
         "RelativePath": "scummvm/extra/sky.cpt",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "supernova.dat",
         "RelativePath": "scummvm/extra/supernova.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "teenagent.dat",
         "RelativePath": "scummvm/extra/teenagent.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "titanic.dat",
         "RelativePath": "scummvm/extra/titanic.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "tony.dat",
         "RelativePath": "scummvm/extra/tony.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "toon.dat",
         "RelativePath": "scummvm/extra/toon.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "ultima.dat",
         "RelativePath": "scummvm/extra/ultima.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "wintermute.zip",
         "RelativePath": "scummvm/extra/wintermute.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "mm.dat",
         "RelativePath": "scummvm/extra/mm.dat",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "vkeybd_default.zip",
         "RelativePath": "scummvm/extra/vkeybd_default.zip",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "Roland_SC-55.sf2",
         "RelativePath": "scummvm/extra/Roland_SC-55.sf2",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -4338,61 +3716,51 @@
       {
         "FileName": "cgb_boot.bin",
         "RelativePath": "cgb_boot.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "gbc_bios.bin",
         "RelativePath": "gbc_bios.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "cgb0_boot.bin",
         "RelativePath": "cgb0_boot.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "cgb_agb_boot.bin",
         "RelativePath": "cgb_agb_boot.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dmg_rom.bin",
         "RelativePath": "dmg_rom.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "dmg0_rom.bin",
         "RelativePath": "dmg0_rom.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "gba_bios.bin",
         "RelativePath": "gba_bios.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "nds7.bin",
         "RelativePath": "nds7.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "nds9.bin",
         "RelativePath": "nds9.bin",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "firmware.bin",
         "RelativePath": "firmware.bin",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -4404,13 +3772,11 @@
       {
         "FileName": "bios.sms",
         "RelativePath": "bios.sms",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "BIOS.col",
         "RelativePath": "BIOS.col",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -4422,13 +3788,11 @@
       {
         "FileName": "BS-X.bin",
         "RelativePath": "BS-X.bin",
-        "MD5Hash": "fed4d8242cfbed61343d53d48432aced",
         "Optional": true
       },
       {
         "FileName": "STBIOS.bin",
         "RelativePath": "STBIOS.bin",
-        "MD5Hash": "d3a44ba7d42a74d3ac58cb9c14c6a5ca",
         "Optional": true
       }
     ]
@@ -4440,49 +3804,41 @@
       {
         "FileName": "squirreljme.jar",
         "RelativePath": "squirreljme.jar",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "squirreljme-fast.jar",
         "RelativePath": "squirreljme-fast.jar",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "squirreljme-slow.jar",
         "RelativePath": "squirreljme-slow.jar",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "squirreljme-slow-test.jar",
         "RelativePath": "squirreljme-slow-test.jar",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "squirreljme-0.3.0.jar",
         "RelativePath": "squirreljme-0.3.0.jar",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "squirreljme-0.3.0-fast.jar",
         "RelativePath": "squirreljme-0.3.0-fast.jar",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "squirreljme-0.3.0-slow.jar",
         "RelativePath": "squirreljme-0.3.0-slow.jar",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "squirreljme-0.3.0-slow-test.jar",
         "RelativePath": "squirreljme-0.3.0-slow-test.jar",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -4494,31 +3850,26 @@
       {
         "FileName": "psxonpsp660.bin",
         "RelativePath": "psxonpsp660.bin",
-        "MD5Hash": "c53ca5908936d412331790f4426c6c33",
         "Optional": true
       },
       {
         "FileName": "scph5500.bin",
         "RelativePath": "scph5500.bin",
-        "MD5Hash": "8dd7d5296a650fac7319bce665a6a53c",
         "Optional": true
       },
       {
         "FileName": "scph5501.bin",
         "RelativePath": "scph5501.bin",
-        "MD5Hash": "490f666e1afb15b7362b406ed1cea246",
         "Optional": true
       },
       {
         "FileName": "scph5502.bin",
         "RelativePath": "scph5502.bin",
-        "MD5Hash": "32736f17079d0b2b7024407c39bd3050",
         "Optional": true
       },
       {
         "FileName": "ps1_rom.bin",
         "RelativePath": "ps1_rom.bin",
-        "MD5Hash": "81bbe60ba7a3d1cea1d48c14cbcc647b",
         "Optional": true
       }
     ]
@@ -4530,7 +3881,6 @@
       {
         "FileName": "gba_bios.bin",
         "RelativePath": "gba_bios.bin",
-        "MD5Hash": "a860e8c0b6d573d191e4ec7db1b1e4f6",
         "Optional": false
       }
     ]
@@ -4542,37 +3892,31 @@
       {
         "FileName": "kick34005.A500",
         "RelativePath": "kick34005.A500",
-        "MD5Hash": "",
         "Optional": false
       },
       {
         "FileName": "kick40063.A600",
         "RelativePath": "kick40063.A600",
-        "MD5Hash": "",
         "Optional": false
       },
       {
         "FileName": "kick40068.A1200",
         "RelativePath": "kick40068.A1200",
-        "MD5Hash": "",
         "Optional": false
       },
       {
         "FileName": "kick34005.CDTV",
         "RelativePath": "kick34005.CDTV",
-        "MD5Hash": "",
         "Optional": false
       },
       {
         "FileName": "kick40060.CD32",
         "RelativePath": "kick40060.CD32",
-        "MD5Hash": "",
         "Optional": false
       },
       {
         "FileName": "kick40060.CD32.ext",
         "RelativePath": "kick40060.CD32.ext",
-        "MD5Hash": "",
         "Optional": false
       }
     ]
@@ -4584,7 +3928,6 @@
       {
         "FileName": "gba_bios.bin",
         "RelativePath": "gba_bios.bin",
-        "MD5Hash": "a860e8c0b6d573d191e4ec7db1b1e4f6",
         "Optional": true
       }
     ]
@@ -4596,19 +3939,16 @@
       {
         "FileName": "gba_bios.bin",
         "RelativePath": "gba_bios.bin",
-        "MD5Hash": "a860e8c0b6d573d191e4ec7db1b1e4f6",
         "Optional": true
       },
       {
         "FileName": "gb_bios.bin",
         "RelativePath": "gb_bios.bin",
-        "MD5Hash": "32fbbd84168d3482956eb3c5051637f5",
         "Optional": true
       },
       {
         "FileName": "gbc_bios.bin",
         "RelativePath": "gbc_bios.bin",
-        "MD5Hash": "dbfce9db9deaa2567f6a84fde55f9680",
         "Optional": true
       }
     ]
@@ -4620,31 +3960,26 @@
       {
         "FileName": "JiffyDOS_C128.bin",
         "RelativePath": "vice/JiffyDOS_C128.bin",
-        "MD5Hash": "cbbd1bbcb5e4fd8046b6030ab71fc021",
         "Optional": true
       },
       {
         "FileName": "JiffyDOS_C64.bin",
         "RelativePath": "vice/JiffyDOS_C64.bin",
-        "MD5Hash": "be09394f0576cf81fa8bacf634daf9a2",
         "Optional": true
       },
       {
         "FileName": "JiffyDOS_1541-II.bin",
         "RelativePath": "vice/JiffyDOS_1541-II.bin",
-        "MD5Hash": "1b1e985ea5325a1f46eb7fd9681707bf",
         "Optional": true
       },
       {
         "FileName": "JiffyDOS_1571_repl310654.bin",
         "RelativePath": "vice/JiffyDOS_1571_repl310654.bin",
-        "MD5Hash": "41c6cc528e9515ffd0ed9b180f8467c0",
         "Optional": true
       },
       {
         "FileName": "JiffyDOS_1581.bin",
         "RelativePath": "vice/JiffyDOS_1581.bin",
-        "MD5Hash": "20b6885c6dc2d42c38754a365b043d71",
         "Optional": true
       }
     ]
@@ -4656,25 +3991,21 @@
       {
         "FileName": "JiffyDOS_C64.bin",
         "RelativePath": "vice/JiffyDOS_C64.bin",
-        "MD5Hash": "be09394f0576cf81fa8bacf634daf9a2",
         "Optional": true
       },
       {
         "FileName": "JiffyDOS_1541-II.bin",
         "RelativePath": "vice/JiffyDOS_1541-II.bin",
-        "MD5Hash": "1b1e985ea5325a1f46eb7fd9681707bf",
         "Optional": true
       },
       {
         "FileName": "JiffyDOS_1571_repl310654.bin",
         "RelativePath": "vice/JiffyDOS_1571_repl310654.bin",
-        "MD5Hash": "41c6cc528e9515ffd0ed9b180f8467c0",
         "Optional": true
       },
       {
         "FileName": "JiffyDOS_1581.bin",
         "RelativePath": "vice/JiffyDOS_1581.bin",
-        "MD5Hash": "20b6885c6dc2d42c38754a365b043d71",
         "Optional": true
       }
     ]
@@ -4686,25 +4017,21 @@
       {
         "FileName": "JiffyDOS_C64.bin",
         "RelativePath": "vice/JiffyDOS_C64.bin",
-        "MD5Hash": "be09394f0576cf81fa8bacf634daf9a2",
         "Optional": true
       },
       {
         "FileName": "JiffyDOS_1541-II.bin",
         "RelativePath": "vice/JiffyDOS_1541-II.bin",
-        "MD5Hash": "1b1e985ea5325a1f46eb7fd9681707bf",
         "Optional": true
       },
       {
         "FileName": "JiffyDOS_1571_repl310654.bin",
         "RelativePath": "vice/JiffyDOS_1571_repl310654.bin",
-        "MD5Hash": "41c6cc528e9515ffd0ed9b180f8467c0",
         "Optional": true
       },
       {
         "FileName": "JiffyDOS_1581.bin",
         "RelativePath": "vice/JiffyDOS_1581.bin",
-        "MD5Hash": "20b6885c6dc2d42c38754a365b043d71",
         "Optional": true
       }
     ]
@@ -4716,25 +4043,21 @@
       {
         "FileName": "JiffyDOS_C64.bin",
         "RelativePath": "vice/JiffyDOS_C64.bin",
-        "MD5Hash": "be09394f0576cf81fa8bacf634daf9a2",
         "Optional": true
       },
       {
         "FileName": "JiffyDOS_1541-II.bin",
         "RelativePath": "vice/JiffyDOS_1541-II.bin",
-        "MD5Hash": "1b1e985ea5325a1f46eb7fd9681707bf",
         "Optional": true
       },
       {
         "FileName": "JiffyDOS_1571_repl310654.bin",
         "RelativePath": "vice/JiffyDOS_1571_repl310654.bin",
-        "MD5Hash": "41c6cc528e9515ffd0ed9b180f8467c0",
         "Optional": true
       },
       {
         "FileName": "JiffyDOS_1581.bin",
         "RelativePath": "vice/JiffyDOS_1581.bin",
-        "MD5Hash": "20b6885c6dc2d42c38754a365b043d71",
         "Optional": true
       }
     ]
@@ -4746,25 +4069,21 @@
       {
         "FileName": "JiffyDOS_C64.bin",
         "RelativePath": "vice/JiffyDOS_C64.bin",
-        "MD5Hash": "be09394f0576cf81fa8bacf634daf9a2",
         "Optional": true
       },
       {
         "FileName": "JiffyDOS_1541-II.bin",
         "RelativePath": "vice/JiffyDOS_1541-II.bin",
-        "MD5Hash": "1b1e985ea5325a1f46eb7fd9681707bf",
         "Optional": true
       },
       {
         "FileName": "JiffyDOS_1571_repl310654.bin",
         "RelativePath": "vice/JiffyDOS_1571_repl310654.bin",
-        "MD5Hash": "41c6cc528e9515ffd0ed9b180f8467c0",
         "Optional": true
       },
       {
         "FileName": "JiffyDOS_1581.bin",
         "RelativePath": "vice/JiffyDOS_1581.bin",
-        "MD5Hash": "20b6885c6dc2d42c38754a365b043d71",
         "Optional": true
       }
     ]
@@ -4776,7 +4095,6 @@
       {
         "FileName": "Vircon32Bios.v32",
         "RelativePath": "Vircon32Bios.v32",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -4788,13 +4106,11 @@
       {
         "FileName": "IPLROM.X1",
         "RelativePath": "xmil/IPLROM.X1",
-        "MD5Hash": "",
         "Optional": true
       },
       {
         "FileName": "IPLROM.X1T",
         "RelativePath": "xmil/IPLROM.X1T",
-        "MD5Hash": "",
         "Optional": true
       }
     ]
@@ -4806,7 +4122,6 @@
       {
         "FileName": "saturn_bios.bin",
         "RelativePath": "saturn_bios.bin",
-        "MD5Hash": "af5828fdff51384f99b3c4926be27762",
         "Optional": false
       }
     ]
@@ -4818,7 +4133,6 @@
       {
         "FileName": "saturn_bios.bin",
         "RelativePath": "saturn_bios.bin",
-        "MD5Hash": "af5828fdff51384f99b3c4926be27762",
         "Optional": true
       }
     ]

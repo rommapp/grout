@@ -84,7 +84,7 @@ func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 	platformCount := len(mappedPlatforms)
 
 	artForceRes, err := gaba.SelectionMessage(
-		fmt.Sprintf(i18n.Localize(&goi18n.Message{ID: "artwork_sync_preload_choice", Other: "Do you want to preload all or missing artwork ?"}, nil)),
+		i18n.Localize(&goi18n.Message{ID: "artwork_sync_preload_choice", Other: "Do you want to preload all or missing artwork ?"}, nil),
 		[]gaba.SelectionOption{
 			{DisplayName: i18n.Localize(&goi18n.Message{ID: "artwork_sync_preload_missing", Other: "Missing Only"}, nil), Value: SyncMissingOnlyOption},
 			{DisplayName: i18n.Localize(&goi18n.Message{ID: "artwork_sync_preload_all", Other: "All"}, nil), Value: SyncAllOption},

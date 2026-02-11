@@ -38,8 +38,8 @@ func AddGameDescription(entry gamelist.RomGameEntry) {
 	}
 
 	description.WriteString(fmt.Sprintf("\n%s: %s\n", i18n.Localize(&goi18n.Message{ID: "game_details_description", Other: "Description"}, nil), entry.Game.Summary))
-	_, err = fmt.Fprintf(gameTextFile, description.String())
+	_, err = fmt.Fprint(gameTextFile, description.String())
 	if err != nil {
-		logger.Warn("Cannot write to file %v: %v\n", gameTextFile, err)
+		logger.Warn("Cannot write to file", "file", gameTextFile.Name(), "error", err)
 	}
 }

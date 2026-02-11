@@ -1,13 +1,10 @@
 package bios
 
 import (
-	"crypto/md5"
 	"embed"
-	"encoding/hex"
 	"fmt"
 	"grout/cfw"
 	"grout/internal/jsonutil"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -27,7 +24,6 @@ var PlatformToLibretroCores = mustLoadJSONMap[string, []string]("data/platform_c
 type File struct {
 	FileName     string // e.g., "gba_bios.bin"
 	RelativePath string // e.g., "gba_bios.bin" or "psx/scph5500.bin"
-	MD5Hash      string // e.g., "a860e8c0b6d573d191e4ec7db1b1e4f6" (optional, empty string if unknown)
 	Optional     bool   // true if BIOS file is optional for the emulator to function
 }
 
@@ -55,47 +51,15 @@ func SaveFile(biosFile File, platformFSSlug string, data []byte) error {
 	return nil
 }
 
-func VerifyFileMD5(data []byte, expectedMD5 string) (bool, string) {
-	if expectedMD5 == "" {
-		// No MD5 hash to verify against
-		return true, ""
-	}
-
-	hash := md5.Sum(data)
-	actualMD5 := hex.EncodeToString(hash[:])
-
-	return actualMD5 == expectedMD5, actualMD5
-}
-
-func GetFileInfo(biosFile File, platformFSSlug string) (exists bool, size int64, md5Hash string, err error) {
+// FileExists checks if a BIOS file exists on the filesystem for the given platform.
+func FileExists(biosFile File, platformFSSlug string) bool {
 	filePaths := cfw.GetBIOSFilePaths(biosFile.RelativePath, platformFSSlug)
-
 	for _, filePath := range filePaths {
-		info, err := os.Stat(filePath)
-		if err != nil {
-			if os.IsNotExist(err) {
-				continue
-			}
-			return false, 0, "", err
+		if _, err := os.Stat(filePath); err == nil {
+			return true
 		}
-
-		file, err := os.Open(filePath)
-		if err != nil {
-			return true, info.Size(), "", err
-		}
-		defer file.Close()
-
-		hash := md5.New()
-		if _, err := io.Copy(hash, file); err != nil {
-			return true, info.Size(), "", err
-		}
-
-		md5Hash = hex.EncodeToString(hash.Sum(nil))
-
-		return true, info.Size(), md5Hash, nil
 	}
-
-	return false, 0, "", nil
+	return false
 }
 
 func GetFilesForPlatform(platformFSSlug string) []File {
@@ -123,57 +87,4 @@ func GetFilesForPlatform(platformFSSlug string) []File {
 	}
 
 	return biosFiles
-}
-
-type Status string
-
-const (
-	StatusMissing        Status = "missing"
-	StatusValid          Status = "valid"
-	StatusInvalidHash    Status = "invalid_hash"
-	StatusNoHashToVerify Status = "no_hash"
-)
-
-type FileStatus struct {
-	File        File
-	Status      Status
-	Exists      bool
-	Size        int64
-	ActualMD5   string
-	ExpectedMD5 string
-}
-
-func CheckFileStatus(biosFile File, platformFSSlug string) FileStatus {
-	status := FileStatus{
-		File:        biosFile,
-		ExpectedMD5: biosFile.MD5Hash,
-	}
-
-	exists, size, actualMD5, err := GetFileInfo(biosFile, platformFSSlug)
-	if err != nil {
-		status.Status = StatusMissing
-		return status
-	}
-
-	status.Exists = exists
-	status.Size = size
-	status.ActualMD5 = actualMD5
-
-	if !exists {
-		status.Status = StatusMissing
-		return status
-	}
-
-	if biosFile.MD5Hash == "" {
-		status.Status = StatusNoHashToVerify
-		return status
-	}
-
-	if actualMD5 == biosFile.MD5Hash {
-		status.Status = StatusValid
-	} else {
-		status.Status = StatusInvalidHash
-	}
-
-	return status
 }

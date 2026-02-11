@@ -131,57 +131,33 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (BIOSDownloadOutput, 
 		var displayText string
 		var shouldSelect bool
 
+		var fileExists bool
 		if item.metadata != nil {
-			// We have metadata - show enriched information
-			status := bios.CheckFileStatus(*item.metadata, input.Platform.FSSlug)
-
-			var statusText string
-			switch status.Status {
-			case bios.StatusValid:
-				statusText = i18n.Localize(&goi18n.Message{ID: "bios_status_ready", Other: "Ready"}, nil)
-			case bios.StatusInvalidHash:
-				statusText = i18n.Localize(&goi18n.Message{ID: "bios_status_wrong_version", Other: "Wrong Version"}, nil)
-			case bios.StatusNoHashToVerify:
-				statusText = i18n.Localize(&goi18n.Message{ID: "bios_status_unverified", Other: "Installed (Unverified)"}, nil)
-			case bios.StatusMissing:
-				statusText = i18n.Localize(&goi18n.Message{ID: "bios_status_not_installed", Other: "Not Installed"}, nil)
-			}
-
-			optionalText := ""
-			if item.metadata.Optional {
-				optionalText = " (Optional)"
-			}
-
-			displayText = fmt.Sprintf("%s%s - %s", fw.FileName, optionalText, statusText)
-			shouldSelect = status.Status == bios.StatusMissing || status.Status == bios.StatusInvalidHash
+			fileExists = bios.FileExists(*item.metadata, input.Platform.FSSlug)
 		} else {
-			// No metadata - check if file exists and show basic status
-			biosDir := cfw.GetBIOSDirectory()
-
-			// Determine the correct file path using same logic as save
-			// FilePath may be: just filename, subdir/filename, or just subdir
-			var expectedPath string
-			if fw.FilePath == "" || fw.FilePath == fw.FileName {
-				expectedPath = filepath.Join(biosDir, fw.FileName)
-			} else if filepath.Base(fw.FilePath) == fw.FileName {
-				expectedPath = filepath.Join(biosDir, fw.FilePath)
-			} else {
-				expectedPath = filepath.Join(biosDir, fw.FilePath, fw.FileName)
+			relativePath := fw.FileName
+			for _, p := range cfw.GetBIOSFilePaths(relativePath, input.Platform.FSSlug) {
+				if fileutil.FileExists(p) {
+					fileExists = true
+					break
+				}
 			}
-
-			fileExists := fileutil.FileExists(expectedPath)
-
-			var statusText string
-			if fileExists {
-				statusText = i18n.Localize(&goi18n.Message{ID: "bios_status_ready", Other: "Ready"}, nil)
-				shouldSelect = false
-			} else {
-				statusText = i18n.Localize(&goi18n.Message{ID: "bios_status_not_installed", Other: "Not Installed"}, nil)
-				shouldSelect = true
-			}
-
-			displayText = fmt.Sprintf("%s - %s", fw.FileName, statusText)
 		}
+
+		var statusText string
+		if fileExists {
+			statusText = i18n.Localize(&goi18n.Message{ID: "bios_status_ready", Other: "Ready"}, nil)
+		} else {
+			statusText = i18n.Localize(&goi18n.Message{ID: "bios_status_not_installed", Other: "Not Installed"}, nil)
+			shouldSelect = true
+		}
+
+		optionalText := ""
+		if item.metadata != nil && item.metadata.Optional {
+			optionalText = " (Optional)"
+		}
+
+		displayText = fmt.Sprintf("%s%s - %s", fw.FileName, optionalText, statusText)
 
 		menuItems = append(menuItems, gaba.MenuItem{
 			Text:     displayText,
@@ -255,7 +231,6 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (BIOSDownloadOutput, 
 	logger.Debug("Download results", "completed", len(res.Completed), "failed", len(res.Failed))
 
 	successCount := 0
-	warningCount := 0
 	for _, download := range res.Completed {
 		info := locationToInfoMap[download.Location]
 
@@ -265,37 +240,29 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (BIOSDownloadOutput, 
 			continue
 		}
 
-		// Verify MD5 if we have metadata
-		if info.metadata != nil && info.metadata.MD5Hash != "" {
-			isValid, actualHash := bios.VerifyFileMD5(data, info.metadata.MD5Hash)
-			if !isValid {
-				logger.Warn("MD5 hash mismatch for BIOS file",
-					"file", info.metadata.FileName,
-					"expected", info.metadata.MD5Hash,
-					"actual", actualHash)
-				warningCount++
-			}
-		}
-
 		// Save the file
 		if info.metadata != nil {
-			// We have metadata - use SaveFile to handle subdirectories
 			if err := bios.SaveFile(*info.metadata, input.Platform.FSSlug, data); err != nil {
 				logger.Error("Failed to save BIOS file", "file", info.metadata.FileName, "error", err)
 				continue
 			}
 		} else {
-			// No metadata - just plop into the BIOS folder
-			biosDir := cfw.GetBIOSDirectory()
-			filePath := filepath.Join(biosDir, info.firmware.FileName)
+			relativePath := info.firmware.FileName
 
-			if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
-				logger.Error("Failed to create BIOS directory", "error", err)
-				continue
+			filePaths := cfw.GetBIOSFilePaths(relativePath, input.Platform.FSSlug)
+			var saveErr error
+			for _, filePath := range filePaths {
+				if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
+					saveErr = err
+					break
+				}
+				if err := os.WriteFile(filePath, data, 0644); err != nil {
+					saveErr = err
+					break
+				}
 			}
-
-			if err := os.WriteFile(filePath, data, 0644); err != nil {
-				logger.Error("Failed to save BIOS file", "file", info.firmware.FileName, "error", err)
+			if saveErr != nil {
+				logger.Error("Failed to save BIOS file", "file", info.firmware.FileName, "error", saveErr)
 				continue
 			}
 		}
@@ -304,20 +271,10 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (BIOSDownloadOutput, 
 		successCount++
 	}
 
-	// Show completion message to user
-	if successCount > 0 && warningCount == 0 {
+	if successCount > 0 {
 		logger.Info("BIOS download complete", "success", successCount)
 		gaba.ConfirmationMessage(
 			fmt.Sprintf(i18n.Localize(&goi18n.Message{ID: "bios_download_complete", Other: "Successfully downloaded %d BIOS file(s)."}, nil), successCount),
-			ContinueFooter(),
-			gaba.MessageOptions{},
-		)
-	} else if successCount > 0 && warningCount > 0 {
-		logger.Warn("BIOS download complete with warnings",
-			"success", successCount,
-			"warnings", warningCount)
-		gaba.ConfirmationMessage(
-			fmt.Sprintf(i18n.Localize(&goi18n.Message{ID: "bios_download_complete_with_warnings", Other: "Downloaded %d BIOS file(s) with %d hash warning(s). Files may not be the correct version."}, nil), successCount, warningCount),
 			ContinueFooter(),
 			gaba.MessageOptions{},
 		)
