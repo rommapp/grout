@@ -107,7 +107,7 @@ Your local save, if present, is uploaded to RomM (with timestamp appended to fil
 
 RomM's save, if present, is downloaded to your device.
 
-### When both exist
+### When both saves exist
 
 The newer save (based on last modified time) determines the action:
 
@@ -116,7 +116,7 @@ The newer save (based on last modified time) determines the action:
     - The current local save is backed up to `.backup/` within the platform's save directory
     - The RomM save is downloaded to your device
 
-### When there's no matching ROM in RomM
+### No matching ROM in RomM
 
 The save file is reported as "unmatched" in the sync results.
 
@@ -128,8 +128,6 @@ The save file is reported as "unmatched" in the sync results.
 ---
 
 ## Sync Results
-
-![Grout preview, sync summary](../resources/img/user_guide/sync_summary.png "Grout preview, sync summary")
 
 After syncing, you'll see a summary showing:
 
@@ -166,7 +164,7 @@ When you change this setting, Grout automatically moves existing save files to t
 Save Sync works with save files, **NOT** save states. Save states are emulator-specific snapshots that require both
 sides to use the same emulator and sometimes even the same version.
 
-### Syncs can be obscured by autoload
+### Syncs can be obscured by autoload { data-toc-label="Autoload Warning" }
 
 If you use save states with autoload enabled, the emulator will load the state instead of the save file. To use synced
 saves:

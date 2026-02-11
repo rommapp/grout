@@ -133,7 +133,7 @@ to this screen later, any custom folder names you entered will be remembered and
 
 You can change these mappings later from [Settings](settings.md).
 
-### Platform Mappings Reference
+### Mappings Reference
 
 Grout uses platform mappings to determine where to save downloaded games on your device. Each Custom Firmware (CFW) uses
 different folder naming conventions. Use these references to see the exact folder names used by your CFW:

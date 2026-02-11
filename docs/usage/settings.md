@@ -2,8 +2,6 @@
 
 Press `X` from the main menu to access Settings.
 
-![Grout preview, settings](../resources/img/user_guide/settings.png "Grout preview, settings")
-
 !!! important
     **Kids Mode Impact:** When Kids Mode is enabled, the Settings screen is hidden. To access settings temporarily, press `L1` + `R1` + `Menu` during the Grout splash screen. See [Kids Mode](#kids-mode) for details.
 
@@ -29,12 +27,10 @@ the platform mapping screen that appeared during setup.
 
 For complete save sync documentation, see the [Save Sync Guide](save-sync.md).
 
-**Save Sync Mappings** - Opens a sub-menu where you can configure the default save directory for each platform. This is
+**Save Sync Settings** - Opens a sub-menu where you can configure the default save directory for each platform. This is
 useful for platforms with multiple emulators (e.g., GBA on muOS), allowing you to set which emulator's save folder
 should be used for syncing. Only visible when Save Sync is enabled. Individual games can override this setting via
 Game Options.
-
-![Grout preview, save sync mapping](../resources/img/user_guide/sync_mappings.png "Grout preview, save sync mapping")
 
 **Advanced** - Opens a sub-menu for advanced configuration options. See [Advanced Settings](#advanced-settings) below.
 
@@ -54,14 +50,6 @@ When set to show, Grout displays cover art thumbnails next to game names in the 
 automatically cached in the background as you browse. This provides a visual preview similar to your frontend's game
 library view.
 
-### Game Details
-
-When enabled, selecting a game shows a detailed information screen with cover art, summary,
-metadata, and game options before downloading. When disabled, selecting a game immediately starts the download.
-
-!!! important
-    **Kids Mode Impact:** When Kids Mode is enabled, the Game Details screen is still accessible, but the Game Options button (`Y`) is hidden.
-
 ### Downloaded Games
 
 Controls how already-downloaded games appear in game lists:
@@ -74,6 +62,16 @@ Controls how already-downloaded games appear in game lists:
 
 When enabled, Grout downloads box art for games after downloading the ROMs. The art goes into your
 artwork directory so your frontend can display it.
+
+### Download Art Kind
+
+Controls which type of artwork is downloaded when Download Art is enabled. This option is only visible when
+Download Art is set to True.
+
+- **Default** - Uses the default artwork provided by RomM
+- **Box2D** - 2D box art scans
+- **Box3D** - 3D box art renders
+- **MixImage** - Composite mix images combining multiple artwork types
 
 ### Archived Downloads
 
@@ -144,6 +142,14 @@ slow connections. Options range from 15 to 120 minutes.
 
 How long Grout waits for responses from your RomM server before giving up. If you have a slow
 connection or are a completionist with a heavily loaded server, increase this. Options range from 15 to 300 seconds.
+
+### Release Channel
+
+Controls which release channel Grout uses for updates:
+
+- **Match RomM** - Automatically matches the release channel of your RomM server
+- **Stable** - Only receive stable releases
+- **Beta** - Receive beta releases for early access to new features
 
 ### Kids Mode
 
