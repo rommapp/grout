@@ -2,14 +2,98 @@ package cache
 
 import (
 	"database/sql"
+	"fmt"
+	"strconv"
 	"time"
+
+	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
 
-const schemaVersion = 5
+const schemaVersion = 7
 
 // nowUTC returns the current UTC time formatted as RFC3339 for consistent datetime storage
 func nowUTC() string {
 	return time.Now().UTC().Format(time.RFC3339)
+}
+
+// lookupTables lists all metadata lookup tables for use in migrations and cleanup
+var lookupTables = []string{
+	"genres",
+	"franchises",
+	"companies",
+	"game_modes",
+	"age_ratings",
+	"regions",
+	"languages",
+	"tags",
+}
+
+// junctionTables lists all game metadata junction tables for use in migrations and cleanup
+var junctionTables = []string{
+	"game_genres",
+	"game_franchises",
+	"game_companies",
+	"game_game_modes",
+	"game_age_ratings",
+	"game_regions",
+	"game_languages",
+	"game_tags",
+}
+
+// migrateIfNeeded checks the current schema version and runs migrations if required.
+// Since this is a cache database, migration simply drops and recreates affected tables.
+func migrateIfNeeded(db *sql.DB) error {
+	logger := gaba.GetLogger()
+
+	var versionStr string
+	err := db.QueryRow(`SELECT value FROM cache_metadata WHERE key = 'schema_version'`).Scan(&versionStr)
+	if err != nil {
+		// Table doesn't exist yet or no version — fresh database, nothing to migrate
+		return nil
+	}
+
+	currentVersion, err := strconv.Atoi(versionStr)
+	if err != nil {
+		return nil
+	}
+
+	if currentVersion >= schemaVersion {
+		return nil
+	}
+
+	logger.Info("Migrating cache schema", "from", currentVersion, "to", schemaVersion)
+
+	if currentVersion < 7 {
+		if err := migrateToV7(db); err != nil {
+			return fmt.Errorf("migration to v7 failed: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// migrateToV7 drops games and all related tables so they get
+// recreated with the normalized schema by createTables. The next sync refills everything.
+func migrateToV7(db *sql.DB) error {
+	logger := gaba.GetLogger()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	tablesToDrop := []string{"games", "game_collections"}
+	tablesToDrop = append(tablesToDrop, junctionTables...)
+	tablesToDrop = append(tablesToDrop, lookupTables...)
+	for _, table := range tablesToDrop {
+		if _, err := tx.Exec("DROP TABLE IF EXISTS " + table); err != nil {
+			return fmt.Errorf("failed to drop table %s: %w", table, err)
+		}
+	}
+
+	logger.Info("Dropped games, junction, and lookup tables for v7 migration")
+	return tx.Commit()
 }
 
 func createTables(db *sql.DB) error {
@@ -89,6 +173,15 @@ func createTables(db *sql.DB) error {
 			crc_hash TEXT DEFAULT '',
 			md5_hash TEXT DEFAULT '',
 			sha1_hash TEXT DEFAULT '',
+			player_count INTEGER DEFAULT 1,
+			first_release_date INTEGER DEFAULT 0,
+			average_rating REAL DEFAULT 0,
+			fs_size_bytes INTEGER DEFAULT 0,
+			is_identified INTEGER DEFAULT 0,
+			is_unidentified INTEGER DEFAULT 0,
+			missing_from_fs INTEGER DEFAULT 0,
+			has_manual INTEGER DEFAULT 0,
+			has_multiple_files INTEGER DEFAULT 0,
 			data_json TEXT NOT NULL,
 			updated_at TEXT,
 			cached_at TEXT NOT NULL
@@ -98,6 +191,7 @@ func createTables(db *sql.DB) error {
 		return err
 	}
 
+	// Existing games indexes
 	_, err = tx.Exec(`CREATE INDEX IF NOT EXISTS idx_games_platform_id ON games(platform_id)`)
 	if err != nil {
 		return err
@@ -128,6 +222,32 @@ func createTables(db *sql.DB) error {
 		return err
 	}
 
+	// New scalar column indexes
+	_, err = tx.Exec(`CREATE INDEX IF NOT EXISTS idx_games_release_date ON games(first_release_date) WHERE first_release_date > 0`)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`CREATE INDEX IF NOT EXISTS idx_games_rating ON games(average_rating) WHERE average_rating > 0`)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`CREATE INDEX IF NOT EXISTS idx_games_missing ON games(missing_from_fs) WHERE missing_from_fs = 1`)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`CREATE INDEX IF NOT EXISTS idx_games_platform_rating ON games(platform_id, average_rating)`)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`CREATE INDEX IF NOT EXISTS idx_games_platform_release ON games(platform_id, first_release_date)`)
+	if err != nil {
+		return err
+	}
+
 	_, err = tx.Exec(`
 		CREATE TABLE IF NOT EXISTS game_collections (
 			game_id INTEGER NOT NULL,
@@ -137,6 +257,58 @@ func createTables(db *sql.DB) error {
 	`)
 	if err != nil {
 		return err
+	}
+
+	// Normalized lookup tables for metadata values
+	lookupTableDefs := []struct{ table, column string }{
+		{"genres", "name"},
+		{"franchises", "name"},
+		{"companies", "name"},
+		{"game_modes", "name"},
+		{"age_ratings", "name"},
+		{"regions", "name"},
+		{"languages", "name"},
+		{"tags", "name"},
+	}
+	for _, def := range lookupTableDefs {
+		_, err = tx.Exec(`
+			CREATE TABLE IF NOT EXISTS ` + def.table + ` (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				` + def.column + ` TEXT NOT NULL UNIQUE
+			)
+		`)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Junction tables with integer foreign keys
+	junctionTableDefs := []struct{ table, fkColumn, lookupTable string }{
+		{"game_genres", "genre_id", "genres"},
+		{"game_franchises", "franchise_id", "franchises"},
+		{"game_companies", "company_id", "companies"},
+		{"game_game_modes", "game_mode_id", "game_modes"},
+		{"game_age_ratings", "age_rating_id", "age_ratings"},
+		{"game_regions", "region_id", "regions"},
+		{"game_languages", "language_id", "languages"},
+		{"game_tags", "tag_id", "tags"},
+	}
+	for _, def := range junctionTableDefs {
+		_, err = tx.Exec(`
+			CREATE TABLE IF NOT EXISTS ` + def.table + ` (
+				game_id INTEGER NOT NULL,
+				` + def.fkColumn + ` INTEGER NOT NULL,
+				PRIMARY KEY (game_id, ` + def.fkColumn + `)
+			)
+		`)
+		if err != nil {
+			return err
+		}
+
+		_, err = tx.Exec(`CREATE INDEX IF NOT EXISTS idx_` + def.table + `_` + def.fkColumn + ` ON ` + def.table + `(` + def.fkColumn + `)`)
+		if err != nil {
+			return err
+		}
 	}
 
 	_, err = tx.Exec(`

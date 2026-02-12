@@ -29,4 +29,5 @@ const (
 	ScreenBIOSDownload
 	ScreenArtworkSync
 	ScreenUpdateCheck
+	ScreenGameFilters
 )

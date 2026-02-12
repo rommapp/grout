@@ -201,4 +201,9 @@ func registerScreens(r *router.Router, state *AppState) {
 		screen := ui.NewUpdateScreen()
 		return screen.Draw(input.(ui.UpdateInput))
 	})
+
+	r.Register(ScreenGameFilters, func(input any) (any, error) {
+		screen := ui.NewGameFiltersScreen()
+		return screen.Draw(input.(ui.GameFiltersInput))
+	})
 }

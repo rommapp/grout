@@ -90,6 +90,11 @@ func newCacheManager(host romm.Host, config Config) (*Manager, error) {
 	db.SetMaxOpenConns(1)
 	db.SetMaxIdleConns(1)
 
+	if err := migrateIfNeeded(db); err != nil {
+		db.Close()
+		return nil, newCacheError("init", "", "", err)
+	}
+
 	if err := createTables(db); err != nil {
 		db.Close()
 		return nil, newCacheError("init", "", "", err)
@@ -185,6 +190,8 @@ func (cm *Manager) Clear() error {
 	defer cm.mu.Unlock()
 
 	tables := []string{"games", "game_collections", "collections", "platforms", "bios_availability", "filename_mappings"}
+	tables = append(tables, junctionTables...)
+	tables = append(tables, lookupTables...)
 
 	tx, err := cm.db.Begin()
 	if err != nil {
@@ -224,6 +231,18 @@ func (cm *Manager) ClearGames() error {
 		return newCacheError("clear_games", "", "", err)
 	}
 	defer tx.Rollback()
+
+	// Delete junction and lookup tables before games
+	for _, table := range junctionTables {
+		if _, err := tx.Exec("DELETE FROM " + table); err != nil {
+			return newCacheError("clear_games", table, "", err)
+		}
+	}
+	for _, table := range lookupTables {
+		if _, err := tx.Exec("DELETE FROM " + table); err != nil {
+			return newCacheError("clear_games", table, "", err)
+		}
+	}
 
 	if _, err := tx.Exec("DELETE FROM game_collections"); err != nil {
 		return newCacheError("clear_games", "game_collections", "", err)

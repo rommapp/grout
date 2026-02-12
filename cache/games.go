@@ -89,6 +89,100 @@ func (cm *Manager) GetPlatformGames(platformID int) ([]romm.Rom, error) {
 	return games, nil
 }
 
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}
+
+// parseMaxPlayerCount extracts the maximum player count from a ScreenScraper
+// player_count string (e.g. "1", "2", "1-4") and the Rom's game-mode heuristic.
+// Returns at least 1.
+func parseMaxPlayerCount(game romm.Rom) int {
+	pc := strings.TrimSpace(game.ScreenScraperMetadata.PlayerCount)
+	if pc != "" {
+		// Handle range like "1-4" — take the last number
+		if idx := strings.LastIndex(pc, "-"); idx >= 0 {
+			if n, err := strconv.Atoi(strings.TrimSpace(pc[idx+1:])); err == nil && n > 0 {
+				return n
+			}
+		}
+		// Handle plain number
+		if n, err := strconv.Atoi(pc); err == nil && n > 0 {
+			return n
+		}
+	}
+	// Fall back to the game-mode heuristic already on Rom
+	return game.MaxPlayerCount()
+}
+
+// anySliceToStrings converts []any to []string, skipping non-string values.
+func anySliceToStrings(items []any) []string {
+	result := make([]string, 0, len(items))
+	for _, item := range items {
+		if s, ok := item.(string); ok && s != "" {
+			result = append(result, s)
+		}
+	}
+	return result
+}
+
+// resolveLookupID returns the integer ID for a value in a lookup table,
+// inserting a new row if the value doesn't already exist.
+func resolveLookupID(tx *sql.Tx, lookupTable, value string) (int64, error) {
+	// Try INSERT OR IGNORE first, then SELECT — avoids the common SELECT-miss path
+	_, err := tx.Exec("INSERT OR IGNORE INTO "+lookupTable+" (name) VALUES (?)", value)
+	if err != nil {
+		return 0, err
+	}
+	var id int64
+	err = tx.QueryRow("SELECT id FROM "+lookupTable+" WHERE name = ?", value).Scan(&id)
+	return id, err
+}
+
+// batchInsertJunction resolves string values to lookup IDs and inserts (game_id, fk_id)
+// rows into a junction table in batches within the given transaction.
+func batchInsertJunction(tx *sql.Tx, junctionTable, fkCol, lookupTable string, gameID int, values []string) error {
+	if len(values) == 0 {
+		return nil
+	}
+
+	// Resolve all values to lookup IDs first
+	ids := make([]int64, 0, len(values))
+	for _, val := range values {
+		id, err := resolveLookupID(tx, lookupTable, val)
+		if err != nil {
+			return err
+		}
+		ids = append(ids, id)
+	}
+
+	const batchSize = 400 // 2 params per row = 800 variables max
+	for i := 0; i < len(ids); i += batchSize {
+		end := i + batchSize
+		if end > len(ids) {
+			end = len(ids)
+		}
+		batch := ids[i:end]
+
+		query := "INSERT OR IGNORE INTO " + junctionTable + " (game_id, " + fkCol + ") VALUES "
+		args := make([]any, 0, len(batch)*2)
+		for j, fkID := range batch {
+			if j > 0 {
+				query += ", "
+			}
+			query += "(?, ?)"
+			args = append(args, gameID, fkID)
+		}
+
+		if _, err := tx.Exec(query, args...); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (cm *Manager) SavePlatformGames(platformID int, games []romm.Rom) error {
 	if cm == nil || !cm.initialized {
 		return ErrNotInitialized
@@ -104,19 +198,37 @@ func (cm *Manager) SavePlatformGames(platformID int, games []romm.Rom) error {
 	defer tx.Rollback()
 
 	stmt, err := tx.Prepare(`
-		INSERT OR REPLACE INTO games (id, platform_id, platform_fs_slug, name, fs_name, fs_name_no_ext, crc_hash, md5_hash, sha1_hash, data_json, updated_at, cached_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT OR REPLACE INTO games (
+			id, platform_id, platform_fs_slug, name, fs_name, fs_name_no_ext,
+			crc_hash, md5_hash, sha1_hash,
+			player_count, first_release_date, average_rating, fs_size_bytes,
+			is_identified, is_unidentified, missing_from_fs, has_manual, has_multiple_files,
+			data_json, updated_at, cached_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`)
 	if err != nil {
 		return newCacheError("save", "games", GetPlatformCacheKey(platformID), err)
 	}
 	defer stmt.Close()
 
+	// Delete existing junction table data for this platform's games
+	for _, table := range junctionTables {
+		_, err := tx.Exec(
+			"DELETE FROM "+table+" WHERE game_id IN (SELECT id FROM games WHERE platform_id = ?)",
+			platformID,
+		)
+		if err != nil {
+			return newCacheError("save", "games", GetPlatformCacheKey(platformID), err)
+		}
+	}
+
 	now := nowUTC()
+	cacheKey := GetPlatformCacheKey(platformID)
+
 	for _, game := range games {
 		dataJSON, err := json.Marshal(game)
 		if err != nil {
-			return newCacheError("save", "games", GetPlatformCacheKey(platformID), err)
+			return newCacheError("save", "games", cacheKey, err)
 		}
 
 		_, err = stmt.Exec(
@@ -129,17 +241,46 @@ func (cm *Manager) SavePlatformGames(platformID int, games []romm.Rom) error {
 			game.CrcHash,
 			game.Md5Hash,
 			game.Sha1Hash,
+			parseMaxPlayerCount(game),
+			game.Metadatum.FirstReleaseDate,
+			game.Metadatum.AverageRating,
+			game.FsSizeBytes,
+			boolToInt(game.IsIdentified),
+			boolToInt(game.IsUnidentified),
+			boolToInt(game.MissingFromFs),
+			boolToInt(game.HasManual),
+			boolToInt(game.HasMultipleFiles),
 			string(dataJSON),
 			game.UpdatedAt,
 			now,
 		)
 		if err != nil {
-			return newCacheError("save", "games", GetPlatformCacheKey(platformID), err)
+			return newCacheError("save", "games", cacheKey, err)
+		}
+
+		// Populate junction tables (junction, fk_col, lookup, values)
+		junctions := []struct {
+			junctionTable, fkCol, lookupTable string
+			values                            []string
+		}{
+			{"game_genres", "genre_id", "genres", game.Metadatum.Genres},
+			{"game_franchises", "franchise_id", "franchises", anySliceToStrings(game.Metadatum.Franchises)},
+			{"game_companies", "company_id", "companies", game.Metadatum.Companies},
+			{"game_game_modes", "game_mode_id", "game_modes", game.Metadatum.GameModes},
+			{"game_age_ratings", "age_rating_id", "age_ratings", game.Metadatum.AgeRatings},
+			{"game_regions", "region_id", "regions", game.Regions},
+			{"game_languages", "language_id", "languages", game.Languages},
+			{"game_tags", "tag_id", "tags", anySliceToStrings(game.Tags)},
+		}
+		for _, jt := range junctions {
+			if err := batchInsertJunction(tx, jt.junctionTable, jt.fkCol, jt.lookupTable, game.ID, jt.values); err != nil {
+				return newCacheError("save", "games", cacheKey, err)
+			}
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
-		return newCacheError("save", "games", GetPlatformCacheKey(platformID), err)
+		return newCacheError("save", "games", cacheKey, err)
 	}
 
 	return nil
@@ -808,6 +949,322 @@ func GetGamesForPlatform(fsSlug string) ([]romm.Rom, error) {
 		return nil, ErrNotInitialized
 	}
 	return cm.GetGamesForPlatform(fsSlug)
+}
+
+// GameFilter defines criteria for filtering games at the database level.
+// All non-zero/non-empty fields are ANDed together.
+// Slice fields (e.g., Genres) use OR within the slice (match any of the given values).
+type GameFilter struct {
+	PlatformID     int
+	SearchQuery    string
+	Genres         []string
+	Franchises     []string
+	Companies      []string
+	GameModes      []string
+	AgeRatings     []string
+	Regions        []string
+	Languages      []string
+	Tags           []string
+	IsIdentified   *bool
+	IsUnidentified *bool
+	MissingFromFs  *bool
+	HasManual      *bool
+	HasMultiple    *bool
+	MinRating      float64
+	MaxRating      float64
+	MinReleaseDate int64
+	MaxReleaseDate int64
+	MinSizeBytes   int64
+	MaxSizeBytes   int64
+	NameSearch     string
+}
+
+// HasActiveFilters returns true if any filter criteria are set.
+func (f GameFilter) HasActiveFilters() bool {
+	return len(f.Genres) > 0 || len(f.Franchises) > 0 || len(f.Companies) > 0 ||
+		len(f.GameModes) > 0 || len(f.AgeRatings) > 0 || len(f.Regions) > 0 ||
+		len(f.Languages) > 0 || len(f.Tags) > 0 ||
+		f.IsIdentified != nil || f.IsUnidentified != nil || f.MissingFromFs != nil ||
+		f.HasManual != nil || f.HasMultiple != nil ||
+		f.MinRating > 0 || f.MaxRating > 0 ||
+		f.MinReleaseDate > 0 || f.MaxReleaseDate > 0 ||
+		f.MinSizeBytes > 0 || f.MaxSizeBytes > 0
+}
+
+// GetFilteredGames returns games matching all the given filter criteria.
+// Results are always deserialized from data_json for full Rom objects.
+func (cm *Manager) GetFilteredGames(filter GameFilter) ([]romm.Rom, error) {
+	if cm == nil || !cm.initialized {
+		return nil, ErrNotInitialized
+	}
+
+	cm.mu.RLock()
+	defer cm.mu.RUnlock()
+
+	query := "SELECT g.data_json FROM games g WHERE 1=1"
+	var args []interface{}
+
+	if filter.PlatformID != 0 {
+		query += " AND g.platform_id = ?"
+		args = append(args, filter.PlatformID)
+	}
+
+	if filter.NameSearch != "" {
+		query += " AND g.name LIKE ?"
+		args = append(args, "%"+filter.NameSearch+"%")
+	}
+
+	// Scalar boolean filters
+	if filter.IsIdentified != nil {
+		query += " AND g.is_identified = ?"
+		args = append(args, boolToInt(*filter.IsIdentified))
+	}
+	if filter.IsUnidentified != nil {
+		query += " AND g.is_unidentified = ?"
+		args = append(args, boolToInt(*filter.IsUnidentified))
+	}
+	if filter.MissingFromFs != nil {
+		query += " AND g.missing_from_fs = ?"
+		args = append(args, boolToInt(*filter.MissingFromFs))
+	}
+	if filter.HasManual != nil {
+		query += " AND g.has_manual = ?"
+		args = append(args, boolToInt(*filter.HasManual))
+	}
+	if filter.HasMultiple != nil {
+		query += " AND g.has_multiple_files = ?"
+		args = append(args, boolToInt(*filter.HasMultiple))
+	}
+
+	// Scalar range filters
+	if filter.MinRating > 0 {
+		query += " AND g.average_rating >= ?"
+		args = append(args, filter.MinRating)
+	}
+	if filter.MaxRating > 0 {
+		query += " AND g.average_rating <= ?"
+		args = append(args, filter.MaxRating)
+	}
+	if filter.MinReleaseDate > 0 {
+		query += " AND g.first_release_date >= ?"
+		args = append(args, filter.MinReleaseDate)
+	}
+	if filter.MaxReleaseDate > 0 {
+		query += " AND g.first_release_date <= ?"
+		args = append(args, filter.MaxReleaseDate)
+	}
+	if filter.MinSizeBytes > 0 {
+		query += " AND g.fs_size_bytes >= ?"
+		args = append(args, filter.MinSizeBytes)
+	}
+	if filter.MaxSizeBytes > 0 {
+		query += " AND g.fs_size_bytes <= ?"
+		args = append(args, filter.MaxSizeBytes)
+	}
+
+	// Junction table filters using EXISTS subqueries through normalized lookup tables
+	type junctionFilter struct {
+		junctionTable, fkCol, lookupTable string
+		values                            []string
+	}
+	junctions := []junctionFilter{
+		{"game_genres", "genre_id", "genres", filter.Genres},
+		{"game_franchises", "franchise_id", "franchises", filter.Franchises},
+		{"game_companies", "company_id", "companies", filter.Companies},
+		{"game_game_modes", "game_mode_id", "game_modes", filter.GameModes},
+		{"game_age_ratings", "age_rating_id", "age_ratings", filter.AgeRatings},
+		{"game_regions", "region_id", "regions", filter.Regions},
+		{"game_languages", "language_id", "languages", filter.Languages},
+		{"game_tags", "tag_id", "tags", filter.Tags},
+	}
+
+	for _, jf := range junctions {
+		if len(jf.values) == 0 {
+			continue
+		}
+		placeholders := make([]string, len(jf.values))
+		for i, v := range jf.values {
+			placeholders[i] = "?"
+			args = append(args, v)
+		}
+		query += " AND EXISTS (SELECT 1 FROM " + jf.junctionTable + " jt INNER JOIN " + jf.lookupTable + " lt ON lt.id = jt." + jf.fkCol + " WHERE jt.game_id = g.id AND lt.name IN (" + strings.Join(placeholders, ",") + "))"
+	}
+
+	query += " ORDER BY g.name"
+
+	rows, err := cm.db.Query(query, args...)
+	if err != nil {
+		cm.stats.recordError()
+		return nil, newCacheError("get", "games", "filtered", err)
+	}
+	defer rows.Close()
+
+	var games []romm.Rom
+	for rows.Next() {
+		var dataJSON string
+		if err := rows.Scan(&dataJSON); err != nil {
+			cm.stats.recordError()
+			return nil, newCacheError("get", "games", "filtered", err)
+		}
+
+		var game romm.Rom
+		if err := json.Unmarshal([]byte(dataJSON), &game); err != nil {
+			cm.stats.recordError()
+			return nil, newCacheError("get", "games", "filtered", err)
+		}
+		games = append(games, game)
+	}
+
+	if err := rows.Err(); err != nil {
+		cm.stats.recordError()
+		return nil, newCacheError("get", "games", "filtered", err)
+	}
+
+	if len(games) > 0 {
+		cm.stats.recordHit()
+	} else {
+		cm.stats.recordMiss()
+	}
+
+	return games, nil
+}
+
+// GetDistinctValues returns all distinct names from a lookup table, optionally
+// filtered to only include values that are associated with games on the given platform.
+func (cm *Manager) GetDistinctValues(lookupTable, junctionTable, fkCol string, platformID int) ([]string, error) {
+	if cm == nil || !cm.initialized {
+		return nil, ErrNotInitialized
+	}
+
+	cm.mu.RLock()
+	defer cm.mu.RUnlock()
+
+	var query string
+	var args []any
+
+	if platformID != 0 {
+		query = "SELECT DISTINCT lt.name FROM " + lookupTable + " lt INNER JOIN " + junctionTable + " jt ON jt." + fkCol + " = lt.id INNER JOIN games g ON g.id = jt.game_id WHERE g.platform_id = ? ORDER BY lt.name"
+		args = append(args, platformID)
+	} else {
+		query = "SELECT lt.name FROM " + lookupTable + " lt WHERE EXISTS (SELECT 1 FROM " + junctionTable + " jt WHERE jt." + fkCol + " = lt.id) ORDER BY lt.name"
+	}
+
+	rows, err := cm.db.Query(query, args...)
+	if err != nil {
+		return nil, newCacheError("get", lookupTable, "distinct", err)
+	}
+	defer rows.Close()
+
+	var values []string
+	for rows.Next() {
+		var v string
+		if err := rows.Scan(&v); err != nil {
+			return nil, newCacheError("get", lookupTable, "distinct", err)
+		}
+		values = append(values, v)
+	}
+
+	return values, rows.Err()
+}
+
+func (cm *Manager) GetDistinctValuesWithFilter(lookupTable, junctionTable, fkCol string, platformID int, filter GameFilter) ([]string, error) {
+	if cm == nil || !cm.initialized {
+		return nil, ErrNotInitialized
+	}
+
+	cm.mu.RLock()
+	defer cm.mu.RUnlock()
+
+	query := "SELECT DISTINCT lt.name FROM " + lookupTable + " lt INNER JOIN " + junctionTable + " jt ON jt." + fkCol + " = lt.id INNER JOIN games g ON g.id = jt.game_id WHERE 1=1"
+	var args []any
+
+	if platformID != 0 {
+		query += " AND g.platform_id = ?"
+		args = append(args, platformID)
+	}
+
+	if filter.SearchQuery != "" {
+		query += " AND LOWER(g.name) LIKE '%' || LOWER(?) || '%'"
+		args = append(args, filter.SearchQuery)
+	}
+
+	type junctionFilter struct {
+		junctionTable, fkCol, lookupTable string
+		values                            []string
+	}
+	junctions := []junctionFilter{
+		{"game_genres", "genre_id", "genres", filter.Genres},
+		{"game_franchises", "franchise_id", "franchises", filter.Franchises},
+		{"game_companies", "company_id", "companies", filter.Companies},
+		{"game_game_modes", "game_mode_id", "game_modes", filter.GameModes},
+		{"game_age_ratings", "age_rating_id", "age_ratings", filter.AgeRatings},
+		{"game_regions", "region_id", "regions", filter.Regions},
+		{"game_languages", "language_id", "languages", filter.Languages},
+		{"game_tags", "tag_id", "tags", filter.Tags},
+	}
+
+	for _, jf := range junctions {
+		if len(jf.values) == 0 {
+			continue
+		}
+		placeholders := make([]string, len(jf.values))
+		for i, v := range jf.values {
+			placeholders[i] = "?"
+			args = append(args, v)
+		}
+		query += " AND EXISTS (SELECT 1 FROM " + jf.junctionTable + " jt2 INNER JOIN " + jf.lookupTable + " lt2 ON lt2.id = jt2." + jf.fkCol + " WHERE jt2.game_id = g.id AND lt2.name IN (" + strings.Join(placeholders, ",") + "))"
+	}
+
+	query += " ORDER BY lt.name"
+
+	rows, err := cm.db.Query(query, args...)
+	if err != nil {
+		return nil, newCacheError("get", lookupTable, "distinct-filtered", err)
+	}
+	defer rows.Close()
+
+	var values []string
+	for rows.Next() {
+		var v string
+		if err := rows.Scan(&v); err != nil {
+			return nil, newCacheError("get", lookupTable, "distinct-filtered", err)
+		}
+		values = append(values, v)
+	}
+
+	return values, rows.Err()
+}
+
+func (cm *Manager) GetDistinctGenres(platformID int) ([]string, error) {
+	return cm.GetDistinctValues("genres", "game_genres", "genre_id", platformID)
+}
+
+func (cm *Manager) GetDistinctFranchises(platformID int) ([]string, error) {
+	return cm.GetDistinctValues("franchises", "game_franchises", "franchise_id", platformID)
+}
+
+func (cm *Manager) GetDistinctCompanies(platformID int) ([]string, error) {
+	return cm.GetDistinctValues("companies", "game_companies", "company_id", platformID)
+}
+
+func (cm *Manager) GetDistinctGameModes(platformID int) ([]string, error) {
+	return cm.GetDistinctValues("game_modes", "game_game_modes", "game_mode_id", platformID)
+}
+
+func (cm *Manager) GetDistinctAgeRatings(platformID int) ([]string, error) {
+	return cm.GetDistinctValues("age_ratings", "game_age_ratings", "age_rating_id", platformID)
+}
+
+func (cm *Manager) GetDistinctRegions(platformID int) ([]string, error) {
+	return cm.GetDistinctValues("regions", "game_regions", "region_id", platformID)
+}
+
+func (cm *Manager) GetDistinctLanguages(platformID int) ([]string, error) {
+	return cm.GetDistinctValues("languages", "game_languages", "language_id", platformID)
+}
+
+func (cm *Manager) GetDistinctTags(platformID int) ([]string, error) {
+	return cm.GetDistinctValues("tags", "game_tags", "tag_id", platformID)
 }
 
 func (cm *Manager) PurgeStaleFilenameMappings() (int64, error) {

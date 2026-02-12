@@ -74,6 +74,8 @@ func buildTransitionFunc(state *AppState, quitOnBack bool, initialShowCollection
 			return popOrExit(stack)
 		case ScreenUpdateCheck:
 			return transitionUpdateCheck(ctx, result)
+		case ScreenGameFilters:
+			return transitionGameFilters(ctx, result)
 		}
 
 		return router.ScreenExit, nil
@@ -143,6 +145,8 @@ func transitionGameList(ctx *transitionContext, result any) (router.Screen, any)
 		Games:        r.AllGames,
 		HasBIOS:      r.HasBIOS,
 		SearchFilter: r.SearchFilter,
+		GameFilter:   r.GameFilter,
+		LastApplied:  r.LastApplied,
 	}
 
 	switch r.Action {
@@ -158,6 +162,8 @@ func transitionGameList(ctx *transitionContext, result any) (router.Screen, any)
 				Games:                r.AllGames,
 				HasBIOS:              r.HasBIOS,
 				SearchFilter:         r.SearchFilter,
+				GameFilter:           r.GameFilter,
+				LastApplied:          r.LastApplied,
 				LastSelectedIndex:    r.LastSelectedIndex,
 				LastSelectedPosition: r.LastSelectedPosition,
 			}
@@ -179,12 +185,23 @@ func transitionGameList(ctx *transitionContext, result any) (router.Screen, any)
 
 	case ui.GameListActionClearSearch:
 		return ScreenGameList, ui.GameListInput{
-			Config:     ctx.state.Config,
-			Host:       ctx.state.Host,
-			Platform:   r.Platform,
-			Collection: r.Collection,
-			Games:      r.AllGames,
-			HasBIOS:    r.HasBIOS,
+			Config:       ctx.state.Config,
+			Host:         ctx.state.Host,
+			Platform:     r.Platform,
+			Collection:   r.Collection,
+			Games:        r.AllGames,
+			HasBIOS:      r.HasBIOS,
+			SearchFilter: r.SearchFilter,
+			GameFilter:   r.GameFilter,
+			LastApplied:  r.LastApplied,
+		}
+
+	case ui.GameListActionFilters:
+		ctx.stack.Push(ScreenGameList, pushInput, r)
+		return ScreenGameFilters, ui.GameFiltersInput{
+			Platform:       r.Platform,
+			CurrentFilters: r.GameFilter,
+			SearchQuery:    r.SearchFilter,
 		}
 
 	case ui.GameListActionBIOS:
@@ -222,6 +239,8 @@ func transitionSearch(ctx *transitionContext, result any) (router.Screen, any) {
 				Games:        prevInput.Games,
 				HasBIOS:      prevInput.HasBIOS,
 				SearchFilter: r.Query,
+				GameFilter:   prevInput.GameFilter,
+				LastApplied:  ui.GameListAppliedSearch,
 			}
 		}
 		if entry.Screen == ScreenCollectionList {
@@ -245,6 +264,8 @@ func transitionSearch(ctx *transitionContext, result any) (router.Screen, any) {
 				Games:                prevInput.Games,
 				HasBIOS:              prevInput.HasBIOS,
 				SearchFilter:         prevInput.SearchFilter,
+				GameFilter:           prevInput.GameFilter,
+				LastApplied:          prevInput.LastApplied,
 				LastSelectedIndex:    prevResume.LastSelectedIndex,
 				LastSelectedPosition: prevResume.LastSelectedPosition,
 			}
@@ -557,6 +578,48 @@ func transitionUpdateCheck(ctx *transitionContext, result any) (router.Screen, a
 	if r.UpdatePerformed {
 		os.Exit(0)
 	}
+	return popOrExit(ctx.stack)
+}
+
+func transitionGameFilters(ctx *transitionContext, result any) (router.Screen, any) {
+	r := result.(ui.GameFiltersOutput)
+
+	entry := ctx.stack.Pop()
+	if entry == nil {
+		return router.ScreenExit, nil
+	}
+
+	prevInput := entry.Input.(ui.GameListInput)
+
+	switch r.Action {
+	case ui.GameFiltersActionApply:
+		return ScreenGameList, ui.GameListInput{
+			Config:       prevInput.Config,
+			Host:         prevInput.Host,
+			Platform:     r.Platform,
+			Collection:   prevInput.Collection,
+			Games:        prevInput.Games,
+			HasBIOS:      prevInput.HasBIOS,
+			SearchFilter: prevInput.SearchFilter,
+			GameFilter:   r.Filters,
+			LastApplied:  ui.GameListAppliedFilters,
+		}
+
+	case ui.GameFiltersActionCancel:
+		prevInput.GameFilter = cache.GameFilter{}
+		if prevInput.SearchFilter != "" {
+			prevInput.LastApplied = ui.GameListAppliedSearch
+		} else {
+			prevInput.LastApplied = ui.GameListAppliedNone
+		}
+		if entry.Resume != nil {
+			prevResume := entry.Resume.(ui.GameListOutput)
+			prevInput.LastSelectedIndex = prevResume.LastSelectedIndex
+			prevInput.LastSelectedPosition = prevResume.LastSelectedPosition
+		}
+		return entry.Screen, prevInput
+	}
+
 	return popOrExit(ctx.stack)
 }
 
