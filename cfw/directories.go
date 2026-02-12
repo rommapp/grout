@@ -103,6 +103,24 @@ func GetArtDirectory(romDir string, platformFSSlug, platformName string) string 
 	}
 }
 
+func GetArtPreviewDirectory(romDir string, platformFSSlug, platformName string) string {
+	switch GetCFW() {
+	case MuOS:
+		return muos.GetPreviewDirectory(platformFSSlug, platformName)
+	default:
+		return ""
+	}
+}
+
+func GetArtSplashDirectory(romDir string, platformFSSlug, platformName string) string {
+	switch GetCFW() {
+	case MuOS:
+		return muos.GetSplashDirectory(platformFSSlug, platformName)
+	default:
+		return ""
+	}
+}
+
 // BaseSavePath returns the base save path for the current CFW.
 func BaseSavePath() string {
 	switch GetCFW() {

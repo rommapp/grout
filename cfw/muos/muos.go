@@ -75,3 +75,19 @@ func GetTextDirectory(platformFSSlug, platformName string) string {
 	}
 	return filepath.Join(GetInfoDirectory(), "catalogue", systemName, "text")
 }
+
+func GetPreviewDirectory(platformFSSlug, platformName string) string {
+	systemName, exists := ArtDirectories[platformFSSlug]
+	if !exists {
+		systemName = platformName
+	}
+	return filepath.Join(GetInfoDirectory(), "catalogue", systemName, "preview")
+}
+
+func GetSplashDirectory(platformFSSlug, platformName string) string {
+	systemName, exists := ArtDirectories[platformFSSlug]
+	if !exists {
+		systemName = platformName
+	}
+	return filepath.Join(GetInfoDirectory(), "catalogue", systemName, "splash")
+}

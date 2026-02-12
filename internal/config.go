@@ -18,26 +18,28 @@ import (
 var kidModeEnabled atomic.Bool
 
 type Config struct {
-	Hosts                  []romm.Host                 `json:"hosts,omitempty"`
-	DirectoryMappings      map[string]DirectoryMapping `json:"directory_mappings,omitempty"`
-	SaveSyncMode           SaveSyncMode                `json:"save_sync_mode"`
-	SaveDirectoryMappings  map[string]string           `json:"save_directory_mappings,omitempty"`
-	GameSaveOverrides      map[int]string              `json:"game_save_overrides,omitempty"`
-	DownloadArt            bool                        `json:"download_art,omitempty"`
-	ShowBoxArt             bool                        `json:"show_box_art,omitempty"`
-	UnzipDownloads         bool                        `json:"unzip_downloads,omitempty"`
-	ShowRegularCollections bool                        `json:"show_collections"`
-	ShowSmartCollections   bool                        `json:"show_smart_collections"`
-	ShowVirtualCollections bool                        `json:"show_virtual_collections"`
-	DownloadedGames        DownloadedGamesMode         `json:"downloaded_games,omitempty"`
-	ApiTimeout             time.Duration               `json:"api_timeout"`
-	DownloadTimeout        time.Duration               `json:"download_timeout"`
-	LogLevel               LogLevel                    `json:"log_level,omitempty"`
-	Language               string                      `json:"language,omitempty"`
-	CollectionView         CollectionView              `json:"collection_view,omitempty"`
-	KidMode                bool                        `json:"kid_mode,omitempty"`
-	ReleaseChannel         ReleaseChannel              `json:"release_channel,omitempty"`
-	ArtKind                artutil.ArtKind             `json:"art_kind,omitempty"`
+	Hosts                        []romm.Host                 `json:"hosts,omitempty"`
+	DirectoryMappings            map[string]DirectoryMapping `json:"directory_mappings,omitempty"`
+	SaveSyncMode                 SaveSyncMode                `json:"save_sync_mode"`
+	SaveDirectoryMappings        map[string]string           `json:"save_directory_mappings,omitempty"`
+	GameSaveOverrides            map[int]string              `json:"game_save_overrides,omitempty"`
+	DownloadArt                  bool                        `json:"download_art,omitempty"`
+	ShowBoxArt                   bool                        `json:"show_box_art,omitempty"`
+	UnzipDownloads               bool                        `json:"unzip_downloads,omitempty"`
+	ShowRegularCollections       bool                        `json:"show_collections"`
+	ShowSmartCollections         bool                        `json:"show_smart_collections"`
+	ShowVirtualCollections       bool                        `json:"show_virtual_collections"`
+	DownloadedGames              DownloadedGamesMode         `json:"downloaded_games,omitempty"`
+	ApiTimeout                   time.Duration               `json:"api_timeout"`
+	DownloadTimeout              time.Duration               `json:"download_timeout"`
+	LogLevel                     LogLevel                    `json:"log_level,omitempty"`
+	Language                     string                      `json:"language,omitempty"`
+	CollectionView               CollectionView              `json:"collection_view,omitempty"`
+	KidMode                      bool                        `json:"kid_mode,omitempty"`
+	ReleaseChannel               ReleaseChannel              `json:"release_channel,omitempty"`
+	ArtKind                      artutil.ArtKind             `json:"art_kind,omitempty"`
+	DownloadArtScreenshotPreview bool                        `json:"download_art_screenshot_preview,omitempty"`
+	DownloadSplashArt            artutil.ArtKind             `json:"download_splash_art,omitempty"`
 
 	PlatformOrder []string `json:"platform_order,omitempty"`
 
@@ -245,6 +247,16 @@ func (c Config) GetPlatformRomDirectory(platform romm.Platform) string {
 func (c Config) GetArtDirectory(platform romm.Platform) string {
 	romDir := c.GetPlatformRomDirectory(platform)
 	return cfw.GetArtDirectory(romDir, platform.FSSlug, platform.Name)
+}
+
+func (c Config) GetArtPreviewDirectory(platform romm.Platform) string {
+	romDir := c.GetPlatformRomDirectory(platform)
+	return cfw.GetArtPreviewDirectory(romDir, platform.FSSlug, platform.Name)
+}
+
+func (c Config) GetArtSplashDirectory(platform romm.Platform) string {
+	romDir := c.GetPlatformRomDirectory(platform)
+	return cfw.GetArtSplashDirectory(romDir, platform.FSSlug, platform.Name)
 }
 
 func (c Config) ShowCollections(host romm.Host) bool {
