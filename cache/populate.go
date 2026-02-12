@@ -156,6 +156,11 @@ func (cm *Manager) populateCache(platforms []romm.Platform, progress *atomic.Flo
 
 	cm.RecordRefreshTime(MetaKeyCollectionsRefreshedAt)
 
+	// Purge items deleted from the server (only during incremental updates)
+	if !isBulkLoad {
+		cm.purgeDeletedItems(client)
+	}
+
 	if progress != nil {
 		progress.Store(1.0)
 	}
@@ -398,6 +403,58 @@ func (cm *Manager) fetchAndCacheCollectionsWithProgress(progress *atomic.Float64
 
 	logger.Debug("Cached collections", "count", len(allCollections))
 	return len(allCollections)
+}
+
+// purgeDeletedItems fetches identifier lists from the server and removes any
+// cached items that no longer exist. This handles server-side deletions that
+// incremental (UpdatedAfter) syncing would otherwise miss.
+func (cm *Manager) purgeDeletedItems(client *romm.Client) {
+	logger := gaba.GetLogger()
+
+	var platformIDs, romIDs, collectionIDs []int
+	var platformErr, romErr, collectionErr error
+
+	var wg sync.WaitGroup
+	wg.Add(3)
+
+	go func() {
+		defer wg.Done()
+		platformIDs, platformErr = client.GetPlatformIdentifiers()
+	}()
+	go func() {
+		defer wg.Done()
+		romIDs, romErr = client.GetRomIdentifiers()
+	}()
+	go func() {
+		defer wg.Done()
+		collectionIDs, collectionErr = client.GetCollectionIdentifiers()
+	}()
+
+	wg.Wait()
+
+	if platformErr != nil {
+		logger.Debug("Failed to fetch platform identifiers for purge", "error", platformErr)
+	} else if len(platformIDs) > 0 {
+		if _, err := cm.PurgeDeletedPlatforms(platformIDs); err != nil {
+			logger.Debug("Failed to purge deleted platforms", "error", err)
+		}
+	}
+
+	if romErr != nil {
+		logger.Debug("Failed to fetch rom identifiers for purge", "error", romErr)
+	} else if len(romIDs) > 0 {
+		if _, err := cm.PurgeDeletedGames(romIDs); err != nil {
+			logger.Debug("Failed to purge deleted games", "error", err)
+		}
+	}
+
+	if collectionErr != nil {
+		logger.Debug("Failed to fetch collection identifiers for purge", "error", collectionErr)
+	} else if len(collectionIDs) > 0 {
+		if _, err := cm.PurgeDeletedCollections(collectionIDs); err != nil {
+			logger.Debug("Failed to purge deleted collections", "error", err)
+		}
+	}
 }
 
 func (cm *Manager) fetchBIOSAvailability(platforms []romm.Platform, client *romm.Client) {

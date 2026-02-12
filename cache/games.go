@@ -1385,6 +1385,90 @@ func (cm *Manager) GetDistinctTags(platformID int) ([]string, error) {
 	return cm.GetDistinctValues("tags", "game_tags", "tag_id", platformID)
 }
 
+// PurgeDeletedGames removes cached games whose IDs are not in the provided list
+// of valid IDs from the server. Also cleans up related junction tables,
+// game_collections, and filename_mappings for the deleted games.
+func (cm *Manager) PurgeDeletedGames(validIDs []int) (int64, error) {
+	if cm == nil || !cm.initialized {
+		return 0, ErrNotInitialized
+	}
+	if len(validIDs) == 0 {
+		return 0, nil
+	}
+
+	logger := gaba.GetLogger()
+
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
+
+	tx, err := cm.db.Begin()
+	if err != nil {
+		return 0, newCacheError("purge", "games", "", err)
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec("CREATE TEMP TABLE _valid_game_ids (id INTEGER PRIMARY KEY)"); err != nil {
+		return 0, newCacheError("purge", "games", "", err)
+	}
+
+	const batchSize = 400
+	for i := 0; i < len(validIDs); i += batchSize {
+		end := i + batchSize
+		if end > len(validIDs) {
+			end = len(validIDs)
+		}
+		batch := validIDs[i:end]
+
+		query := "INSERT OR IGNORE INTO _valid_game_ids (id) VALUES "
+		args := make([]any, len(batch))
+		for j, id := range batch {
+			if j > 0 {
+				query += ", "
+			}
+			query += "(?)"
+			args[j] = id
+		}
+
+		if _, err := tx.Exec(query, args...); err != nil {
+			return 0, newCacheError("purge", "games", "", err)
+		}
+	}
+
+	// Clean up junction tables for deleted games
+	for _, table := range junctionTables {
+		if _, err := tx.Exec("DELETE FROM " + table + " WHERE game_id NOT IN (SELECT id FROM _valid_game_ids)"); err != nil {
+			return 0, newCacheError("purge", "games", table, err)
+		}
+	}
+
+	if _, err := tx.Exec("DELETE FROM game_collections WHERE game_id NOT IN (SELECT id FROM _valid_game_ids)"); err != nil {
+		return 0, newCacheError("purge", "games", "game_collections", err)
+	}
+
+	if _, err := tx.Exec("DELETE FROM filename_mappings WHERE rom_id NOT IN (SELECT id FROM _valid_game_ids)"); err != nil {
+		return 0, newCacheError("purge", "games", "filename_mappings", err)
+	}
+
+	result, err := tx.Exec("DELETE FROM games WHERE id NOT IN (SELECT id FROM _valid_game_ids)")
+	if err != nil {
+		return 0, newCacheError("purge", "games", "", err)
+	}
+
+	deleted, _ := result.RowsAffected()
+
+	tx.Exec("DROP TABLE IF EXISTS _valid_game_ids")
+
+	if err := tx.Commit(); err != nil {
+		return 0, newCacheError("purge", "games", "", err)
+	}
+
+	if deleted > 0 {
+		logger.Debug("Purged deleted games from cache", "count", deleted)
+	}
+
+	return deleted, nil
+}
+
 func (cm *Manager) PurgeStaleFilenameMappings() (int64, error) {
 	if cm == nil || !cm.initialized {
 		return 0, ErrNotInitialized
