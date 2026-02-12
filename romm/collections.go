@@ -79,6 +79,12 @@ func (c *Client) GetCollection(id int) (Collection, error) {
 	return collection, err
 }
 
+func (c *Client) GetCollectionIdentifiers() ([]int, error) {
+	var ids []int
+	err := c.doRequest("GET", endpointCollectionIdentifiers, nil, nil, &ids)
+	return ids, err
+}
+
 func (c *Client) GetSmartCollections(query ...GetCollectionsQuery) ([]Collection, error) {
 	var collections []Collection
 
