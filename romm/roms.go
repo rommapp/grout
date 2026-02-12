@@ -155,6 +155,12 @@ func (c *Client) GetRoms(query GetRomsQuery) (PaginatedRoms, error) {
 	err := c.doRequest("GET", endpointRoms, query, nil, &result)
 	return result, err
 }
+func (c *Client) GetRomIdentifiers() ([]int, error) {
+	var ids []int
+	err := c.doRequest("GET", endpointRomIdentifiers, nil, nil, &ids)
+	return ids, err
+}
+
 func (c *Client) GetRomByHash(query GetRomByHashQuery) (Rom, error) {
 	var rom Rom
 	err := c.doRequest("GET", endpointRomsByHash, query, nil, &rom)

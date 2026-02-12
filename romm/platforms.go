@@ -60,6 +60,12 @@ func (c *Client) GetPlatform(id int) (Platform, error) {
 	return platform, err
 }
 
+func (c *Client) GetPlatformIdentifiers() ([]int, error) {
+	var ids []int
+	err := c.doRequest("GET", endpointPlatformIdentifiers, nil, nil, &ids)
+	return ids, err
+}
+
 // DisambiguatePlatformNames sets each platform's Name field to its display name
 // (preferring CustomName if set), and appends the FSSlug when multiple platforms
 // share the same display name (e.g., "Arcade" becomes "Arcade (fbneo)")

@@ -168,6 +168,83 @@ func (cm *Manager) SetBIOSAvailability(platformID int, hasBIOS bool) error {
 	return nil
 }
 
+// PurgeDeletedPlatforms removes cached platforms whose IDs are not in the provided
+// list of valid IDs from the server. Also cleans up bios_availability and
+// platform_sync_status for the deleted platforms.
+func (cm *Manager) PurgeDeletedPlatforms(validIDs []int) (int64, error) {
+	if cm == nil || !cm.initialized {
+		return 0, ErrNotInitialized
+	}
+	if len(validIDs) == 0 {
+		return 0, nil
+	}
+
+	logger := gaba.GetLogger()
+
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
+
+	tx, err := cm.db.Begin()
+	if err != nil {
+		return 0, newCacheError("purge", "platforms", "", err)
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec("CREATE TEMP TABLE _valid_platform_ids (id INTEGER PRIMARY KEY)"); err != nil {
+		return 0, newCacheError("purge", "platforms", "", err)
+	}
+
+	const batchSize = 400
+	for i := 0; i < len(validIDs); i += batchSize {
+		end := i + batchSize
+		if end > len(validIDs) {
+			end = len(validIDs)
+		}
+		batch := validIDs[i:end]
+
+		query := "INSERT OR IGNORE INTO _valid_platform_ids (id) VALUES "
+		args := make([]any, len(batch))
+		for j, id := range batch {
+			if j > 0 {
+				query += ", "
+			}
+			query += "(?)"
+			args[j] = id
+		}
+
+		if _, err := tx.Exec(query, args...); err != nil {
+			return 0, newCacheError("purge", "platforms", "", err)
+		}
+	}
+
+	if _, err := tx.Exec("DELETE FROM bios_availability WHERE platform_id NOT IN (SELECT id FROM _valid_platform_ids)"); err != nil {
+		return 0, newCacheError("purge", "platforms", "bios_availability", err)
+	}
+
+	if _, err := tx.Exec("DELETE FROM platform_sync_status WHERE platform_id NOT IN (SELECT id FROM _valid_platform_ids)"); err != nil {
+		return 0, newCacheError("purge", "platforms", "platform_sync_status", err)
+	}
+
+	result, err := tx.Exec("DELETE FROM platforms WHERE id NOT IN (SELECT id FROM _valid_platform_ids)")
+	if err != nil {
+		return 0, newCacheError("purge", "platforms", "", err)
+	}
+
+	deleted, _ := result.RowsAffected()
+
+	tx.Exec("DROP TABLE IF EXISTS _valid_platform_ids")
+
+	if err := tx.Commit(); err != nil {
+		return 0, newCacheError("purge", "platforms", "", err)
+	}
+
+	if deleted > 0 {
+		logger.Debug("Purged deleted platforms from cache", "count", deleted)
+	}
+
+	return deleted, nil
+}
+
 // RecordPlatformSyncSuccess records a successful game sync for a platform
 func (cm *Manager) RecordPlatformSyncSuccess(platformID int, gamesCount int) error {
 	if cm == nil || !cm.initialized {

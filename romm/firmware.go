@@ -33,6 +33,12 @@ func (fo FirmwareOptions) Valid() bool {
 	return fo.PlatformID != 0
 }
 
+func (c *Client) GetFirmwareIdentifiers() ([]int, error) {
+	var ids []int
+	err := c.doRequest("GET", endpointFirmwareIdentifiers, nil, nil, &ids)
+	return ids, err
+}
+
 func (c *Client) GetFirmware(platformID int) ([]Firmware, error) {
 	var firmware []Firmware
 	err := c.doRequest("GET", endpointFirmware, FirmwareOptions{PlatformID: platformID}, nil, &firmware)

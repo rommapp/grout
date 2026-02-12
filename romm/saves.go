@@ -53,6 +53,12 @@ func (sq SaveQuery) Valid() bool {
 	return sq.RomID != 0 || sq.PlatformID != 0
 }
 
+func (c *Client) GetSaveIdentifiers() ([]int, error) {
+	var ids []int
+	err := c.doRequest("GET", endpointSaveIdentifiers, nil, nil, &ids)
+	return ids, err
+}
+
 func (c *Client) GetSaves(query SaveQuery) ([]Save, error) {
 	var saves []Save
 	err := c.doRequest("GET", endpointSaves, query, nil, &saves)
