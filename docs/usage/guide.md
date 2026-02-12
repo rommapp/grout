@@ -15,11 +15,11 @@ Grout attempts to be consistent with its controls. Here's a quick reference:
 | `A`          | Confirm / Select                          |
 | `B`          | Back / Cancel                             |
 | `X`          | Secondary action (Search, Settings)       |
-| `Y`          | Tertiary action (Save Sync, Game Options) |
+| `Y`          | Tertiary action (Filters, Save Sync, Game Options) |
 | `Start`      | Confirm / Save settings                   |
 | `Select`     | Toggle list mode (multi-select, reorder)  |
 | `L1` / `R1`  | Shoulder buttons (used in button combos)  |
-| `Menu`       | Help menu (also used in button combos)    |
+| `Menu`       | Context action (BIOS, also used in button combos) |
 | `Up/Down`    | Navigate lists                            |
 | `Left/Right` | Cycle options / Jump pages in list        |
 
@@ -251,6 +251,8 @@ If you entered a search query, you'll see `[Search: "your search term"] | Platfo
 - `A` to select a single game
 - `Select` to enter multi-select mode, then use `A` to select/deselect games
 - `X` to open the search keyboard
+- `Y` to open filters
+- `Menu` to access BIOS downloads (when available)
 - `B` to go back
 
 **Multi-Select Mode:**
@@ -266,6 +268,23 @@ Check all the ones you want, then press `Start` to confirm your selections.
 !!! tip
     Box art must be enabled in [Settings](settings.md#box-art) for it to appear.
 
+
+### Filters
+
+![Grout preview, filters](../resources/img/user_guide/filters.png "Grout preview, filters")
+
+Press `Y` from any game list to open the filters screen. You can filter games by:
+
+- Genre
+- Franchise
+- Company
+- Game Mode
+- Region
+- Language
+- Age Rating
+- Tag
+
+Only filter categories that have values for the current platform are shown. When a filter is active, the title bar displays `[Filtered]`. Press `B` to clear all filters and return to the full list.
 
 ### Search
 
@@ -362,8 +381,8 @@ the correct location on your device.
 
 ### Accessing BIOS Downloads
 
-From the main menu, press `A` on a platform that requires BIOS files. If BIOS files are available for that
-platform in your RomM library, you'll see a "BIOS" option in the platform submenu.
+From the game list, press `Menu` on a platform that has BIOS files available in your RomM library. You'll see
+a "BIOS" option in the footer when BIOS files are available for that platform.
 
 
 ## Spread Joy!

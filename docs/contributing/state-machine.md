@@ -4,33 +4,48 @@ This document shows the navigation flow between screens in Grout.
 
 ---
 
-## Main Flow
+## Overview
 
 ```mermaid
-flowchart TD
-    PS[Platform Selection]
-    GL[Game List]
-    GD[Game Details]
+flowchart LR
+    PS[Platform Selection] -->|"Select Platform"| GL[Game List] -->|"Select Game"| GD[Game Details]
+```
 
-    PS -->|"Select Platform"| GL
+## Platform Selection
+
+```mermaid
+flowchart LR
+    PS[Platform Selection]
+    PS -->|"Select Platform"| GL[Game List]
     PS -->|"Collections"| COLL[["Collections Flow"]]
     PS -->|"Settings"| SETT[["Settings Flow"]]
     PS -->|"Save Sync"| SS[Save Sync]
     PS -->|"Quit"| EXIT((Exit))
-
-    GL -->|"Select Game"| GD
-    GL -->|"Search"| S[Search]
-    GL -->|"BIOS"| BIOS[BIOS Download]
-    GL -->|"Back"| PS
-
-    GD -->|"Download"| GL
-    GD -->|"Options"| GO[Game Options]
-    GD -->|"Back"| GL
-
-    GO --> GD
-    S --> GL
     SS --> PS
-    BIOS --> GL
+```
+
+## Game List
+
+```mermaid
+flowchart LR
+    GL[Game List]
+    GL -->|"Select Game"| GD[Game Details]
+    GL -->|"Search"| S[Search] --> GL
+    GL -->|"Filters"| GF[Game Filters]
+    GF -->|"Apply"| GL
+    GF -->|"Cancel/Clear"| GL
+    GL -->|"BIOS"| BIOS[BIOS Download] --> GL
+    GL -->|"Back"| PS[Platform Selection]
+```
+
+## Game Details
+
+```mermaid
+flowchart LR
+    GD[Game Details]
+    GD -->|"Download"| GL[Game List]
+    GD -->|"Options"| GO[Game Options] --> GD
+    GD -->|"Back"| GL
 ```
 
 ---
@@ -124,26 +139,27 @@ flowchart TD
 
 ## State Descriptions
 
-| State                         | Description                                    |
-|-------------------------------|------------------------------------------------|
-| Platform Selection            | Main menu showing platforms and collections    |
-| Game List                     | List of games for selected platform/collection |
-| Game Details                  | Detailed view with metadata and download       |
-| Game Options                  | Per-game settings (save directory)             |
-| Search                        | On-screen keyboard for game search             |
-| Collection List               | List of available collections                  |
-| Collection Platform Selection | Platform filter within a collection            |
-| Collection Search             | On-screen keyboard for collection search       |
-| Settings                      | Main settings menu                             |
-| General Settings              | Box art, download behavior, language           |
-| Collections Settings          | Collection display options                     |
-| Save Sync Settings            | Save sync mode and per-platform config         |
-| Advanced Settings             | Timeouts and cache management                  |
-| Platform Mapping              | Configure ROM directory mappings               |
-| Refresh Cache                 | Select and refresh cache types                 |
-| Artwork Sync                  | Pre-cache artwork for all games                |
-| Info                          | App info and logout option                     |
-| Update Check                  | Check for and install updates                  |
-| Logout Confirmation           | Confirm logout action                          |
-| Save Sync                     | Manual save synchronization                    |
-| BIOS Download                 | Download BIOS files                            |
+| State                         | Description                                                                                                                                                          |
+|-------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Platform Selection            | Main menu showing platforms and collections                                                                                                                          |
+| Game List                     | List of games for selected platform/collection                                                                                                                       |
+| Game Details                  | Detailed view with metadata and download                                                                                                                             |
+| Game Options                  | Per-game settings (save directory)                                                                                                                                   |
+| Game Filters                  | Filter games by genre, franchise, platform, etc. Changing a filter dynamically updates available options for other filters and clears selections that become invalid |
+| Search                        | On-screen keyboard for game search                                                                                                                                   |
+| Collection List               | List of available collections                                                                                                                                        |
+| Collection Platform Selection | Platform filter within a collection                                                                                                                                  |
+| Collection Search             | On-screen keyboard for collection search                                                                                                                             |
+| Settings                      | Main settings menu                                                                                                                                                   |
+| General Settings              | Box art, download behavior, language                                                                                                                                 |
+| Collections Settings          | Collection display options                                                                                                                                           |
+| Save Sync Settings            | Save sync mode and per-platform config                                                                                                                               |
+| Advanced Settings             | Timeouts and cache management                                                                                                                                        |
+| Platform Mapping              | Configure ROM directory mappings                                                                                                                                     |
+| Refresh Cache                 | Select and refresh cache types                                                                                                                                       |
+| Artwork Sync                  | Pre-cache artwork for all games                                                                                                                                      |
+| Info                          | App info (version, CFW, RomM version) and logout option                                                                                                              |
+| Update Check                  | Check for and install updates                                                                                                                                        |
+| Logout Confirmation           | Confirm logout action                                                                                                                                                |
+| Save Sync                     | Manual save synchronization                                                                                                                                          |
+| BIOS Download                 | Download BIOS files                                                                                                                                                  |

@@ -26,6 +26,14 @@ const (
 	ftCollection
 )
 
+type GameListApplied int
+
+const (
+	GameListAppliedNone GameListApplied = iota
+	GameListAppliedSearch
+	GameListAppliedFilters
+)
+
 type GameListInput struct {
 	Config               *internal.Config
 	Host                 romm.Host
@@ -34,6 +42,8 @@ type GameListInput struct {
 	Games                []romm.Rom
 	HasBIOS              bool
 	SearchFilter         string
+	GameFilter           cache.GameFilter
+	LastApplied          GameListApplied
 	LastSelectedIndex    int
 	LastSelectedPosition int
 }
@@ -44,6 +54,8 @@ type GameListOutput struct {
 	Platform             romm.Platform
 	Collection           romm.Collection
 	SearchFilter         string
+	GameFilter           cache.GameFilter
+	LastApplied          GameListApplied
 	AllGames             []romm.Rom
 	HasBIOS              bool
 	LastSelectedIndex    int
@@ -83,6 +95,8 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 		Platform:             input.Platform,
 		Collection:           input.Collection,
 		SearchFilter:         input.SearchFilter,
+		GameFilter:           input.GameFilter,
+		LastApplied:          input.LastApplied,
 		AllGames:             games,
 		HasBIOS:              hasBIOS,
 		LastSelectedIndex:    input.LastSelectedIndex,
@@ -90,6 +104,31 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 	}
 
 	displayGames := stringutil.PrepareRomNames(games)
+
+	if input.GameFilter.HasActiveFilters() {
+		if cm := cache.GetCacheManager(); cm != nil {
+			filter := input.GameFilter
+			filter.PlatformID = input.Platform.ID
+			if filtered, err := cm.GetFilteredGames(filter); err == nil {
+				if isCollectionSet(input.Collection) {
+					// Intersect: keep only collection games that match the filter
+					allowed := make(map[int]struct{}, len(filtered))
+					for _, g := range filtered {
+						allowed[g.ID] = struct{}{}
+					}
+					kept := make([]romm.Rom, 0, len(displayGames))
+					for _, g := range displayGames {
+						if _, ok := allowed[g.ID]; ok {
+							kept = append(kept, g)
+						}
+					}
+					displayGames = kept
+				} else {
+					displayGames = stringutil.PrepareRomNames(filtered)
+				}
+			}
+		}
+	}
 
 	if input.Config.DownloadedGames == internal.DownloadedGamesModeFilter {
 		filteredGames := make([]romm.Rom, 0, len(displayGames))
@@ -172,6 +211,10 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 	}
 
 	title := displayName
+	if input.GameFilter.HasActiveFilters() {
+		filterLabel := i18n.Localize(&goi18n.Message{ID: "games_list_filtered", Other: "[Filtered]"}, nil)
+		title = fmt.Sprintf("%s %s", filterLabel, title)
+	}
 	if input.SearchFilter != "" {
 		message := i18n.Localize(&goi18n.Message{ID: "games_list_search_prefix", Other: "[Search: \"{{.Query}}\"]"}, map[string]interface{}{"Query": input.SearchFilter})
 		title = fmt.Sprintf("%s %s", message, displayName)
@@ -184,8 +227,7 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 		} else {
 			s.showEmptyMessage(displayName, input.SearchFilter)
 		}
-		if input.SearchFilter != "" {
-			output.Action = GameListActionSearch
+		if clearLastFilter(&output, input.LastApplied) {
 			return output, nil
 		}
 		output.Action = GameListActionBack
@@ -214,25 +256,23 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 	options.MultiSelectButton = gabaconst.VirtualButtonSelect
 	options.DeselectAllButton = gabaconst.VirtualButtonL1
 	options.SelectAllButton = gabaconst.VirtualButtonR1
-	options.HelpButton = gabaconst.VirtualButtonMenu
+	options.SecondaryActionButton = gabaconst.VirtualButtonY
 
 	if hasBIOS && !internal.IsKidModeEnabled() {
-		options.SecondaryActionButton = gabaconst.VirtualButtonY
+		options.TertiaryActionButton = gabaconst.VirtualButtonMenu
 	}
 
-	options.HelpTitle = i18n.Localize(&goi18n.Message{ID: "games_list_help_title", Other: "Games List Help"}, nil)
-	options.HelpText = strings.Split(i18n.Localize(&goi18n.Message{ID: "games_list_help_body", Other: "A - Select a game\nB - Go back to the previous screen\nX - Search for games by name\nSelect - Toggle multi-select mode\n  In multi-select mode:\n  - Use D-Pad to navigate\n  - Press A to toggle selection\n  - Press L1 to deselect all\n  - Press R1 to select all\n  - Press Start to confirm selections\nMenu - Show this help screen\nD-Pad - Navigate the game list"}, nil), "\n")
-	options.HelpExitText = i18n.Localize(&goi18n.Message{ID: "help_exit_text", Other: "Press any button to close help"}, nil)
+	var footerItems []gaba.FooterHelpItem
 
-	footerItems := []gaba.FooterHelpItem{
-		{ButtonName: i18n.Localize(&goi18n.Message{ID: "button_menu", Other: "Menu"}, nil), HelpText: i18n.Localize(&goi18n.Message{ID: "button_help", Other: "Help"}, nil)},
-	}
+	footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_back", Other: "Back"}, nil)})
 
 	if hasBIOS && !internal.IsKidModeEnabled() {
-		footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: "Y", HelpText: i18n.Localize(&goi18n.Message{ID: "button_bios", Other: "BIOS"}, nil)})
+		footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: i18n.Localize(&goi18n.Message{ID: "button_menu", Other: "Menu"}, nil), HelpText: i18n.Localize(&goi18n.Message{ID: "button_bios", Other: "BIOS"}, nil)})
 	}
 
-	footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: "X", HelpText: i18n.Localize(&goi18n.Message{ID: "button_search", Other: "Search"}, nil)})
+	footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: "Y", HelpText: i18n.Localize(&goi18n.Message{ID: "button_filters", Other: "Filters"}, nil), Group: gaba.FooterGroupRight})
+
+	footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: "X", HelpText: i18n.Localize(&goi18n.Message{ID: "button_search", Other: "Search"}, nil), Group: gaba.FooterGroupRight})
 
 	options.FooterHelpItems = footerItems
 
@@ -243,11 +283,7 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 	res, err := gaba.List(options)
 	if err != nil {
 		if errors.Is(err, gaba.ErrCancelled) {
-			if input.SearchFilter != "" {
-				output.SearchFilter = ""
-				output.LastSelectedIndex = 0
-				output.LastSelectedPosition = 0
-				output.Action = GameListActionClearSearch
+			if clearLastFilter(&output, input.LastApplied) {
 				return output, nil
 			}
 			output.Action = GameListActionBack
@@ -273,6 +309,12 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 		return output, nil
 
 	case gaba.ListActionSecondaryTriggered:
+		output.LastSelectedIndex = res.Selected[0]
+		output.LastSelectedPosition = res.VisiblePosition
+		output.Action = GameListActionFilters
+		return output, nil
+
+	case gaba.ListActionTertiaryTriggered:
 		output.Action = GameListActionBIOS
 		return output, nil
 	}
@@ -567,6 +609,51 @@ func fetchList(queryID int, fetchType fetchType) ([]romm.Rom, error) {
 	}
 
 	return nil, fmt.Errorf("unsupported fetch type")
+}
+
+func clearLastFilter(output *GameListOutput, lastApplied GameListApplied) bool {
+	hasFilters := output.GameFilter.HasActiveFilters()
+	hasSearch := output.SearchFilter != ""
+
+	reset := func() {
+		output.LastSelectedIndex = 0
+		output.LastSelectedPosition = 0
+		output.Action = GameListActionClearSearch
+	}
+
+	if lastApplied == GameListAppliedFilters && hasFilters {
+		output.GameFilter = cache.GameFilter{}
+		if hasSearch {
+			output.LastApplied = GameListAppliedSearch
+		} else {
+			output.LastApplied = GameListAppliedNone
+		}
+		reset()
+		return true
+	}
+	if lastApplied == GameListAppliedSearch && hasSearch {
+		output.SearchFilter = ""
+		if hasFilters {
+			output.LastApplied = GameListAppliedFilters
+		} else {
+			output.LastApplied = GameListAppliedNone
+		}
+		reset()
+		return true
+	}
+
+	if hasFilters {
+		output.GameFilter = cache.GameFilter{}
+		reset()
+		return true
+	}
+	if hasSearch {
+		output.SearchFilter = ""
+		reset()
+		return true
+	}
+
+	return false
 }
 
 func filterList(itemList []romm.Rom, filter string) []romm.Rom {

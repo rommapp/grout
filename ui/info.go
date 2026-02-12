@@ -2,6 +2,7 @@ package ui
 
 import (
 	"errors"
+	"grout/cfw"
 	"grout/internal/imageutil"
 	"grout/romm"
 	"grout/version"
@@ -13,7 +14,9 @@ import (
 )
 
 type InfoInput struct {
-	Host romm.Host
+	Host        romm.Host
+	CFW         cfw.CFW
+	RommVersion string
 }
 
 type InfoOutput struct {
@@ -70,8 +73,14 @@ func (s *InfoScreen) buildSections(input InfoInput) []gaba.Section {
 		{Label: i18n.Localize(&goi18n.Message{ID: "info_version", Other: "Version"}, nil), Value: versionInfo.Version},
 		{Label: i18n.Localize(&goi18n.Message{ID: "info_commit", Other: "Commit"}, nil), Value: versionInfo.GitCommit},
 		{Label: i18n.Localize(&goi18n.Message{ID: "info_build_date", Other: "Build Date"}, nil), Value: versionInfo.BuildDate},
+		{Label: i18n.Localize(&goi18n.Message{ID: "info_cfw", Other: "CFW"}, nil), Value: string(input.CFW)},
 	}
 	sections = append(sections, gaba.NewInfoSection("Grout", versionMetadata))
+
+	rommVersion := input.RommVersion
+	if rommVersion == "" {
+		rommVersion = i18n.Localize(&goi18n.Message{ID: "info_unknown", Other: "Unknown"}, nil)
+	}
 
 	metadata := []gaba.MetadataItem{
 		{
@@ -81,6 +90,10 @@ func (s *InfoScreen) buildSections(input InfoInput) []gaba.Section {
 		{
 			Label: i18n.Localize(&goi18n.Message{ID: "info_user", Other: "User"}, nil),
 			Value: input.Host.Username,
+		},
+		{
+			Label: i18n.Localize(&goi18n.Message{ID: "info_romm_version", Other: "Version"}, nil),
+			Value: rommVersion,
 		},
 	}
 

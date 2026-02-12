@@ -25,6 +25,13 @@ func runWithRouter(config *internal.Config, currentCFW cfw.CFW, platforms []romm
 	}
 	currentAppState = state
 
+	go func() {
+		client := romm.NewClientFromHost(state.Host)
+		if heartbeat, err := client.GetHeartbeat(); err == nil {
+			state.RommVersion.Store(heartbeat.System.Version)
+		}
+	}()
+
 	r := buildRouter(state, quitOnBack, showCollections)
 
 	initialInput := ui.PlatformSelectionInput{
@@ -200,5 +207,10 @@ func registerScreens(r *router.Router, state *AppState) {
 	r.Register(ScreenUpdateCheck, func(input any) (any, error) {
 		screen := ui.NewUpdateScreen()
 		return screen.Draw(input.(ui.UpdateInput))
+	})
+
+	r.Register(ScreenGameFilters, func(input any) (any, error) {
+		screen := ui.NewGameFiltersScreen()
+		return screen.Draw(input.(ui.GameFiltersInput))
 	})
 }

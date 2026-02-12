@@ -31,3 +31,15 @@
     border-color: #bea4e1;
     background-color: rgba(190, 164, 225, 0.1);
 }
+
+/* Primary button hover - darken instead of lighten */
+[data-md-color-scheme="slate"] .md-typeset .md-button--primary:hover {
+    background-color: #2a1750;
+    border-color: #2a1750;
+}
+
+/* Remove hover effect from feature cards */
+.md-typeset .grid.cards > ul > li:hover {
+    border-color: var(--md-default-fg-color--lightest);
+    box-shadow: none;
+}

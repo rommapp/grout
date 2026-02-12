@@ -75,6 +75,9 @@ other = "Назад"
 hash = "sha1-a7d7da6d80c497ad76b722c980dcc6f58e786281"
 other = "BIOS"
 
+[button_clear]
+other = "Очистить"
+
 [button_cancel]
 hash = "sha1-77dfd2135f4db726c47299bb55be26f7f4525a46"
 other = "Отмена"
@@ -98,6 +101,9 @@ other = "Переключить"
 [button_download]
 hash = "sha1-a479c9c34e878d07b4d67a73a48f432ad7dc53c8"
 other = "Скачать"
+
+[button_filters]
+other = "Фильтры"
 
 [button_exit]
 hash = "sha1-f83b6fe3aebf13744e866019556d9129cd7a55be"
@@ -205,6 +211,33 @@ other = "Пропустить"
 [common_true]
 hash = "sha1-88b33e4e12f75ac8bf792aebde41f1a090f3a612"
 other = "Да"
+
+[filter_age_rating]
+other = "Возрастной рейтинг"
+
+[filter_all]
+other = "Все"
+
+[filter_company]
+other = "Компания"
+
+[filter_franchise]
+other = "Франшиза"
+
+[filter_game_mode]
+other = "Режим игры"
+
+[filter_genre]
+other = "Жанр"
+
+[filter_language]
+other = "Язык"
+
+[filter_region]
+other = "Регион"
+
+[filter_tag]
+other = "Тег"
 
 [download_artwork]
 hash = "sha1-e4c568fc0f2c433d2144101b3b3eab991134eb4f"
@@ -329,6 +362,12 @@ other = "Каталог сохранений"
 [game_options_title]
 hash = "sha1-7ce298bd6c51841a35d3983c23dae2d00f50b6af"
 other = "Опции игры"
+
+[game_filters_title]
+other = "Фильтры"
+
+[games_list_filtered]
+other = "[Отфильтровано]"
 
 [games_list_filtered_out]
 hash = "sha1-211fbb3fb7df0619367d403f5cef6534484992d2"

@@ -11,23 +11,23 @@ A RomM Client for <a href="https://muos.dev">muOS</a>, <a href="https://knulli.o
 
 <br>
 
-[![license-badge-img]][license-badge]
+
+[![docs-badge-img]][docs-badge]
 [![release-badge-img]][release-badge]
 [![stars-badge-img]][stars-badge]
 [![downloads-badge-img]][downloads-badge]
 [![discord-badge-img]][discord-badge]
 
-![Grout preview, collection flow](.github/resources/webp/preview.webp "Grout preview, collection flow")
+![Grout demo](docs/resources/webp/preview.webp "Grout demo")
 
 </div>
 
 ---
 
-> [!IMPORTANT]                                                                                                                                                                                                                                     
+> [!IMPORTANT]
 > Grout aggressively adopts new RomM features.
 >
-> The required RomM version matches the first three components of Grout's version
-> number.                                                                                                                                                          
+> The required RomM version matches the first three components of Grout's version number.
 > The fourth component is for Grout-specific patches.
 >
 > Grout may still function on older RomM versions, but support will not be provided.
@@ -48,12 +48,12 @@ A RomM Client for <a href="https://muos.dev">muOS</a>, <a href="https://knulli.o
 
 Full documentation is available at **[grout.romm.app](https://grout.romm.app)**.
 
-| Guide | Description |
-|-------|-------------|
-| [Quick Start](https://grout.romm.app/getting-started/) | Get up and running in 5 steps |
-| [User Guide](https://grout.romm.app/usage/guide/) | Complete feature documentation |
-| [Settings Reference](https://grout.romm.app/usage/settings/) | All settings explained |
-| [Save Sync Guide](https://grout.romm.app/usage/save-sync/) | Keep saves synchronized across devices |
+| Guide                                                        | Description                            |
+|--------------------------------------------------------------|----------------------------------------|
+| [Quick Start](https://grout.romm.app/getting-started/)       | Get up and running in 5 steps          |
+| [User Guide](https://grout.romm.app/usage/guide/)            | Complete feature documentation         |
+| [Settings Reference](https://grout.romm.app/usage/settings/) | All settings explained                 |
+| [Save Sync Guide](https://grout.romm.app/usage/save-sync/)   | Keep saves synchronized across devices |
 
 ---
 
@@ -61,10 +61,10 @@ Full documentation is available at **[grout.romm.app](https://grout.romm.app)**.
 
 Interested in contributing? We'd love your help!
 
-| Guide | Description |
-|-------|-------------|
-| [Contributing Guide](https://grout.romm.app/contributing/) | How to contribute code, translations, and more |
-| [Development Guide](https://grout.romm.app/contributing/development/) | Set up your local environment and build Grout |
+| Guide                                                                 | Description                                    |
+|-----------------------------------------------------------------------|------------------------------------------------|
+| [Contributing Guide](https://grout.romm.app/contributing/)            | How to contribute code, translations, and more |
+| [Development Guide](https://grout.romm.app/contributing/development/) | Set up your local environment and build Grout  |
 
 ---
 
@@ -76,7 +76,7 @@ Please [create an issue](https://github.com/rommapp/grout/issues/new/choose) and
 
 ## Contributors
 
-Grout is built by the community for the community. 
+Grout is built by the community for the community.
 
 Thank you to everyone who has helped make this project better!
 
@@ -94,9 +94,9 @@ If you enjoy using Grout and feel inclined to pay it forward, go do something ni
 
 <!-- Badges -->
 
-[license-badge-img]: https://img.shields.io/github/license/rommapp/grout?style=for-the-badge&color=007C77
+[docs-badge-img]: https://img.shields.io/badge/user%20guide-007C77?style=for-the-badge
 
-[license-badge]: LICENSE
+[docs-badge]: https://grout.romm.app/usage/guide/
 
 [release-badge-img]: https://img.shields.io/github/v/release/rommapp/grout?sort=semver&style=for-the-badge&color=007C77
 
@@ -113,13 +113,3 @@ If you enjoy using Grout and feel inclined to pay it forward, go do something ni
 [discord-badge-img]: https://img.shields.io/badge/discord-7289da?style=for-the-badge&color=007C77
 
 [discord-badge]: https://discord.gg/P5HtHnhUDH
-
-<!-- Links -->
-
-[discord-invite]: https://invidget.switchblade.xyz/P5HtHnhUDH
-
-[discord-invite-url]: https://discord.gg/P5HtHnhUDH
-
-[oc-donate-img]: https://opencollective.com/romm/donate/button.png?color=blue
-
-[oc-donate]: https://opencollective.com/romm

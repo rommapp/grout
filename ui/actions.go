@@ -21,6 +21,7 @@ const (
 	GameListActionBIOS
 	GameListActionBack
 	GameListActionClearSearch
+	GameListActionFilters
 )
 
 type GameDetailsAction int
@@ -125,6 +126,13 @@ type LogoutConfirmationAction int
 const (
 	LogoutConfirmationActionConfirm LogoutConfirmationAction = iota
 	LogoutConfirmationActionCancel
+)
+
+type GameFiltersAction int
+
+const (
+	GameFiltersActionApply GameFiltersAction = iota
+	GameFiltersActionCancel
 )
 
 type UpdateCheckAction int

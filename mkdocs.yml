@@ -93,6 +93,7 @@ nav:
 copyright: Copyright &copy; 2025 RomM Team
 
 extra:
+  generator: false
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/rommapp/grout

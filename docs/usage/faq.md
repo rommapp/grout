@@ -54,6 +54,10 @@ collection.
 
 ## Downloading Games
 
+### Can I filter the games list?
+
+Yes. Press `Y` from any game list to filter by genre, franchise, company, game mode, region, language, age rating, or tag. Only categories with available values for the current platform are shown. Press `B` to clear all filters.
+
 ### Can I download multiple games at once?
 
 Yes. Press `Select` to enter multi-select mode, then use `A` to toggle individual games, `R1` to select all, or `L1` to
@@ -159,7 +163,7 @@ Games for that platform won't be visible in Grout and can't be downloaded until 
 
 ### How do I download BIOS files?
 
-Navigate to a platform. If the platform in RomM has BIOS files, Grout will show a prompt in the footer to press 'Y'.
+Navigate to a platform's game list. If the platform in RomM has BIOS files, Grout will show a prompt in the footer to press `Menu`.
 From there Grout will list the BIOS files along with their status (Ready or Missing).
 
 ### Not all platforms show a BIOS option. Why?
