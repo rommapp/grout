@@ -449,7 +449,7 @@ func transitionSettings(ctx *transitionContext, result any) (router.Screen, any)
 
 	case ui.SettingsActionInfo:
 		ctx.stack.Push(ScreenSettings, pushInput, r)
-		return ScreenInfo, ui.InfoInput{Host: ctx.state.Host}
+		return ScreenInfo, buildInfoInput(ctx.state)
 
 	case ui.SettingsActionCheckUpdate:
 		ctx.stack.Push(ScreenSettings, pushInput, r)
@@ -542,10 +542,22 @@ func transitionSaveSyncSettings(ctx *transitionContext, result any) (router.Scre
 	return popOrExit(ctx.stack)
 }
 
+func buildInfoInput(state *AppState) ui.InfoInput {
+	var rommVersion string
+	if v, ok := state.RommVersion.Load().(string); ok {
+		rommVersion = v
+	}
+	return ui.InfoInput{
+		Host:        state.Host,
+		CFW:         state.CFW,
+		RommVersion: rommVersion,
+	}
+}
+
 func transitionInfo(ctx *transitionContext, result any) (router.Screen, any) {
 	r := result.(ui.InfoOutput)
 	if r.Action == ui.InfoActionLogout {
-		ctx.stack.Push(ScreenInfo, ui.InfoInput{Host: ctx.state.Host}, nil)
+		ctx.stack.Push(ScreenInfo, buildInfoInput(ctx.state), nil)
 		return ScreenLogoutConfirmation, nil
 	}
 	return popOrExit(ctx.stack)

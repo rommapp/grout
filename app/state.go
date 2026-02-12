@@ -19,6 +19,8 @@ type AppState struct {
 	CFW       cfw.CFW
 	Platforms []romm.Platform
 
+	RommVersion atomic.Value // string
+
 	AutoSync   *sync.AutoSync
 	AutoUpdate *update.AutoUpdate
 	CacheSync  *cache.BackgroundSync

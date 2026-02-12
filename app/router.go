@@ -25,6 +25,13 @@ func runWithRouter(config *internal.Config, currentCFW cfw.CFW, platforms []romm
 	}
 	currentAppState = state
 
+	go func() {
+		client := romm.NewClientFromHost(state.Host)
+		if heartbeat, err := client.GetHeartbeat(); err == nil {
+			state.RommVersion.Store(heartbeat.System.Version)
+		}
+	}()
+
 	r := buildRouter(state, quitOnBack, showCollections)
 
 	initialInput := ui.PlatformSelectionInput{
