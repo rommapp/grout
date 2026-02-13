@@ -64,17 +64,16 @@ func (s *GeneralSettingsScreen) Draw(input GeneralSettingsInput) (GeneralSetting
 }
 
 func (s *GeneralSettingsScreen) buildMenuItems(config *internal.Config) []gaba.ItemWithOptions {
+	isMuOS := cfw.GetCFW() == cfw.MuOS
 	showArtKind := atomic.Bool{}
 	showArtKind.Store(config.DownloadArt)
+	displayDownloadArtPreview := atomic.Bool{}
+	displayDownloadArtPreview.Store(showArtKind.Load() && isMuOS)
 
 	downloadArtUpdateFunc := func(val interface{}) {
 		showArtKind.Store(val.(bool))
+		displayDownloadArtPreview.Store(showArtKind.Load() && isMuOS)
 	}
-
-	isMuOS := atomic.Bool{}
-	isMuOS.Store(cfw.GetCFW() == cfw.MuOS)
-	displayDownloadArtPreview := atomic.Bool{}
-	displayDownloadArtPreview.Store(showArtKind.Load() && isMuOS.Load())
 
 	return []gaba.ItemWithOptions{
 		{
