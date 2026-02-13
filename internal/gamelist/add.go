@@ -69,30 +69,32 @@ func (gl *GameList) AddRomGame(entry RomGameEntry) {
 
 	if len(entry.Game.Metadatum.Companies) > 0 {
 		gameMetadata[DeveloperElement] = strings.Join(entry.Game.Metadatum.Companies, ", ")
+	} else if entry.Game.ScreenScraperMetadata.Companies != nil && len(entry.Game.ScreenScraperMetadata.Companies) > 0 {
+		gameMetadata[DeveloperElement] = strings.Join(entry.Game.ScreenScraperMetadata.Companies, ", ")
 	}
 
 	gl.AdddOrUpdateEntry(entry.Game.Name, gameMetadata)
 }
 
-func AddRomGamesToGamelist(entry []RomGameEntry) error {
+func AddRomGamesToGamelist(entry []RomGameEntry, gamelistFilename FileName) error {
 	gamelists := make(map[string]GameListEntry)
 	for _, game := range entry {
 		glEntry, exists := gamelists[game.Platform.FSSlug]
 		if !exists {
 			gl := New()
-			gamelistPath := fmt.Sprintf("%s/gamelist.xml", game.RomDirectory)
+			gamelistPath := fmt.Sprintf("%s/%s", game.RomDirectory, gamelistFilename)
 			if fileutil.FileExists(gamelistPath) {
 				data, err := os.ReadFile(gamelistPath)
 				if err != nil {
-					gaba.GetLogger().Debug("Error reading gamelist.xml file", "error", err)
+					gaba.GetLogger().Debug("Error reading gamelist file", "error", err, "path", gamelistPath)
 				}
 				if len(data) > 0 {
-					gaba.GetLogger().Debug("Found gamelist.xml file", "path", gamelistPath, "data", string(data))
+					gaba.GetLogger().Debug("Found gamelist file", "path", gamelistPath, "data", string(data))
 					if err := gl.Parse(data); err != nil {
-						gaba.GetLogger().Error("gamelist.xml not found or can't be parsed, skipping platform", "path", gamelistPath, "error", err)
+						gaba.GetLogger().Error("gamelist not found or can't be parsed, skipping platform", "path", gamelistPath, "error", err)
 						continue
 					} else {
-						gaba.GetLogger().Debug("Successfully parsed gamelist.xml file", "path", gamelistPath, "data", string(data))
+						gaba.GetLogger().Debug("Successfully parsed gamelist file", "path", gamelistPath, "data", string(data))
 					}
 				}
 			}
@@ -105,10 +107,10 @@ func AddRomGamesToGamelist(entry []RomGameEntry) error {
 
 	for _, glEntry := range gamelists {
 		if err := glEntry.GL.Save(glEntry.Path); err != nil {
-			gaba.GetLogger().Error("Unable to save gamelist.xml file", "error", err)
+			gaba.GetLogger().Error("Unable to save gamelist file", "error", err, "path", glEntry.Path)
 			return err
 		}
-		gaba.GetLogger().Debug("Successfully saved gamelist.xml file", "path", glEntry.Path)
+		gaba.GetLogger().Debug("Successfully saved gamelist file", "path", glEntry.Path)
 	}
 
 	return nil

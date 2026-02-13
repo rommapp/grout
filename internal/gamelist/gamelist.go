@@ -25,6 +25,13 @@ const (
 	RegionElement      = "region"
 )
 
+type FileName string
+
+const (
+	GameListFileName      FileName = "gamelist.xml"
+	MiyooGameListFileName FileName = "miyoogamelist.xml"
+)
+
 type GameList struct {
 	document *etree.Document
 }
