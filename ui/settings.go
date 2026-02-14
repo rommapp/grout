@@ -192,9 +192,6 @@ func (s *SettingsScreen) buildMenuItem(settingType SettingType, config *internal
 				{DisplayName: i18n.Localize(&goi18n.Message{ID: "save_sync_mode_manual", Other: "Manual"}, nil), Value: internal.SaveSyncModeManual, OnUpdate: func(v interface{}) {
 					visibility.saveSyncSettings.Store(true)
 				}},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "save_sync_mode_automatic", Other: "Automatic"}, nil), Value: internal.SaveSyncModeAutomatic, OnUpdate: func(v interface{}) {
-					visibility.saveSyncSettings.Store(true)
-				}},
 			},
 			SelectedOption: saveSyncModeToIndex(config.SaveSyncMode),
 		}
@@ -322,8 +319,6 @@ func saveSyncModeToIndex(mode internal.SaveSyncMode) int {
 		return 0
 	case internal.SaveSyncModeManual:
 		return 1
-	case internal.SaveSyncModeAutomatic:
-		return 2
 	default:
 		return 0
 	}

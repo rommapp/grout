@@ -5,7 +5,6 @@ import (
 	"grout/cfw"
 	"grout/internal"
 	"grout/romm"
-	"grout/sync"
 	"grout/ui"
 	"grout/update"
 
@@ -80,14 +79,6 @@ func buildRouter(state *AppState, quitOnBack bool, showCollections bool) *router
 func registerScreens(r *router.Router, state *AppState) {
 	r.Register(ScreenPlatformSelection, func(input any) (any, error) {
 		in := input.(ui.PlatformSelectionInput)
-
-		if state.Config.SaveSyncMode == internal.SaveSyncModeAutomatic {
-			state.autoSyncOnce.Do(func() {
-				state.AutoSync = sync.NewAutoSync(state.Host, state.Config)
-				ui.AddStatusBarIcon(state.AutoSync.Icon())
-				state.AutoSync.Start()
-			})
-		}
 
 		state.autoUpdateOnce.Do(func() {
 			state.AutoUpdate = update.NewAutoUpdate(state.CFW, state.Config.ReleaseChannel, &state.Host)

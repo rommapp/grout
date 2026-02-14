@@ -6,8 +6,6 @@ import (
 
 	_ "github.com/BrandonKowalski/certifiable"
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 func main() {
@@ -30,18 +28,6 @@ func main() {
 }
 
 func cleanup() {
-	if currentAppState != nil && currentAppState.AutoSync != nil && currentAppState.AutoSync.IsRunning() {
-		gaba.GetLogger().Info("Waiting for auto-sync to complete before exiting...")
-		gaba.ProcessMessage(
-			i18n.Localize(&goi18n.Message{ID: "auto_sync_waiting", Other: "Waiting for save sync to complete..."}, nil),
-			gaba.ProcessMessageOptions{},
-			func() (interface{}, error) {
-				currentAppState.AutoSync.Wait()
-				return nil, nil
-			},
-		)
-	}
-
 	if err := os.RemoveAll(".tmp"); err != nil {
 		gaba.GetLogger().Error("Failed to clean .tmp directory", "error", err)
 	}

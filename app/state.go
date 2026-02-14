@@ -5,7 +5,6 @@ import (
 	"grout/cfw"
 	"grout/internal"
 	"grout/romm"
-	"grout/sync"
 	"grout/update"
 	gosync "sync"
 	"sync/atomic"
@@ -21,24 +20,17 @@ type AppState struct {
 
 	RommVersion atomic.Value // string
 
-	AutoSync   *sync.AutoSync
 	AutoUpdate *update.AutoUpdate
 	CacheSync  *cache.BackgroundSync
 
-	autoSyncOnce   gosync.Once
 	autoUpdateOnce gosync.Once
 }
 
 func computeShowSaveSync(state *AppState) *atomic.Bool {
-	switch state.Config.SaveSyncMode {
-	case internal.SaveSyncModeManual:
+	if state.Config.SaveSyncMode == internal.SaveSyncModeManual {
 		showSaveSync := &atomic.Bool{}
 		showSaveSync.Store(true)
 		return showSaveSync
-	case internal.SaveSyncModeAutomatic:
-		if state.AutoSync != nil {
-			return state.AutoSync.ShowButton()
-		}
 	}
 	return nil
 }

@@ -4,7 +4,7 @@ go 1.25.6
 
 require (
 	github.com/BrandonKowalski/certifiable v1.3.0
-	github.com/BrandonKowalski/gabagool/v2 v2.9.0
+	github.com/BrandonKowalski/gabagool/v2 v2.9.1
 	github.com/beevik/etree v1.6.0
 	github.com/bodgit/sevenzip v1.6.1
 	github.com/nicksnyder/go-i18n/v2 v2.6.1
@@ -38,7 +38,7 @@ require (
 	github.com/veandco/go-sdl2 v0.4.40 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	go4.org v0.0.0-20260112195520-a5071408f32f // indirect
-	golang.org/x/exp v0.0.0-20260211191109-2735e65f0518 // indirect
+	golang.org/x/exp v0.0.0-20260212183809-81e46e3db34a // indirect
 	golang.org/x/net v0.50.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	modernc.org/libc v1.67.7 // indirect

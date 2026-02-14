@@ -111,6 +111,11 @@ func LoadConfig() (*Config, error) {
 		config.SaveSyncMode = SaveSyncModeOff
 	}
 
+	// Migrate legacy "automatic" mode to "manual"
+	if config.SaveSyncMode == "automatic" {
+		config.SaveSyncMode = SaveSyncModeManual
+	}
+
 	if config.ArtKind == "" {
 		config.ArtKind = artutil.ArtKindDefault
 	}

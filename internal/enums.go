@@ -11,9 +11,8 @@ const (
 type SaveSyncMode string
 
 const (
-	SaveSyncModeOff       SaveSyncMode = "off"
-	SaveSyncModeManual    SaveSyncMode = "manual"
-	SaveSyncModeAutomatic SaveSyncMode = "automatic"
+	SaveSyncModeOff    SaveSyncMode = "off"
+	SaveSyncModeManual SaveSyncMode = "manual"
 )
 
 type DownloadedGamesMode string

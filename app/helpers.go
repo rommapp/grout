@@ -34,12 +34,6 @@ func savePlatformOrder(state *AppState, platforms []romm.Platform) {
 	internal.SaveConfig(state.Config)
 }
 
-func triggerAutoSyncRouter(state *AppState) {
-	if state.AutoSync != nil {
-		state.AutoSync.Trigger()
-	}
-}
-
 func executeDownloadUI(state *AppState, r ui.GameDetailsOutput, stack *router.Stack) {
 	entry := stack.Peek()
 	var allGames []romm.Rom
