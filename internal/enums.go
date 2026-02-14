@@ -8,13 +8,6 @@ const (
 	ReleaseChannelBeta      ReleaseChannel = "beta"
 )
 
-type SaveSyncMode string
-
-const (
-	SaveSyncModeOff    SaveSyncMode = "off"
-	SaveSyncModeManual SaveSyncMode = "manual"
-)
-
 type DownloadedGamesMode string
 
 const (

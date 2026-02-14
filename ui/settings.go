@@ -6,16 +6,11 @@ import (
 	"grout/internal"
 	"grout/internal/artutil"
 	"grout/romm"
-	"sync/atomic"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
 	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
-
-type settingsVisibility struct {
-	saveSyncSettings atomic.Bool
-}
 
 type SettingsInput struct {
 	Config                *internal.Config
@@ -33,7 +28,6 @@ type SettingsOutput struct {
 	CollectionsSettingsClicked bool
 	DirectoryMappingsClicked   bool
 	AdvancedSettingsClicked    bool
-	SaveSyncSettingsClicked    bool
 	CheckUpdatesClicked        bool
 	LastSelectedIndex          int
 	LastVisibleStartIndex      int
@@ -51,8 +45,6 @@ const (
 	SettingGeneralSettings     SettingType = "general_settings"
 	SettingCollectionsSettings SettingType = "collections_settings"
 	SettingDirectoryMappings   SettingType = "directory_mappings"
-	SettingSaveSync            SettingType = "save_sync"
-	SettingSaveSyncSettings    SettingType = "save_sync_settings"
 	SettingAdvancedSettings    SettingType = "advanced_settings"
 	SettingInfo                SettingType = "info"
 	SettingCheckUpdates        SettingType = "check_updates"
@@ -62,8 +54,6 @@ var settingsOrder = []SettingType{
 	SettingGeneralSettings,
 	SettingCollectionsSettings,
 	SettingDirectoryMappings,
-	SettingSaveSync,
-	SettingSaveSyncSettings,
 	SettingAdvancedSettings,
 	SettingInfo,
 	SettingCheckUpdates,
@@ -73,10 +63,7 @@ func (s *SettingsScreen) Draw(input SettingsInput) (SettingsOutput, error) {
 	config := input.Config
 	output := SettingsOutput{Action: SettingsActionBack, Config: config}
 
-	visibility := &settingsVisibility{}
-	visibility.saveSyncSettings.Store(config.SaveSyncMode != internal.SaveSyncModeOff)
-
-	items := s.buildMenuItems(config, visibility)
+	items := s.buildMenuItems(config)
 
 	result, err := gaba.OptionsList(
 		i18n.Localize(&goi18n.Message{ID: "settings_title", Other: "Settings"}, nil),
@@ -136,12 +123,6 @@ func (s *SettingsScreen) Draw(input SettingsInput) (SettingsOutput, error) {
 			return output, nil
 		}
 
-		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_save_sync_settings", Other: "Save Sync Settings"}, nil) {
-			output.SaveSyncSettingsClicked = true
-			output.Action = SettingsActionSaveSync
-			return output, nil
-		}
-
 		if selectedText == i18n.Localize(&goi18n.Message{ID: "update_check_for_updates", Other: "Check for Updates"}, nil) {
 			output.CheckUpdatesClicked = true
 			output.Action = SettingsActionCheckUpdate
@@ -154,15 +135,15 @@ func (s *SettingsScreen) Draw(input SettingsInput) (SettingsOutput, error) {
 	return output, nil
 }
 
-func (s *SettingsScreen) buildMenuItems(config *internal.Config, visibility *settingsVisibility) []gaba.ItemWithOptions {
+func (s *SettingsScreen) buildMenuItems(config *internal.Config) []gaba.ItemWithOptions {
 	items := make([]gaba.ItemWithOptions, 0, len(settingsOrder))
 	for _, settingType := range settingsOrder {
-		items = append(items, s.buildMenuItem(settingType, config, visibility))
+		items = append(items, s.buildMenuItem(settingType))
 	}
 	return items
 }
 
-func (s *SettingsScreen) buildMenuItem(settingType SettingType, config *internal.Config, visibility *settingsVisibility) gaba.ItemWithOptions {
+func (s *SettingsScreen) buildMenuItem(settingType SettingType) gaba.ItemWithOptions {
 	switch settingType {
 	case SettingGeneralSettings:
 		return gaba.ItemWithOptions{
@@ -180,27 +161,6 @@ func (s *SettingsScreen) buildMenuItem(settingType SettingType, config *internal
 		return gaba.ItemWithOptions{
 			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_edit_mappings", Other: "Directory Mappings"}, nil)},
 			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
-		}
-
-	case SettingSaveSync:
-		return gaba.ItemWithOptions{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_save_sync", Other: "Save Sync"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "save_sync_mode_off", Other: "Off"}, nil), Value: internal.SaveSyncModeOff, OnUpdate: func(v interface{}) {
-					visibility.saveSyncSettings.Store(false)
-				}},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "save_sync_mode_manual", Other: "Manual"}, nil), Value: internal.SaveSyncModeManual, OnUpdate: func(v interface{}) {
-					visibility.saveSyncSettings.Store(true)
-				}},
-			},
-			SelectedOption: saveSyncModeToIndex(config.SaveSyncMode),
-		}
-
-	case SettingSaveSyncSettings:
-		return gaba.ItemWithOptions{
-			Item:        gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_save_sync_settings", Other: "Save Sync Settings"}, nil)},
-			Options:     []gaba.Option{{Type: gaba.OptionTypeClickable}},
-			VisibleWhen: &visibility.saveSyncSettings,
 		}
 
 	case SettingAdvancedSettings:
@@ -230,16 +190,8 @@ func (s *SettingsScreen) buildMenuItem(settingType SettingType, config *internal
 	}
 }
 
-func (s *SettingsScreen) applySettings(config *internal.Config, items []gaba.ItemWithOptions) {
-	for _, item := range items {
-		text := item.Item.Text
-		switch text {
-		case i18n.Localize(&goi18n.Message{ID: "settings_save_sync", Other: "Save Sync"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(internal.SaveSyncMode); ok {
-				config.SaveSyncMode = val
-			}
-		}
-	}
+func (s *SettingsScreen) applySettings(_ *internal.Config, _ []gaba.ItemWithOptions) {
+	// No toggle settings remain on the settings screen
 }
 
 func boolToIndex(b bool) int {
@@ -308,17 +260,6 @@ func languageToIndex(lang string) int {
 		return 6
 	case "ja":
 		return 7
-	default:
-		return 0
-	}
-}
-
-func saveSyncModeToIndex(mode internal.SaveSyncMode) int {
-	switch mode {
-	case internal.SaveSyncModeOff:
-		return 0
-	case internal.SaveSyncModeManual:
-		return 1
 	default:
 		return 0
 	}

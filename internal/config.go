@@ -20,7 +20,6 @@ var kidModeEnabled atomic.Bool
 type Config struct {
 	Hosts                        []romm.Host                 `json:"hosts,omitempty"`
 	DirectoryMappings            map[string]DirectoryMapping `json:"directory_mappings,omitempty"`
-	SaveSyncMode                 SaveSyncMode                `json:"save_sync_mode"`
 	SaveDirectoryMappings        map[string]string           `json:"save_directory_mappings,omitempty"`
 	GameSaveOverrides            map[int]string              `json:"game_save_overrides,omitempty"`
 	DownloadArt                  bool                        `json:"download_art,omitempty"`
@@ -105,15 +104,6 @@ func LoadConfig() (*Config, error) {
 
 	if config.CollectionView == "" {
 		config.CollectionView = CollectionViewPlatform
-	}
-
-	if config.SaveSyncMode == "" {
-		config.SaveSyncMode = SaveSyncModeOff
-	}
-
-	// Migrate legacy "automatic" mode to "manual"
-	if config.SaveSyncMode == "automatic" {
-		config.SaveSyncMode = SaveSyncModeManual
 	}
 
 	if config.ArtKind == "" {
