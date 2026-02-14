@@ -33,8 +33,13 @@ func FillGamesMetadata(entries []gamelist.RomGameEntry) {
 	logger := gaba.GetLogger()
 	switch GetCFW() {
 	case Knulli, ROCKNIX:
-		if err := gamelist.AddRomGamesToGamelist(entries); err != nil {
-			logger.Warn("Failed to refresh ES database", "error", err)
+		if err := gamelist.AddRomGamesToGamelist(entries, gamelist.GameListFileName); err != nil {
+			logger.Warn("Failed to add games to ES gamelist.xml", "error", err)
+		}
+		scheduleESRestart()
+	case Spruce, Allium:
+		if err := gamelist.AddRomGamesToGamelist(entries, gamelist.MiyooGameListFileName); err != nil {
+			logger.Warn("Failed to add games to miyoogamelist.xml", "error", err)
 		}
 	case MuOS:
 		for _, entry := range entries {
