@@ -16,10 +16,17 @@ import (
 
 func AddGameDescription(entry gamelist.RomGameEntry) {
 	logger := gaba.GetLogger()
-	gameTextPath := filepath.Join(GetTextDirectory(entry.Platform.FSSlug, entry.Platform.Name), fmt.Sprintf("%s.txt", entry.Game.FsNameNoExt))
+	textDir := GetTextDirectory(entry.Platform.FSSlug, entry.Platform.Name)
+	if err := os.MkdirAll(textDir, 0755); err != nil {
+		logger.Warn("Cannot create text directory", "path", textDir, "error", err)
+		return
+	}
+
+	gameTextPath := filepath.Join(textDir, fmt.Sprintf("%s.txt", entry.Game.FsNameNoExt))
 	gameTextFile, err := os.Create(gameTextPath)
 	if err != nil {
-		logger.Warn("Cannot create file %v: %v\n", gameTextPath, err)
+		logger.Warn("Cannot create file", "path", gameTextPath, "error", err)
+		return
 	}
 	defer gameTextFile.Close()
 
