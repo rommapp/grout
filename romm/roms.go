@@ -317,3 +317,31 @@ func (r Rom) GetArtworkURL(kind artutil.ArtKind, host Host) string {
 
 	return strings.ReplaceAll(coverURL, " ", "%20")
 }
+
+func (r Rom) GetScreenshotURL(host Host) string {
+	screenshotURL := ""
+	if len(r.UserScreenshots) > 0 {
+		screenshotURL = host.URL() + r.UserScreenshots[0].URLPath
+	} else if len(r.MergedScreenshots) > 0 {
+		screenshotURL = host.URL() + r.MergedScreenshots[0]
+	} else if r.ScreenScraperMetadata.ScreenshotURL != "" {
+		screenshotURL = r.ScreenScraperMetadata.ScreenshotURL
+	}
+
+	return strings.ReplaceAll(screenshotURL, " ", "%20")
+}
+
+func (r Rom) GetSplashArtURL(kind artutil.ArtKind, host Host) string {
+	splashArtURL := ""
+	if kind == artutil.ArtKindMarquee {
+		if r.ScreenScraperMetadata.MarqueePath != "" {
+			splashArtURL = host.URL() + r.ScreenScraperMetadata.MarqueePath
+		} else if r.ScreenScraperMetadata.MarqueeURL != "" {
+			splashArtURL = r.ScreenScraperMetadata.MarqueeURL
+		}
+	} else if kind == artutil.ArtKindTitle && r.ScreenScraperMetadata.TitleScreenURL != "" {
+		splashArtURL = r.ScreenScraperMetadata.TitleScreenURL
+	}
+
+	return strings.ReplaceAll(splashArtURL, " ", "%20")
+}

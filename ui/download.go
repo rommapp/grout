@@ -7,6 +7,7 @@ import (
 	"grout/cfw"
 	"grout/cfw/muos"
 	"grout/internal"
+	"grout/internal/artutil"
 	"grout/internal/fileutil"
 	"grout/internal/gamelist"
 	"grout/internal/imageutil"
@@ -51,6 +52,7 @@ type artDownload struct {
 	URL      string
 	Location string
 	GameName string
+	IsImage  bool
 }
 
 func NewDownloadScreen() *DownloadScreen {
@@ -394,6 +396,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 		})
 
 		if config.DownloadArt && (g.PathCoverLarge != "" || g.PathCoverSmall != "" || g.URLCover != "") {
+			// Prepare download for cover art
 			artDir := config.GetArtDirectory(gamePlatform)
 			artFileName := g.FsNameNoExt + ".png"
 			artLocation := filepath.Join(artDir, artFileName)
@@ -405,7 +408,35 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 				URL:      coverURL,
 				Location: artLocation,
 				GameName: g.Name,
+				IsImage:  true,
 			})
+
+			// Prepare download for additional art types if enabled
+			artPreviewDir := config.GetArtPreviewDirectory(gamePlatform)
+			if config.DownloadArtScreenshotPreview && artPreviewDir != "" {
+				screenshotPreviewLocation := filepath.Join(artPreviewDir, artFileName)
+				if screenshotURL := g.GetScreenshotURL(host); screenshotURL != "" {
+					artDownloads = append(artDownloads, artDownload{
+						URL:      screenshotURL,
+						Location: screenshotPreviewLocation,
+						GameName: g.Name,
+						IsImage:  true,
+					})
+				}
+			}
+
+			artSplashDir := config.GetArtSplashDirectory(gamePlatform)
+			if config.DownloadSplashArt != artutil.ArtKindNone && artSplashDir != "" {
+				splashArtLocation := filepath.Join(artSplashDir, artFileName)
+				if splashURL := g.GetSplashArtURL(config.DownloadSplashArt, host); splashURL != "" {
+					artDownloads = append(artDownloads, artDownload{
+						URL:      splashURL,
+						Location: splashArtLocation,
+						GameName: g.Name,
+						IsImage:  true,
+					})
+				}
+			}
 		}
 		gamesSummaries = append(gamesSummaries, gamelistRomEntry)
 	}

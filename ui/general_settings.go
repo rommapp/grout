@@ -2,6 +2,7 @@ package ui
 
 import (
 	"errors"
+	"grout/cfw"
 	"grout/internal"
 	"grout/internal/artutil"
 	"sync/atomic"
@@ -63,11 +64,15 @@ func (s *GeneralSettingsScreen) Draw(input GeneralSettingsInput) (GeneralSetting
 }
 
 func (s *GeneralSettingsScreen) buildMenuItems(config *internal.Config) []gaba.ItemWithOptions {
+	isMuOS := cfw.GetCFW() == cfw.MuOS
 	showArtKind := atomic.Bool{}
 	showArtKind.Store(config.DownloadArt)
+	displayDownloadArtPreview := atomic.Bool{}
+	displayDownloadArtPreview.Store(showArtKind.Load() && isMuOS)
 
 	downloadArtUpdateFunc := func(val interface{}) {
 		showArtKind.Store(val.(bool))
+		displayDownloadArtPreview.Store(showArtKind.Load() && isMuOS)
 	}
 
 	return []gaba.ItemWithOptions{
@@ -116,6 +121,25 @@ func (s *GeneralSettingsScreen) buildMenuItems(config *internal.Config) []gaba.I
 			VisibleWhen:    &showArtKind,
 		},
 		{
+			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_art_preview", Other: "Download Screenshot Preview"}, nil)},
+			Options: []gaba.Option{
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_true", Other: "True"}, nil), Value: true},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_false", Other: "False"}, nil), Value: false},
+			},
+			SelectedOption: boolToIndex(!config.DownloadArtScreenshotPreview),
+			VisibleWhen:    &displayDownloadArtPreview,
+		},
+		{
+			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_art_splash", Other: "Download Splash Art"}, nil)},
+			Options: []gaba.Option{
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_none", Other: "None"}, nil), Value: artutil.ArtKindNone},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_marquee", Other: "Marquee"}, nil), Value: artutil.ArtKindMarquee},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_title", Other: "Title"}, nil), Value: artutil.ArtKindTitle},
+			},
+			SelectedOption: boxArtToIndex(config.DownloadSplashArt),
+			VisibleWhen:    &displayDownloadArtPreview,
+		},
+		{
 			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_language", Other: "Language"}, nil)},
 			Options: []gaba.Option{
 				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_language_english", Other: "English"}, nil), Value: "en"},
@@ -154,6 +178,14 @@ func (s *GeneralSettingsScreen) applySettings(config *internal.Config, items []g
 		case i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind", Other: "Download Art Kind"}, nil):
 			if val, ok := item.Options[item.SelectedOption].Value.(artutil.ArtKind); ok {
 				config.ArtKind = val
+			}
+		case i18n.Localize(&goi18n.Message{ID: "settings_download_art_preview", Other: "Download Screenshot Preview"}, nil):
+			if val, ok := item.Options[item.SelectedOption].Value.(bool); ok {
+				config.DownloadArtScreenshotPreview = val
+			}
+		case i18n.Localize(&goi18n.Message{ID: "settings_download_art_splash", Other: "Download Splash Art"}, nil):
+			if val, ok := item.Options[item.SelectedOption].Value.(artutil.ArtKind); ok {
+				config.DownloadSplashArt = val
 			}
 
 		case i18n.Localize(&goi18n.Message{ID: "settings_compressed_downloads", Other: "Archived Downloads"}, nil):
