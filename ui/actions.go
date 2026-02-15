@@ -9,7 +9,6 @@ const (
 	PlatformSelectionActionSelected PlatformSelectionAction = iota
 	PlatformSelectionActionCollections
 	PlatformSelectionActionSettings
-	PlatformSelectionActionSaveSync
 	PlatformSelectionActionQuit
 )
 
@@ -71,7 +70,6 @@ const (
 	SettingsActionCollections
 	SettingsActionAdvanced
 	SettingsActionPlatformMapping
-	SettingsActionSaveSync
 	SettingsActionInfo
 	SettingsActionCheckUpdate
 	SettingsActionBack
@@ -105,13 +103,6 @@ type PlatformMappingAction int
 const (
 	PlatformMappingActionSaved PlatformMappingAction = iota
 	PlatformMappingActionBack
-)
-
-type SaveSyncSettingsAction int
-
-const (
-	SaveSyncSettingsActionSaved SaveSyncSettingsAction = iota
-	SaveSyncSettingsActionBack
 )
 
 type InfoAction int

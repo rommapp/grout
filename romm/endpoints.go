@@ -26,4 +26,13 @@ const (
 
 	endpointSaves           = "/api/saves"
 	endpointSaveIdentifiers = "/api/saves/identifiers"
+	endpointSaveSummary     = "/api/saves/summary"
+	endpointSaveByID        = "/api/saves/%d"
+	endpointSaveContent     = "/api/saves/%d/content"
+	endpointSaveDownloaded  = "/api/saves/%d/downloaded"
+	endpointSaveTrack       = "/api/saves/%d/track"
+	endpointSaveUntrack     = "/api/saves/%d/untrack"
+
+	endpointDevices    = "/api/devices"
+	endpointDeviceByID = "/api/devices/%s"
 )

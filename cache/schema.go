@@ -9,7 +9,7 @@ import (
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
 
-const schemaVersion = 7
+const schemaVersion = 9
 
 // nowUTC returns the current UTC time formatted as RFC3339 for consistent datetime storage
 func nowUTC() string {
@@ -66,6 +66,16 @@ func migrateIfNeeded(db *sql.DB) error {
 	if currentVersion < 7 {
 		if err := migrateToV7(db); err != nil {
 			return fmt.Errorf("migration to v7 failed: %w", err)
+		}
+	}
+
+	// v9 removes save_mappings and filename_mappings tables (save sync ripped out)
+	if currentVersion < 9 {
+		if _, err := db.Exec("DROP TABLE IF EXISTS save_mappings"); err != nil {
+			return fmt.Errorf("migration to v9: drop save_mappings: %w", err)
+		}
+		if _, err := db.Exec("DROP TABLE IF EXISTS filename_mappings"); err != nil {
+			return fmt.Errorf("migration to v9: drop filename_mappings: %w", err)
 		}
 	}
 
@@ -318,46 +328,6 @@ func createTables(db *sql.DB) error {
 			checked_at TEXT NOT NULL
 		)
 	`)
-	if err != nil {
-		return err
-	}
-
-	// filename_mappings stores user's local filenames that differ from RomM's fs_name
-	// This enables matching orphan ROMs by hash and remembering the association
-	_, err = tx.Exec(`
-		CREATE TABLE IF NOT EXISTS filename_mappings (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			platform_fs_slug TEXT NOT NULL,
-			local_filename_no_ext TEXT NOT NULL,
-			rom_id INTEGER NOT NULL,
-			rom_name TEXT NOT NULL,
-			matched_at TEXT NOT NULL,
-			UNIQUE(platform_fs_slug, local_filename_no_ext)
-		)
-	`)
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.Exec(`CREATE INDEX IF NOT EXISTS idx_filename_mappings_lookup ON filename_mappings(platform_fs_slug, local_filename_no_ext)`)
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.Exec(`
-		CREATE TABLE IF NOT EXISTS failed_lookups (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			platform_fs_slug TEXT NOT NULL,
-			local_filename_no_ext TEXT NOT NULL,
-			last_attempt TEXT NOT NULL,
-			UNIQUE(platform_fs_slug, local_filename_no_ext)
-		)
-	`)
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.Exec(`CREATE INDEX IF NOT EXISTS idx_failed_lookups ON failed_lookups(platform_fs_slug, local_filename_no_ext)`)
 	if err != nil {
 		return err
 	}

@@ -21,11 +21,9 @@ const (
 	ScreenCollectionsSettings
 	ScreenAdvancedSettings
 	ScreenPlatformMapping
-	ScreenSaveSyncSettings
 	ScreenInfo
 	ScreenLogoutConfirmation
 	ScreenRebuildCache
-	ScreenSaveSync
 	ScreenBIOSDownload
 	ScreenArtworkSync
 	ScreenUpdateCheck

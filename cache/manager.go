@@ -189,7 +189,7 @@ func (cm *Manager) Clear() error {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 
-	tables := []string{"games", "game_collections", "collections", "platforms", "bios_availability", "filename_mappings"}
+	tables := []string{"games", "game_collections", "collections", "platforms", "bios_availability"}
 	tables = append(tables, junctionTables...)
 	tables = append(tables, lookupTables...)
 

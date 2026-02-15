@@ -25,12 +25,3 @@ type AppState struct {
 
 	autoUpdateOnce gosync.Once
 }
-
-func computeShowSaveSync(state *AppState) *atomic.Bool {
-	if state.Config.SaveSyncMode == internal.SaveSyncModeManual {
-		showSaveSync := &atomic.Bool{}
-		showSaveSync.Store(true)
-		return showSaveSync
-	}
-	return nil
-}

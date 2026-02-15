@@ -58,16 +58,12 @@ func buildTransitionFunc(state *AppState, quitOnBack bool, initialShowCollection
 			return transitionAdvancedSettings(ctx, result)
 		case ScreenPlatformMapping:
 			return transitionPlatformMapping(ctx, result)
-		case ScreenSaveSyncSettings:
-			return transitionSaveSyncSettings(ctx, result)
 		case ScreenInfo:
 			return transitionInfo(ctx, result)
 		case ScreenLogoutConfirmation:
 			return transitionLogoutConfirmation(ctx, result)
 		case ScreenRebuildCache:
 			return transitionRebuildCache(ctx, result)
-		case ScreenSaveSync:
-			return popOrExit(stack)
 		case ScreenBIOSDownload:
 			return popOrExit(stack)
 		case ScreenArtworkSync:
@@ -93,7 +89,6 @@ func transitionPlatformSelection(ctx *transitionContext, result any) (router.Scr
 		Platforms:       &ctx.state.Platforms,
 		QuitOnBack:      ctx.quitOnBack,
 		ShowCollections: ctx.showCollections,
-		ShowSaveSync:    computeShowSaveSync(ctx.state),
 	}
 
 	switch r.Action {
@@ -117,13 +112,6 @@ func transitionPlatformSelection(ctx *transitionContext, result any) (router.Scr
 		return ScreenSettings, ui.SettingsInput{
 			Config: ctx.state.Config,
 			CFW:    ctx.state.CFW,
-			Host:   ctx.state.Host,
-		}
-
-	case ui.PlatformSelectionActionSaveSync:
-		ctx.stack.Push(ScreenPlatformSelection, pushInput, r)
-		return ScreenSaveSync, ui.SaveSyncInput{
-			Config: ctx.state.Config,
 			Host:   ctx.state.Host,
 		}
 
@@ -153,7 +141,7 @@ func transitionGameList(ctx *transitionContext, result any) (router.Screen, any)
 	case ui.GameListActionSelected:
 		if len(r.SelectedGames) > 1 {
 			executeMultiDownloadUI(ctx.state, r)
-			triggerAutoSyncRouter(ctx.state)
+
 			return ScreenGameList, ui.GameListInput{
 				Config:               ctx.state.Config,
 				Host:                 ctx.state.Host,
@@ -293,7 +281,7 @@ func transitionGameDetails(ctx *transitionContext, result any) (router.Screen, a
 	switch r.Action {
 	case ui.GameDetailsActionDownload:
 		executeDownloadUI(ctx.state, r, ctx.stack)
-		triggerAutoSyncRouter(ctx.state)
+
 		return popOrExit(ctx.stack)
 
 	case ui.GameDetailsActionOptions:
@@ -443,10 +431,6 @@ func transitionSettings(ctx *transitionContext, result any) (router.Screen, any)
 			PlatformsBinding: ctx.state.Config.PlatformsBinding,
 		}
 
-	case ui.SettingsActionSaveSync:
-		ctx.stack.Push(ScreenSettings, pushInput, r)
-		return ScreenSaveSyncSettings, ui.SaveSyncSettingsInput{Config: ctx.state.Config, CFW: ctx.state.CFW}
-
 	case ui.SettingsActionInfo:
 		ctx.stack.Push(ScreenSettings, pushInput, r)
 		return ScreenInfo, buildInfoInput(ctx.state)
@@ -533,15 +517,6 @@ func transitionPlatformMapping(ctx *transitionContext, result any) (router.Scree
 	return popOrExit(ctx.stack)
 }
 
-func transitionSaveSyncSettings(ctx *transitionContext, result any) (router.Screen, any) {
-	r := result.(ui.SaveSyncSettingsOutput)
-	if r.Config != nil {
-		ctx.state.Config = r.Config
-	}
-	triggerAutoSyncRouter(ctx.state)
-	return popOrExit(ctx.stack)
-}
-
 func buildInfoInput(state *AppState) ui.InfoInput {
 	var rommVersion string
 	if v, ok := state.RommVersion.Load().(string); ok {
@@ -572,7 +547,6 @@ func transitionLogoutConfirmation(ctx *transitionContext, result any) (router.Sc
 			Platforms:       &ctx.state.Platforms,
 			QuitOnBack:      ctx.quitOnBack,
 			ShowCollections: ctx.state.Config.ShowCollections(ctx.state.Host),
-			ShowSaveSync:    computeShowSaveSync(ctx.state),
 		}
 	}
 	return popOrExit(ctx.stack)
@@ -657,9 +631,6 @@ func popOrExit(stack *router.Stack) (router.Screen, any) {
 			output := entry.Resume.(ui.PlatformSelectionOutput)
 			input.LastSelectedIndex = output.LastSelectedIndex
 			input.LastSelectedPosition = output.LastSelectedPosition
-		}
-		if currentAppState != nil {
-			input.ShowSaveSync = computeShowSaveSync(currentAppState)
 		}
 		return entry.Screen, input
 

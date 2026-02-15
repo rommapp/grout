@@ -4,7 +4,6 @@ import (
 	"errors"
 	"grout/internal"
 	"grout/romm"
-	"sync/atomic"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	buttons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
@@ -16,7 +15,6 @@ type PlatformSelectionInput struct {
 	Platforms            *[]romm.Platform // Pointer to allow dynamic updates from state
 	QuitOnBack           bool
 	ShowCollections      bool
-	ShowSaveSync         *atomic.Bool // nil = hidden, otherwise controls visibility dynamically
 	LastSelectedIndex    int
 	LastSelectedPosition int
 }
@@ -82,13 +80,6 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (PlatformSe
 				HelpText:   i18n.Localize(&goi18n.Message{ID: "button_quit", Other: "Quit"}, nil),
 			})
 		}
-		if input.ShowSaveSync != nil && !internal.IsKidModeEnabled() {
-			footerItems = append(footerItems, gaba.FooterHelpItem{
-				ButtonName: "Y",
-				HelpText:   i18n.Localize(&goi18n.Message{ID: "button_save_sync", Other: "Sync"}, nil),
-				Show:       input.ShowSaveSync,
-			})
-		}
 		footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_select", Other: "Select"}, nil)})
 	} else {
 		footerItems = []gaba.FooterHelpItem{
@@ -100,9 +91,6 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (PlatformSe
 	options := gaba.DefaultListOptions("Grout", menuItems)
 	if !internal.IsKidModeEnabled() {
 		options.ActionButton = buttons.VirtualButtonX
-	}
-	if input.ShowSaveSync != nil {
-		options.SecondaryActionButton = buttons.VirtualButtonY
 	}
 	options.ReorderButton = buttons.VirtualButtonSelect
 	options.FooterHelpItems = footerItems
@@ -170,12 +158,6 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (PlatformSe
 	case gaba.ListActionTriggered:
 		if input.QuitOnBack {
 			output.Action = PlatformSelectionActionSettings
-			return output, nil
-		}
-
-	case gaba.ListActionSecondaryTriggered:
-		if input.QuitOnBack && input.ShowSaveSync != nil {
-			output.Action = PlatformSelectionActionSaveSync
 			return output, nil
 		}
 	}

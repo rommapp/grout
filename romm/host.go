@@ -14,6 +14,8 @@ type Host struct {
 	Username           string `json:"username,omitempty"`
 	Password           string `json:"password,omitempty"`
 	InsecureSkipVerify bool   `json:"insecure_skip_verify,omitempty"`
+
+	DeviceID string `json:"device_id,omitempty"`
 }
 
 func (h Host) ToLoggable() map[string]any {

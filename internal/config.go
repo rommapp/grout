@@ -20,8 +20,6 @@ var kidModeEnabled atomic.Bool
 type Config struct {
 	Hosts                        []romm.Host                 `json:"hosts,omitempty"`
 	DirectoryMappings            map[string]DirectoryMapping `json:"directory_mappings,omitempty"`
-	SaveDirectoryMappings        map[string]string           `json:"save_directory_mappings,omitempty"`
-	GameSaveOverrides            map[int]string              `json:"game_save_overrides,omitempty"`
 	DownloadArt                  bool                        `json:"download_art,omitempty"`
 	ShowBoxArt                   bool                        `json:"show_box_art,omitempty"`
 	UnzipDownloads               bool                        `json:"unzip_downloads,omitempty"`
@@ -65,8 +63,6 @@ func (c Config) ToLoggable() any {
 		"download_art":            c.DownloadArt,
 		"art_kind":                c.ArtKind,
 		"show_box_art":            c.ShowBoxArt,
-		"save_directory_mappings": c.SaveDirectoryMappings,
-		"game_save_overrides":     c.GameSaveOverrides,
 		"collections":             c.ShowRegularCollections,
 		"smart_collections":       c.ShowSmartCollections,
 		"virtual_collections":     c.ShowVirtualCollections,
@@ -128,10 +124,6 @@ func SaveConfig(config *Config) error {
 
 	if config.CollectionView == "" {
 		config.CollectionView = CollectionViewPlatform
-	}
-
-	if config.SaveSyncMode == "" {
-		config.SaveSyncMode = SaveSyncModeOff
 	}
 
 	if config.ReleaseChannel == "" {

@@ -37,7 +37,6 @@ func runWithRouter(config *internal.Config, currentCFW cfw.CFW, platforms []romm
 		Platforms:       &state.Platforms,
 		QuitOnBack:      quitOnBack,
 		ShowCollections: showCollections,
-		ShowSaveSync:    computeShowSaveSync(state),
 	}
 
 	return r.Run(ScreenPlatformSelection, initialInput)
@@ -85,10 +84,6 @@ func registerScreens(r *router.Router, state *AppState) {
 			ui.AddStatusBarIcon(state.AutoUpdate.Icon())
 			state.AutoUpdate.Start()
 		})
-
-		if in.ShowSaveSync == nil {
-			in.ShowSaveSync = computeShowSaveSync(state)
-		}
 
 		screen := ui.NewPlatformSelectionScreen()
 		return screen.Draw(in)
@@ -154,11 +149,6 @@ func registerScreens(r *router.Router, state *AppState) {
 		return screen.Draw(input.(ui.PlatformMappingInput))
 	})
 
-	r.Register(ScreenSaveSyncSettings, func(input any) (any, error) {
-		screen := ui.NewSaveSyncSettingsScreen()
-		return screen.Draw(input.(ui.SaveSyncSettingsInput))
-	})
-
 	r.Register(ScreenInfo, func(input any) (any, error) {
 		screen := ui.NewInfoScreen()
 		return screen.Draw(input.(ui.InfoInput))
@@ -174,11 +164,6 @@ func registerScreens(r *router.Router, state *AppState) {
 		in.CacheSync = state.CacheSync
 		screen := ui.NewRebuildCacheScreen()
 		return screen.Draw(in)
-	})
-
-	r.Register(ScreenSaveSync, func(input any) (any, error) {
-		screen := ui.NewSaveSyncScreen()
-		return screen.Draw(input.(ui.SaveSyncInput))
 	})
 
 	r.Register(ScreenBIOSDownload, func(input any) (any, error) {
@@ -204,4 +189,5 @@ func registerScreens(r *router.Router, state *AppState) {
 		screen := ui.NewGameFiltersScreen()
 		return screen.Draw(input.(ui.GameFiltersInput))
 	})
+
 }
