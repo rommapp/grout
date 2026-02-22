@@ -9,6 +9,7 @@ const (
 	PlatformSelectionActionSelected PlatformSelectionAction = iota
 	PlatformSelectionActionCollections
 	PlatformSelectionActionSettings
+	PlatformSelectionActionSaveSync
 	PlatformSelectionActionQuit
 )
 
@@ -72,6 +73,7 @@ const (
 	SettingsActionPlatformMapping
 	SettingsActionInfo
 	SettingsActionCheckUpdate
+	SettingsActionSaveSync
 	SettingsActionBack
 )
 
@@ -124,6 +126,34 @@ type GameFiltersAction int
 const (
 	GameFiltersActionApply GameFiltersAction = iota
 	GameFiltersActionCancel
+)
+
+type SaveConflictAction int
+
+const (
+	SaveConflictActionResolved SaveConflictAction = iota
+	SaveConflictActionCancel
+)
+
+type SyncMenuAction int
+
+const (
+	SyncMenuActionSyncNow SyncMenuAction = iota
+	SyncMenuActionSyncedGames
+	SyncMenuActionHistory
+	SyncMenuActionBack
+)
+
+type SyncedGamesAction int
+
+const (
+	SyncedGamesActionBack SyncedGamesAction = iota
+)
+
+type SyncHistoryAction int
+
+const (
+	SyncHistoryActionBack SyncHistoryAction = iota
 )
 
 type UpdateCheckAction int
