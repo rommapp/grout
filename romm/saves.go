@@ -110,6 +110,10 @@ func (sdq SaveDeviceQuery) Valid() bool {
 	return sdq.DeviceID != ""
 }
 
+type SaveDeviceBody struct {
+	DeviceID string `json:"device_id"`
+}
+
 type SaveSummaryQuery struct {
 	RomID int `qs:"rom_id"`
 }
@@ -130,13 +134,10 @@ func (c *Client) GetSaves(query SaveQuery) ([]Save, error) {
 	return saves, err
 }
 
-// DownloadSave downloads a save by its download path (legacy method for backward compat).
 func (c *Client) DownloadSave(downloadPath string) ([]byte, error) {
 	return c.doRequestRaw("GET", downloadPath, nil)
 }
 
-// DownloadSaveByID downloads a save by its ID with device tracking.
-// If optimistic is true, the server auto-updates the device sync record on download.
 func (c *Client) DownloadSaveByID(saveID int, deviceID string, optimistic bool) ([]byte, error) {
 	path := fmt.Sprintf(endpointSaveContent, saveID)
 	query := SaveContentQuery{
@@ -146,28 +147,24 @@ func (c *Client) DownloadSaveByID(saveID int, deviceID string, optimistic bool) 
 	return c.doRequestRawWithQuery("GET", path, query)
 }
 
-// ConfirmSaveDownloaded confirms that a save was successfully downloaded to a device.
 func (c *Client) ConfirmSaveDownloaded(saveID int, deviceID string) error {
 	path := fmt.Sprintf(endpointSaveDownloaded, saveID)
-	query := SaveDeviceQuery{DeviceID: deviceID}
-	return c.doRequest("POST", path, query, nil, nil)
+	body := SaveDeviceBody{DeviceID: deviceID}
+	return c.doRequest("POST", path, nil, body, nil)
 }
 
-// TrackSave marks a save as tracked for a device.
 func (c *Client) TrackSave(saveID int, deviceID string) error {
 	path := fmt.Sprintf(endpointSaveTrack, saveID)
-	query := SaveDeviceQuery{DeviceID: deviceID}
-	return c.doRequest("POST", path, query, nil, nil)
+	body := SaveDeviceBody{DeviceID: deviceID}
+	return c.doRequest("POST", path, nil, body, nil)
 }
 
-// UntrackSave marks a save as untracked for a device.
 func (c *Client) UntrackSave(saveID int, deviceID string) error {
 	path := fmt.Sprintf(endpointSaveUntrack, saveID)
-	query := SaveDeviceQuery{DeviceID: deviceID}
-	return c.doRequest("POST", path, query, nil, nil)
+	body := SaveDeviceBody{DeviceID: deviceID}
+	return c.doRequest("POST", path, nil, body, nil)
 }
 
-// GetSaveSummary returns a summary of saves for a ROM, grouped by slot.
 func (c *Client) GetSaveSummary(romID int) (SaveSummary, error) {
 	var summary SaveSummary
 	query := SaveSummaryQuery{RomID: romID}
@@ -175,7 +172,6 @@ func (c *Client) GetSaveSummary(romID int) (SaveSummary, error) {
 	return summary, err
 }
 
-// UploadSave uploads a save file (legacy method).
 func (c *Client) UploadSave(romID int, savePath string, emulator string) (Save, error) {
 	return c.UploadSaveWithQuery(UploadSaveQuery{
 		RomID:    romID,
@@ -183,7 +179,6 @@ func (c *Client) UploadSave(romID int, savePath string, emulator string) (Save, 
 	}, savePath)
 }
 
-// UploadSaveWithQuery uploads a save file with full query parameters.
 func (c *Client) UploadSaveWithQuery(query UploadSaveQuery, savePath string) (Save, error) {
 	file, err := os.Open(savePath)
 	if err != nil {

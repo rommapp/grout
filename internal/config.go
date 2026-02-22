@@ -40,6 +40,7 @@ type Config struct {
 
 	PlatformOrder         []string          `json:"platform_order,omitempty"`
 	SaveDirectoryMappings map[string]string `json:"save_directory_mappings,omitempty"`
+	SlotPreferences       map[string]string `json:"slot_preferences,omitempty"`
 
 	PlatformsBinding map[string]string `json:"-"`
 }
@@ -183,6 +184,35 @@ func (c *Config) LoadPlatformsBinding(host romm.Host, timeout ...time.Duration) 
 
 	c.PlatformsBinding = rommConfig.PlatformsBinding
 	return nil
+}
+
+func (c Config) GetDirectoryMapping(fsSlug string) (string, bool) {
+	if mapping, ok := c.DirectoryMappings[fsSlug]; ok {
+		return mapping.RelativePath, true
+	}
+	return "", false
+}
+
+// TODO: SlotPreferences should be moved out of the config file (e.g. into the cache DB or a dedicated store).
+func (c Config) GetSlotPreference(romID int) string {
+	if c.SlotPreferences != nil {
+		if slot, ok := c.SlotPreferences[fmt.Sprintf("%d", romID)]; ok {
+			return slot
+		}
+	}
+	return "default"
+}
+
+func (c *Config) SetSlotPreference(romID int, slot string) {
+	if c.SlotPreferences == nil {
+		c.SlotPreferences = make(map[string]string)
+	}
+	key := fmt.Sprintf("%d", romID)
+	if slot == "default" {
+		delete(c.SlotPreferences, key)
+	} else {
+		c.SlotPreferences[key] = slot
+	}
 }
 
 func (c Config) GetApiTimeout() time.Duration    { return c.ApiTimeout }

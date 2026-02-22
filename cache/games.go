@@ -1060,6 +1060,37 @@ func (cm *Manager) GetDistinctTags(platformID int) ([]string, error) {
 	return cm.GetDistinctValues("tags", "game_tags", "tag_id", platformID)
 }
 
+func (cm *Manager) GetRomByFSLookup(fsSlug, fsNameNoExt string) (romm.Rom, error) {
+	if cm == nil || !cm.initialized {
+		return romm.Rom{}, ErrNotInitialized
+	}
+
+	cm.mu.RLock()
+	defer cm.mu.RUnlock()
+
+	var dataJSON string
+	err := cm.db.QueryRow(`
+		SELECT data_json FROM games WHERE platform_fs_slug = ? AND fs_name_no_ext = ? LIMIT 1
+	`, fsSlug, fsNameNoExt).Scan(&dataJSON)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			cm.stats.recordMiss()
+			return romm.Rom{}, ErrCacheMiss
+		}
+		cm.stats.recordError()
+		return romm.Rom{}, newCacheError("get", "games", "fs_lookup", err)
+	}
+
+	var game romm.Rom
+	if err := json.Unmarshal([]byte(dataJSON), &game); err != nil {
+		cm.stats.recordError()
+		return romm.Rom{}, newCacheError("get", "games", "fs_lookup", err)
+	}
+
+	cm.stats.recordHit()
+	return game, nil
+}
+
 // PurgeDeletedGames removes cached games whose IDs are not in the provided list
 // of valid IDs from the server. Also cleans up related junction tables
 // and game_collections for the deleted games.
