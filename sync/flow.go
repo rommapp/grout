@@ -130,7 +130,7 @@ func ScanSaves(config *internal.Config) []LocalSave {
 				}
 
 				ext := strings.ToLower(filepath.Ext(entry.Name()))
-				if ext != ".sav" && ext != ".srm" {
+				if !ValidSaveExtensions[ext] {
 					continue
 				}
 
