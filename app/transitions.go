@@ -180,8 +180,22 @@ func transitionSyncMenu(ctx *transitionContext, result any) (router.Screen, any)
 
 func transitionSaveSyncSettings(ctx *transitionContext, result any) (router.Screen, any) {
 	r := result.(ui.SaveSyncSettingsOutput)
+	needsSave := false
+
 	if r.Host.DeviceID != "" && r.Host.DeviceID != ctx.state.Host.DeviceID {
 		ctx.state.Host.DeviceID = r.Host.DeviceID
+		needsSave = true
+	}
+	if r.Host.DeviceName != ctx.state.Host.DeviceName {
+		ctx.state.Host.DeviceName = r.Host.DeviceName
+		needsSave = true
+	}
+	if r.Config.SaveBackupLimit != ctx.state.Config.SaveBackupLimit {
+		ctx.state.Config.SaveBackupLimit = r.Config.SaveBackupLimit
+		needsSave = true
+	}
+
+	if needsSave {
 		ctx.state.Config.Hosts[0] = ctx.state.Host
 		internal.SaveConfig(ctx.state.Config)
 	}
@@ -468,7 +482,6 @@ func transitionSettings(ctx *transitionContext, result any) (router.Screen, any)
 	if r.Config != nil {
 		ctx.state.Config = r.Config
 		internal.SaveConfig(ctx.state.Config)
-		ctx.showCollections = ctx.state.Config.ShowCollections(ctx.state.Host)
 	}
 
 	pushInput := ui.SettingsInput{Config: ctx.state.Config, CFW: ctx.state.CFW, Host: ctx.state.Host}
@@ -517,6 +530,7 @@ func transitionSettings(ctx *transitionContext, result any) (router.Screen, any)
 		}
 
 	case ui.SettingsActionSaved, ui.SettingsActionBack:
+		ctx.showCollections = ctx.state.Config.ShowCollections(ctx.state.Host)
 		return popOrExitWithCollections(ctx.stack, ctx.showCollections, ctx.state.Host.DeviceID != "")
 	}
 

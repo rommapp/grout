@@ -2,6 +2,8 @@ github.com/BrandonKowalski/certifiable v1.3.0 h1:o4VbMMVqBQ8kYFqUFD7J3P6tJg9dVKW
 github.com/BrandonKowalski/certifiable v1.3.0/go.mod h1:fnYhDBTxp3ZeTYFkWDXSAo5m8ytUwGG/3dZHSzDH9UU=
 github.com/BrandonKowalski/gabagool/v2 v2.9.5 h1:ito/ibJY1PXvcXSF5xKvaioDQldHhgSUTvIIG4h+2Sc=
 github.com/BrandonKowalski/gabagool/v2 v2.9.5/go.mod h1:Iq/YFTz7+w8O78IE21kOkHbg3a4ZD2mjcd0S/jVhI94=
+github.com/BrandonKowalski/gabagool/v2 v2.11.0 h1:fGLIENQ73qg2eBniQPYkeVmILwVLqT/TqtUPkSHxd4I=
+github.com/BrandonKowalski/gabagool/v2 v2.11.0/go.mod h1:Iq/YFTz7+w8O78IE21kOkHbg3a4ZD2mjcd0S/jVhI94=
 github.com/BurntSushi/toml v1.6.0 h1:dRaEfpa2VI55EwlIW72hMRHdWouJeRF7TPYhI+AUQjk=
 github.com/BurntSushi/toml v1.6.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/andybalholm/brotli v1.2.0 h1:ukwgCxwYrmACq68yiUqwIWnGY0cTPox/M94sVwToPjQ=
@@ -109,6 +111,8 @@ modernc.org/goabi0 v0.2.0 h1:HvEowk7LxcPd0eq6mVOAEMai46V+i7Jrj13t4AzuNks=
 modernc.org/goabi0 v0.2.0/go.mod h1:CEFRnnJhKvWT1c1JTI3Avm+tgOWbkOu5oPA8eH8LnMI=
 modernc.org/libc v1.68.0 h1:PJ5ikFOV5pwpW+VqCK1hKJuEWsonkIJhhIXyuF/91pQ=
 modernc.org/libc v1.68.0/go.mod h1:NnKCYeoYgsEqnY3PgvNgAeaJnso968ygU8Z0DxjoEc0=
+modernc.org/libc v1.69.0 h1:YQJ5QMSReTgQ3QFmI0dudfjXIjCcYTUxcH8/9P9f0D8=
+modernc.org/libc v1.69.0/go.mod h1:YfLLduUEbodNV2xLU5JOnRHBTAHVHsVW3bVYGw0ZCV4=
 modernc.org/mathutil v1.7.1 h1:GCZVGXdaN8gTqB1Mf/usp1Y/hSqgI2vAGGP4jZMCxOU=
 modernc.org/mathutil v1.7.1/go.mod h1:4p5IwJITfppl0G4sUEDtCr4DthTaT47/N3aT6MhfgJg=
 modernc.org/memory v1.11.0 h1:o4QC8aMQzmcwCK3t3Ux/ZHmwFPzE6hf2Y5LbkRs+hbI=

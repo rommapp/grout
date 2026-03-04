@@ -66,7 +66,7 @@ func CheckForUpdate(c cfw.CFW, releaseChannel internal.ReleaseChannel, host *rom
 		// Find a Grout release matching the RomM version
 		release, err = FetchReleaseForRomMVersion(heartbeat.System.Version)
 		if err != nil {
-			return nil, fmt.Errorf("failed to find matching release: %w", err)
+			return nil, err
 		}
 	} else {
 		release, err = FetchLatestRelease(releaseChannel)

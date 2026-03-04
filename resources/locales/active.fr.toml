@@ -631,6 +631,9 @@ other = "{{.Name}} (Non trouvé dans RomM)"
 [save_sync_no_changes]
 other = "Tout est à jour !\nAllez jouer !"
 
+[save_sync_register_device]
+other = "Register Device"
+
 [save_sync_resolve_error]
 other = "Failed to connect to server.\nPlease check your connection and try again."
 
@@ -1041,6 +1044,8 @@ other = "il y a {{.Count}} mins"
 [update_available]
 hash = "sha1-678c7342e3859f9f76837180ff8b1901d504014d"
 other = "Mise à jour disponible : {{.Version}}"
+
+update_check_error = "{{.Error}}"
 
 [update_check_for_updates]
 hash = "sha1-8604ff8e6ae507998b6b132f2010e297ee238e72"

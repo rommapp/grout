@@ -30,26 +30,58 @@ func NewSaveSyncSettingsScreen() *SaveSyncSettingsScreen {
 }
 
 func (s *SaveSyncSettingsScreen) Draw(input SaveSyncSettingsInput) (SaveSyncSettingsOutput, error) {
+	if input.Host.DeviceID == "" {
+		return s.drawUnregistered(input)
+	}
+	return s.drawRegistered(input)
+}
+
+func (s *SaveSyncSettingsScreen) drawUnregistered(input SaveSyncSettingsInput) (SaveSyncSettingsOutput, error) {
+	output := SaveSyncSettingsOutput{Config: input.Config, Host: input.Host}
+
+	items := []gaba.ItemWithOptions{
+		{
+			Item: gaba.MenuItem{
+				Text: i18n.Localize(&goi18n.Message{ID: "save_sync_register_device", Other: "Register Device"}, nil),
+			},
+			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
+		},
+	}
+
+	result, err := gaba.OptionsList(
+		i18n.Localize(&goi18n.Message{ID: "settings_save_sync", Other: "Save Sync"}, nil),
+		gaba.OptionListSettings{
+			FooterHelpItems: []gaba.FooterHelpItem{FooterBack(), FooterSelect()},
+			StatusBar:       StatusBar(),
+			UseSmallTitle:   true,
+		},
+		items,
+	)
+
+	if err != nil {
+		if errors.Is(err, gaba.ErrCancelled) {
+			return output, nil
+		}
+		return output, err
+	}
+
+	if result.Action != gaba.ListActionSelected {
+		return output, nil
+	}
+
+	return s.registerDevice(output)
+}
+
+func (s *SaveSyncSettingsScreen) drawRegistered(input SaveSyncSettingsInput) (SaveSyncSettingsOutput, error) {
 	output := SaveSyncSettingsOutput{Config: input.Config, Host: input.Host}
 	logger := gaba.GetLogger()
-
-	currentName := ""
-	if input.Host.DeviceID != "" {
-		client := romm.NewClientFromHost(input.Host, input.Config.ApiTimeout)
-		device, err := client.GetDevice(input.Host.DeviceID)
-		if err == nil {
-			currentName = device.Name
-		} else {
-			logger.Warn("Failed to fetch device info", "error", err)
-		}
-	}
 
 	items := []gaba.ItemWithOptions{
 		{
 			Item: gaba.MenuItem{
 				Text: i18n.Localize(&goi18n.Message{ID: "save_sync_device_name", Other: "Device Name"}, nil),
 			},
-			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
+			Options: []gaba.Option{{Type: gaba.OptionTypeClickable, DisplayName: input.Host.DeviceName}},
 		},
 		{
 			Item: gaba.MenuItem{
@@ -96,7 +128,7 @@ func (s *SaveSyncSettingsScreen) Draw(input SaveSyncSettingsInput) (SaveSyncSett
 		return output, nil
 	}
 
-	defaultName := currentName
+	defaultName := input.Host.DeviceName
 	if defaultName == "" {
 		if hostname, err := os.Hostname(); err == nil {
 			defaultName = hostname
@@ -118,26 +150,48 @@ func (s *SaveSyncSettingsScreen) Draw(input SaveSyncSettingsInput) (SaveSyncSett
 
 	client := romm.NewClientFromHost(input.Host, input.Config.ApiTimeout)
 
-	if input.Host.DeviceID != "" {
-		var updateErr error
-		gaba.ProcessMessage(
-			i18n.Localize(&goi18n.Message{ID: "device_registration_updating", Other: "Updating device..."}, nil),
-			gaba.ProcessMessageOptions{ShowThemeBackground: true},
-			func() (any, error) {
-				_, updateErr = client.UpdateDevice(input.Host.DeviceID, romm.UpdateDeviceRequest{Name: deviceName})
-				return nil, nil
-			},
+	var updateErr error
+	gaba.ProcessMessage(
+		i18n.Localize(&goi18n.Message{ID: "device_registration_updating", Other: "Updating device..."}, nil),
+		gaba.ProcessMessageOptions{ShowThemeBackground: true},
+		func() (any, error) {
+			_, updateErr = client.UpdateDevice(input.Host.DeviceID, romm.UpdateDeviceRequest{Name: deviceName})
+			return nil, nil
+		},
+	)
+	if updateErr != nil {
+		logger.Error("Failed to update device", "error", updateErr)
+		gaba.ConfirmationMessage(
+			fmt.Sprintf("Failed to update device: %v", updateErr),
+			ContinueFooter(),
+			gaba.MessageOptions{},
 		)
-		if updateErr != nil {
-			logger.Error("Failed to update device", "error", updateErr)
-			gaba.ConfirmationMessage(
-				fmt.Sprintf("Failed to update device: %v", updateErr),
-				ContinueFooter(),
-				gaba.MessageOptions{},
-			)
+	} else {
+		output.Host.DeviceName = deviceName
+	}
+	return output, nil
+}
+
+func (s *SaveSyncSettingsScreen) registerDevice(output SaveSyncSettingsOutput) (SaveSyncSettingsOutput, error) {
+	defaultName := ""
+	if hostname, err := os.Hostname(); err == nil {
+		defaultName = hostname
+	}
+
+	res, err := gaba.Keyboard(defaultName, i18n.Localize(&goi18n.Message{ID: "device_registration_prompt", Other: "Enter a name for this device"}, nil))
+	if err != nil {
+		if errors.Is(err, gaba.ErrCancelled) {
+			return output, nil
 		}
+		return output, err
+	}
+
+	deviceName := res.Text
+	if deviceName == "" {
 		return output, nil
 	}
+
+	client := romm.NewClientFromHost(output.Host, output.Config.ApiTimeout)
 
 	var device romm.Device
 	var regErr error
@@ -160,5 +214,6 @@ func (s *SaveSyncSettingsScreen) Draw(input SaveSyncSettingsInput) (SaveSyncSett
 	}
 
 	output.Host.DeviceID = device.ID
+	output.Host.DeviceName = deviceName
 	return output, nil
 }
