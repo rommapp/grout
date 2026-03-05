@@ -42,6 +42,9 @@ type SyncItem struct {
 	Action         SyncAction
 	Success        bool
 	ForceOverwrite bool
+	TargetSlot     string      // Slot to upload to (from slot preference); used by upload()
+	AvailableSlots []string    // Distinct slot names when multiple slots exist (first-time downloads)
+	AllRemoteSaves []romm.Save // All remote saves for re-selection after slot pick
 }
 
 func (item *SyncItem) Resolve(action SyncAction) {

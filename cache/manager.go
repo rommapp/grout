@@ -184,12 +184,24 @@ func (cm *Manager) Clear() error {
 		return ErrNotInitialized
 	}
 
+	if err := cm.ClearMetadata(); err != nil {
+		return err
+	}
+	cm.ClearArtwork()
+	return nil
+}
+
+func (cm *Manager) ClearMetadata() error {
+	if cm == nil || !cm.initialized {
+		return ErrNotInitialized
+	}
+
 	logger := gaba.GetLogger()
 
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 
-	tables := []string{"games", "game_collections", "collections", "platforms", "bios_availability"}
+	tables := []string{"games", "game_collections", "collections", "platforms", "bios_availability", "cache_metadata"}
 	tables = append(tables, junctionTables...)
 	tables = append(tables, lookupTables...)
 
@@ -209,13 +221,19 @@ func (cm *Manager) Clear() error {
 		return newCacheError("clear", "", "", err)
 	}
 
+	logger.Info("Metadata cache cleared")
+	return nil
+}
+
+func (cm *Manager) ClearArtwork() {
+	logger := gaba.GetLogger()
+
 	artworkDir := GetArtworkCacheDir()
 	if fileutil.FileExists(artworkDir) {
 		os.RemoveAll(artworkDir)
 	}
 
-	logger.Info("Cache cleared")
-	return nil
+	logger.Info("Artwork cache cleared")
 }
 
 func (cm *Manager) ClearGames() error {

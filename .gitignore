@@ -38,3 +38,4 @@ __pycache__/
 # MkDocs build output
 site/
 
+/save_slots.json

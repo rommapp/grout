@@ -194,7 +194,7 @@ func registerScreens(r *router.Router, state *AppState) {
 	r.Register(ScreenSaveSync, func(input any) (any, error) {
 		in := input.(ui.SaveSyncInput)
 		screen := ui.NewSaveSyncScreen()
-		return screen.Execute(in.Config, in.Host), nil
+		return screen.Execute(in), nil
 	})
 
 	r.Register(ScreenSaveSyncSettings, func(input any) (any, error) {

@@ -77,7 +77,7 @@ func buildTransitionFunc(state *AppState, quitOnBack bool, initialShowCollection
 		case ScreenSyncMenu:
 			return transitionSyncMenu(ctx, result)
 		case ScreenSyncedGames:
-			return popOrExit(stack)
+			return transitionSyncedGames(ctx, result)
 		case ScreenSyncHistory:
 			return popOrExit(stack)
 		case ScreenSaveSyncSettings:
@@ -176,6 +176,33 @@ func transitionSyncMenu(ctx *transitionContext, result any) (router.Screen, any)
 	}
 
 	return router.ScreenExit, nil
+}
+
+func transitionSyncedGames(ctx *transitionContext, result any) (router.Screen, any) {
+	r := result.(ui.SyncedGamesOutput)
+	if r.Config != nil {
+		ctx.state.Config = r.Config
+	}
+
+	if r.Action == ui.SyncedGamesActionSyncNow {
+		ctx.stack.Push(ScreenSyncedGames, ui.SyncedGamesInput{
+			Config:    ctx.state.Config,
+			Host:      ctx.state.Host,
+			Platforms: &ctx.state.Platforms,
+			DeviceID:  ctx.state.Host.DeviceID,
+		}, nil)
+		syncInput := ui.SaveSyncInput{
+			Config: ctx.state.Config,
+			Host:   ctx.state.Host,
+		}
+		if r.NewSlotName != "" {
+			syncInput.NewSlotName = r.NewSlotName
+			syncInput.NewSlotRomID = r.NewSlotRomID
+		}
+		return ScreenSaveSync, syncInput
+	}
+
+	return popOrExit(ctx.stack)
 }
 
 func transitionSaveSyncSettings(ctx *transitionContext, result any) (router.Screen, any) {
@@ -400,6 +427,23 @@ func transitionGameOptions(ctx *transitionContext, result any) (router.Screen, a
 			Host: r.Host,
 			Game: r.Game,
 		}
+	}
+
+	if r.Action == ui.GameOptionsActionSyncNow {
+		ctx.stack.Push(ScreenGameOptions, ui.GameOptionsInput{
+			Config: ctx.state.Config,
+			Host:   r.Host,
+			Game:   r.Game,
+		}, nil)
+		syncInput := ui.SaveSyncInput{
+			Config: ctx.state.Config,
+			Host:   r.Host,
+		}
+		if r.NewSlotName != "" {
+			syncInput.NewSlotName = r.NewSlotName
+			syncInput.NewSlotRomID = r.Game.ID
+		}
+		return ScreenSaveSync, syncInput
 	}
 
 	return popOrExit(ctx.stack)

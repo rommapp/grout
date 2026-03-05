@@ -69,7 +69,7 @@ func main() {
 
 	newSaves := sync.LocalSavesWithoutRemote(localSaves, remoteSaves)
 	var items []sync.SyncItem
-	items = append(items, sync.NewSaveUploadActions(newSaves)...)
+	items = append(items, sync.NewSaveUploadActions(newSaves, config)...)
 	items = append(items, sync.DetermineActions(localSaves, remoteSaves, host.DeviceID, config)...)
 
 	fmt.Println("Scanning for remote-only saves...")

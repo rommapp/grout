@@ -38,6 +38,7 @@ const (
 	GameOptionsActionSaved GameOptionsAction = iota
 	GameOptionsActionShowQR
 	GameOptionsActionBack
+	GameOptionsActionSyncNow
 )
 
 type SearchAction int
@@ -148,6 +149,7 @@ type SyncedGamesAction int
 
 const (
 	SyncedGamesActionBack SyncedGamesAction = iota
+	SyncedGamesActionSyncNow
 )
 
 type SyncHistoryAction int

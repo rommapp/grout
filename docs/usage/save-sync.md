@@ -19,7 +19,7 @@ Once registered, the **Sync** button (`Y`) appears on the main menu, giving you 
 Press `Y` from the main menu to open the Sync Menu. It contains:
 
 - **Sync Now** - Run a manual save sync. If you've synced before, the last sync time is shown (e.g., "Sync Now · 2h ago")
-- **Synced Games** - Browse games that have been synced on this device, grouped by platform
+- **Synced Games** - Browse games that have been synced on this device, grouped by platform. From here you can view save details and manage save slots for individual games.
 - **View History** - See a chronological log of all sync actions (uploads, downloads) for this device
 
 ---
@@ -131,6 +131,33 @@ The save file is reported as "unmatched" in the sync results.
     The filename of the save will match the local filename of the ROM. This will allow you to have a ROM file duplicated
     locally under two names to handle two different saves (e.g. a Nuzlocke run in Pokemon alongside a vanilla
     playthrough).
+
+---
+
+## Save Slots
+
+Save slots let you manage multiple save versions for a single game on RomM. By default, all saves use the "default" slot, but you can create named slots and switch between them.
+
+### Switching Slots
+
+You can change which slot a game syncs to from two places:
+
+- **Game Options** - From the game details screen, press `Y` to open Game Options. The **Save Slot** setting shows all available slots plus a **New Slot...** option.
+- **Synced Games** - From the Sync Menu, open **Synced Games**, navigate to a game, and press `Y` on the detail screen to change the save slot.
+
+Use `Left/Right` to cycle through available slots. Changing to a different slot triggers a sync automatically.
+
+### Creating a New Slot
+
+Select **New Slot...** from the slot selector to create a new named slot. An on-screen keyboard will appear where you can type the slot name. When you confirm, Grout immediately uploads your local saves to the new slot on RomM.
+
+### Multi-Slot Downloads
+
+When downloading saves for the first time from a game that has multiple slots on RomM, Grout shows a slot selection screen. This lets you choose which slot to download from. The game name is prefixed with its platform slug (e.g., `[gba] Pokemon Emerald`) so you can identify games across platforms.
+
+### Slot Preferences
+
+Your slot preferences are stored in `save_slots.json`, separate from the main config file. Each entry maps a ROM ID to the preferred slot name. Games without a preference default to the "default" slot.
 
 ---
 

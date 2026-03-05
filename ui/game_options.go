@@ -17,10 +17,11 @@ type GameOptionsInput struct {
 }
 
 type GameOptionsOutput struct {
-	Action GameOptionsAction
-	Config *internal.Config
-	Host   romm.Host
-	Game   romm.Rom
+	Action      GameOptionsAction
+	Config      *internal.Config
+	Host        romm.Host
+	Game        romm.Rom
+	NewSlotName string // Set when a new slot is created (for targeted upload)
 }
 
 type GameOptionsScreen struct{}
@@ -38,7 +39,7 @@ func (s *GameOptionsScreen) Draw(input GameOptionsInput) (GameOptionsOutput, err
 	if input.Host.DeviceID != "" {
 		client := romm.NewClientFromHost(input.Host, config.ApiTimeout)
 		summary, err := client.GetSaveSummary(input.Game.ID)
-		if err == nil && len(summary.Slots) > 1 {
+		if err == nil {
 			for _, slot := range summary.Slots {
 				name := "default"
 				if slot.Slot != nil {
@@ -49,7 +50,9 @@ func (s *GameOptionsScreen) Draw(input GameOptionsInput) (GameOptionsOutput, err
 		}
 	}
 
-	items := s.buildMenuItems(config, input.Game, slotNames)
+	oldSlotPref := config.GetSlotPreference(input.Game.ID)
+
+	items := s.buildMenuItems(config, input.Game, input.Host.DeviceID != "", slotNames)
 
 	showQRText := i18n.Localize(&goi18n.Message{ID: "game_options_show_qr", Other: "Show QR Code"}, nil)
 	items = append(items, gaba.ItemWithOptions{
@@ -91,37 +94,64 @@ func (s *GameOptionsScreen) Draw(input GameOptionsInput) (GameOptionsOutput, err
 
 	s.applySettings(config, input.Game, result.Items)
 
-	err = internal.SaveConfig(config)
-	if err != nil {
-		gaba.GetLogger().Error("Error saving game options", "error", err)
+	if err = internal.SaveSlotPreferences(config); err != nil {
+		gaba.GetLogger().Error("Error saving slot preferences", "error", err)
 		return output, err
 	}
 
-	output.Action = GameOptionsActionSaved
+	newSlotPref := config.GetSlotPreference(input.Game.ID)
+	if newSlotPref != oldSlotPref {
+		output.Action = GameOptionsActionSyncNow
+		// Check if this is a brand-new slot (not on server yet) for targeted upload
+		isNewSlot := true
+		for _, name := range slotNames {
+			if name == newSlotPref {
+				isNewSlot = false
+				break
+			}
+		}
+		if isNewSlot {
+			output.NewSlotName = newSlotPref
+		}
+	} else {
+		output.Action = GameOptionsActionSaved
+	}
 	return output, nil
 }
 
-func (s *GameOptionsScreen) buildMenuItems(config *internal.Config, game romm.Rom, slotNames []string) []gaba.ItemWithOptions {
+func (s *GameOptionsScreen) buildMenuItems(config *internal.Config, game romm.Rom, deviceRegistered bool, slotNames []string) []gaba.ItemWithOptions {
 	items := make([]gaba.ItemWithOptions, 0)
 
-	if len(slotNames) > 1 {
-		saveSlotText := i18n.Localize(&goi18n.Message{ID: "game_options_save_slot", Other: "Default"}, nil)
-
+	if deviceRegistered {
+		saveSlotText := i18n.Localize(&goi18n.Message{ID: "game_options_save_slot", Other: "Save Slot"}, nil)
 		defaultLabel := i18n.Localize(&goi18n.Message{ID: "common_default", Other: "Default"}, nil)
+		newSlotLabel := i18n.Localize(&goi18n.Message{ID: "game_options_new_slot", Other: "New Slot..."}, nil)
 
-		options := make([]gaba.Option, 0, len(slotNames))
-		for _, name := range slotNames {
-			displayName := name
-			if name == "default" {
-				displayName = defaultLabel
+		options := make([]gaba.Option, 0, len(slotNames)+2)
+
+		if len(slotNames) == 0 {
+			options = append(options, gaba.Option{DisplayName: defaultLabel, Value: "default"})
+		} else {
+			for _, name := range slotNames {
+				displayName := name
+				if name == "default" {
+					displayName = defaultLabel
+				}
+				options = append(options, gaba.Option{DisplayName: displayName, Value: name})
 			}
-			options = append(options, gaba.Option{DisplayName: displayName, Value: name})
 		}
+
+		options = append(options, gaba.Option{
+			DisplayName:    newSlotLabel,
+			Value:          "",
+			Type:           gaba.OptionTypeKeyboard,
+			KeyboardPrompt: "",
+		})
 
 		currentPref := config.GetSlotPreference(game.ID)
 		selectedIdx := 0
-		for i, name := range slotNames {
-			if name == currentPref {
+		for i, opt := range options {
+			if val, ok := opt.Value.(string); ok && val == currentPref {
 				selectedIdx = i
 				break
 			}
@@ -138,12 +168,13 @@ func (s *GameOptionsScreen) buildMenuItems(config *internal.Config, game romm.Ro
 }
 
 func (s *GameOptionsScreen) applySettings(config *internal.Config, game romm.Rom, items []gaba.ItemWithOptions) {
-	saveSlotText := i18n.Localize(&goi18n.Message{ID: "game_options_save_slot", Other: "Default"}, nil)
+	saveSlotText := i18n.Localize(&goi18n.Message{ID: "game_options_save_slot", Other: "Save Slot"}, nil)
 
 	for _, item := range items {
 		if item.Item.Text == saveSlotText {
 			if item.SelectedOption >= 0 && item.SelectedOption < len(item.Options) {
-				if selectedSlot, ok := item.Options[item.SelectedOption].Value.(string); ok {
+				selectedOpt := item.Options[item.SelectedOption]
+				if selectedSlot, ok := selectedOpt.Value.(string); ok && selectedSlot != "" {
 					config.SetSlotPreference(game.ID, selectedSlot)
 				}
 			}

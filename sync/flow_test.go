@@ -488,7 +488,7 @@ func TestNewSaveUploadActions(t *testing.T) {
 		{RomID: 2, RomName: "Zelda"},
 	}
 
-	items := NewSaveUploadActions(saves)
+	items := NewSaveUploadActions(saves, nil)
 
 	if len(items) != 2 {
 		t.Fatalf("expected 2 items, got %d", len(items))

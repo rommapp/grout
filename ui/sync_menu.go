@@ -2,12 +2,8 @@ package ui
 
 import (
 	"errors"
-	"fmt"
-	"grout/cache"
 	"grout/internal"
 	"grout/romm"
-	"math"
-	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
@@ -43,13 +39,6 @@ func (s *SyncMenuScreen) Draw(input SyncMenuInput) (SyncMenuOutput, error) {
 	}
 
 	syncNowText := i18n.Localize(&goi18n.Message{ID: "sync_menu_sync_now", Other: "Sync Now"}, nil)
-
-	if cm := cache.GetCacheManager(); cm != nil {
-		if lastSync := cm.GetLastSyncTime(input.Host.DeviceID); lastSync != nil {
-			syncNowText = fmt.Sprintf("%s · %s", syncNowText, formatRelativeTime(*lastSync))
-		}
-	}
-
 	syncedGamesText := i18n.Localize(&goi18n.Message{ID: "sync_menu_synced_games", Other: "Synced Games"}, nil)
 	historyText := i18n.Localize(&goi18n.Message{ID: "sync_menu_history", Other: "View History"}, nil)
 
@@ -110,21 +99,4 @@ func (s *SyncMenuScreen) Draw(input SyncMenuInput) (SyncMenuOutput, error) {
 	}
 
 	return output, nil
-}
-
-func formatRelativeTime(t time.Time) string {
-	d := time.Since(t)
-	switch {
-	case d < time.Minute:
-		return i18n.Localize(&goi18n.Message{ID: "time_just_now", Other: "just now"}, nil)
-	case d < time.Hour:
-		m := int(math.Round(d.Minutes()))
-		return i18n.Localize(&goi18n.Message{ID: "time_minutes_ago", Other: "{{.Count}}m ago"}, map[string]any{"Count": m})
-	case d < 24*time.Hour:
-		h := int(math.Round(d.Hours()))
-		return i18n.Localize(&goi18n.Message{ID: "time_hours_ago", Other: "{{.Count}}h ago"}, map[string]any{"Count": h})
-	default:
-		days := int(math.Round(d.Hours() / 24))
-		return i18n.Localize(&goi18n.Message{ID: "time_days_ago", Other: "{{.Count}}d ago"}, map[string]any{"Count": days})
-	}
 }

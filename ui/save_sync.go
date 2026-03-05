@@ -14,8 +14,10 @@ import (
 )
 
 type SaveSyncInput struct {
-	Config *internal.Config
-	Host   romm.Host
+	Config       *internal.Config
+	Host         romm.Host
+	NewSlotName  string // If set, upload-only mode for a new slot
+	NewSlotRomID int    // ROM ID to upload saves for
 }
 
 type SaveSyncOutput struct{}
@@ -26,7 +28,9 @@ func NewSaveSyncScreen() *SaveSyncScreen {
 	return &SaveSyncScreen{}
 }
 
-func (s *SaveSyncScreen) Execute(config *internal.Config, host romm.Host) SaveSyncOutput {
+func (s *SaveSyncScreen) Execute(input SaveSyncInput) SaveSyncOutput {
+	config := input.Config
+	host := input.Host
 	client := romm.NewClientFromHost(host, config.ApiTimeout)
 
 	// Health check — verify server is reachable before starting sync
@@ -37,6 +41,11 @@ func (s *SaveSyncScreen) Execute(config *internal.Config, host romm.Host) SaveSy
 			gaba.MessageOptions{},
 		)
 		return SaveSyncOutput{}
+	}
+
+	// New slot upload: skip resolve, scan local saves and upload to the new slot
+	if input.NewSlotName != "" && input.NewSlotRomID > 0 {
+		return s.executeNewSlotUpload(client, config, host.DeviceID, input.NewSlotRomID, input.NewSlotName)
 	}
 
 	// Phase 1: Resolve — scan local saves, fetch summaries, determine actions
@@ -61,6 +70,9 @@ func (s *SaveSyncScreen) Execute(config *internal.Config, host romm.Host) SaveSy
 		)
 		return SaveSyncOutput{}
 	}
+
+	// Slot selection for first-time downloads with multiple slots
+	s.resolveMultiSlotDownloads(config, items)
 
 	// Check for conflicts and show resolution screen
 	var conflicts []sync.SyncItem
@@ -120,6 +132,130 @@ func (s *SaveSyncScreen) Execute(config *internal.Config, host romm.Host) SaveSy
 	s.showReport(report)
 
 	return SaveSyncOutput{}
+}
+
+func (s *SaveSyncScreen) executeNewSlotUpload(client *romm.Client, config *internal.Config, deviceID string, romID int, slotName string) SaveSyncOutput {
+	var report sync.SyncReport
+	progress := uatomic.NewFloat64(0)
+
+	gaba.ProcessMessage(
+		i18n.Localize(&goi18n.Message{ID: "save_sync_syncing", Other: "Syncing saves..."}, nil),
+		gaba.ProcessMessageOptions{
+			ShowThemeBackground: true,
+			ShowProgressBar:     true,
+			Progress:            progress,
+		},
+		func() (any, error) {
+			localSaves := sync.ScanSaves(config)
+			var items []sync.SyncItem
+			for _, ls := range localSaves {
+				if ls.RomID == romID {
+					items = append(items, sync.SyncItem{
+						LocalSave:  ls,
+						TargetSlot: slotName,
+						Action:     sync.ActionUpload,
+					})
+				}
+			}
+			report = sync.ExecuteSaveSync(client, config, deviceID, items, func(current, total int) {
+				if total > 0 {
+					progress.Store(float64(current) / float64(total))
+				}
+			})
+			return nil, nil
+		},
+	)
+
+	s.showReport(report)
+	return SaveSyncOutput{}
+}
+
+func (s *SaveSyncScreen) resolveMultiSlotDownloads(config *internal.Config, items []sync.SyncItem) {
+	defaultLabel := i18n.Localize(&goi18n.Message{ID: "common_default", Other: "Default"}, nil)
+
+	// Collect items that need slot selection
+	type slotChoice struct {
+		itemIndex int
+		romName   string
+		slots     []string
+	}
+	var choices []slotChoice
+	for i, item := range items {
+		if len(item.AvailableSlots) > 1 {
+			choices = append(choices, slotChoice{
+				itemIndex: i,
+				romName:   item.LocalSave.RomName,
+				slots:     item.AvailableSlots,
+			})
+		}
+	}
+
+	if len(choices) == 0 {
+		return
+	}
+
+	// Build an OptionsList with one row per game
+	optionItems := make([]gaba.ItemWithOptions, 0, len(choices))
+	for _, c := range choices {
+		options := make([]gaba.Option, 0, len(c.slots))
+		for _, slot := range c.slots {
+			displayName := slot
+			if slot == "default" {
+				displayName = defaultLabel
+			}
+			options = append(options, gaba.Option{DisplayName: displayName, Value: slot})
+		}
+
+		currentPref := config.GetSlotPreference(items[c.itemIndex].LocalSave.RomID)
+		selectedIdx := 0
+		for i, slot := range c.slots {
+			if slot == currentPref {
+				selectedIdx = i
+				break
+			}
+		}
+
+		displayText := fmt.Sprintf("[%s] %s", items[c.itemIndex].LocalSave.FSSlug, c.romName)
+		optionItems = append(optionItems, gaba.ItemWithOptions{
+			Item:           gaba.MenuItem{Text: displayText},
+			Options:        options,
+			SelectedOption: selectedIdx,
+		})
+	}
+
+	saveSlotText := i18n.Localize(&goi18n.Message{ID: "game_options_save_slot", Other: "Save Slot"}, nil)
+
+	result, err := gaba.OptionsList(
+		saveSlotText,
+		gaba.OptionListSettings{
+			FooterHelpItems:      OptionsListFooter(),
+			InitialSelectedIndex: 0,
+			StatusBar:            StatusBar(),
+			UseSmallTitle:        true,
+		},
+		optionItems,
+	)
+	if err != nil {
+		return // Cancelled — proceed with defaults
+	}
+
+	// Apply selections
+	for ci, c := range choices {
+		if ci < len(result.Items) {
+			item := result.Items[ci]
+			if item.SelectedOption >= 0 && item.SelectedOption < len(item.Options) {
+				if selectedSlot, ok := item.Options[item.SelectedOption].Value.(string); ok {
+					config.SetSlotPreference(items[c.itemIndex].LocalSave.RomID, selectedSlot)
+					newSave := sync.SelectSaveForSlot(items[c.itemIndex].AllRemoteSaves, selectedSlot)
+					if newSave != nil {
+						items[c.itemIndex].RemoteSave = newSave
+					}
+				}
+			}
+		}
+	}
+
+	internal.SaveSlotPreferences(config)
 }
 
 func (s *SaveSyncScreen) showReport(report sync.SyncReport) {

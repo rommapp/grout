@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strings"
 	gosync "sync"
+	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
@@ -36,7 +37,7 @@ func ResolveSaveSync(client *romm.Client, config *internal.Config, deviceID stri
 	logger.Debug("Local saves without remote", "count", len(newSaves))
 
 	var allItems []SyncItem
-	allItems = append(allItems, NewSaveUploadActions(newSaves)...)
+	allItems = append(allItems, NewSaveUploadActions(newSaves, config)...)
 	allItems = append(allItems, DetermineActions(localSaves, remoteSaves, deviceID, config)...)
 
 	remoteOnly, err := DiscoverRemoteSaves(client, config, localSaves, deviceID)
@@ -243,12 +244,17 @@ func LocalSavesWithoutRemote(localSaves []LocalSave, remoteSaves map[int][]romm.
 	return filtered
 }
 
-func NewSaveUploadActions(saves []LocalSave) []SyncItem {
+func NewSaveUploadActions(saves []LocalSave, config *internal.Config) []SyncItem {
 	var items []SyncItem
 	for _, ls := range saves {
+		targetSlot := "default"
+		if config != nil {
+			targetSlot = config.GetSlotPreference(ls.RomID)
+		}
 		items = append(items, SyncItem{
-			LocalSave: ls,
-			Action:    ActionUpload,
+			LocalSave:  ls,
+			TargetSlot: targetSlot,
+			Action:     ActionUpload,
 		})
 	}
 	return items
@@ -270,17 +276,35 @@ func DetermineActions(localSaves []LocalSave, remoteSaves map[int][]romm.Save, d
 		}
 
 		remoteSave := selectSaveForSync(saves, preferredSlot)
-		action := determineAction(remoteSave, &ls, deviceID)
+
+		// Check if the selected save is actually in the preferred slot or a fallback
+		remoteSlot := "default"
+		if remoteSave != nil && remoteSave.Slot != nil {
+			remoteSlot = *remoteSave.Slot
+		}
+
+		var action SyncAction
+		if remoteSave != nil && remoteSlot != preferredSlot {
+			// Fallback save from a different slot — don't compare against it.
+			// Upload to populate the preferred slot instead.
+			action = ActionUpload
+			remoteSave = nil
+		} else {
+			action = determineAction(remoteSave, &ls, deviceID)
+		}
 
 		logger.Debug("Determined sync action",
 			"romID", ls.RomID,
 			"romName", ls.RomName,
 			"action", action.String(),
+			"preferredSlot", preferredSlot,
+			"remoteSlot", remoteSlot,
 		)
 
 		items = append(items, SyncItem{
 			LocalSave:  ls,
 			RemoteSave: remoteSave,
+			TargetSlot: preferredSlot,
 			Action:     action,
 		})
 	}
@@ -301,27 +325,31 @@ func determineAction(remoteSave *romm.Save, localSave *LocalSave, deviceID strin
 		logger.Debug("Cannot stat local save, will download", "path", localSave.FilePath, "error", err)
 		return ActionDownload
 	}
-	localMtime := localInfo.ModTime()
+	// Truncate all times to second precision — the server may drop sub-second
+	// precision between the upload response and subsequent fetches.
+	localMtime := localInfo.ModTime().Truncate(time.Second)
+	remoteUpdatedAt := remoteSave.UpdatedAt.Truncate(time.Second)
 
 	for _, ds := range remoteSave.DeviceSyncs {
 		if ds.DeviceID == deviceID {
-			localChanged := localMtime.After(ds.LastSyncedAt)
-			remoteChanged := remoteSave.UpdatedAt.After(ds.LastSyncedAt)
+			lastSyncedAt := ds.LastSyncedAt.Truncate(time.Second)
+			localChanged := localMtime.After(lastSyncedAt)
+			remoteChanged := remoteUpdatedAt.After(lastSyncedAt)
 
 			if localChanged && remoteChanged {
 				logger.Debug("Both local and remote changed since last sync, conflict",
-					"romID", localSave.RomID, "localMtime", localMtime, "remoteUpdatedAt", remoteSave.UpdatedAt, "lastSyncedAt", ds.LastSyncedAt)
+					"romID", localSave.RomID, "localMtime", localMtime, "remoteUpdatedAt", remoteUpdatedAt, "lastSyncedAt", lastSyncedAt)
 				return ActionConflict
 			}
 
 			if ds.IsCurrent {
-				if localMtime.After(remoteSave.UpdatedAt) {
+				if localMtime.After(remoteUpdatedAt) {
 					logger.Debug("Device current, local newer, will upload",
-						"romID", localSave.RomID, "localMtime", localMtime, "remoteUpdatedAt", remoteSave.UpdatedAt)
+						"romID", localSave.RomID, "localMtime", localMtime, "remoteUpdatedAt", remoteUpdatedAt)
 					return ActionUpload
 				}
 				logger.Debug("Device current, local not newer, skipping",
-					"romID", localSave.RomID, "localMtime", localMtime, "remoteUpdatedAt", remoteSave.UpdatedAt)
+					"romID", localSave.RomID, "localMtime", localMtime, "remoteUpdatedAt", remoteUpdatedAt)
 				return ActionSkip
 			}
 			logger.Debug("Device in sync list but not current, will download",
@@ -330,19 +358,25 @@ func determineAction(remoteSave *romm.Save, localSave *LocalSave, deviceID strin
 		}
 	}
 
-	if localMtime.After(remoteSave.UpdatedAt) {
+	if localMtime.After(remoteUpdatedAt) {
 		logger.Debug("Device not tracked, local newer, will upload",
-			"romID", localSave.RomID, "localMtime", localMtime, "remoteUpdatedAt", remoteSave.UpdatedAt)
+			"romID", localSave.RomID, "localMtime", localMtime, "remoteUpdatedAt", remoteUpdatedAt)
 		return ActionUpload
 	}
-	if !localMtime.Before(remoteSave.UpdatedAt) {
+	if !localMtime.Before(remoteUpdatedAt) {
 		logger.Debug("Device not tracked, mtime matches remote, skipping",
-			"romID", localSave.RomID, "localMtime", localMtime, "remoteUpdatedAt", remoteSave.UpdatedAt)
+			"romID", localSave.RomID, "localMtime", localMtime, "remoteUpdatedAt", remoteUpdatedAt)
 		return ActionSkip
 	}
 	logger.Debug("Device not tracked, local older, will download",
-		"romID", localSave.RomID, "localMtime", localMtime, "remoteUpdatedAt", remoteSave.UpdatedAt)
+		"romID", localSave.RomID, "localMtime", localMtime, "remoteUpdatedAt", remoteUpdatedAt)
 	return ActionDownload
+}
+
+// SelectSaveForSlot picks the latest save from the given slot.
+// Falls back to the most recently updated save if the slot has no saves.
+func SelectSaveForSlot(saves []romm.Save, preferredSlot string) *romm.Save {
+	return selectSaveForSync(saves, preferredSlot)
 }
 
 // selectSaveForSync picks the latest save from the preferred slot.
@@ -441,7 +475,9 @@ func upload(client *romm.Client, deviceID string, item *SyncItem) bool {
 	logger.Debug("Uploading save", "romID", item.LocalSave.RomID, "romName", item.LocalSave.RomName, "file", item.LocalSave.FilePath)
 
 	slot := "default"
-	if item.RemoteSave != nil && item.RemoteSave.Slot != nil {
+	if item.TargetSlot != "" {
+		slot = item.TargetSlot
+	} else if item.RemoteSave != nil && item.RemoteSave.Slot != nil {
 		slot = *item.RemoteSave.Slot
 	}
 
@@ -455,7 +491,7 @@ func upload(client *romm.Client, deviceID string, item *SyncItem) bool {
 		DeviceID:  deviceID,
 		Emulator:  emulator,
 		Slot:      slot,
-		Overwrite: item.ForceOverwrite,
+		Overwrite: item.ForceOverwrite || item.RemoteSave != nil,
 	}
 
 	uploadedSave, err := client.UploadSaveWithQuery(query, item.LocalSave.FilePath)
@@ -464,8 +500,17 @@ func upload(client *romm.Client, deviceID string, item *SyncItem) bool {
 		return false
 	}
 
-	if err := os.Chtimes(item.LocalSave.FilePath, uploadedSave.UpdatedAt, uploadedSave.UpdatedAt); err != nil {
+	// Truncate to second precision — the server returns UpdatedAt without
+	// sub-second precision on subsequent fetches, so local mtime must match.
+	t := uploadedSave.UpdatedAt.Truncate(time.Second)
+	if err := os.Chtimes(item.LocalSave.FilePath, t, t); err != nil {
 		logger.Warn("Failed to set save file mtime after upload", "path", item.LocalSave.FilePath, "error", err)
+	}
+
+	// Mark this device as synced for the uploaded save so that subsequent
+	// syncs see IsCurrent=true in DeviceSyncs and correctly skip.
+	if err := client.ConfirmSaveDownloaded(uploadedSave.ID, deviceID); err != nil {
+		logger.Warn("Failed to confirm upload sync state", "saveID", uploadedSave.ID, "error", err)
 	}
 
 	logger.Debug("Upload successful", "romID", item.LocalSave.RomID, "romName", item.LocalSave.RomName)
@@ -536,7 +581,8 @@ func download(client *romm.Client, config *internal.Config, deviceID string, ite
 		return false
 	}
 
-	if err := os.Chtimes(savePath, item.RemoteSave.UpdatedAt, item.RemoteSave.UpdatedAt); err != nil {
+	t := item.RemoteSave.UpdatedAt.Truncate(time.Second)
+	if err := os.Chtimes(savePath, t, t); err != nil {
 		logger.Warn("Failed to set save file mtime", "path", savePath, "error", err)
 	}
 
@@ -622,7 +668,7 @@ func DiscoverRemoteSaves(client *romm.Client, config *internal.Config, localSave
 		logger.Debug("Found remote save for ROM without local save",
 			"romID", r.romID, "romName", rom.RomName, "saveFile", remoteSave.FileName)
 
-		items = append(items, SyncItem{
+		item := SyncItem{
 			LocalSave: LocalSave{
 				RomID:       r.romID,
 				RomName:     rom.RomName,
@@ -631,7 +677,26 @@ func DiscoverRemoteSaves(client *romm.Client, config *internal.Config, localSave
 			},
 			RemoteSave: remoteSave,
 			Action:     ActionDownload,
-		})
+		}
+
+		// Detect multiple distinct slots for first-time downloads
+		slotSet := make(map[string]bool)
+		for _, save := range r.saves {
+			slot := "default"
+			if save.Slot != nil {
+				slot = *save.Slot
+			}
+			slotSet[slot] = true
+		}
+		if len(slotSet) > 1 {
+			for slot := range slotSet {
+				item.AvailableSlots = append(item.AvailableSlots, slot)
+			}
+			sort.Strings(item.AvailableSlots)
+			item.AllRemoteSaves = r.saves
+		}
+
+		items = append(items, item)
 	}
 
 	logger.Debug("Remote-only saves to download", "count", len(items))

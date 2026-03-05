@@ -40,7 +40,7 @@ type Config struct {
 
 	PlatformOrder         []string          `json:"platform_order,omitempty"`
 	SaveDirectoryMappings map[string]string `json:"save_directory_mappings,omitempty"`
-	SlotPreferences       map[string]string `json:"slot_preferences,omitempty"`
+	SlotPreferences       map[string]string `json:"-"`                           // Stored in save_slots.json, not config.json
 	SaveBackupLimit       int               `json:"save_backup_limit,omitempty"` // 0 = no limit, 5/10/15 = keep N most recent per game
 
 	PlatformsBinding map[string]string `json:"-"`
@@ -107,6 +107,25 @@ func LoadConfig() (*Config, error) {
 
 	if config.ArtKind == "" {
 		config.ArtKind = artutil.ArtKindDefault
+	}
+
+	// Load slot preferences from dedicated file
+	config.SlotPreferences = LoadSlotPreferences()
+
+	// Migrate: if config.json still has slot_preferences, move them to save_slots.json
+	if config.SlotPreferences == nil {
+		var raw map[string]json.RawMessage
+		if json.Unmarshal(data, &raw) == nil {
+			if sp, ok := raw["slot_preferences"]; ok {
+				var migrated map[string]string
+				if json.Unmarshal(sp, &migrated) == nil && len(migrated) > 0 {
+					config.SlotPreferences = migrated
+					SaveSlotPreferences(&config)
+					// Re-save config.json to remove the migrated key
+					SaveConfig(&config)
+				}
+			}
+		}
 	}
 
 	return &config, nil
@@ -194,7 +213,30 @@ func (c Config) GetDirectoryMapping(fsSlug string) (string, bool) {
 	return "", false
 }
 
-// TODO: SlotPreferences should be moved out of the config file (e.g. into the cache DB or a dedicated store).
+func LoadSlotPreferences() map[string]string {
+	data, err := os.ReadFile("save_slots.json")
+	if err != nil {
+		return nil
+	}
+	var prefs map[string]string
+	if err := json.Unmarshal(data, &prefs); err != nil {
+		return nil
+	}
+	return prefs
+}
+
+func SaveSlotPreferences(config *Config) error {
+	if len(config.SlotPreferences) == 0 {
+		os.Remove("save_slots.json")
+		return nil
+	}
+	pretty, err := json.MarshalIndent(config.SlotPreferences, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile("save_slots.json", pretty, 0644)
+}
+
 func (c Config) GetSlotPreference(romID int) string {
 	if c.SlotPreferences != nil {
 		if slot, ok := c.SlotPreferences[fmt.Sprintf("%d", romID)]; ok {
