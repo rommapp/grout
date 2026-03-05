@@ -77,6 +77,9 @@ func migrateIfNeeded(db *sql.DB) error {
 		if _, err := db.Exec("DROP TABLE IF EXISTS filename_mappings"); err != nil {
 			return fmt.Errorf("migration to v9: drop filename_mappings: %w", err)
 		}
+		if _, err := db.Exec("DROP TABLE IF EXISTS failed_lookups"); err != nil {
+			return fmt.Errorf("migration to v9: drop failed_lookups: %w", err)
+		}
 	}
 
 	return nil

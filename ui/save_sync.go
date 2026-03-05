@@ -308,10 +308,6 @@ func (s *SaveSyncScreen) buildReportSections(report sync.SyncReport) []gaba.Sect
 		var items []gaba.MetadataItem
 		for _, item := range report.Items {
 			if item.Action == sync.ActionDownload && item.Success {
-				fileName := item.LocalSave.FileName
-				if fileName == "" && item.RemoteSave != nil {
-					fileName = item.RemoteSave.FileName
-				}
 				items = append(items, gaba.MetadataItem{
 					Label: item.LocalSave.RomName,
 				})

@@ -66,6 +66,9 @@ func (cm *Manager) GetSaveSyncHistory(deviceID string) []SaveSyncRecord {
 		r.SyncedAt, _ = time.Parse(time.RFC3339, syncedAt)
 		records = append(records, r)
 	}
+	if err := rows.Err(); err != nil {
+		gaba.GetLogger().Error("Error iterating save sync history rows", "error", err)
+	}
 	return records
 }
 
@@ -92,6 +95,9 @@ func (cm *Manager) GetSyncedRomIDs(deviceID string) []int {
 		if err := rows.Scan(&id); err == nil {
 			ids = append(ids, id)
 		}
+	}
+	if err := rows.Err(); err != nil {
+		gaba.GetLogger().Error("Error iterating synced rom ID rows", "error", err)
 	}
 	return ids
 }
