@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
@@ -19,7 +20,26 @@ var (
 	ErrUnauthorized      = errors.New("invalid credentials")
 	ErrForbidden         = errors.New("access forbidden")
 	ErrServerError       = errors.New("server error")
+	ErrConflict          = errors.New("conflict")
 )
+
+// ConflictError represents a 409 Conflict response from the server,
+// typically when uploading a save that conflicts with the current state.
+type ConflictError struct {
+	ErrorType       string    `json:"error"`
+	Message         string    `json:"message"`
+	SaveID          int       `json:"save_id"`
+	CurrentSaveTime time.Time `json:"current_save_time"`
+	DeviceSyncTime  time.Time `json:"device_sync_time"`
+}
+
+func (e *ConflictError) Error() string {
+	return fmt.Sprintf("conflict: %s (save_id=%d)", e.Message, e.SaveID)
+}
+
+func (e *ConflictError) Unwrap() error {
+	return ErrConflict
+}
 
 type AuthError struct {
 	StatusCode int

@@ -8,6 +8,7 @@ Grout has been tested on the following devices running ROCKNIX:
 
 | Manufacturer | Device   |
 |--------------|----------|
+| Anbernic     | RG34XX   |
 | Anbernic     | RG35XXSP |
 | Retroid      | Flip 2   |
 

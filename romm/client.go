@@ -174,6 +174,43 @@ func (c *Client) doRequestRaw(method, path string, body interface{}) ([]byte, er
 	return bodyBytes, nil
 }
 
+func (c *Client) doRequestRawWithQuery(method, path string, queryParams queryParam) ([]byte, error) {
+	fullURL := c.baseURL + path
+
+	req, err := http.NewRequest(method, fullURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	if queryParams != nil && queryParams.Valid() {
+		values, err := qs.NewEncoder().Values(queryParams)
+		if err == nil {
+			req.URL.RawQuery = values.Encode()
+		}
+	}
+
+	if c.username != "" && c.password != "" {
+		req.SetBasicAuth(c.username, c.password)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("API error: status %d, body: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	return bodyBytes, nil
+}
+
 func (c *Client) doMultipartRequest(method, path string, queryParams queryParam, body io.Reader, contentType string, result interface{}) error {
 	u := c.baseURL + path
 	req, err := http.NewRequest(method, u, body)
@@ -200,6 +237,11 @@ func (c *Client) doMultipartRequest(method, path string, queryParams queryParam,
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusConflict {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return parseConflictError(bodyBytes)
+	}
+
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("API error: status %d, body: %s", resp.StatusCode, string(bodyBytes))
@@ -212,4 +254,27 @@ func (c *Client) doMultipartRequest(method, path string, queryParams queryParam,
 	}
 
 	return nil
+}
+
+// parseConflictError attempts to parse a 409 response body into a ConflictError.
+func parseConflictError(body []byte) error {
+	// Try parsing as a direct ConflictError
+	var conflict ConflictError
+	if err := json.Unmarshal(body, &conflict); err == nil && conflict.ErrorType != "" {
+		return &conflict
+	}
+
+	// Try parsing as {"detail": {...}} wrapper (FastAPI style)
+	var wrapper struct {
+		Detail ConflictError `json:"detail"`
+	}
+	if err := json.Unmarshal(body, &wrapper); err == nil && wrapper.Detail.ErrorType != "" {
+		return &wrapper.Detail
+	}
+
+	// Fallback: return a generic conflict error
+	return &ConflictError{
+		ErrorType: "conflict",
+		Message:   string(body),
+	}
 }

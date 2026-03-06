@@ -165,6 +165,6 @@ func FetchReleaseForRomMVersion(rommVersion string) (*GitHubRelease, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("no Grout release found matching RomM version %d.%d.%d",
+	return nil, fmt.Errorf("No Grout release found matching RomM version %d.%d.%d",
 		rommVer.Major, rommVer.Minor, rommVer.Patch)
 }

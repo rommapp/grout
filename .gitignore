@@ -6,12 +6,13 @@
 *.iml
 
 # Build
-build/
+build64/
 build32/
 build-miyoo/
 grout
 app/app
 es_restart_request
+/save-sync-preview
 
 # Local config
 .env
@@ -36,3 +37,6 @@ __pycache__/
 
 # MkDocs build output
 site/
+
+/save_slots.json
+/create-conflict

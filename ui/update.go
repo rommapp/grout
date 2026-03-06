@@ -56,10 +56,11 @@ func (s *UpdateScreen) Draw(input UpdateInput) (UpdateOutput, error) {
 		if err != nil {
 			actualErr = err
 		}
-		logger.Error("Failed to check for updates", "error", actualErr)
+		logger.Debug("Failed to check for updates", "error", actualErr)
 
+		msg := i18n.Localize(&goi18n.Message{ID: "update_check_error", Other: "{{.Error}}"}, map[string]interface{}{"Error": actualErr.Error()})
 		gaba.ConfirmationMessage(
-			i18n.Localize(&goi18n.Message{ID: "update_failed", Other: "Update failed: {{.Error}}"}, map[string]interface{}{"Error": actualErr.Error()}),
+			msg,
 			[]gaba.FooterHelpItem{
 				{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_back", Other: "Back"}, nil)},
 			},

@@ -49,11 +49,11 @@ jobs:
                pak.json > pak.json.tmp && mv pak.json.tmp pak.json
 
             # Update build pak.json (will be copied during build)
-            mkdir -p build/Grout.pak
+            mkdir -p build64/Grout.pak
             jq --arg version "${{ steps.version.outputs.value }}" \
                --arg changelog "${{ inputs.changelog }}" \
                '.version = $version | .changelog[$version] = $changelog' \
-               pak.json > build/Grout.pak/pak.json
+               pak.json > build64/Grout.pak/pak.json
           else
             echo "Version is already ${{ steps.version.outputs.value }}, skipping pak.json update"
           fi
@@ -78,39 +78,42 @@ jobs:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build and Package
         run: task build extract package-next package-muos package-knulli package-spruce package-rocknix package-trimui
 
       - name: Create NextUI distribution
         run: |
-          cd build/Grout.pak
+          cd build64/Grout.pak
           zip -r ../Grout.pak.zip .
 
       - name: Create muOS distribution
         run: |
-          cd build/muOS
+          cd build64/muOS
           zip -r Grout.muxapp Grout
           mv Grout.muxapp ../Grout.muxapp
 
       - name: Create Knulli distribution
         run: |
-          cd build/Knulli
+          cd build64/Knulli
           zip -r ../Grout-Knulli.zip Grout
 
       - name: Create spruce distribution
         run: |
-          cd build/Spruce
+          cd build64/Spruce
           zip -r Grout.spruce.zip Grout
           mv Grout.spruce.zip ../Grout.spruce.zip
 
       - name: Create ROCKNIX distribution
         run: |
-          cd build/ROCKNIX
+          cd build64/ROCKNIX
           zip -r ../Grout-ROCKNIX.zip Grout.sh Grout
 
       - name: Create Trimui distribution
         run: |
-          cd build/Trimui
+          cd build64/Trimui
           zip -r ../Grout-Trimui.zip Grout
 
       - name: Create GitHub Release
@@ -125,12 +128,12 @@ jobs:
 
             ${{ inputs.beta && format('Built from branch: `{0}`', github.ref_name) || '' }}
           files: |
-            build/Grout.pak.zip
-            build/Grout.muxapp
-            build/Grout.spruce.zip
-            build/Grout-Knulli.zip
-            build/Grout-ROCKNIX.zip
-            build/Grout-Trimui.zip
-            build/grout
+            build64/Grout.pak.zip
+            build64/Grout.muxapp
+            build64/Grout.spruce.zip
+            build64/Grout-Knulli.zip
+            build64/Grout-ROCKNIX.zip
+            build64/Grout-Trimui.zip
+            build64/grout
           draft: false
           prerelease: ${{ inputs.beta }}

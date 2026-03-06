@@ -1,0 +1,118 @@
+{
+  "3do": [],
+  "acpc": [],
+  "amiga": [],
+  "arcade": [
+    "FinalBurn Neo",
+    "fbneo",
+    "MAME"
+  ],
+  "arduboy": [],
+  "atari-st": [],
+  "atari2600": [],
+  "atari5200": [],
+  "atari7800": [],
+  "c128": [],
+  "c64": [],
+  "cave-story": [],
+  "cbm-ii": [],
+  "chailove": [],
+  "chip-8": [],
+  "colecovision": [],
+  "cpet": [],
+  "dc": [
+    "reicast"],
+  "doom": [],
+  "dos": [],
+  "fairchild-channel-f": [],
+  "famicom": [],
+  "fds": [],
+  "g-and-w": [],
+  "galaksija": [],
+  "gamegear": [],
+  "gb": [
+    "mGBA"
+  ],
+  "gba": [
+    "mGBA"
+  ],
+  "gbc": [
+    "mGBA"
+  ],
+  "genesis": [],
+  "intellivision": [],
+  "j2me": [],
+  "jaguar": [],
+  "karaoke": [],
+  "lowres": [],
+  "lua": [],
+  "lynx": [],
+  "media-player": [],
+  "mega-duck-slash-cougar-boy": [],
+  "msx": [],
+  "n64": [],
+  "naomi": [
+    "reicast"
+  ],
+  "nds": [],
+  "neo-geo-cd": [],
+  "neo-geo-pocket": [],
+  "neo-geo-pocket-color": [],
+  "neogeoaes": [],
+  "neogeomvs": [],
+  "nes": [],
+  "odyssey": [],
+  "onscripter": [],
+  "openbor": [],
+  "pc-8000": [],
+  "pc-9800-series": [],
+  "pc-fx": [],
+  "philips-cd-i": [],
+  "pico": [],
+  "pico-8": [],
+  "pokemon-mini": [],
+  "ports": [
+    "External"
+  ],
+  "psp": [
+    "PPSSPP (External)",
+    "PPSSPP"
+  ],
+  "psx": [
+    "PCSX-ReARMed"
+  ],
+  "quake": [],
+  "rpg-maker": [],
+  "saturn": [
+    "yabasanshiro"
+  ],
+  "scummvm": [],
+  "sega32": [],
+  "segacd": [],
+  "sfam": [
+    "snes9x"
+  ],
+  "sg1000": [],
+  "sharp-x68000": [],
+  "sms": [],
+  "snes": [],
+  "supergrafx": [],
+  "supervision": [],
+  "tg16": [],
+  "ti-83": [],
+  "tic-80": [],
+  "turbografx-cd": [],
+  "uzebox": [],
+  "vectrex": [],
+  "vemulator": [],
+  "vic-20": [],
+  "vircon-32": [],
+  "virtualboy": [],
+  "wasm-4": [],
+  "wolfenstein-3d": [],
+  "wonderswan": [],
+  "wonderswan-color": [],
+  "x1": [],
+  "zx81": [],
+  "zxs": []
+}

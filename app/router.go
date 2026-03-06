@@ -5,7 +5,6 @@ import (
 	"grout/cfw"
 	"grout/internal"
 	"grout/romm"
-	"grout/sync"
 	"grout/ui"
 	"grout/update"
 
@@ -38,7 +37,7 @@ func runWithRouter(config *internal.Config, currentCFW cfw.CFW, platforms []romm
 		Platforms:       &state.Platforms,
 		QuitOnBack:      quitOnBack,
 		ShowCollections: showCollections,
-		ShowSaveSync:    computeShowSaveSync(state),
+		ShowSaveSync:    state.Host.DeviceID != "",
 	}
 
 	return r.Run(ScreenPlatformSelection, initialInput)
@@ -81,23 +80,11 @@ func registerScreens(r *router.Router, state *AppState) {
 	r.Register(ScreenPlatformSelection, func(input any) (any, error) {
 		in := input.(ui.PlatformSelectionInput)
 
-		if state.Config.SaveSyncMode == internal.SaveSyncModeAutomatic {
-			state.autoSyncOnce.Do(func() {
-				state.AutoSync = sync.NewAutoSync(state.Host, state.Config)
-				ui.AddStatusBarIcon(state.AutoSync.Icon())
-				state.AutoSync.Start()
-			})
-		}
-
 		state.autoUpdateOnce.Do(func() {
 			state.AutoUpdate = update.NewAutoUpdate(state.CFW, state.Config.ReleaseChannel, &state.Host)
 			ui.AddStatusBarIcon(state.AutoUpdate.Icon())
 			state.AutoUpdate.Start()
 		})
-
-		if in.ShowSaveSync == nil {
-			in.ShowSaveSync = computeShowSaveSync(state)
-		}
 
 		screen := ui.NewPlatformSelectionScreen()
 		return screen.Draw(in)
@@ -163,11 +150,6 @@ func registerScreens(r *router.Router, state *AppState) {
 		return screen.Draw(input.(ui.PlatformMappingInput))
 	})
 
-	r.Register(ScreenSaveSyncSettings, func(input any) (any, error) {
-		screen := ui.NewSaveSyncSettingsScreen()
-		return screen.Draw(input.(ui.SaveSyncSettingsInput))
-	})
-
 	r.Register(ScreenInfo, func(input any) (any, error) {
 		screen := ui.NewInfoScreen()
 		return screen.Draw(input.(ui.InfoInput))
@@ -183,11 +165,6 @@ func registerScreens(r *router.Router, state *AppState) {
 		in.CacheSync = state.CacheSync
 		screen := ui.NewRebuildCacheScreen()
 		return screen.Draw(in)
-	})
-
-	r.Register(ScreenSaveSync, func(input any) (any, error) {
-		screen := ui.NewSaveSyncScreen()
-		return screen.Draw(input.(ui.SaveSyncInput))
 	})
 
 	r.Register(ScreenBIOSDownload, func(input any) (any, error) {
@@ -213,4 +190,37 @@ func registerScreens(r *router.Router, state *AppState) {
 		screen := ui.NewGameFiltersScreen()
 		return screen.Draw(input.(ui.GameFiltersInput))
 	})
+
+	r.Register(ScreenSaveSync, func(input any) (any, error) {
+		in := input.(ui.SaveSyncInput)
+		screen := ui.NewSaveSyncScreen()
+		return screen.Execute(in), nil
+	})
+
+	r.Register(ScreenSaveConflict, func(input any) (any, error) {
+		screen := ui.NewSaveConflictScreen()
+		return screen.Draw(input.(ui.SaveConflictInput))
+	})
+
+	r.Register(ScreenSaveSyncSettings, func(input any) (any, error) {
+		in := input.(ui.SaveSyncSettingsInput)
+		screen := ui.NewSaveSyncSettingsScreen()
+		return screen.Draw(in)
+	})
+
+	r.Register(ScreenSyncMenu, func(input any) (any, error) {
+		screen := ui.NewSyncMenuScreen()
+		return screen.Draw(input.(ui.SyncMenuInput))
+	})
+
+	r.Register(ScreenSyncedGames, func(input any) (any, error) {
+		screen := ui.NewSyncedGamesScreen()
+		return screen.Draw(input.(ui.SyncedGamesInput))
+	})
+
+	r.Register(ScreenSyncHistory, func(input any) (any, error) {
+		screen := ui.NewSyncHistoryScreen()
+		return screen.Draw(input.(ui.SyncHistoryInput))
+	})
+
 }

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"grout/internal"
 	"grout/romm"
-	"sync/atomic"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	buttons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
@@ -16,7 +15,7 @@ type PlatformSelectionInput struct {
 	Platforms            *[]romm.Platform // Pointer to allow dynamic updates from state
 	QuitOnBack           bool
 	ShowCollections      bool
-	ShowSaveSync         *atomic.Bool // nil = hidden, otherwise controls visibility dynamically
+	ShowSaveSync         bool
 	LastSelectedIndex    int
 	LastSelectedPosition int
 }
@@ -76,17 +75,17 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (PlatformSe
 				ButtonName: "X",
 				HelpText:   i18n.Localize(&goi18n.Message{ID: "button_settings", Other: "Settings"}, nil),
 			})
+
+			if input.ShowSaveSync {
+				footerItems = append(footerItems, gaba.FooterHelpItem{
+					ButtonName: "Y",
+					HelpText:   i18n.Localize(&goi18n.Message{ID: "button_sync", Other: "Sync"}, nil),
+				})
+			}
 		} else {
 			footerItems = append(footerItems, gaba.FooterHelpItem{
 				ButtonName: "B",
 				HelpText:   i18n.Localize(&goi18n.Message{ID: "button_quit", Other: "Quit"}, nil),
-			})
-		}
-		if input.ShowSaveSync != nil && !internal.IsKidModeEnabled() {
-			footerItems = append(footerItems, gaba.FooterHelpItem{
-				ButtonName: "Y",
-				HelpText:   i18n.Localize(&goi18n.Message{ID: "button_save_sync", Other: "Sync"}, nil),
-				Show:       input.ShowSaveSync,
 			})
 		}
 		footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_select", Other: "Select"}, nil)})
@@ -100,9 +99,9 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (PlatformSe
 	options := gaba.DefaultListOptions("Grout", menuItems)
 	if !internal.IsKidModeEnabled() {
 		options.ActionButton = buttons.VirtualButtonX
-	}
-	if input.ShowSaveSync != nil {
-		options.SecondaryActionButton = buttons.VirtualButtonY
+		if input.ShowSaveSync {
+			options.SecondaryActionButton = buttons.VirtualButtonY
+		}
 	}
 	options.ReorderButton = buttons.VirtualButtonSelect
 	options.FooterHelpItems = footerItems
@@ -174,10 +173,10 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (PlatformSe
 		}
 
 	case gaba.ListActionSecondaryTriggered:
-		if input.QuitOnBack && input.ShowSaveSync != nil {
-			output.Action = PlatformSelectionActionSaveSync
-			return output, nil
-		}
+		output.LastSelectedIndex = sel.Selected[0]
+		output.LastSelectedPosition = sel.VisiblePosition
+		output.Action = PlatformSelectionActionSaveSync
+		return output, nil
 	}
 
 	output.Action = PlatformSelectionActionQuit

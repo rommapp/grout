@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
+	icons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
 	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
@@ -80,9 +81,6 @@ func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 		return
 	}
 
-	var allMissingArtwork []romm.Rom
-	platformCount := len(mappedPlatforms)
-
 	artForceRes, err := gaba.SelectionMessage(
 		i18n.Localize(&goi18n.Message{ID: "artwork_sync_preload_choice", Other: "Do you want to preload all or missing artwork ?"}, nil),
 		[]gaba.SelectionOption{
@@ -100,51 +98,98 @@ func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 		return
 	}
 
+	// Scan all platforms and collect artwork per platform
+	type platformArtwork struct {
+		platform romm.Platform
+		roms     []romm.Rom
+	}
+
+	var platformResults []platformArtwork
+	platformCount := len(mappedPlatforms)
 	cm := cache.GetCacheManager()
+
+	// ProcessMessage runs the closure synchronously on the calling goroutine,
+	// so mutating platformResults from within the closure is safe.
 	for i, platform := range mappedPlatforms {
+		p := platform
 		gaba.ProcessMessage(
-			fmt.Sprintf(i18n.Localize(&goi18n.Message{ID: "artwork_sync_scanning", Other: "Scanning platform %d/%d: %s..."}, nil), i+1, platformCount, platform.Name),
+			fmt.Sprintf(i18n.Localize(&goi18n.Message{ID: "artwork_sync_scanning", Other: "Scanning platform %d/%d: %s..."}, nil), i+1, platformCount, p.Name),
 			gaba.ProcessMessageOptions{ShowThemeBackground: true},
 			func() (interface{}, error) {
 				var roms []romm.Rom
 				var err error
 
 				if cm != nil {
-					roms, err = cm.GetPlatformGames(platform.ID)
+					roms, err = cm.GetPlatformGames(p.ID)
 					if err != nil || len(roms) == 0 {
-						if err := cm.RefreshPlatformGames(platform); err != nil {
-							logger.Error("Failed to refresh platform games", "platform", platform.Name, "error", err)
+						if err := cm.RefreshPlatformGames(p); err != nil {
+							logger.Error("Failed to refresh platform games", "platform", p.Name, "error", err)
 							return nil, nil
 						}
-						roms, err = cm.GetPlatformGames(platform.ID)
+						roms, err = cm.GetPlatformGames(p.ID)
 						if err != nil {
-							logger.Error("Failed to get platform games from cache", "platform", platform.Name, "error", err)
+							logger.Error("Failed to get platform games from cache", "platform", p.Name, "error", err)
 							return nil, nil
 						}
 					}
 				} else {
-					logger.Error("Cache manager not available", "platform", platform.Name)
+					logger.Error("Cache manager not available", "platform", p.Name)
 					return nil, nil
 				}
 
 				if artForceRes.SelectedValue == SyncMissingOnlyOption {
-					missingArtwork := cache.GetMissingArtwork(roms)
-					allMissingArtwork = append(allMissingArtwork, missingArtwork...)
-				} else {
-					allMissingArtwork = append(allMissingArtwork, roms...)
+					roms = cache.GetMissingArtwork(roms)
+				}
+
+				if len(roms) > 0 {
+					platformResults = append(platformResults, platformArtwork{platform: p, roms: roms})
 				}
 				return nil, nil
 			},
 		)
 	}
 
-	if len(allMissingArtwork) == 0 {
+	if len(platformResults) == 0 {
 		gaba.ConfirmationMessage(
 			i18n.Localize(&goi18n.Message{ID: "artwork_sync_up_to_date", Other: "All artwork is already cached!"}, nil),
 			ContinueFooter(),
 			gaba.MessageOptions{},
 		)
 		return
+	}
+
+	// Show platform list in multi-select mode for user to pick which to download
+	var menuItems []gaba.MenuItem
+	for _, pr := range platformResults {
+		menuItems = append(menuItems, gaba.MenuItem{
+			Text:     fmt.Sprintf("%s (%d)", pr.platform.Name, len(pr.roms)),
+			Selected: true,
+			Metadata: pr,
+		})
+	}
+
+	options := gaba.DefaultListOptions(
+		i18n.Localize(&goi18n.Message{ID: "artwork_sync_select_platforms", Other: "Select Platforms"}, nil),
+		menuItems,
+	)
+	options.UseSmallTitle = true
+	options.InitialMultiSelectMode = true
+	options.FooterHelpItems = []gaba.FooterHelpItem{
+		FooterBack(),
+		{ButtonName: icons.Start, HelpText: i18n.Localize(&goi18n.Message{ID: "button_download", Other: "Download"}, nil), IsConfirmButton: true},
+	}
+	options.StatusBar = StatusBar()
+
+	sel, err := gaba.List(options)
+	if err != nil || sel.Action != gaba.ListActionSelected || len(sel.Selected) == 0 {
+		return
+	}
+
+	// Collect artwork from selected platforms
+	var allMissingArtwork []romm.Rom
+	for _, idx := range sel.Selected {
+		pr := sel.Items[idx].Metadata.(platformArtwork)
+		allMissingArtwork = append(allMissingArtwork, pr.roms...)
 	}
 
 	var downloads []gaba.Download
@@ -174,19 +219,6 @@ func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 			ContinueFooter(),
 			gaba.MessageOptions{},
 		)
-		return
-	}
-
-	_, err = gaba.ConfirmationMessage(
-		fmt.Sprintf(i18n.Localize(&goi18n.Message{ID: "artwork_sync_confirm", Other: "Download artwork for %d games?"}, nil), len(downloads)),
-		[]gaba.FooterHelpItem{
-			FooterCancel(),
-			FooterDownload(),
-		},
-		gaba.MessageOptions{},
-	)
-
-	if err != nil {
 		return
 	}
 

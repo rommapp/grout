@@ -126,6 +126,8 @@ type GetRomsQuery struct {
 	OrderBy             string `qs:"order_by,omitempty"`
 	OrderDir            string `qs:"order_dir,omitempty"`
 	UpdatedAfter        string `qs:"updated_after,omitempty"` // ISO8601 timestamp with timezone
+	WithFilterValues    bool   `qs:"with_filter_values"`
+	WithCharIndex       bool   `qs:"with_char_index"`
 }
 
 func (q GetRomsQuery) Valid() bool {

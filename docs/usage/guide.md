@@ -334,6 +334,9 @@ different revisions (Rev A, Rev B). When a game has multiple versions available:
 - **Save Directory** - Choose which emulator's save folder this game should use. This overrides the platform-wide
   setting configured in Save Sync Mappings. When changed, Grout automatically moves existing save files to the new
   location. This is useful when you use different emulators for specific games within the same platform.
+- **Save Slot** - Choose which save slot to sync to for this game. Appears when Save Sync is enabled (device
+  registered). You can select an existing slot or create a new one with **New Slot...**. Changing the slot triggers
+  a sync automatically. See [Save Slots](save-sync.md#save-slots) for details.
 
 !!! important
     **Kids Mode Impact:** When Kids Mode is enabled, the Game Options screen is hidden.

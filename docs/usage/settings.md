@@ -18,19 +18,7 @@ See [Collections Settings](#collections-settings) below.
 **Directory Mappings** - Change which device directories are mapped to which RomM platforms. This takes you back to
 the platform mapping screen that appeared during setup.
 
-**Save Sync** - Controls save synchronization behavior:
-
-- **Off** - Save sync is completely disabled
-- **Manual** - Save sync is available via the `Y` button from the main menu
-- **Automatic** - Grout automatically syncs saves in the background when you launch the app. A cloud icon in the status
-  bar shows sync progress. If issues are detected, a `Y` button appears to access manual sync.
-
-For complete save sync documentation, see the [Save Sync Guide](save-sync.md).
-
-**Save Sync Settings** - Opens a sub-menu where you can configure the default save directory for each platform. This is
-useful for platforms with multiple emulators (e.g., GBA on muOS), allowing you to set which emulator's save folder
-should be used for syncing. Only visible when Save Sync is enabled. Individual games can override this setting via
-Game Options.
+**Save Sync** - Opens a sub-menu for configuring save sync. See [Save Sync Settings](#save-sync-settings) below.
 
 **Advanced** - Opens a sub-menu for advanced configuration options. See [Advanced Settings](#advanced-settings) below.
 
@@ -111,6 +99,26 @@ Controls how collections display their games:
   collection. Select a platform to view games from only that platform.
 - **Unified** - After selecting a collection, you'll immediately see all games from all platforms with platform slugs
   shown as prefixes (e.g., `[nes] Tecmo Bowl`, `[snes] Super Mario World`)
+
+---
+
+## Save Sync Settings
+
+This sub-menu configures save synchronization. For complete save sync documentation, see the [Save Sync Guide](save-sync.md).
+
+### Device Name
+
+Register or rename this device with your RomM server. Each device needs a unique name so RomM can track which saves
+belong to which device. Selecting this opens a keyboard to enter or change the device name.
+
+### Save Backups
+
+Controls how many backup copies of local saves are retained when a newer save is downloaded from the server:
+
+- **5** / **10** / **15** - Keep the N most recent backups per game
+- **No Limit** - Keep all backups (default)
+
+Backups are stored in a `.backup/` directory within each platform's save directory.
 
 ---
 

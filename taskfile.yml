@@ -11,39 +11,39 @@ tasks:
   build:
     desc: Build for ARM64
     cmds:
-      - rm -rf build
+      - rm -rf build64
       - docker buildx build {{.NO_CACHE}} --platform=linux/arm64 --build-arg GITHUB_ACTIONS=false --label {{.LABEL}} -t {{.IMAGE_NAME}} -f docker/Dockerfile .
     silent: true
 
   build-32:
     desc: Build for ARM32
     cmds:
-      - rm -rf build
+      - rm -rf build32
       - docker buildx build {{.NO_CACHE}} --platform=linux/arm/v7 --build-arg GITHUB_ACTIONS=false --label {{.LABEL}} -t {{.IMAGE_NAME}} -f docker/32.Dockerfile .
     silent: true
 
   build-local:
     desc: Build for ARM64 using local gabagool workspace
     cmds:
-      - rm -rf build
+      - rm -rf build64
       - cd .. && docker buildx build {{.NO_CACHE}} --platform=linux/arm64 --build-arg USE_LOCAL_GABAGOOL=true --build-arg GITHUB_ACTIONS=false --label {{.LABEL}} -f grout/docker/Dockerfile -t {{.IMAGE_NAME}} .
     silent: true
 
   build-32-local:
     desc: Build for ARM32 using local gabagool workspace
     cmds:
-      - rm -rf build
+      - rm -rf build32
       - cd .. && docker buildx build {{.NO_CACHE}} --platform=linux/arm/v7 --build-arg USE_LOCAL_GABAGOOL=true --build-arg GITHUB_ACTIONS=false --label {{.LABEL}} -f grout/docker/32.Dockerfile -t {{.IMAGE_NAME}} .
     silent: true
 
   extract:
     desc: Extract binary and libraries from Docker image
     cmds:
-      - mkdir -p build/lib
+      - mkdir -p build64/lib
       - docker rm {{.CONTAINER_NAME}} 2>/dev/null || true
       - docker create --name {{.CONTAINER_NAME}} --label {{.LABEL}} {{.IMAGE_NAME}}
-      - docker cp {{.CONTAINER_NAME}}:/build/grout build/grout
-      - docker cp {{.CONTAINER_NAME}}:/usr/lib/aarch64-linux-gnu/libSDL2_gfx-1.0.so.0.0.2 build/lib/libSDL2_gfx-1.0.so.0
+      - docker cp {{.CONTAINER_NAME}}:/build/grout build64/grout
+      - docker cp {{.CONTAINER_NAME}}:/usr/lib/aarch64-linux-gnu/libSDL2_gfx-1.0.so.0.0.2 build64/lib/libSDL2_gfx-1.0.so.0
       - docker rm {{.CONTAINER_NAME}}
     silent: true
 
@@ -66,70 +66,70 @@ tasks:
   package-next:
     desc: Package for NextUI
     cmds:
-      - rm -rf build/Grout.pak
-      - mkdir -p build/Grout.pak/lib
-      - cp build/grout scripts/NextUI/launch.sh README.md LICENSE pak.json build/Grout.pak
-      - cp -R build/lib/* build/Grout.pak/lib/
+      - rm -rf build64/Grout.pak
+      - mkdir -p build64/Grout.pak/lib
+      - cp build64/grout scripts/NextUI/launch.sh README.md LICENSE pak.json build64/Grout.pak
+      - cp -R build64/lib/* build64/Grout.pak/lib/
     silent: true
 
   package-muos:
     desc: Package for muOS
     cmds:
-      - rm -rf build/muOS build/Grout.muxapp
-      - mkdir -p build/muOS/Grout/lib
-      - cp build/grout scripts/muOS/mux_launch.sh README.md LICENSE build/muOS/Grout
-      - cp -R build/lib/* build/muOS/Grout/lib/
-      - cp -R scripts/muOS/resources build/muOS/Grout/
-      - cd build/muOS && zip -r ../Grout.muxapp Grout
+      - rm -rf build64/muOS build64/Grout.muxapp
+      - mkdir -p build64/muOS/Grout/lib
+      - cp build64/grout scripts/muOS/mux_launch.sh README.md LICENSE build64/muOS/Grout
+      - cp -R build64/lib/* build64/muOS/Grout/lib/
+      - cp -R scripts/muOS/resources build64/muOS/Grout/
+      - cd build64/muOS && zip -r ../Grout.muxapp Grout
     silent: true
 
   package-knulli:
     desc: Package for Knulli
     cmds:
-      - rm -rf build/Knulli
-      - mkdir -p build/Knulli/Grout/lib
-      - cp build/grout scripts/Knulli/Grout.sh scripts/Knulli/logo.png README.md LICENSE build/Knulli/Grout
-      - cp -R build/lib/* build/Knulli/Grout/lib/
+      - rm -rf build64/Knulli
+      - mkdir -p build64/Knulli/Grout/lib
+      - cp build64/grout scripts/Knulli/Grout.sh scripts/Knulli/logo.png README.md LICENSE build64/Knulli/Grout
+      - cp -R build64/lib/* build64/Knulli/Grout/lib/
     silent: true
 
   package-spruce:
     desc: Package for Spruce
     cmds:
-      - rm -rf build/Spruce
-      - mkdir -p build/Spruce/Grout/grout/lib
-      - cp scripts/Spruce/* README.md LICENSE build/Spruce/Grout
-      - cp build/grout build/Spruce/Grout/grout
-      - cp -R build/lib/* build/Spruce/Grout/grout/lib/
+      - rm -rf build64/Spruce
+      - mkdir -p build64/Spruce/Grout/grout/lib
+      - cp scripts/Spruce/* README.md LICENSE build64/Spruce/Grout
+      - cp build64/grout build64/Spruce/Grout/grout
+      - cp -R build64/lib/* build64/Spruce/Grout/grout/lib/
     silent: true
 
   package-allium:
     desc: Package for Allium
     cmds:
-      - rm -rf build/Allium
-      - mkdir -p build/Allium/Grout.pak/grout/lib
-      - cp -R scripts/Allium/* build/Allium/Grout.pak
-      - cp build32/grout README.md LICENSE build/Allium/Grout.pak/grout
-#      - cp -R build/lib/* build/Allium/Grout.pak/grout/lib/ # Come back for these libs
+      - rm -rf build64/Allium
+      - mkdir -p build64/Allium/Grout.pak/grout/lib
+      - cp -R scripts/Allium/* build64/Allium/Grout.pak
+      - cp build32/grout README.md LICENSE build64/Allium/Grout.pak/grout
+#      - cp -R build64/lib/* build64/Allium/Grout.pak/grout/lib/ # Come back for these libs
     silent: true
 
   package-rocknix:
     desc: Package for ROCKNIX
     cmds:
-      - rm -rf build/ROCKNIX
-      - mkdir -p build/ROCKNIX/Grout/lib
-      - cp scripts/ROCKNIX/Grout.sh build/ROCKNIX/
-      - cp build/grout scripts/ROCKNIX/logo.png README.md LICENSE build/ROCKNIX/Grout/
-      - cp -R build/lib/* build/ROCKNIX/Grout/lib/
+      - rm -rf build64/ROCKNIX
+      - mkdir -p build64/ROCKNIX/Grout/lib
+      - cp scripts/ROCKNIX/Grout.sh build64/ROCKNIX/
+      - cp build64/grout scripts/ROCKNIX/logo.png README.md LICENSE build64/ROCKNIX/Grout/
+      - cp -R build64/lib/* build64/ROCKNIX/Grout/lib/
     silent: true
 
   package-trimui:
     desc: Package for Trimui
     cmds:
-      - rm -rf build/Trimui
-      - mkdir -p build/Trimui/Grout/grout/lib
-      - cp scripts/Trimui/* README.md LICENSE build/Trimui/Grout
-      - cp build/grout build/Trimui/Grout/grout
-      - cp -R build/lib/* build/Trimui/Grout/grout/lib/
+      - rm -rf build64/Trimui
+      - mkdir -p build64/Trimui/Grout/grout/lib
+      - cp scripts/Trimui/* README.md LICENSE build64/Trimui/Grout
+      - cp build64/grout build64/Trimui/Grout/grout
+      - cp -R build64/lib/* build64/Trimui/Grout/grout/lib/
     silent: true
 
   all:
@@ -140,7 +140,6 @@ tasks:
       - task: build-32
       - task: extract-32
       - task: package
-      - task: docker-clean
     silent: true
 
   all-local:
@@ -151,14 +150,13 @@ tasks:
       - task: build-32-local
       - task: extract-32
       - task: package
-      - task: docker-clean
     silent: true
 
   adb-next:
     desc: Deploy to NextUI device via ADB
     cmds:
       - adb shell rm -rf /mnt/SDCARD/Tools/tg5040/Grout.pak
-      - adb push build/Grout.pak /mnt/SDCARD/Tools/tg5040
+      - adb push build64/Grout.pak /mnt/SDCARD/Tools/tg5040
       - adb push config-platformless.json /mnt/SDCARD/Tools/tg5040/Grout.pak/config.json
     silent: true
 
@@ -166,7 +164,7 @@ tasks:
     desc: Deploy to muOS device via ADB (SD1)
     cmds:
       - adb shell rm -rf /mnt/mmc/MUOS/application/Grout
-      - adb push build/muOS/Grout /mnt/mmc/MUOS/application
+      - adb push build64/muOS/Grout /mnt/mmc/MUOS/application
       - adb push config-platformless.json /mnt/mmc/MUOS/application/Grout/config.json
     silent: true
 
@@ -174,7 +172,7 @@ tasks:
     desc: Deploy to muOS device via ADB (SD2)
     cmds:
       - adb shell rm -rf /mnt/sdcard/MUOS/application/Grout
-      - adb push build/muOS/Grout /mnt/sdcard/MUOS/application
+      - adb push build64/muOS/Grout /mnt/sdcard/MUOS/application
       - adb push config-platformless.json /mnt/sdcard/MUOS/application/Grout/config.json
     silent: true
 
@@ -182,7 +180,7 @@ tasks:
     desc: Deploy to Knulli device via ADB
     cmds:
       - adb shell rm -rf /userdata/roms/ports/Grout
-      - adb push build/Knulli/Grout /userdata/roms/ports
+      - adb push build64/Knulli/Grout /userdata/roms/ports
       - adb push config-platformless.json /userdata/roms/ports/Grout/config.json
     silent: true
 
@@ -259,20 +257,7 @@ tasks:
   clean:
     desc: Remove build artifacts
     cmds:
-      - rm -rf build
-    silent: true
-
-  docker-clean:
-    desc: Remove grout Docker containers and images (preserves quasimodo base)
-    cmds:
-      - docker rm $(docker ps -aq --filter "label={{.LABEL}}") 2>/dev/null || true
-      - docker rmi $(docker images -q --filter "label={{.LABEL}}") 2>/dev/null || true
-      - docker builder prune -f --filter "label={{.LABEL}}" 2>/dev/null || true
-    silent: true
-
-  clean-all:
-    desc: Remove build artifacts and Docker images
-    deps: [ clean, docker-clean ]
+      - rm -rf build64 build32
     silent: true
 
   hooks-setup:

@@ -20,9 +20,6 @@ var kidModeEnabled atomic.Bool
 type Config struct {
 	Hosts                        []romm.Host                 `json:"hosts,omitempty"`
 	DirectoryMappings            map[string]DirectoryMapping `json:"directory_mappings,omitempty"`
-	SaveSyncMode                 SaveSyncMode                `json:"save_sync_mode"`
-	SaveDirectoryMappings        map[string]string           `json:"save_directory_mappings,omitempty"`
-	GameSaveOverrides            map[int]string              `json:"game_save_overrides,omitempty"`
 	DownloadArt                  bool                        `json:"download_art,omitempty"`
 	ShowBoxArt                   bool                        `json:"show_box_art,omitempty"`
 	UnzipDownloads               bool                        `json:"unzip_downloads,omitempty"`
@@ -41,7 +38,10 @@ type Config struct {
 	DownloadArtScreenshotPreview bool                        `json:"download_art_screenshot_preview,omitempty"`
 	DownloadSplashArt            artutil.ArtKind             `json:"download_splash_art,omitempty"`
 
-	PlatformOrder []string `json:"platform_order,omitempty"`
+	PlatformOrder         []string          `json:"platform_order,omitempty"`
+	SaveDirectoryMappings map[string]string `json:"save_directory_mappings,omitempty"`
+	SlotPreferences       map[string]string `json:"-"`                           // Stored in save_slots.json, not config.json
+	SaveBackupLimit       int               `json:"save_backup_limit,omitempty"` // 0 = no limit, 5/10/15 = keep N most recent per game
 
 	PlatformsBinding map[string]string `json:"-"`
 }
@@ -66,8 +66,6 @@ func (c Config) ToLoggable() any {
 		"download_art":            c.DownloadArt,
 		"art_kind":                c.ArtKind,
 		"show_box_art":            c.ShowBoxArt,
-		"save_directory_mappings": c.SaveDirectoryMappings,
-		"game_save_overrides":     c.GameSaveOverrides,
 		"collections":             c.ShowRegularCollections,
 		"smart_collections":       c.ShowSmartCollections,
 		"virtual_collections":     c.ShowVirtualCollections,
@@ -107,13 +105,12 @@ func LoadConfig() (*Config, error) {
 		config.CollectionView = CollectionViewPlatform
 	}
 
-	if config.SaveSyncMode == "" {
-		config.SaveSyncMode = SaveSyncModeOff
-	}
-
 	if config.ArtKind == "" {
 		config.ArtKind = artutil.ArtKindDefault
 	}
+
+	// Load slot preferences from dedicated file
+	config.SlotPreferences = LoadSlotPreferences()
 
 	return &config, nil
 }
@@ -133,10 +130,6 @@ func SaveConfig(config *Config) error {
 
 	if config.CollectionView == "" {
 		config.CollectionView = CollectionViewPlatform
-	}
-
-	if config.SaveSyncMode == "" {
-		config.SaveSyncMode = SaveSyncModeOff
 	}
 
 	if config.ReleaseChannel == "" {
@@ -195,6 +188,58 @@ func (c *Config) LoadPlatformsBinding(host romm.Host, timeout ...time.Duration) 
 
 	c.PlatformsBinding = rommConfig.PlatformsBinding
 	return nil
+}
+
+func (c Config) GetDirectoryMapping(fsSlug string) (string, bool) {
+	if mapping, ok := c.DirectoryMappings[fsSlug]; ok {
+		return mapping.RelativePath, true
+	}
+	return "", false
+}
+
+func LoadSlotPreferences() map[string]string {
+	data, err := os.ReadFile("save_slots.json")
+	if err != nil {
+		return nil
+	}
+	var prefs map[string]string
+	if err := json.Unmarshal(data, &prefs); err != nil {
+		return nil
+	}
+	return prefs
+}
+
+func SaveSlotPreferences(config *Config) error {
+	if len(config.SlotPreferences) == 0 {
+		os.Remove("save_slots.json")
+		return nil
+	}
+	pretty, err := json.MarshalIndent(config.SlotPreferences, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile("save_slots.json", pretty, 0644)
+}
+
+func (c Config) GetSlotPreference(romID int) string {
+	if c.SlotPreferences != nil {
+		if slot, ok := c.SlotPreferences[fmt.Sprintf("%d", romID)]; ok {
+			return slot
+		}
+	}
+	return "default"
+}
+
+func (c *Config) SetSlotPreference(romID int, slot string) {
+	if c.SlotPreferences == nil {
+		c.SlotPreferences = make(map[string]string)
+	}
+	key := fmt.Sprintf("%d", romID)
+	if slot == "default" {
+		delete(c.SlotPreferences, key)
+	} else {
+		c.SlotPreferences[key] = slot
+	}
 }
 
 func (c Config) GetApiTimeout() time.Duration    { return c.ApiTimeout }

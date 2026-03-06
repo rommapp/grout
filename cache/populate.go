@@ -146,9 +146,6 @@ func (cm *Manager) populateCache(platforms []romm.Platform, progress *atomic.Flo
 	// Record refresh time
 	if firstErr == nil {
 		cm.RecordRefreshTime(MetaKeyGamesRefreshedAt)
-		if updatedAfter != "" {
-			cm.PurgeStaleFilenameMappings()
-		}
 	}
 
 	// Collections (85-98%)
