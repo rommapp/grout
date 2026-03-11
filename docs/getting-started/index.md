@@ -7,7 +7,7 @@ Get up and running with Grout in 5 steps.
 Make sure you have:
 
 - A RomM server running and accessible
-- A compatible device running muOS, Knulli, ROCKNIX, Spruce v4 or NextUI
+- A compatible device running muOS, Knulli, ROCKNIX, Spruce v4, NextUI, or Batocera
 - Your device connected to Wi-Fi
 
 ---
@@ -23,6 +23,7 @@ Choose your platform:
 - [ROCKNIX Installation](install-rocknix.md)
 - [Spruce Installation](install-spruce.md)
 - [NextUI Installation](install-nextui.md)
+- [Batocera Installation](install-batocera.md)
 
 ### Step 2: Launch and Select Language
 

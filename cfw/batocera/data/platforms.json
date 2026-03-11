@@ -1,0 +1,228 @@
+{
+  "3do": [
+    "3do"
+  ],
+  "3ds": [
+    "3ds"
+  ],
+  "acpc": [
+    "amstradcpc"
+  ],
+  "amiga": [
+    "amiga500",
+    "amiga1200"
+  ],
+  "arcade": [
+    "arcade",
+    "mame",
+    "fbneo",
+    "neogeo"
+  ],
+  "arduboy": [
+    "arduboy"
+  ],
+  "atari-st": [
+    "atarist"
+  ],
+  "atari2600": [
+    "atari2600"
+  ],
+  "atari5200": [
+    "atari5200"
+  ],
+  "atari7800": [
+    "atari7800"
+  ],
+  "c128": [
+    "c128"
+  ],
+  "c64": [
+    "c64"
+  ],
+  "cave-story": [
+    "cavestory"
+  ],
+  "colecovision": [
+    "colecovision"
+  ],
+  "cpet": [
+    "pet"
+  ],
+  "dc": [
+    "dreamcast"
+  ],
+  "dos": [
+    "dos"
+  ],
+  "fairchild-channel-f": [
+    "channelf"
+  ],
+  "famicom": [
+    "nes"
+  ],
+  "fds": [
+    "fds"
+  ],
+  "g-and-w": [
+    "gameandwatch"
+  ],
+  "galaksija": [],
+  "gamegear": [
+    "gamegear"
+  ],
+  "gb": [
+    "gb"
+  ],
+  "gba": [
+    "gba"
+  ],
+  "gbc": [
+    "gbc"
+  ],
+  "genesis": [
+    "megadrive"
+  ],
+  "intellivision": [
+    "intellivision"
+  ],
+  "j2me": [],
+  "jaguar": [
+    "jaguar"
+  ],
+  "lynx": [
+    "lynx"
+  ],
+  "mega-duck-slash-cougar-boy": [
+    "megaduck"
+  ],
+  "msx": [
+    "msx1",
+    "msx2",
+    "msx2plus",
+    "msxturbor"
+  ],
+  "n64": [
+    "n64"
+  ],
+  "nds": [
+    "nds"
+  ],
+  "neo-geo-cd": [
+    "neogeocd"
+  ],
+  "neo-geo-pocket": [
+    "ngp"
+  ],
+  "neo-geo-pocket-color": [
+    "ngpc"
+  ],
+  "neogeoaes": [
+    "neogeo"
+  ],
+  "neogeomvs": [
+    "neogeo"
+  ],
+  "nes": [
+    "nes"
+  ],
+  "odyssey": [
+    "odyssey2"
+  ],
+  "openbor": [
+    "openbor"
+  ],
+  "pc-8000": [
+    "pc88"
+  ],
+  "pc-9800-series": [
+    "pc98"
+  ],
+  "pc-fx": [
+    "pcfx"
+  ],
+  "philips-cd-i": [
+    "cdi"
+  ],
+  "pico": [
+    "pico8"
+  ],
+  "pico-8": [
+    "pico8"
+  ],
+  "pokemon-mini": [
+    "pokemini"
+  ],
+  "ps2": [
+    "ps2"
+  ],
+  "psp": [
+    "psp"
+  ],
+  "psx": [
+    "psx",
+    "ps1"
+  ],
+  "saturn": [
+    "saturn"
+  ],
+  "sega32": [
+    "sega32x"
+  ],
+  "segacd": [
+    "segacd"
+  ],
+  "sfam": [
+    "snes"
+  ],
+  "sg1000": [
+    "sg1000"
+  ],
+  "sharp-x68000": [
+    "x68000"
+  ],
+  "sms": [
+    "mastersystem"
+  ],
+  "snes": [
+    "snes"
+  ],
+  "supergrafx": [
+    "supergrafx"
+  ],
+  "supervision": [
+    "supervision"
+  ],
+  "tg16": [
+    "pcengine"
+  ],
+  "tic-80": [
+    "tic80"
+  ],
+  "turbografx-cd": [
+    "pcenginecd"
+  ],
+  "vectrex": [
+    "vectrex"
+  ],
+  "vic-20": [
+    "c20"
+  ],
+  "virtualboy": [
+    "virtualboy"
+  ],
+  "wonderswan": [
+    "wswan"
+  ],
+  "wonderswan-color": [
+    "wswanc"
+  ],
+  "x1": [
+    "x1"
+  ],
+  "zx81": [
+    "zx81"
+  ],
+  "zxs": [
+    "zxspectrum"
+  ]
+}

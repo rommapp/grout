@@ -15,6 +15,13 @@ tasks:
       - docker buildx build {{.NO_CACHE}} --platform=linux/arm64 --build-arg GITHUB_ACTIONS=false --label {{.LABEL}} --load -t {{.IMAGE_NAME}} -f docker/Dockerfile .
     silent: true
 
+  build-amd64:
+    desc: Build for AMD64 (x86_64)
+    cmds:
+      - rm -rf build64
+      - docker buildx build {{.NO_CACHE}} --load --platform=linux/amd64 --build-arg GITHUB_ACTIONS=false --label {{.LABEL}} -t {{.IMAGE_NAME}}-amd64 -f docker/Dockerfile .
+    silent: true
+
   build-32:
     desc: Build for ARM32
     cmds:
@@ -47,6 +54,17 @@ tasks:
       - docker rm {{.CONTAINER_NAME}}
     silent: true
 
+  extract-amd64:
+    desc: Extract binary and libraries from AMD64 Docker image
+    cmds:
+      - mkdir -p build/lib
+      - docker rm {{.CONTAINER_NAME}} 2>/dev/null || true
+      - docker create --name {{.CONTAINER_NAME}} --label {{.LABEL}} {{.IMAGE_NAME}}-amd64
+      - docker cp {{.CONTAINER_NAME}}:/build/grout build/grout
+      - docker cp {{.CONTAINER_NAME}}:/usr/lib/x86_64-linux-gnu/libSDL2_gfx-1.0.so.0.0.2 build/lib/libSDL2_gfx-1.0.so.0
+      - docker rm {{.CONTAINER_NAME}}
+    silent: true
+
   extract-32:
     desc: Extract binary and libraries from Docker image
     cmds:
@@ -60,7 +78,7 @@ tasks:
 
   package:
     desc: Package for all platforms
-    deps: [ package-next, package-muos, package-knulli, package-spruce, package-rocknix, package-trimui, package-allium ]
+    deps: [ package-next, package-muos, package-knulli, package-spruce, package-rocknix, package-trimui, package-allium, package-batocera ]
     silent: true
 
   package-next:
@@ -130,6 +148,24 @@ tasks:
       - cp scripts/Trimui/* README.md LICENSE build64/Trimui/Grout
       - cp build64/grout build64/Trimui/Grout/grout
       - cp -R build64/lib/* build64/Trimui/Grout/grout/lib/
+    silent: true
+
+  package-batocera:
+    desc: Package for Batocera
+    cmds:
+      - rm -rf build/Batocera
+      - mkdir -p build/Batocera/Grout/lib
+      - cp scripts/Batocera/Grout.sh build/Batocera/
+      - cp build/grout README.md LICENSE build/Batocera/Grout/
+      - cp -R build/lib/* build/Batocera/Grout/lib/
+    silent: true
+
+  batocera-amd64:
+    desc: Build and package Batocera for AMD64 (x86_64 PC)
+    cmds:
+      - task: build-amd64
+      - task: extract-amd64
+      - task: package-batocera
     silent: true
 
   all:

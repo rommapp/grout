@@ -26,7 +26,7 @@ type Info struct {
 
 func GetAssetName(c cfw.CFW) string {
 	switch c {
-	case cfw.MuOS, cfw.Knulli, cfw.Spruce, cfw.NextUI, cfw.ROCKNIX, cfw.Trimui:
+	case cfw.MuOS, cfw.Knulli, cfw.Spruce, cfw.NextUI, cfw.ROCKNIX, cfw.Trimui, cfw.Batocera:
 		return "grout"
 	default:
 		return ""
