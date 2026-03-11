@@ -1,6 +1,7 @@
 package cfw
 
 import (
+	"grout/cfw/batocera"
 	"grout/cfw/knulli"
 	"grout/cfw/muos"
 	"grout/cfw/rocknix"
@@ -23,6 +24,8 @@ func AddGroutToGamelist(c CFW) {
 		gamelist.AddGroutEntry(knulli.GetGroutGamelist(), "./Grout/Grout.sh")
 	case ROCKNIX:
 		gamelist.AddGroutEntry(rocknix.GetGroutGamelist(), "./Grout.sh")
+	case Batocera:
+		gamelist.AddGroutEntry(batocera.GetGroutGamelist(), "./Grout/Grout.sh")
 	default:
 		return
 	}
@@ -32,7 +35,7 @@ func AddGroutToGamelist(c CFW) {
 func FillGamesMetadata(entries []gamelist.RomGameEntry) {
 	logger := gaba.GetLogger()
 	switch GetCFW() {
-	case Knulli, ROCKNIX:
+	case Knulli, ROCKNIX, Batocera:
 		if err := gamelist.AddRomGamesToGamelist(entries); err != nil {
 			logger.Warn("Failed to refresh ES database", "error", err)
 		}

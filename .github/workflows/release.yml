@@ -79,7 +79,7 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and Package
-        run: task build extract package-next package-muos package-knulli package-spruce package-rocknix package-trimui
+        run: task build extract package-next package-muos package-knulli package-spruce package-rocknix package-trimui package-batocera
 
       - name: Create NextUI distribution
         run: |
@@ -113,6 +113,11 @@ jobs:
           cd build/Trimui
           zip -r ../Grout-Trimui.zip Grout
 
+      - name: Create Batocera distribution
+        run: |
+          cd build/Batocera
+          zip -r ../Grout-Batocera.zip Grout.sh Grout
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -131,6 +136,7 @@ jobs:
             build/Grout-Knulli.zip
             build/Grout-ROCKNIX.zip
             build/Grout-Trimui.zip
+            build/Grout-Batocera.zip
             build/grout
           draft: false
           prerelease: ${{ inputs.beta }}

@@ -2,6 +2,7 @@ package cfw
 
 import (
 	"grout/cfw/allium"
+	"grout/cfw/batocera"
 	"grout/cfw/knulli"
 	"grout/cfw/muos"
 	"grout/cfw/nextui"
@@ -28,6 +29,8 @@ func GetRomDirectory() string {
 		return trimui.GetRomDirectory()
 	case Allium:
 		return allium.GetRomDirectory()
+	case Batocera:
+		return batocera.GetRomDirectory()
 	}
 	return ""
 }
@@ -58,6 +61,8 @@ func GetBIOSDirectory() string {
 		return trimui.GetBIOSDirectory()
 	case Allium:
 		return allium.GetBIOSDirectory()
+	case Batocera:
+		return batocera.GetBIOSDirectory()
 	}
 	return ""
 }
@@ -98,6 +103,8 @@ func GetArtDirectory(romDir string, platformFSSlug, platformName string) string 
 		return trimui.GetArtDirectory(platformFSSlug, platformName)
 	case Allium:
 		return allium.GetArtDirectory(romDir)
+	case Batocera:
+		return batocera.GetArtDirectory(romDir)
 	default:
 		return ""
 	}
@@ -120,6 +127,8 @@ func BaseSavePath() string {
 		return trimui.GetBaseSavePath()
 	case Allium:
 		return allium.GetBaseSavePath()
+	case Batocera:
+		return batocera.GetBaseSavePath()
 	}
 	return ""
 }
