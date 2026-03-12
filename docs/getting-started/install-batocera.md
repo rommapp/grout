@@ -6,8 +6,8 @@ This guide will help you install Grout on devices running [Batocera](https://bat
 
 Grout has been tested on the following devices running Batocera:
 
-| Manufacturer | Device |
-|--------------|--------|
+| Manufacturer | Device                        |
+|--------------|-------------------------------|
 | _None yet_   | _Please report your results!_ |
 
 _Please help verify compatibility on other devices by reporting your results!_

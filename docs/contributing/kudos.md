@@ -15,3 +15,4 @@ Thank you to everyone who has contributed to Grout!
 - **Sargun Vohra** ([@sargunv](https://github.com/sargunv))
 - **Seth Barberee** ([@SethBarberee](https://github.com/SethBarberee))
 - **Zach Keatings** ([@ZacharyKeatings](https://github.com/ZacharyKeatings))
+- **Jordan Davidson** ([@from-nibly](https://github.com/from-nibly))
