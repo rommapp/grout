@@ -136,6 +136,13 @@ const (
 	SaveConflictActionCancel
 )
 
+type SaveMappingAction int
+
+const (
+	SaveMappingActionSaved SaveMappingAction = iota
+	SaveMappingActionBack
+)
+
 type SyncMenuAction int
 
 const (
@@ -143,6 +150,13 @@ const (
 	SyncMenuActionSyncedGames
 	SyncMenuActionHistory
 	SyncMenuActionBack
+)
+
+type SaveSyncSettingsAction int
+
+const (
+	SaveSyncSettingsActionBack SaveSyncSettingsAction = iota
+	SaveSyncSettingsActionSaveMapping
 )
 
 type SyncedGamesAction int

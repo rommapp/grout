@@ -223,4 +223,9 @@ func registerScreens(r *router.Router, state *AppState) {
 		return screen.Draw(input.(ui.SyncHistoryInput))
 	})
 
+	r.Register(ScreenSaveMapping, func(input any) (any, error) {
+		screen := ui.NewSaveMappingScreen()
+		return screen.Draw(input.(ui.SaveMappingInput))
+	})
+
 }

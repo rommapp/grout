@@ -19,6 +19,7 @@ type SaveSyncSettingsInput struct {
 }
 
 type SaveSyncSettingsOutput struct {
+	Action SaveSyncSettingsAction
 	Config *internal.Config
 	Host   romm.Host
 }
@@ -76,6 +77,12 @@ func (s *SaveSyncSettingsScreen) drawRegistered(input SaveSyncSettingsInput) (Sa
 	output := SaveSyncSettingsOutput{Config: input.Config, Host: input.Host}
 	logger := gaba.GetLogger()
 
+	const (
+		menuDeviceName = iota
+		menuBackupLimit
+		menuSaveMapping
+	)
+
 	items := []gaba.ItemWithOptions{
 		{
 			Item: gaba.MenuItem{
@@ -94,6 +101,12 @@ func (s *SaveSyncSettingsScreen) drawRegistered(input SaveSyncSettingsInput) (Sa
 				{DisplayName: i18n.Localize(&goi18n.Message{ID: "save_sync_backup_no_limit", Other: "No Limit"}, nil), Value: 0},
 			},
 			SelectedOption: backupLimitToIndex(input.Config.SaveBackupLimit),
+		},
+		{
+			Item: gaba.MenuItem{
+				Text: i18n.Localize(&goi18n.Message{ID: "sync_menu_save_mapping", Other: "Save Mapping"}, nil),
+			},
+			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
 		},
 	}
 
@@ -115,7 +128,7 @@ func (s *SaveSyncSettingsScreen) drawRegistered(input SaveSyncSettingsInput) (Sa
 	}
 
 	// Apply backup limit setting
-	if val, ok := result.Items[1].Options[result.Items[1].SelectedOption].Value.(int); ok {
+	if val, ok := result.Items[menuBackupLimit].Options[result.Items[menuBackupLimit].SelectedOption].Value.(int); ok {
 		output.Config.SaveBackupLimit = val
 	}
 
@@ -123,8 +136,13 @@ func (s *SaveSyncSettingsScreen) drawRegistered(input SaveSyncSettingsInput) (Sa
 		return output, nil
 	}
 
-	// Only the device name row is clickable
-	if result.Selected != 0 {
+	switch result.Selected {
+	case menuSaveMapping:
+		output.Action = SaveSyncSettingsActionSaveMapping
+		return output, nil
+	case menuDeviceName:
+		// fall through to device name editing below
+	default:
 		return output, nil
 	}
 

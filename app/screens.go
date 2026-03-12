@@ -34,4 +34,5 @@ const (
 	ScreenSyncMenu
 	ScreenSyncedGames
 	ScreenSyncHistory
+	ScreenSaveMapping
 )

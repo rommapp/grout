@@ -86,6 +86,8 @@ func buildTransitionFunc(state *AppState, quitOnBack bool, initialShowCollection
 			return popOrExit(stack)
 		case ScreenSaveSyncSettings:
 			return transitionSaveSyncSettings(ctx, result)
+		case ScreenSaveMapping:
+			return transitionSaveMapping(ctx, result)
 		}
 
 		return router.ScreenExit, nil
@@ -182,6 +184,17 @@ func transitionSyncMenu(ctx *transitionContext, result any) (router.Screen, any)
 	return router.ScreenExit, nil
 }
 
+func transitionSaveMapping(ctx *transitionContext, result any) (router.Screen, any) {
+	r := result.(ui.SaveMappingOutput)
+	if r.Config != nil {
+		ctx.state.Config = r.Config
+		if r.Action == ui.SaveMappingActionSaved {
+			internal.SaveConfig(r.Config)
+		}
+	}
+	return popOrExit(ctx.stack)
+}
+
 func transitionSyncedGames(ctx *transitionContext, result any) (router.Screen, any) {
 	r := result.(ui.SyncedGamesOutput)
 	if r.Config != nil {
@@ -236,6 +249,17 @@ func transitionSaveSyncSettings(ctx *transitionContext, result any) (router.Scre
 		}
 		internal.SaveConfig(ctx.state.Config)
 	}
+
+	if r.Action == ui.SaveSyncSettingsActionSaveMapping {
+		ctx.stack.Push(ScreenSaveSyncSettings, ui.SaveSyncSettingsInput{
+			Config: ctx.state.Config,
+			Host:   ctx.state.Host,
+		}, nil)
+		return ScreenSaveMapping, ui.SaveMappingInput{
+			Config: ctx.state.Config,
+		}
+	}
+
 	return popOrExit(ctx.stack)
 }
 
