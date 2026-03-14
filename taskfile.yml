@@ -88,6 +88,7 @@ tasks:
       - mkdir -p build64/Grout.pak/lib
       - cp build64/grout scripts/NextUI/launch.sh README.md LICENSE pak.json build64/Grout.pak
       - cp -R build64/lib/* build64/Grout.pak/lib/
+      - chmod +x build64/Grout.pak/grout build64/Grout.pak/launch.sh
     silent: true
 
   package-muos:
@@ -98,6 +99,7 @@ tasks:
       - cp build64/grout scripts/muOS/mux_launch.sh README.md LICENSE build64/muOS/Grout
       - cp -R build64/lib/* build64/muOS/Grout/lib/
       - cp -R scripts/muOS/resources build64/muOS/Grout/
+      - chmod +x build64/muOS/Grout/grout build64/muOS/Grout/mux_launch.sh
       - cd build64/muOS && zip -r ../Grout.muxapp Grout
     silent: true
 
@@ -108,6 +110,7 @@ tasks:
       - mkdir -p build64/Knulli/Grout/lib
       - cp build64/grout scripts/Knulli/Grout.sh scripts/Knulli/logo.png README.md LICENSE build64/Knulli/Grout
       - cp -R build64/lib/* build64/Knulli/Grout/lib/
+      - chmod +x build64/Knulli/Grout/grout build64/Knulli/Grout/Grout.sh
     silent: true
 
   package-spruce:
@@ -118,6 +121,7 @@ tasks:
       - cp scripts/Spruce/* README.md LICENSE build64/Spruce/Grout
       - cp build64/grout build64/Spruce/Grout/grout
       - cp -R build64/lib/* build64/Spruce/Grout/grout/lib/
+      - chmod +x build64/Spruce/Grout/grout/grout build64/Spruce/Grout/launch.sh build64/Spruce/Grout/launch-universal.sh
     silent: true
 
   package-allium:
@@ -138,6 +142,7 @@ tasks:
       - cp scripts/ROCKNIX/Grout.sh build64/ROCKNIX/
       - cp build64/grout scripts/ROCKNIX/logo.png README.md LICENSE build64/ROCKNIX/Grout/
       - cp -R build64/lib/* build64/ROCKNIX/Grout/lib/
+      - chmod +x build64/ROCKNIX/Grout/grout build64/ROCKNIX/Grout.sh
     silent: true
 
   package-trimui:
@@ -148,6 +153,7 @@ tasks:
       - cp scripts/Trimui/* README.md LICENSE build64/Trimui/Grout
       - cp build64/grout build64/Trimui/Grout/grout
       - cp -R build64/lib/* build64/Trimui/Grout/grout/lib/
+      - chmod +x build64/Trimui/Grout/grout/grout build64/Trimui/Grout/launch.sh
     silent: true
 
   package-batocera:
@@ -158,6 +164,7 @@ tasks:
       - cp scripts/Batocera/Grout.sh build/Batocera/
       - cp build/grout README.md LICENSE build/Batocera/Grout/
       - cp -R build/lib/* build/Batocera/Grout/lib/
+      - chmod +x build/Batocera/Grout/grout build/Batocera/Grout.sh
     silent: true
 
   batocera-amd64:
