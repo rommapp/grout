@@ -72,6 +72,7 @@ nav:
       - Spruce: getting-started/install-spruce.md
       - NextUI: getting-started/install-nextui.md
       - TrimUI: getting-started/install-trimui.md
+      - Batocera: getting-started/install-batocera.md
   - Usage:
       - User Guide: usage/guide.md
       - Settings Reference: usage/settings.md
@@ -83,6 +84,7 @@ nav:
           - Spruce: platforms/spruce.md
           - NextUI: platforms/nextui.md
           - TrimUI: platforms/trimui.md
+          - Batocera: platforms/BATOCERA.md
   - Contributing:
       - contributing/index.md
       - Development Guide: contributing/development.md
