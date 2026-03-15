@@ -23,14 +23,14 @@ var (
 
 func GetBasePath() string {
 	if basePath := os.Getenv("BASE_PATH"); basePath != "" {
-		return filepath.Join(basePath + "MUOS")
+		return filepath.Join(basePath, "MUOS")
 	}
 	return StoragePath
 }
 
 func GetRomDirectory() string {
-	if os.Getenv("BASE_PATH") != "" {
-		return filepath.Join(GetBasePath(), "ROMS")
+	if basePath := os.Getenv("BASE_PATH"); basePath != "" {
+		return filepath.Join(basePath, "ROMS")
 	}
 	return RomsFolderUnion
 }
