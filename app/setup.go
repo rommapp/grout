@@ -130,6 +130,7 @@ func setup() SetupResult {
 		loginConfig, loginErr := ui.LoginFlow(romm.Host{})
 		if loginErr != nil {
 			logger.Error("Login flow failed", "error", loginErr)
+			gaba.Close()
 			log.SetOutput(os.Stderr)
 			log.Fatalf("Login failed: %v", loginErr)
 		}
@@ -288,6 +289,7 @@ func setup() SetupResult {
 			loginConfig, loginErr := ui.LoginFlow(config.Hosts[0])
 			if loginErr != nil {
 				logger.Error("Re-login failed", "error", loginErr)
+				gaba.Close()
 				log.SetOutput(os.Stderr)
 				log.Fatalf("Login failed: %v", loginErr)
 			}

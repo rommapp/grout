@@ -303,7 +303,8 @@ func LoginFlow(existingHost romm.Host) (*internal.Config, error) {
 			return nil, fmt.Errorf("unable to get server information: %w", err)
 		}
 		if cancelled {
-			os.Exit(1)
+			gabagool.Close()
+			os.Exit(0)
 		}
 
 		// Validate connection before asking for auth
