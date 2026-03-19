@@ -359,8 +359,8 @@ func (r Rom) GetScreenshotURL(host Host) string {
 		screenshotURL = r.ScreenScraperMetadata.ScreenshotURL
 	}
 
-	if screenshotURL == "" && err != nil {
-		logger.Error("Error joining host URL with screenshot path", "error", err, "hostURL", host.ToLoggable(), "screenshotPath", screenshotURL)
+	if screenshotURL == "" || err != nil {
+		logger.Error("No screenshot found in UserScreenshots, MergedScreenshots or ScreenScraper", "error", err, "hostURL", host.ToLoggable())
 	}
 
 	return strings.ReplaceAll(screenshotURL, " ", "%20")
@@ -465,6 +465,48 @@ func (r Rom) GetManualURL(host Host) string {
 
 	if r.ScreenScraperMetadata.ManualURL != "" {
 		return r.ScreenScraperMetadata.ManualURL
+	}
+
+	return ""
+}
+
+func (r Rom) GetBoxbackURL(host Host) string {
+	var err error
+	boxbackURL := ""
+	if r.ScreenScraperMetadata.Box2DBackPath != "" {
+		if !strings.Contains(r.ScreenScraperMetadata.Box2DBackPath, RommAssetPrefix) {
+			boxbackURL, err = url.JoinPath(host.URL(), RommAssetPrefix, r.ScreenScraperMetadata.Box2DBackPath)
+		} else {
+			boxbackURL, err = url.JoinPath(host.URL(), r.ScreenScraperMetadata.Box2DBackPath)
+		}
+		if err != nil {
+			gaba.GetLogger().Error("Error joining host URL with boxback path", "error", err, "hostURL", host.ToLoggable(), "boxbackPath", r.ScreenScraperMetadata.Box2DBackPath)
+			return ""
+		}
+		return boxbackURL
+	} else if r.ScreenScraperMetadata.Box2DBackURL != "" {
+		return r.ScreenScraperMetadata.Box2DBackURL
+	}
+
+	return ""
+}
+
+func (r Rom) GetFanartURL(host Host) string {
+	var err error
+	fanartURL := ""
+	if r.ScreenScraperMetadata.FanartPath != "" {
+		if !strings.Contains(r.ScreenScraperMetadata.FanartPath, RommAssetPrefix) {
+			fanartURL, err = url.JoinPath(host.URL(), RommAssetPrefix, r.ScreenScraperMetadata.FanartPath)
+		} else {
+			fanartURL, err = url.JoinPath(host.URL(), r.ScreenScraperMetadata.FanartPath)
+		}
+		if err != nil {
+			gaba.GetLogger().Error("Error joining host URL with fanart path", "error", err, "hostURL", host.ToLoggable(), "fanartPath", r.ScreenScraperMetadata.FanartPath)
+			return ""
+		}
+		return fanartURL
+	} else if r.ScreenScraperMetadata.FanartURL != "" {
+		return r.ScreenScraperMetadata.FanartURL
 	}
 
 	return ""

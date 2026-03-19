@@ -19,11 +19,14 @@ type GameListEntry struct {
 }
 
 type artLocation struct {
-	ImagePath   string
-	MarqueePath string
-	VideoPath   string
-	BezelPath   string
-	ManualPath  string
+	ImagePath     string
+	MarqueePath   string
+	VideoPath     string
+	BezelPath     string
+	ManualPath    string
+	BoxBackPath   string
+	FanartPath    string
+	ThumbnailPath string
 }
 
 type RomGameEntry struct {
@@ -51,7 +54,10 @@ func (gl *GameList) AddRomGame(entry RomGameEntry) {
 
 	if entry.ArtLocation.ImagePath != "" {
 		gameMetadata[ImageElement] = entry.ArtLocation.ImagePath
-		gameMetadata[ThumbnailElement] = entry.ArtLocation.ImagePath
+	}
+
+	if entry.ArtLocation.ThumbnailPath != "" {
+		gameMetadata[ThumbnailElement] = entry.ArtLocation.ThumbnailPath
 	}
 
 	if entry.ArtLocation.MarqueePath != "" {
@@ -68,6 +74,14 @@ func (gl *GameList) AddRomGame(entry RomGameEntry) {
 
 	if entry.ArtLocation.ManualPath != "" {
 		gameMetadata[ManualElement] = entry.ArtLocation.ManualPath
+	}
+
+	if entry.ArtLocation.BoxBackPath != "" {
+		gameMetadata[BoxbackElement] = entry.ArtLocation.BoxBackPath
+	}
+
+	if entry.ArtLocation.FanartPath != "" {
+		gameMetadata[FanartElement] = entry.ArtLocation.FanartPath
 	}
 
 	if entry.GamePath != "" {
@@ -100,7 +114,9 @@ func (gl *GameList) AddRomGame(entry RomGameEntry) {
 	}
 
 	if entry.Game.ScreenScraperID > 0 {
-		gameMetadata[ScraperIDElement] = fmt.Sprintf("%d", entry.Game.ScreenScraperID)
+		screenscraperID := strconv.Itoa(entry.Game.ScreenScraperID)
+		gameMetadata[ScraperIDElement] = screenscraperID
+		gl.SetGameID(entry.Game.Name, screenscraperID)
 	}
 
 	if entry.Game.RetroAchievementsID > 0 {

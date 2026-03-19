@@ -145,6 +145,16 @@ func (s *GeneralSettingsScreen) buildMenuItems(config *internal.Config) []gaba.I
 			VisibleWhen:    &displayDownloadArtPreview,
 		},
 		{
+			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_thumbnail", Other: "Download Art Thumbnail"}, nil)},
+			Options: []gaba.Option{
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_default", Other: "Default"}, nil), Value: artutil.ArtKindDefault},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_box2d", Other: "Box2D"}, nil), Value: artutil.ArtKindBox2D},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_box3d", Other: "Box3D"}, nil), Value: artutil.ArtKindBox3D},
+			},
+			SelectedOption: boxArtToIndex(config.AdditionalDownloads.Thumbnail),
+			VisibleWhen:    &displayEmulationStationOptions,
+		},
+		{
 			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_marquee", Other: "Download Marquee Image"}, nil)},
 			Options: []gaba.Option{
 				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_true", Other: "True"}, nil), Value: true},
@@ -163,15 +173,6 @@ func (s *GeneralSettingsScreen) buildMenuItems(config *internal.Config) []gaba.I
 			VisibleWhen:    &displayEmulationStationOptions,
 		},
 		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_thumbnail", Other: "Download Game Thumbnail"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_true", Other: "True"}, nil), Value: true},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_false", Other: "False"}, nil), Value: false},
-			},
-			SelectedOption: boolToIndex(!config.AdditionalDownloads.Thumbnail),
-			VisibleWhen:    &displayEmulationStationOptions,
-		},
-		{
 			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_bezel", Other: "Download Game Bezel"}, nil)},
 			Options: []gaba.Option{
 				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_true", Other: "True"}, nil), Value: true},
@@ -187,6 +188,24 @@ func (s *GeneralSettingsScreen) buildMenuItems(config *internal.Config) []gaba.I
 				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_false", Other: "False"}, nil), Value: false},
 			},
 			SelectedOption: boolToIndex(!config.AdditionalDownloads.Manual),
+			VisibleWhen:    &displayEmulationStationOptions,
+		},
+		{
+			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_boxback", Other: "Download Game Box back"}, nil)},
+			Options: []gaba.Option{
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_true", Other: "True"}, nil), Value: true},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_false", Other: "False"}, nil), Value: false},
+			},
+			SelectedOption: boolToIndex(!config.AdditionalDownloads.BoxBack),
+			VisibleWhen:    &displayEmulationStationOptions,
+		},
+		{
+			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_fanart", Other: "Download Game Fan Art"}, nil)},
+			Options: []gaba.Option{
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_true", Other: "True"}, nil), Value: true},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_false", Other: "False"}, nil), Value: false},
+			},
+			SelectedOption: boolToIndex(!config.AdditionalDownloads.Fanart),
 			VisibleWhen:    &displayEmulationStationOptions,
 		},
 		{
@@ -254,8 +273,8 @@ func (s *GeneralSettingsScreen) applySettings(config *internal.Config, items []g
 			}
 
 		case i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_thumbnail", Other: "Download Game Thumbnail"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(bool); ok {
-				config.AdditionalDownloads.Thumbnail = val
+			if val, ok := item.Options[item.SelectedOption].Value.(artutil.ArtKind); ok {
+				config.ArtKind = val
 			}
 
 		case i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_bezel", Other: "Download Game Bezel"}, nil):
@@ -266,6 +285,14 @@ func (s *GeneralSettingsScreen) applySettings(config *internal.Config, items []g
 		case i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_manual", Other: "Download Game Manual"}, nil):
 			if val, ok := item.Options[item.SelectedOption].Value.(bool); ok {
 				config.AdditionalDownloads.Manual = val
+			}
+		case i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_boxback", Other: "Download Game Box back"}, nil):
+			if val, ok := item.Options[item.SelectedOption].Value.(bool); ok {
+				config.AdditionalDownloads.BoxBack = val
+			}
+		case i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_fanart", Other: "Download Game Fan Art"}, nil):
+			if val, ok := item.Options[item.SelectedOption].Value.(bool); ok {
+				config.AdditionalDownloads.Fanart = val
 			}
 
 		case i18n.Localize(&goi18n.Message{ID: "settings_language", Other: "Language"}, nil):

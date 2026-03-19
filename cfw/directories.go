@@ -197,3 +197,25 @@ func GetManualDirectory(romDir string, platformFSSlug, platformName string) stri
 		return ""
 	}
 }
+
+func GetBoxbackDirectory(romDir string, platformFSSlug, platformName string) string {
+	switch GetCFW() {
+	case ROCKNIX:
+		return rocknix.GetArtDirectory(romDir)
+	case Knulli:
+		return knulli.GetArtDirectory(romDir)
+	default:
+		return ""
+	}
+}
+
+func GetFanartDirectory(romDir string, platformFSSlug, platformName string) string {
+	switch GetCFW() {
+	case ROCKNIX:
+		return rocknix.GetArtDirectory(romDir)
+	case Knulli:
+		return knulli.GetArtDirectory(romDir)
+	default:
+		return ""
+	}
+}

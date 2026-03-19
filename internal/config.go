@@ -18,11 +18,13 @@ import (
 var kidModeEnabled atomic.Bool
 
 type AdditionalDownloads struct {
-	Marquee   bool `json:"marquee,omitempty"`
-	Video     bool `json:"video,omitempty"`
-	Thumbnail bool `json:"thumbnail,omitempty"`
-	Bezel     bool `json:"bezel,omitempty"`
-	Manual    bool `json:"manual,omitempty"`
+	Marquee   bool            `json:"marquee,omitempty"`
+	Video     bool            `json:"video,omitempty"`
+	Thumbnail artutil.ArtKind `json:"thumbnail,omitempty"`
+	Bezel     bool            `json:"bezel,omitempty"`
+	Manual    bool            `json:"manual,omitempty"`
+	BoxBack   bool            `json:"box_back,omitempty"`
+	Fanart    bool            `json:"fanart,omitempty"`
 }
 
 type Config struct {
@@ -291,6 +293,16 @@ func (c Config) GetArtBezelDirectory(platform romm.Platform) string {
 func (c Config) GetManualDirectory(platform romm.Platform) string {
 	romDir := c.GetPlatformRomDirectory(platform)
 	return cfw.GetManualDirectory(romDir, platform.FSSlug, platform.Name)
+}
+
+func (c Config) GetFanartDirectoru(platform romm.Platform) string {
+	romDir := c.GetPlatformRomDirectory(platform)
+	return cfw.GetFanartDirectory(romDir, platform.FSSlug, platform.Name)
+}
+
+func (c Config) GetBoxbackDirectoru(platform romm.Platform) string {
+	romDir := c.GetPlatformRomDirectory(platform)
+	return cfw.GetBoxbackDirectory(romDir, platform.FSSlug, platform.Name)
 }
 
 func (c Config) ShowCollections(host romm.Host) bool {

@@ -423,9 +423,23 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 			}
 
 			artSplashDir := config.GetArtSplashDirectory(gamePlatform)
-			if config.DownloadSplashArt != artutil.ArtKindNone && artSplashDir != "" {
-				splashArtLocation := filepath.Join(artSplashDir, artFileName)
-				if splashURL := g.GetSplashArtURL(config.DownloadSplashArt, host); splashURL != "" {
+			if (config.DownloadSplashArt != artutil.ArtKindNone || config.AdditionalDownloads.Thumbnail != artutil.ArtKindNone) && artSplashDir != "" {
+				artSplashFileName := g.FsNameNoExt
+				isESBased := cfw.GetCFW().IsBasedOnEmulationStation()
+				if isESBased {
+					artSplashFileName += "-thumb.png"
+				} else {
+					artSplashFileName += ".png"
+				}
+				splashArtLocation := filepath.Join(artSplashDir, artSplashFileName)
+				kind := config.DownloadSplashArt
+				if config.AdditionalDownloads.Thumbnail != artutil.ArtKindNone {
+					kind = config.AdditionalDownloads.Thumbnail
+				}
+				if splashURL := g.GetSplashArtURL(kind, host); splashURL != "" {
+					if isESBased {
+						gamelistRomEntry.ArtLocation.ThumbnailPath = splashArtLocation
+					}
 					artDownloads = append(artDownloads, artDownload{
 						URL:      splashURL,
 						Location: splashArtLocation,
@@ -438,9 +452,9 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 			artMarqueeDir := config.GetArtMarqueeDirectory(gamePlatform)
 			if config.AdditionalDownloads.Marquee && artMarqueeDir != "" {
 				marqueeArtFileName := g.FsNameNoExt
-				// is cfw is ES based, use _marquee suffix to avoid conflicts with cover art
+				// is cfw is ES based, use -marquee suffix to avoid conflicts with cover art
 				if cfw.GetCFW().IsBasedOnEmulationStation() {
-					marqueeArtFileName += "_marquee.png"
+					marqueeArtFileName += "-marquee.png"
 				} else {
 					marqueeArtFileName += ".png"
 				}
@@ -494,6 +508,48 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 						Location: manualLocation,
 						GameName: g.Name,
 						IsImage:  false,
+					})
+				}
+			}
+
+			boxbackDir := config.GetBoxbackDirectoru(gamePlatform)
+			if config.AdditionalDownloads.BoxBack && boxbackDir != "" {
+				boxbackArtFileName := g.FsNameNoExt
+				// is cfw is ES based, use -boxback suffix to avoid conflicts with cover art
+				if cfw.GetCFW().IsBasedOnEmulationStation() {
+					boxbackArtFileName += "-boxback.png"
+				} else {
+					boxbackArtFileName += ".png"
+				}
+				boxbackArtLocation := filepath.Join(boxbackDir, boxbackArtFileName)
+				if boxbackURL := g.GetBoxbackURL(host); boxbackURL != "" {
+					gamelistRomEntry.ArtLocation.BoxBackPath = boxbackArtLocation
+					artDownloads = append(artDownloads, artDownload{
+						URL:      boxbackURL,
+						Location: boxbackArtLocation,
+						GameName: g.Name,
+						IsImage:  true,
+					})
+				}
+			}
+
+			fanartDir := config.GetFanartDirectoru(gamePlatform)
+			if config.AdditionalDownloads.Fanart && fanartDir != "" {
+				fanartFileName := g.FsNameNoExt
+				// is cfw is ES based, use -fanart suffix to avoid conflicts with cover art
+				if cfw.GetCFW().IsBasedOnEmulationStation() {
+					fanartFileName += "-fanart.png"
+				} else {
+					fanartFileName += ".png"
+				}
+				fanartLocation := filepath.Join(fanartDir, fanartFileName)
+				if fanartURL := g.GetFanartURL(host); fanartURL != "" {
+					gamelistRomEntry.ArtLocation.FanartPath = fanartLocation
+					artDownloads = append(artDownloads, artDownload{
+						URL:      fanartURL,
+						Location: fanartLocation,
+						GameName: g.Name,
+						IsImage:  true,
 					})
 				}
 			}
