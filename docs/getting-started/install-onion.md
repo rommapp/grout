@@ -24,6 +24,14 @@ _Please help verify compatibility on other devices by reporting your results!_
 3. Place the `Grout` directory into `/mnt/SDCARD/App/` on your SD card.
 4. Launch Grout from the Apps menu and enjoy!
 
+## Enable RTC for save sync support
+
+1. Install the Clock app from OnionOS Package Manager
+2. Open Clock app and set the time
+3. (recommended) Open the Tweaks app
+4. (recommended) Go to System, then Date and Time section and enable "set time from internet"
+5. (optional) Enable "Wait for sync on startup"
+
 ## Update
 
 ### In-App update (Recommended)
