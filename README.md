@@ -6,7 +6,7 @@
   <br />
   <img src=".github/resources/logotipo.png" height="45px" width="auto" alt="romm grout logotype">
     <h3 style="font-size: 25px;">
-A RomM Client for <a href="https://github.com/OnionUI/Onion">Onion</a>, <a href="https://github.com/allium-launcher/allium">Allium</a>, <a href="https://muos.dev">muOS</a>, <a href="https://knulli.org">Knulli</a>, <a href="https://rocknix.org">ROCKNIX</a>, <a href="https://spruceui.github.io/">Spruce (v4)</a>, <a href="https://nextui.loveretro.games">NextUI</a>, <a href="https://trimui.com">TrimUI</a> and <a href="https://batocera.org">Batocera</a>.
+A RomM Client for <a href="https://github.com/allium-launcher/allium">Allium</a>, <a href="https://batocera.org">Batocera</a>, <a href="https://knulli.org">Knulli</a>, <a href="https://muos.dev">muOS</a>, <a href="https://nextui.loveretro.games">NextUI</a>, <a href="https://github.com/OnionUI/Onion">Onion</a>, <a href="https://rocknix.org">ROCKNIX</a>, <a href="https://spruceui.github.io/">Spruce (v4)</a> and <a href="https://trimui.com">TrimUI</a>.
     </h3>
 
 <br>
