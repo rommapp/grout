@@ -64,8 +64,8 @@ type Config struct {
 	ShowSmartCollections         bool                        `json:"show_smart_collections"`
 	ShowVirtualCollections       bool                        `json:"show_virtual_collections"`
 	DownloadedGames              DownloadedGamesMode         `json:"downloaded_games,omitempty"`
-	ApiTimeout                   DurationSeconds              `json:"api_timeout"`
-	DownloadTimeout              DurationSeconds              `json:"download_timeout"`
+	ApiTimeout                   DurationSeconds             `json:"api_timeout"`
+	DownloadTimeout              DurationSeconds             `json:"download_timeout"`
 	LogLevel                     LogLevel                    `json:"log_level,omitempty"`
 	Language                     string                      `json:"language,omitempty"`
 	CollectionView               CollectionView              `json:"collection_view,omitempty"`
@@ -153,6 +153,14 @@ func LoadConfig() (*Config, error) {
 		config.ArtKind = artutil.ArtKindDefault
 	}
 
+	if config.AdditionalDownloads.Thumbnail == "" {
+		config.AdditionalDownloads.Thumbnail = artutil.ArtKindNone
+	}
+
+	if config.AdditionalDownloads.Marquee == "" {
+		config.AdditionalDownloads.Marquee = artutil.ArtKindNone
+	}
+
 	// Load slot preferences from dedicated file
 	config.SlotPreferences = LoadSlotPreferences()
 
@@ -182,6 +190,14 @@ func SaveConfig(config *Config) error {
 
 	if config.ArtKind == "" {
 		config.ArtKind = artutil.ArtKindDefault
+	}
+
+	if config.AdditionalDownloads.Thumbnail == "" {
+		config.AdditionalDownloads.Thumbnail = artutil.ArtKindNone
+	}
+
+	if config.AdditionalDownloads.Marquee == "" {
+		config.AdditionalDownloads.Marquee = artutil.ArtKindNone
 	}
 
 	gaba.SetRawLogLevel(string(config.LogLevel))

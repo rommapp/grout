@@ -145,9 +145,9 @@ func (s *GeneralSettingsScreen) buildMenuItems(config *internal.Config) []gaba.I
 			VisibleWhen:    &displayDownloadArtPreview,
 		},
 		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_thumbnail", Other: "Download Art Thumbnail"}, nil)},
+			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_thumbnail", Other: "Download Game Thumbnail"}, nil)},
 			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_default", Other: "Default"}, nil), Value: artutil.ArtKindDefault},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_none", Other: "None"}, nil), Value: artutil.ArtKindNone},
 				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_box2d", Other: "Box2D"}, nil), Value: artutil.ArtKindBox2D},
 				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_box3d", Other: "Box3D"}, nil), Value: artutil.ArtKindBox3D},
 			},
@@ -283,7 +283,7 @@ func (s *GeneralSettingsScreen) applySettings(config *internal.Config, items []g
 
 		case i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_thumbnail", Other: "Download Game Thumbnail"}, nil):
 			if val, ok := item.Options[item.SelectedOption].Value.(artutil.ArtKind); ok {
-				config.ArtKind = val
+				config.AdditionalDownloads.Thumbnail = val
 			}
 
 		case i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_bezel", Other: "Download Game Bezel"}, nil):
