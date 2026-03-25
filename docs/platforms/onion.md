@@ -15,6 +15,9 @@ This table shows the mappings of RomM Fs Slug to Onion's platform folders.
 | Atari Jaguar                  | jaguar                     | *(none)*                                        |
 | Atari Lynx                    | lynx                       | LYNX                                            |
 | Atari ST/STE                  | atari-st                   | ATARIST                                         |
+| Capcom Play System 1          | cps1                       | CPS1                                            |
+| Capcom Play System 2          | cps2                       | CPS2                                            |
+| Capcom Play System 3          | cps3                       | CPS3                                            |
 | Cave Story                    | cave-story                 | *(none)*                                        |
 | ColecoVision                  | colecovision               | COLECO                                          |
 | Commodore 128                 | c128                       | *(none)*                                        |
@@ -39,7 +42,7 @@ This table shows the mappings of RomM Fs Slug to Onion's platform folders.
 | Neo Geo CD                    | neo-geo-cd                 | NEOCD                                           |
 | Neo Geo MVS                   | neogeomvs                  | NEOGEO                                          |
 | Neo Geo Pocket                | neo-geo-pocket             | NGP                                             |
-| Neo Geo Pocket Color          | neo-geo-pocket-color       | NGPC                                            |
+| Neo Geo Pocket Color          | neo-geo-pocket-color       | NGP                                             |
 | Nintendo 3DS                  | 3ds                        | *(none)*                                        |
 | Nintendo 64                   | n64                        | N64                                             |
 | Nintendo DS                   | nds                        | NDS                                             |
@@ -51,12 +54,15 @@ This table shows the mappings of RomM Fs Slug to Onion's platform folders.
 | PC-9800 Series                | pc-9800-series             | *(none)*                                        |
 | PC-FX                         | pc-fx                      | *(none)*                                        |
 | Philips CD-i                  | philips-cd-i               | *(none)*                                        |
-| PICO-8                        | pico                       | PICO8, FAKE08                                   |
-| PICO-8                        | pico-8                     | PICO8, FAKE08                                   |
+| PICO-8                        | pico                       | PICO                                            |
+| PICO-8                        | pico-8                     | PICO                                            |
 | PlayStation                   | psx                        | PS                                              |
 | PlayStation 2                 | ps2                        | PS2                                             |
 | PlayStation Portable          | psp                        | PSP                                             |
 | Pokemon Mini                  | pokemon-mini               | POKE                                            |
+| Ports                         | ports                      | PORTS                                           |
+| Satellaview                   | satellaview                | SATELLAVIEW                                     |
+| ScummVM                       | scummvm                    | SCUMMVM                                         |
 | Sega 32X                      | sega32                     | THIRTYTWOX                                      |
 | Sega CD                       | segacd                     | SEGACD                                          |
 | Sega Game Gear                | gamegear                   | GG                                              |
@@ -66,15 +72,18 @@ This table shows the mappings of RomM Fs Slug to Onion's platform folders.
 | SG-1000                       | sg1000                     | SEGASGONE                                       |
 | Sharp X1                      | x1                         | *(none)*                                        |
 | Sharp X68000                  | sharp-x68000               | X68000                                          |
+| Sufami Turbo                  | sufami-turbo               | SUFAMI                                          |
 | Super Famicom                 | sfam                       | SFC                                             |
+| Super Game Boy                | sgb                        | SGB                                             |
 | Super Nintendo                | snes                       | SFC                                             |
 | Supervision                   | supervision                | SUPERVISION                                     |
 | TIC-80                        | tic-80                     | TIC                                             |
 | TurboGrafx-16                 | tg16                       | PCE                                             |
 | TurboGrafx-CD                 | turbografx-cd              | PCECD                                           |
 | Vectrex                       | vectrex                    | VECTREX                                         |
+| VideoPac                      | videopac                   | VIDEOPAC                                        |
 | Virtual Boy                   | virtualboy                 | VB                                              |
 | WonderSwan                    | wonderswan                 | WS                                              |
-| WonderSwan Color              | wonderswan-color           | WSC                                             |
+| WonderSwan Color              | wonderswan-color           | WS                                              |
 | ZX Spectrum                   | zxs                        | ZXS                                             |
 | ZX81                          | zx81                       | *(none)*                                        |

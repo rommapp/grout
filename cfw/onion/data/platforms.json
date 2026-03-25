@@ -34,6 +34,15 @@
     "COLECO"
   ],
   "cpet": [],
+  "cps1": [
+    "CPS1"
+  ],
+  "cps2": [
+    "CPS2"
+  ],
+  "cps3": [
+    "CPS3"
+  ],
   "dc": [
     "DC"
   ],
@@ -95,7 +104,7 @@
     "NGP"
   ],
   "neo-geo-pocket-color": [
-    "NGPC"
+    "NGP"
   ],
   "neogeoaes": [
     "NEOGEO"
@@ -117,15 +126,16 @@
   "pc-fx": [],
   "philips-cd-i": [],
   "pico": [
-    "PICO8",
-    "FAKE08"
+    "PICO"
   ],
   "pico-8": [
-    "PICO8",
-    "FAKE08"
+    "PICO"
   ],
   "pokemon-mini": [
     "POKE"
+  ],
+  "ports": [
+    "PORTS"
   ],
   "ps2": [
     "PS2"
@@ -136,7 +146,13 @@
   "psx": [
     "PS"
   ],
+  "satellaview": [
+    "SATELLAVIEW"
+  ],
   "saturn": [],
+  "scummvm": [
+    "SCUMMVM"
+  ],
   "sega32": [
     "THIRTYTWOX"
   ],
@@ -149,6 +165,9 @@
   "sg1000": [
     "SEGASGONE"
   ],
+  "sgb": [
+    "SGB"
+  ],
   "sharp-x68000": [
     "X68000"
   ],
@@ -157,6 +176,9 @@
   ],
   "snes": [
     "SFC"
+  ],
+  "sufami-turbo": [
+    "SUFAMI"
   ],
   "supergrafx": [
     "SGFX"
@@ -179,6 +201,9 @@
   "vic-20": [
     "VIC20"
   ],
+  "videopac": [
+    "VIDEOPAC"
+  ],
   "virtualboy": [
     "VB"
   ],
@@ -186,7 +211,7 @@
     "WS"
   ],
   "wonderswan-color": [
-    "WSC"
+    "WS"
   ],
   "x1": [],
   "zx81": [],
