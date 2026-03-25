@@ -88,8 +88,9 @@ jobs:
 
       - name: Rename architecture-specific binaries for release
         run: |
-          cp build32/grout build32/grout-arm32
+          cp build64/grout build64/grout-arm64
           cp build/grout build/grout-amd64
+          cp build32/grout build32/grout-arm32
 
       - name: Create NextUI distribution
         run: |
@@ -165,7 +166,7 @@ jobs:
             dist/Grout-Trimui.zip
             dist/Grout-Batocera-arm64.zip
             dist/Grout-Batocera-amd64.zip
-            build64/grout
+            build64/grout-arm64
             build/grout-amd64
             build32/grout-arm32
           draft: false

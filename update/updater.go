@@ -27,15 +27,17 @@ type Info struct {
 
 func GetAssetName(c cfw.CFW) string {
 	switch c {
-	case cfw.MuOS, cfw.Knulli, cfw.Spruce, cfw.NextUI, cfw.ROCKNIX, cfw.Trimui:
-		return "grout"
-	case cfw.Batocera:
-		if runtime.GOARCH == "amd64" {
+	case cfw.MuOS, cfw.Knulli, cfw.Spruce, cfw.NextUI, cfw.ROCKNIX, cfw.Trimui, cfw.Batocera, cfw.Allium, cfw.Onion:
+		switch runtime.GOARCH {
+		case "arm64":
+			return "grout-arm64"
+		case "arm":
+			return "grout-arm32"
+		case "amd64":
 			return "grout-amd64"
+		default:
+			return ""
 		}
-		return "grout"
-	case cfw.Allium, cfw.Onion:
-		return "grout-arm32"
 	default:
 		return ""
 	}
