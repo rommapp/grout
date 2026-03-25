@@ -78,7 +78,7 @@ tasks:
 
   package:
     desc: Package for all platforms
-    deps: [ package-next, package-muos, package-knulli, package-spruce, package-rocknix, package-trimui, package-allium, package-onion, package-batocera ]
+    deps: [ package-next, package-muos, package-knulli, package-spruce, package-rocknix, package-trimui, package-allium, package-onion, package-batocera, package-batocera-amd64 ]
     silent: true
 
   package-next:
@@ -167,14 +167,25 @@ tasks:
     silent: true
 
   package-batocera:
-    desc: Package for Batocera
+    desc: Package for Batocera (ARM64)
     cmds:
-      - rm -rf dist/Batocera
-      - mkdir -p dist/Batocera/Grout/lib
-      - cp scripts/Batocera/Grout.sh dist/Batocera/
-      - cp build64/grout README.md LICENSE dist/Batocera/Grout/
-      - cp -R build64/lib/* dist/Batocera/Grout/lib/
-      - chmod a+x dist/Batocera/Grout/grout dist/Batocera/Grout.sh
+      - rm -rf dist/Batocera-arm64
+      - mkdir -p dist/Batocera-arm64/Grout/lib
+      - cp scripts/Batocera/Grout.sh dist/Batocera-arm64/
+      - cp build64/grout README.md LICENSE dist/Batocera-arm64/Grout/
+      - cp -R build64/lib/* dist/Batocera-arm64/Grout/lib/
+      - chmod a+x dist/Batocera-arm64/Grout/grout dist/Batocera-arm64/Grout.sh
+    silent: true
+
+  package-batocera-amd64:
+    desc: Package for Batocera (AMD64/x86_64)
+    cmds:
+      - rm -rf dist/Batocera-amd64
+      - mkdir -p dist/Batocera-amd64/Grout/lib
+      - cp scripts/Batocera/Grout.sh dist/Batocera-amd64/
+      - cp build/grout README.md LICENSE dist/Batocera-amd64/Grout/
+      - cp -R build/lib/* dist/Batocera-amd64/Grout/lib/
+      - chmod a+x dist/Batocera-amd64/Grout/grout dist/Batocera-amd64/Grout.sh
     silent: true
 
   batocera-amd64:
@@ -182,12 +193,7 @@ tasks:
     cmds:
       - task: build-amd64
       - task: extract-amd64
-      - rm -rf dist/Batocera
-      - mkdir -p dist/Batocera/Grout/lib
-      - cp scripts/Batocera/Grout.sh dist/Batocera/
-      - cp build/grout README.md LICENSE dist/Batocera/Grout/
-      - cp -R build/lib/* dist/Batocera/Grout/lib/
-      - chmod a+x dist/Batocera/Grout/grout dist/Batocera/Grout.sh
+      - task: package-batocera-amd64
     silent: true
 
   all:

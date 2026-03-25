@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"go.uber.org/atomic"
@@ -26,7 +27,12 @@ type Info struct {
 
 func GetAssetName(c cfw.CFW) string {
 	switch c {
-	case cfw.MuOS, cfw.Knulli, cfw.Spruce, cfw.NextUI, cfw.ROCKNIX, cfw.Trimui, cfw.Batocera:
+	case cfw.MuOS, cfw.Knulli, cfw.Spruce, cfw.NextUI, cfw.ROCKNIX, cfw.Trimui:
+		return "grout"
+	case cfw.Batocera:
+		if runtime.GOARCH == "amd64" {
+			return "grout-amd64"
+		}
 		return "grout"
 	case cfw.Allium, cfw.Onion:
 		return "grout-arm32"

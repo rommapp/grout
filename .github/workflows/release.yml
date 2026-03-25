@@ -77,14 +77,19 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and Package (64-bit)
+      - name: Build and Package (64-bit ARM)
         run: task build extract package-next package-muos package-knulli package-spruce package-rocknix package-trimui package-batocera
+
+      - name: Build and Package (64-bit AMD64)
+        run: task build-amd64 extract-amd64 package-batocera-amd64
 
       - name: Build and Package (32-bit)
         run: task build-32 extract-32 package-allium package-onion
 
-      - name: Rename ARM32 binary for release
-        run: cp build32/grout build32/grout-arm32
+      - name: Rename architecture-specific binaries for release
+        run: |
+          cp build32/grout build32/grout-arm32
+          cp build/grout build/grout-amd64
 
       - name: Create NextUI distribution
         run: |
@@ -128,10 +133,15 @@ jobs:
           cd dist/Onion
           zip -r ../Grout-Onion.zip Grout
 
-      - name: Create Batocera distribution
+      - name: Create Batocera ARM64 distribution
         run: |
-          cd dist/Batocera
-          zip -r ../Grout-Batocera.zip Grout.sh Grout
+          cd dist/Batocera-arm64
+          zip -r ../Grout-Batocera-arm64.zip Grout.sh Grout
+
+      - name: Create Batocera AMD64 distribution
+        run: |
+          cd dist/Batocera-amd64
+          zip -r ../Grout-Batocera-amd64.zip Grout.sh Grout
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -153,8 +163,10 @@ jobs:
             dist/Grout-Knulli.zip
             dist/Grout-ROCKNIX.zip
             dist/Grout-Trimui.zip
-            dist/Grout-Batocera.zip
+            dist/Grout-Batocera-arm64.zip
+            dist/Grout-Batocera-amd64.zip
             build64/grout
+            build/grout-amd64
             build32/grout-arm32
           draft: false
           prerelease: ${{ inputs.beta }}
