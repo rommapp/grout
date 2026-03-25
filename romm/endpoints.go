@@ -28,8 +28,9 @@ const (
 	endpointSaveByID       = "/api/saves/%d"
 	endpointSaveSummary    = "/api/saves/summary"
 	endpointSaveContent    = "/api/saves/%d/content"
-	endpointSaveDownloaded = "/api/saves/%d/downloaded"
+	endpointDevices        = "/api/devices"
+	endpointDeviceByID     = "/api/devices/%s"
 
-	endpointDevices    = "/api/devices"
-	endpointDeviceByID = "/api/devices/%s"
+	endpointSyncNegotiate       = "/api/sync/negotiate"
+	endpointSyncSessionComplete = "/api/sync/sessions/%d/complete"
 )

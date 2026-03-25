@@ -1,5 +1,7 @@
 version: '3'
 
+dotenv: ['.env']
+
 vars:
   IMAGE_NAME: grout-build
   CONTAINER_NAME: grout-extract
@@ -251,6 +253,22 @@ tasks:
       - adb shell rm -rf /userdata/roms/ports/Grout
       - adb push build64/Knulli/Grout /userdata/roms/ports
       - adb push config-platformless.json /userdata/roms/ports/Grout/config.json
+    silent: true
+
+  upload-muos:
+    desc: Deploy to muOS device via SSH/rsync
+    preconditions:
+      - sh: test -n "$DEVICE_IP_ADDRESS"
+        msg: "DEVICE_IP_ADDRESS not set"
+      - sh: test -n "$PRIVATE_KEY_PATH" || test -n "$SSH_PASSWORD"
+        msg: "Set PRIVATE_KEY_PATH or SSH_PASSWORD"
+    vars:
+      SSH_OPTS: '{{if .PRIVATE_KEY_PATH}}-i {{.PRIVATE_KEY_PATH}}{{end}} -o StrictHostKeyChecking=no'
+      SSH_PREFIX: '{{if not .PRIVATE_KEY_PATH}}sshpass -p "{{.SSH_PASSWORD}}"{{end}}'
+    cmds:
+      - '{{.SSH_PREFIX}} ssh {{.SSH_OPTS}} root@{{.DEVICE_IP_ADDRESS}} "rm -rf /mnt/mmc/MUOS/application/Grout"'
+      - '{{.SSH_PREFIX}} rsync -avz --no-owner --no-group -e "ssh {{.SSH_OPTS}}" build64/muOS/Grout root@{{.DEVICE_IP_ADDRESS}}:/mnt/mmc/MUOS/application/'
+      # - '{{.SSH_PREFIX}} scp {{.SSH_OPTS}} config-platformless.json root@{{.DEVICE_IP_ADDRESS}}:/mnt/mmc/MUOS/application/Grout/config.json'
     silent: true
 
   i18n:

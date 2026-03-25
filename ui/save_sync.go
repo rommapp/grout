@@ -19,12 +19,14 @@ type SaveSyncInput struct {
 	NewSlotName   string          // If set, upload-only mode for a new slot
 	NewSlotRomID  int             // ROM ID to upload saves for
 	ResolvedItems []sync.SyncItem // If set, skip resolve phase and execute directly
+	SessionID     int             // Sync session ID from negotiate (passed through conflict resolution)
 }
 
 type SaveSyncOutput struct {
 	NeedsConflictResolution bool
 	Items                   []sync.SyncItem
 	ConflictIndices         map[int]int // maps conflict slice index → items slice index
+	SessionID               int         // Sync session ID to pass through conflict resolution
 }
 
 type SaveSyncScreen struct{}
@@ -40,7 +42,7 @@ func (s *SaveSyncScreen) Execute(input SaveSyncInput) SaveSyncOutput {
 
 	// If we have resolved items from the conflict screen, skip to execute phase
 	if input.ResolvedItems != nil {
-		return s.executeSyncPhase(client, config, host.DeviceID, input.ResolvedItems)
+		return s.executeSyncPhase(client, config, host.DeviceID, input.ResolvedItems, input.SessionID)
 	}
 
 	// Health check — verify server is reachable before starting sync
@@ -58,15 +60,15 @@ func (s *SaveSyncScreen) Execute(input SaveSyncInput) SaveSyncOutput {
 		return s.executeNewSlotUpload(client, config, host.DeviceID, input.NewSlotRomID, input.NewSlotName)
 	}
 
-	// Phase 1: Resolve — scan local saves, fetch summaries, determine actions
-	var items []sync.SyncItem
+	// Phase 1: Resolve — scan local saves, negotiate with server
+	var result sync.SyncResult
 	var resolveErr error
 	gaba.ProcessMessage(
 		i18n.Localize(&goi18n.Message{ID: "save_sync_scanning", Other: "Scanning saves..."}, nil),
 		gaba.ProcessMessageOptions{ShowThemeBackground: true},
 		func() (any, error) {
 			var err error
-			items, err = sync.ResolveSaveSync(client, config, host.DeviceID)
+			result, err = sync.ResolveSaveSync(client, config, host.DeviceID)
 			resolveErr = err
 			return nil, nil
 		},
@@ -80,6 +82,8 @@ func (s *SaveSyncScreen) Execute(input SaveSyncInput) SaveSyncOutput {
 		)
 		return SaveSyncOutput{}
 	}
+
+	items := result.Items
 
 	// Slot selection for first-time downloads with multiple slots
 	items = s.resolveMultiSlotDownloads(config, items)
@@ -101,14 +105,15 @@ func (s *SaveSyncScreen) Execute(input SaveSyncInput) SaveSyncOutput {
 			NeedsConflictResolution: true,
 			Items:                   items,
 			ConflictIndices:         conflictIndices,
+			SessionID:               result.SessionID,
 		}
 	}
 
 	// No conflicts — execute directly
-	return s.executeSyncPhase(client, config, host.DeviceID, items)
+	return s.executeSyncPhase(client, config, host.DeviceID, items, result.SessionID)
 }
 
-func (s *SaveSyncScreen) executeSyncPhase(client *romm.Client, config *internal.Config, deviceID string, items []sync.SyncItem) SaveSyncOutput {
+func (s *SaveSyncScreen) executeSyncPhase(client *romm.Client, config *internal.Config, deviceID string, items []sync.SyncItem, sessionID int) SaveSyncOutput {
 	var report sync.SyncReport
 
 	hasActionable := false
@@ -129,7 +134,7 @@ func (s *SaveSyncScreen) executeSyncPhase(client *romm.Client, config *internal.
 				Progress:            progress,
 			},
 			func() (any, error) {
-				report = sync.ExecuteSaveSync(client, config, deviceID, items, func(current, total int) {
+				report = sync.ExecuteSaveSync(client, config, deviceID, items, sessionID, func(current, total int) {
 					if total > 0 {
 						progress.Store(float64(current) / float64(total))
 					}
@@ -138,7 +143,7 @@ func (s *SaveSyncScreen) executeSyncPhase(client *romm.Client, config *internal.
 			},
 		)
 	} else {
-		report = sync.ExecuteSaveSync(client, config, deviceID, items, nil)
+		report = sync.ExecuteSaveSync(client, config, deviceID, items, sessionID, nil)
 	}
 
 	s.showReport(report)
@@ -168,7 +173,7 @@ func (s *SaveSyncScreen) executeNewSlotUpload(client *romm.Client, config *inter
 					})
 				}
 			}
-			report = sync.ExecuteSaveSync(client, config, deviceID, items, func(current, total int) {
+			report = sync.ExecuteSaveSync(client, config, deviceID, items, 0, func(current, total int) {
 				if total > 0 {
 					progress.Store(float64(current) / float64(total))
 				}

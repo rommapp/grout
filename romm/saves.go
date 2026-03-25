@@ -87,6 +87,7 @@ type UploadSaveQuery struct {
 	Overwrite        bool   `qs:"overwrite,omitempty"`
 	Autocleanup      bool   `qs:"autocleanup,omitempty"`
 	AutocleanupLimit int    `qs:"autocleanup_limit,omitempty"`
+	SessionID        int    `qs:"session_id,omitempty"`
 }
 
 func (uq UploadSaveQuery) Valid() bool {
@@ -96,14 +97,11 @@ func (uq UploadSaveQuery) Valid() bool {
 type SaveContentQuery struct {
 	DeviceID   string `qs:"device_id,omitempty"`
 	Optimistic bool   `qs:"optimistic,omitempty"`
+	SessionID  int    `qs:"session_id,omitempty"`
 }
 
 func (scq SaveContentQuery) Valid() bool {
 	return scq.DeviceID != ""
-}
-
-type SaveDeviceBody struct {
-	DeviceID string `json:"device_id"`
 }
 
 type SaveSummaryQuery struct {
@@ -124,26 +122,18 @@ func (c *Client) DownloadSave(downloadPath string) ([]byte, error) {
 	return c.doRequestRaw("GET", downloadPath, nil)
 }
 
-func (c *Client) DownloadSaveByID(saveID int, deviceID string, optimistic bool) ([]byte, error) {
+func (c *Client) DownloadSaveByID(saveID int, deviceID string, optimistic bool, sessionID ...int) ([]byte, error) {
 	path := fmt.Sprintf(endpointSaveContent, saveID)
 	query := SaveContentQuery{
 		DeviceID:   deviceID,
 		Optimistic: optimistic,
 	}
+	if len(sessionID) > 0 {
+		query.SessionID = sessionID[0]
+	}
 	return c.doRequestRawWithQuery("GET", path, query)
 }
 
-func (c *Client) ConfirmSaveDownloaded(saveID int, deviceID string) error {
-	path := fmt.Sprintf(endpointSaveDownloaded, saveID)
-	body := SaveDeviceBody{DeviceID: deviceID}
-	return c.doRequest("POST", path, nil, body, nil)
-}
-
-// MarkDeviceSynced confirms this device has the latest save state.
-// Used after both uploads and downloads.
-func (c *Client) MarkDeviceSynced(saveID int, deviceID string) error {
-	return c.ConfirmSaveDownloaded(saveID, deviceID)
-}
 
 func (c *Client) GetSaveSummary(romID int) (SaveSummary, error) {
 	var summary SaveSummary
@@ -185,13 +175,6 @@ func (c *Client) UpdateSave(saveID int, savePath string) (Save, error) {
 	}
 
 	return res, nil
-}
-
-func (c *Client) UploadSave(romID int, savePath string, emulator string) (Save, error) {
-	return c.UploadSaveWithQuery(UploadSaveQuery{
-		RomID:    romID,
-		Emulator: emulator,
-	}, savePath)
 }
 
 func (c *Client) UploadSaveWithQuery(query UploadSaveQuery, savePath string) (Save, error) {

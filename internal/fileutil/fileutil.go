@@ -3,6 +3,7 @@ package fileutil
 import (
 	"archive/zip"
 	"bufio"
+	"crypto/md5"
 	"crypto/sha1"
 	"fmt"
 	"hash/crc32"
@@ -303,6 +304,25 @@ func FilterHiddenDirectories(entries []os.DirEntry) []os.DirEntry {
 		}
 	}
 	return result
+}
+
+// ComputeMD5 computes the MD5 hash of a file and returns it as a lowercase hex string.
+// This matches the server's content hash algorithm (8192-byte chunks, md5, hex output).
+func ComputeMD5(filePath string) (string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to open file: %w", err)
+	}
+	defer file.Close()
+
+	hash := md5.New()
+	buffer := make([]byte, 8192)
+
+	if _, err := io.CopyBuffer(hash, file, buffer); err != nil {
+		return "", fmt.Errorf("failed to compute hash: %w", err)
+	}
+
+	return fmt.Sprintf("%x", hash.Sum(nil)), nil
 }
 
 // ComputeCRC32 computes the CRC32 hash of a file and returns it as an uppercase hex string

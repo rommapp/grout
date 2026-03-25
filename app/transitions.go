@@ -283,6 +283,7 @@ func transitionSaveSync(ctx *transitionContext, result any) (router.Screen, any)
 		Items:           conflicts,
 		AllItems:        r.Items,
 		ConflictIndices: r.ConflictIndices,
+		SessionID:       r.SessionID,
 	}
 }
 
@@ -303,6 +304,7 @@ func transitionSaveConflict(ctx *transitionContext, result any) (router.Screen, 
 		Config:        ctx.state.Config,
 		Host:          ctx.state.Host,
 		ResolvedItems: r.AllItems,
+		SessionID:     r.SessionID,
 	}
 }
 
