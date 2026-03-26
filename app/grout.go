@@ -2,6 +2,7 @@ package main
 
 import (
 	"grout/cfw"
+	"grout/update"
 	"os"
 
 	_ "github.com/BrandonKowalski/certifiable"
@@ -31,5 +32,6 @@ func cleanup() {
 	if err := os.RemoveAll(".tmp"); err != nil {
 		gaba.GetLogger().Error("Failed to clean .tmp directory", "error", err)
 	}
+	update.CleanupUpdateArtifacts()
 	gaba.Close()
 }

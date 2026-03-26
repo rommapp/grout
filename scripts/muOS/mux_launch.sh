@@ -43,6 +43,12 @@ fi
 
 cd "$CUR_DIR" || exit 1
 
+# Apply pending update
+if [ -d "../.update" ]; then
+    cp -rf ../.update/* ..
+    rm -rf ../.update
+fi
+
 export CFW=MUOS
 export LD_LIBRARY_PATH=$CUR_DIR/lib:$LD_LIBRARY_PATH
 

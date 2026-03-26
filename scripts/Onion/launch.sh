@@ -2,6 +2,12 @@
 CUR_DIR="$(dirname "$0")"
 cd "$CUR_DIR"/grout || exit 1
 
+# Apply pending update
+if [ -d "../../.update" ]; then
+    cp -rf ../../.update/* ../..
+    rm -rf ../../.update
+fi
+
 export CFW=ONION
 export IS_MIYOO=1
 export LD_LIBRARY_PATH=/mnt/SDCARD/App/Grout/grout/lib:$LD_LIBRARY_PATH
