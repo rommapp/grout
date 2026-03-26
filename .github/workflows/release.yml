@@ -413,7 +413,10 @@ jobs:
             git push
           fi
 
-      - name: Trigger docs deployment
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run docs.yml
+  deploy-docs:
+    needs: update-versions
+    uses: ./.github/workflows/docs.yml
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
