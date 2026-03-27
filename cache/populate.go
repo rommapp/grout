@@ -2,6 +2,7 @@ package cache
 
 import (
 	"grout/romm"
+	"runtime"
 	"sync"
 	"time"
 
@@ -114,27 +115,26 @@ func (cm *Manager) populateCache(platforms []romm.Platform, progress *atomic.Flo
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		allGames, err := cm.fetchAllGames(client, updatedAfter, updateProgress)
-		if err != nil {
-			logger.Error("Failed to fetch games", "error", err)
-			firstErr = err
-			return
-		}
-		// Group by platform and save
-		gamesByPlatform := make(map[int][]romm.Rom)
-		for _, game := range allGames {
-			gamesByPlatform[game.PlatformID] = append(gamesByPlatform[game.PlatformID], game)
-		}
-		for platformID, games := range gamesByPlatform {
-			if err := cm.SavePlatformGames(platformID, games); err != nil {
-				logger.Error("Failed to save platform games", "platformID", platformID, "error", err)
-				cm.RecordPlatformSyncFailure(platformID)
+		for _, p := range platforms {
+			err := cm.fetchPlatformGames(p, &fetchOpts{
+				client:       client,
+				onProgress:   updateProgress,
+				updatedAfter: updatedAfter,
+			})
+			
+			if err != nil {
+				logger.Error("Failed to fetch/save platform games", "platformID", p.ID, "error", err)
+				cm.RecordPlatformSyncFailure(p.ID)
 				if firstErr == nil {
 					firstErr = err
 				}
 			} else {
-				cm.RecordPlatformSyncSuccess(platformID, len(games))
+				cm.RecordPlatformSyncSuccess(p.ID, p.ROMCount)
 			}
+
+			// Aggressively free memory after saving each platform 
+			// Prevents OOM crashes on 128MB devices
+			runtime.GC()
 		}
 	}()
 
@@ -205,6 +205,8 @@ func (cm *Manager) fetchPlatformGames(platform romm.Platform, opts *fetchOpts) e
 
 		if offset == 0 {
 			expectedTotal = res.Total
+			// Pre-allocate the exact slice capacity to prevent memory spikes
+			allGames = make([]romm.Rom, 0, expectedTotal)
 		}
 
 		allGames = append(allGames, res.Items...)
