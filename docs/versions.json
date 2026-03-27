@@ -2,94 +2,94 @@
   "stable": null,
   "beta": {
     "version": "v4.8.0.1-beta.1",
-    "notes": "More CI!",
+    "notes": "More More CI!",
     "assets": {
       "Grout.pak.zip": {
         "url": "https://github.com/rommapp/grout/releases/download/v4.8.0.1-beta.1/Grout.pak.zip",
-        "size": 23549969,
-        "sha256": "067849b09e046d849e73adae1fd404e6fbee8cd15369235d3ef13ec20aa034c4"
+        "size": 23549967,
+        "sha256": "5905909e63df49be8f7792df96457171052525b8a4c213ef98b516c94f9f2eea"
       },
       "Grout.muxapp": {
         "url": "https://github.com/rommapp/grout/releases/download/v4.8.0.1-beta.1/Grout.muxapp",
-        "size": 23550267,
-        "sha256": "2809de5b883fbe5e7479dfdfbae09afa892e420945d639005e28f05841e84757"
+        "size": 23550265,
+        "sha256": "4f233bb750922388541b502a6bd0ba3b818aed0f01be4e4dfee15522cc04068a"
       },
       "Grout-Knulli.zip": {
         "url": "https://github.com/rommapp/grout/releases/download/v4.8.0.1-beta.1/Grout-Knulli.zip",
-        "size": 23588093,
-        "sha256": "c2ea922c3c60862392a147a8631352db85b28261ae8416fc1d67df6593175f2a"
+        "size": 23588091,
+        "sha256": "5b3ad6ea8380039cfe0c609d67a3ab5ec5f85b98b806021e243fcca1a816cf8b"
       },
       "Grout.spruce.zip": {
         "url": "https://github.com/rommapp/grout/releases/download/v4.8.0.1-beta.1/Grout.spruce.zip",
-        "size": 23554959,
-        "sha256": "da6842371a20897f170cb7ea372b2ad6b8ce21f2fbab62e25d964c155b80f345"
+        "size": 23554957,
+        "sha256": "2ef3d59962378285938c7daa77be4541065004f189b58f8d90d6632adbf35a48"
       },
       "Grout-ROCKNIX.zip": {
         "url": "https://github.com/rommapp/grout/releases/download/v4.8.0.1-beta.1/Grout-ROCKNIX.zip",
-        "size": 23588090,
-        "sha256": "1de0ab9130d7bedcbf075a708d54a5f93ddabe79e5d8ace49533ede3578618e0"
+        "size": 23588088,
+        "sha256": "6648fb180a25a4de56c1365962ec4aa8b0d2fffabc0b04ef0714aa756e6f51de"
       },
       "Grout-Trimui.zip": {
         "url": "https://github.com/rommapp/grout/releases/download/v4.8.0.1-beta.1/Grout-Trimui.zip",
-        "size": 23562075,
-        "sha256": "c90b8bedf2d460317bb0a4ecb756b14c8c1e7c5744947502dcd897f400ee5315"
+        "size": 23562073,
+        "sha256": "ffbffb92a34f68b305bf77356ff5f655dd28086801c59bdd4e67c0aea555ce78"
       },
       "Grout-MinUI-arm64.zip": {
         "url": "https://github.com/rommapp/grout/releases/download/v4.8.0.1-beta.1/Grout-MinUI-arm64.zip",
-        "size": 23548839,
-        "sha256": "afa791f802a4d5ad2791ed6b433568b80cff672723ee71cbc85b6841d35dba12"
+        "size": 23548837,
+        "sha256": "4d799f773cbc6336a405dce02a733b5428253f4a057074af6d9d8188260cf3ed"
       },
       "Grout-Batocera-arm64.zip": {
         "url": "https://github.com/rommapp/grout/releases/download/v4.8.0.1-beta.1/Grout-Batocera-arm64.zip",
-        "size": 23548903,
-        "sha256": "5b375263d50d4be23ae6a3e39c522604dcf9ac7de794ec1ab5761da115bebb86"
+        "size": 23548901,
+        "sha256": "d71307696586fc5a08588e91542a2fb27be8f85aaf69847e5e0cd3919ff02aec"
       }
     }
   },
   "romm": {
     "4.8.0": {
       "version": "v4.8.0.1-beta.1",
-      "notes": "More CI!",
+      "notes": "More More CI!",
       "assets": {
         "Grout.pak.zip": {
           "url": "https://github.com/rommapp/grout/releases/download/v4.8.0.1-beta.1/Grout.pak.zip",
-          "size": 23549969,
-          "sha256": "067849b09e046d849e73adae1fd404e6fbee8cd15369235d3ef13ec20aa034c4"
+          "size": 23549967,
+          "sha256": "5905909e63df49be8f7792df96457171052525b8a4c213ef98b516c94f9f2eea"
         },
         "Grout.muxapp": {
           "url": "https://github.com/rommapp/grout/releases/download/v4.8.0.1-beta.1/Grout.muxapp",
-          "size": 23550267,
-          "sha256": "2809de5b883fbe5e7479dfdfbae09afa892e420945d639005e28f05841e84757"
+          "size": 23550265,
+          "sha256": "4f233bb750922388541b502a6bd0ba3b818aed0f01be4e4dfee15522cc04068a"
         },
         "Grout-Knulli.zip": {
           "url": "https://github.com/rommapp/grout/releases/download/v4.8.0.1-beta.1/Grout-Knulli.zip",
-          "size": 23588093,
-          "sha256": "c2ea922c3c60862392a147a8631352db85b28261ae8416fc1d67df6593175f2a"
+          "size": 23588091,
+          "sha256": "5b3ad6ea8380039cfe0c609d67a3ab5ec5f85b98b806021e243fcca1a816cf8b"
         },
         "Grout.spruce.zip": {
           "url": "https://github.com/rommapp/grout/releases/download/v4.8.0.1-beta.1/Grout.spruce.zip",
-          "size": 23554959,
-          "sha256": "da6842371a20897f170cb7ea372b2ad6b8ce21f2fbab62e25d964c155b80f345"
+          "size": 23554957,
+          "sha256": "2ef3d59962378285938c7daa77be4541065004f189b58f8d90d6632adbf35a48"
         },
         "Grout-ROCKNIX.zip": {
           "url": "https://github.com/rommapp/grout/releases/download/v4.8.0.1-beta.1/Grout-ROCKNIX.zip",
-          "size": 23588090,
-          "sha256": "1de0ab9130d7bedcbf075a708d54a5f93ddabe79e5d8ace49533ede3578618e0"
+          "size": 23588088,
+          "sha256": "6648fb180a25a4de56c1365962ec4aa8b0d2fffabc0b04ef0714aa756e6f51de"
         },
         "Grout-Trimui.zip": {
           "url": "https://github.com/rommapp/grout/releases/download/v4.8.0.1-beta.1/Grout-Trimui.zip",
-          "size": 23562075,
-          "sha256": "c90b8bedf2d460317bb0a4ecb756b14c8c1e7c5744947502dcd897f400ee5315"
+          "size": 23562073,
+          "sha256": "ffbffb92a34f68b305bf77356ff5f655dd28086801c59bdd4e67c0aea555ce78"
         },
         "Grout-MinUI-arm64.zip": {
           "url": "https://github.com/rommapp/grout/releases/download/v4.8.0.1-beta.1/Grout-MinUI-arm64.zip",
-          "size": 23548839,
-          "sha256": "afa791f802a4d5ad2791ed6b433568b80cff672723ee71cbc85b6841d35dba12"
+          "size": 23548837,
+          "sha256": "4d799f773cbc6336a405dce02a733b5428253f4a057074af6d9d8188260cf3ed"
         },
         "Grout-Batocera-arm64.zip": {
           "url": "https://github.com/rommapp/grout/releases/download/v4.8.0.1-beta.1/Grout-Batocera-arm64.zip",
-          "size": 23548903,
-          "sha256": "5b375263d50d4be23ae6a3e39c522604dcf9ac7de794ec1ab5761da115bebb86"
+          "size": 23548901,
+          "sha256": "d71307696586fc5a08588e91542a2fb27be8f85aaf69847e5e0cd3919ff02aec"
         }
       }
     }
