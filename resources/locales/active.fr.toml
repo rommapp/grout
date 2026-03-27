@@ -6,13 +6,21 @@ other = "%d images d'illustration téléchargées avec succès."
 hash = "sha1-869ec904d8bde854dcf9489791abb3eef66818f9"
 other = "Échec du téléchargement de %d images d'illustration."
 
-[artwork_sync_no_artwork]
-hash = "sha1-b6f701dde7bd2fbefb5a16031b840ce953d89d98"
-other = "Aucun artwork disponible à télécharger."
-
 [artwork_sync_no_platforms]
 hash = "sha1-b9b27ff510e8ba88853b517993776a9b867c1e40"
 other = "Aucune plateforme avec des associations de dossiers trouvée."
+
+[artwork_sync_preload_all]
+hash = "sha1-6a72085653e4c5be8c7640c868ef787cbcf063d1"
+other = "Tout"
+
+[artwork_sync_preload_choice]
+hash = "sha1-dd82c2a6f26ac4534c845f8340399f803ebefe14"
+other = "Voulez-vous précharger toutes les illustrations ou seulement les manquantes ?"
+
+[artwork_sync_preload_missing]
+hash = "sha1-804dced41b23408f8e182c05cb66483599f4f431"
+other = "Manquantes uniquement"
 
 [artwork_sync_processing]
 hash = "sha1-005be85329c5856533c8c19e448dc1870e3b033d"
@@ -22,22 +30,13 @@ other = "Traitement des illustrations..."
 hash = "sha1-b6223550ccbdc62d88de558bd9d49c7c1da8e3bc"
 other = "Analyse de la plateforme %d/%d : %s..."
 
+[artwork_sync_select_platforms]
+hash = "sha1-225bb6dcf1d536bf821b3824b825fb8786e7c0ae"
+other = "Sélectionner les Plateformes"
+
 [artwork_sync_up_to_date]
 hash = "sha1-ef880c0f2577f0a9fb8ca21f2ed3710e5aef1376"
 other = "Toutes les illustrations sont déjà en cache !"
-
-[artwork_sync_preload_all]
-other = "Tout"
-
-[artwork_sync_preload_choice]
-other = "Voulez-vous précharger toutes les illustrations ou seulement les manquantes ?"
-
-[artwork_sync_preload_missing]
-other = "Manquantes uniquement"
-
-[artwork_sync_select_platforms]
-hash = "sha1-b4c3a8e5f2d1c0b9a8e7d6c5b4a3f2e1d0c9b8a7"
-other = "Select Platforms"
 
 [bios_download_complete]
 hash = "sha1-344ccb404588981250e2016ac355ac798d0b7e31"
@@ -52,7 +51,7 @@ hash = "sha1-eedf22da12a12dcd80d934cd25b3ce5c6f6952bc"
 other = "Cette plateforme ne nécessite aucun fichier BIOS."
 
 [bios_status_not_installed]
-hash = "sha1-5cc41c2d9eefe7c246cac37b27f70b3ebc24575e"
+hash = "sha1-92185dc52f71ef75dafedf866a3c86e592962f6d"
 other = "Manquant"
 
 [bios_status_ready]
@@ -67,16 +66,9 @@ other = "Retour"
 hash = "sha1-a7d7da6d80c497ad76b722c980dcc6f58e786281"
 other = "BIOS"
 
-[button_clear]
-other = "Effacer"
-
 [button_cancel]
 hash = "sha1-77dfd2135f4db726c47299bb55be26f7f4525a46"
 other = "Annuler"
-
-[button_close]
-hash = "sha1-bbfa773e5a63a5ea58c9b6207e608ca0120e592a"
-other = "Fermer"
 
 [button_confirm]
 hash = "sha1-04a212215ef9fbf686d280802eb81ee7a6e681cd"
@@ -94,16 +86,13 @@ other = "Défiler"
 hash = "sha1-a479c9c34e878d07b4d67a73a48f432ad7dc53c8"
 other = "Télécharger"
 
-[button_filters]
-other = "Filtres"
-
 [button_exit]
 hash = "sha1-f83b6fe3aebf13744e866019556d9129cd7a55be"
 other = "Quitter"
 
-[button_help]
-hash = "sha1-c47ae15370cfe1ed2781eedc1dc2547d12d9e972"
-other = "Aide"
+[button_filters]
+hash = "sha1-96e578211aa295317cf257310712fa28ccd8f6c6"
+other = "Filtres"
 
 [button_login]
 hash = "sha1-4e5a2893bdcc7d239c1db72e4c4ffbe4bea73174"
@@ -126,15 +115,8 @@ hash = "sha1-1a2285d8881f226e13430515a9dd2b9fb6294200"
 other = "Quitter"
 
 [button_redownload]
-hash = "sha1-3d0a3c6e0fd5672b0e3e33bbef33dff73a5f0a8c"
+hash = "sha1-9b4bddc714fd04976a21edcda7ffd449a909b80f"
 other = "Retélécharger"
-
-[button_save]
-other = "Sauvegarder"
-
-[button_save_sync]
-hash = "sha1-905f63092ff26517a7aa8083857b3c8af9707002"
-other = "Synchroniser"
 
 [button_search]
 hash = "sha1-bce06414177f72ab70e6387b6af9f8ceef0d6049"
@@ -148,33 +130,29 @@ other = "Sélectionner"
 hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
 other = "Paramètres"
 
+[button_sync]
+hash = "sha1-905f63092ff26517a7aa8083857b3c8af9707002"
+other = "Sync"
+
 [cache_building]
 hash = "sha1-5c797965ec584713643883f81dd4a7b4c965791e"
 other = "Construction du cache..."
 
 [cache_clear_artwork]
-hash = "sha1-a2bbf44dc75ec0e56ce03387ff46b24a04f0e048"
-other = "Artwork"
+hash = "sha1-bfbeaf93f0968f2bfc07af9e46d813fc2b1fb24d"
+other = "Illustrations"
 
 [cache_clear_both]
-hash = "sha1-4fcd25e32f6c69d12d5e6d0ef2c40f9a6f46ec82"
-other = "Metadata & Artwork"
+hash = "sha1-6a72085653e4c5be8c7640c868ef787cbcf063d1"
+other = "Tout"
 
 [cache_clear_metadata]
-hash = "sha1-d32b8ce0d66f32f3a2c5fae46bfe2e6fef3c7f2b"
-other = "Metadata"
+hash = "sha1-251edc0eb5a820646bda4e103f0f007fd55321f3"
+other = "Métadonnées"
 
 [cache_clear_prompt]
-hash = "sha1-e60a6d6a0e36f2f66a1c9d4bcf4e0e3e6b0b2a5c"
-other = "What would you like to clear?"
-
-[cache_collections]
-hash = "sha1-5359505ab9b75bcd412f099c13ee7d4eb5b0a509"
-other = "Cache des Collections"
-
-[cache_games]
-hash = "sha1-1e7dbd606b8bad53986d06fd58c9d73dcad67d64"
-other = "Cache des Jeux"
+hash = "sha1-822dd4473a6ce4dc5dd1f326679114ac1edc4c45"
+other = "Que souhaitez-vous effacer ?"
 
 [collection_cache_missing]
 hash = "sha1-fb424e624d844a5fbbb880c35b7d2867f03333e6"
@@ -195,6 +173,10 @@ other = "Plateforme"
 [collection_view_unified]
 hash = "sha1-287fda8114f4bf0b9263ae57f270e9f31f24c3b2"
 other = "Unifiée"
+
+[collections_syncing]
+hash = "sha1-2c9683fd54b9f378b745c96e1a5779519d592bdc"
+other = "Syncing collections..."
 
 [common_default]
 hash = "sha1-808d7dca8a74d84af27a2d6602c3d786de45fe1e"
@@ -220,32 +202,17 @@ other = "Passer"
 hash = "sha1-88b33e4e12f75ac8bf792aebde41f1a090f3a612"
 other = "Vrai"
 
-[filter_age_rating]
-other = "Classification d'âge"
+[device_registration_prompt]
+hash = "sha1-6b0f02d1ffe64e0c961c6832dc578dbf79fa6fd0"
+other = "Entrez un nom pour cet appareil"
 
-[filter_all]
-other = "Tout"
+[device_registration_registering]
+hash = "sha1-d14adea2e992a1e4f0d1708ed0fcef766043f9e2"
+other = "Enregistrement de l'appareil..."
 
-[filter_company]
-other = "Éditeur"
-
-[filter_franchise]
-other = "Franchise"
-
-[filter_game_mode]
-other = "Mode de jeu"
-
-[filter_genre]
-other = "Genre"
-
-[filter_language]
-other = "Langue"
-
-[filter_region]
-other = "Région"
-
-[filter_tag]
-other = "Tag"
+[device_registration_updating]
+hash = "sha1-8756571c6829c22cde85131128b0b650acdb024c"
+other = "Mise à jour de l'appareil..."
 
 [download_artwork]
 hash = "sha1-e4c568fc0f2c433d2144101b3b3eab991134eb4f"
@@ -279,6 +246,46 @@ other = "Sélection de l'émulateur {{.Platform}}"
 hash = "sha1-0312ebb4e268eed54feef24bdda148a22bfd8ed9"
 other = "Erreur lors du chargement des plateformes !\nVeuillez consulter les logs pour plus d'informations."
 
+[filter_age_rating]
+hash = "sha1-65f6934c08731ed936b31808a8df0255737c4c96"
+other = "Classification d'âge"
+
+[filter_all]
+hash = "sha1-6a72085653e4c5be8c7640c868ef787cbcf063d1"
+other = "Tout"
+
+[filter_company]
+hash = "sha1-7a1994999d181deea68e4304b3346e78f838ecb7"
+other = "Éditeur"
+
+[filter_franchise]
+hash = "sha1-4784beef5c8d95e5a9eb473f408d6b16e3362867"
+other = "Franchise"
+
+[filter_game_mode]
+hash = "sha1-9424db05db84e49a7dc7daa39d034dd4c0684210"
+other = "Mode de jeu"
+
+[filter_genre]
+hash = "sha1-2aa31fca5e4f84ebdfaab36c9a6da36cf8d36509"
+other = "Genre"
+
+[filter_language]
+hash = "sha1-89b86ab0e66f527166d98df92ddbcf5416ed58f6"
+other = "Langue"
+
+[filter_platform]
+hash = "sha1-123a7f2fcc9ae7cbbbd7c7627a483853a9708dab"
+other = "Platform"
+
+[filter_region]
+hash = "sha1-0f217179940c6d89f5cb2c7002a58d91ab7286c1"
+other = "Région"
+
+[filter_tag]
+hash = "sha1-982963c1c41cbed8cab073724749592fe35c532b"
+other = "Tag"
+
 [game_details_average_rating]
 hash = "sha1-3843a4b5750d289e79e106bd3df7540a1a04a1fc"
 other = "Note Moyenne"
@@ -286,6 +293,10 @@ other = "Note Moyenne"
 [game_details_companies]
 hash = "sha1-9dba7ad7c5bdb2aa80495855ae01b2cbb94d11c9"
 other = "Entreprises"
+
+[game_details_description]
+hash = "sha1-55f8ebc805e65b5b71ddafdae390e3be2bcd69af"
+other = "Description"
 
 [game_details_file_size]
 hash = "sha1-0fce4167b52045abc782cbeb524a9ba741979663"
@@ -315,13 +326,13 @@ other = "Langues"
 hash = "sha1-8cbbf13782924ad2683777c84dfeefd5d696b649"
 other = "ROM Multi-Fichiers"
 
+[game_details_name]
+hash = "sha1-709a23220f2c3d64d1e1d6d18c4d5280f8d82fca"
+other = "Nom"
+
 [game_details_platform]
 hash = "sha1-123a7f2fcc9ae7cbbbd7c7627a483853a9708dab"
 other = "Plateforme"
-
-[game_details_qr_section]
-hash = "sha1-8e5845c85bba45dafe635ffd01f4299d6211451e"
-other = "Lien du jeu sur RomM"
 
 [game_details_regions]
 hash = "sha1-039711232507cd9753ddba093da2350b27e67dca"
@@ -335,33 +346,37 @@ other = "Date de Sortie"
 hash = "sha1-3deb7456519697ecf4eefc455516c969a3681bae"
 other = "Type"
 
+[game_filters_title]
+hash = "sha1-96e578211aa295317cf257310712fa28ccd8f6c6"
+other = "Filtres"
+
 [game_options_new_slot]
+hash = "sha1-666b35edc842f4391bbb9af211063b10ea914104"
 other = "Nouveau Slot..."
 
 [game_options_save_slot]
+hash = "sha1-0825ef277e3e7119673e06661bd0be79dba52ca7"
 other = "Emplacement de sauvegarde"
+
+[game_options_show_qr]
+hash = "sha1-aac0780d1e78f71bc2c0830a05aae1074cf67aec"
+other = "Afficher le QR Code"
 
 [game_options_title]
 hash = "sha1-7ce298bd6c51841a35d3983c23dae2d00f50b6af"
 other = "Options du jeu"
 
-[game_filters_title]
-other = "Filtres"
+[game_qr_title]
+hash = "sha1-36f4c832ee960aed051bb091a533d4a583ffe310"
+other = "Page du Jeu RomM"
 
 [games_list_filtered]
+hash = "sha1-8f34177e1f62bf7f61d2ae172671b21938ae1442"
 other = "[Filtré]"
 
 [games_list_filtered_out]
 hash = "sha1-211fbb3fb7df0619367d403f5cef6534484992d2"
 other = "Aucun jeu dans {{.Name}} ne correspond à vos plateformes"
-
-[games_list_help_body]
-hash = "sha1-57d918bd5c65068f774a2584e0eaa9989d5d9113"
-other = "A - Sélectionner un jeu\nB - Retourner à l'écran précédent\nX - Rechercher des jeux par nom\nSelect - Basculer le mode multi-sélection\n  En mode multi-sélection :\n  - Utilisez le D-Pad pour naviguer\n  - Appuyez sur A pour basculer la sélection\n  - Appuyez sur L1 pour tout désélectionner\n  - Appuyez sur R1 pour tout sélectionner\n  - Appuyez sur Start pour confirmer les sélections\nMenu - Afficher cet écran d'aide\nD-Pad - Naviguer dans la liste des jeux"
-
-[games_list_help_title]
-hash = "sha1-77fdd51f105473d648b8c22b6897d0f12d0dd360"
-other = "Aide - Liste des Jeux"
 
 [games_list_load_error]
 hash = "sha1-bbcf22625a6f65a05bebab886c05c9ddc6b985da"
@@ -395,6 +410,10 @@ other = "Appuyez sur n'importe quel bouton pour fermer l'aide"
 hash = "sha1-d3cb9f9582eb7f5e392ef4fbc853ceb81a5a5d03"
 other = "Date de compilation"
 
+[info_cfw]
+hash = "sha1-9e8a64d60817578b97aa60558a9173985e63634d"
+other = "CFW"
+
 [info_commit]
 hash = "sha1-1a1873ab51c74e8b39327ee42dade7a407e5a22d"
 other = "Commit"
@@ -403,9 +422,29 @@ other = "Commit"
 hash = "sha1-e5531adae3c84603f2287c4a3d32bcf612b2962c"
 other = "Dépôt GitHub"
 
+[info_romm_version]
+hash = "sha1-2da600bf9404843107a9531694f654e5662959e0"
+other = "Version"
+
 [info_server]
 hash = "sha1-cb0cb170d106f8e8d5af1e05bbdbd3a96a7de197"
 other = "Serveur"
+
+[info_token_expires]
+hash = "sha1-a99be3da0c9da2f3c64500b5ef8a8e48f503d127"
+other = "Expires"
+
+[info_token_name]
+hash = "sha1-a1141eb96836ed960ae0be11b9889597388b5df0"
+other = "Token"
+
+[info_token_never_expires]
+hash = "sha1-80c3052d33ccdee15ffaaa110c5c39072495fe63"
+other = "Never"
+
+[info_unknown]
+hash = "sha1-bc7819b34ff87570745fbe461e36a16f80e562ce"
+other = "Unknown"
 
 [info_user]
 hash = "sha1-9f8a2389a20ca0752aa9e95093515517e90e194c"
@@ -420,24 +459,44 @@ hash = "sha1-bd604d99e75e45d38bc7ac8fc714cde0097d901f"
 other = "Debug"
 
 [log_level_error]
-hash = "sha1-abc123"
-other = "Error"
-
-[log_level_info]
 hash = "sha1-7f2f6a15cf8da2b27e5a4af47b58e7ad71c0b3d9"
 other = "Erreur"
+
+[log_level_info]
+hash = "sha1-4b631f69842530d659306c8f06dbad594a6b1807"
+other = "Info"
+
+[login_auth_credentials]
+hash = "sha1-dd097a229701c1db23e0a192b0e48637872c75b8"
+other = "Credentials"
+
+[login_auth_method]
+hash = "sha1-3d42f8771acd1ec200fba7b0d6f148a4cc0bd2d9"
+other = "Auth Method"
+
+[login_auth_pairing_code]
+hash = "sha1-ef7045e5ea20e809ebcfdc1b690c4a37865364ed"
+other = "Pairing Code"
+
+[login_auth_title]
+hash = "sha1-ee1acfa55eb1476c86c5c4a68f256a67b25289ab"
+other = "Authentication"
 
 [login_error_connection_refused]
 hash = "sha1-23e5a20e58a1f065f556bbc99f20bb9037adbe70"
 other = "Impossible de se connecter à l'hôte !\nVeuillez vérifier que le nom d'hôte et le port sont corrects."
 
 [login_error_credentials]
-hash = "sha1-78649d0d74c900b26a3b9057e39001b900888517"
-other = "Nom de compte ou mot de passe incorrect."
+hash = "sha1-ab31c540610430da052c8ce4ba9c002d41820774"
+other = "Identifiants invalides."
 
 [login_error_forbidden]
-hash = "sha1-8ceb3996ff12ad79926d6f2d04195c69d7041778"
-other = "Accès Refusé !\nVérifiez votre nom d'utilisateur/mot de passe et essayez de basculer entre http et https."
+hash = "sha1-aebbbbdee730357c75fc93f3e4fbbb2de5863394"
+other = "Accès Interdit !\nVérifiez vos identifiants et essayez de basculer entre http et https."
+
+[login_error_invalid_code]
+hash = "sha1-8fda631c75f8d70be86cba6961a15c4193e1f386"
+other = "Invalid or expired pairing code.\nPlease try again."
 
 [login_error_invalid_hostname]
 hash = "sha1-5b400e2f88225e333d6be2b1213d6bea077340d3"
@@ -471,6 +530,10 @@ other = "Erreur de protocole !\nEssayez de basculer entre http et https."
 hash = "sha1-c983a1551dcbdb6f0ce43637e89a8726577d4f4b"
 other = "Nom de Domaine"
 
+[login_pairing_code]
+hash = "sha1-ef7045e5ea20e809ebcfdc1b690c4a37865364ed"
+other = "Pairing Code"
+
 [login_password]
 hash = "sha1-8be3c943b1609fffbfc51aad666d0a04adf83c9d"
 other = "Mot de Passe"
@@ -491,6 +554,10 @@ other = "HTTP"
 hash = "sha1-f52698c28f0d2036450e02a85451ee4f5be02442"
 other = "HTTPS"
 
+[login_server_title]
+hash = "sha1-cb0cb170d106f8e8d5af1e05bbdbd3a96a7de197"
+other = "Server"
+
 [login_ssl_certificates]
 hash = "sha1-167bd6182100989e39aab5fcf981d035ea73dcc7"
 other = "Certificats SSL"
@@ -508,8 +575,12 @@ hash = "sha1-84c29015de33e5d22422382a372caba5c58f8c01"
 other = "Nom de compte"
 
 [login_validating]
+hash = "sha1-2b01abd3fe5d07b59d90202573da2fb788d000e3"
+other = "Connexion en cours..."
+
+[login_validating_connection]
 hash = "sha1-cd2c8fff39519159039f7640f974edc2db8b6ce3"
-other = "Validation de la connexion..."
+other = "Validating connection..."
 
 [logout_confirm_message]
 hash = "sha1-fc8c20806e08254d4bddd38e5e7d60c1bd01e564"
@@ -528,7 +599,7 @@ hash = "sha1-d4f6486d8141fda18c9d6fc9d7c7680c3c385efa"
 other = "Créer '{{.Name}}'"
 
 [platform_mapping_custom]
-hash = "sha1-7c51e189fe1f7a6a88f22d27fc93e2f2ac206bf2"
+hash = "sha1-cfca17d018a282a0380a8e24ac6bdf809fa6da86"
 other = "Personnalisé..."
 
 [platform_mapping_directory_not_found]
@@ -547,37 +618,52 @@ other = "Association des Dossiers de ROM"
 hash = "sha1-4bbb632f02fd69807705c0179999c17d35c93b0f"
 other = "Collections"
 
-[rebuild_cache_title]
-hash = "sha1-820f6b0deff7fdc081825ab624ce289175235630"
-other = "Actualiser le Cache"
-
 [release_beta]
 hash = "sha1-f03b60f7e52b7ce49ed1e4f9fa511c452a2185bb"
 other = "Bêta"
+
+[release_match_romm]
+hash = "sha1-04cb5571d5aa93fc1101672cb48a592cd38a3472"
+other = "Correspondre à RomM"
 
 [release_stable]
 hash = "sha1-d96e5b2dd07c1733b2b013bd82922c22baade37d"
 other = "Stable"
 
 [save_conflict_keep_local]
+hash = "sha1-600672010e8542e8d7e829a8349dfc6c154ed789"
 other = "Garder local"
 
 [save_conflict_keep_remote]
+hash = "sha1-257811abef370d1e4374d01c09977fb7b7bbb72a"
 other = "Garder distant"
 
 [save_conflict_title]
+hash = "sha1-bf6ccb737415574d8a0672a35fbf5384b67fd929"
 other = "Résoudre les conflits"
 
+[save_mapping_no_platforms]
+hash = "sha1-768414e320febf805fe97e0ecaa1d970ada8833b"
+other = "No platforms with multiple emulators found."
+
+[save_mapping_title]
+hash = "sha1-696f9a36f6043e3b976769cf2e72ebff7d953d47"
+other = "Save Sync Mappings"
+
 [save_sync_backup_limit]
+hash = "sha1-1f09edd38f87a8aad7fac0bf883c8aee04186930"
 other = "Save Backups"
 
 [save_sync_backup_no_limit]
+hash = "sha1-4e4ff419c4d80fddcbc8f261448db23ce808a400"
 other = "No Limit"
 
 [save_sync_conflicts]
+hash = "sha1-1e6b4f9a091ea30a5e57a2cda4b28e51833ccd62"
 other = "Conflits"
 
 [save_sync_device_name]
+hash = "sha1-cf507cd5c74a49f686ef3c12a3b7b5cd2d1749cb"
 other = "Nom de l'appareil"
 
 [save_sync_downloaded]
@@ -585,23 +671,28 @@ hash = "sha1-c6197029254600e042230dbe5880e70c4b842e07"
 other = "Téléchargé"
 
 [save_sync_errors]
+hash = "sha1-805e86a8cbf628e38e4c45612c005a504009e79a"
 other = "Erreurs"
 
 [save_sync_no_changes]
+hash = "sha1-88465343e322e1fe1f7d5b05618035c8c0f2f90b"
 other = "Tout est à jour !\nAllez jouer !"
 
 [save_sync_register_device]
+hash = "sha1-b4e192913ffbf1b6cd918a611a502cb47d846f7e"
 other = "Register Device"
 
 [save_sync_resolve_error]
+hash = "sha1-1bf9153fa9336c6e3a5cc76a74d9870ef09e7b7d"
 other = "Failed to connect to server.\nPlease check your connection and try again."
 
 [save_sync_results_title]
+hash = "sha1-e447609c1dcab14c1606d166d50bc212386a4975"
 other = "Synchronisation terminée"
 
 [save_sync_scanning]
-hash = "sha1-6e0e349d1314bd7909fa32d8c46698b412601d19"
-other = "Analyse des fichiers de sauvegarde..."
+hash = "sha1-d6491698e70e30fe3e822b8d8f664fa1bb2b6a4b"
+other = "Recherche des sauvegardes..."
 
 [save_sync_syncing]
 hash = "sha1-cf3c39aa4d28234527fd8d9966cae4bbbccfacb3"
@@ -611,14 +702,9 @@ other = "Synchronisation des sauvegardes..."
 hash = "sha1-80c494898ac90610a67c95502d2a56b4af4963f1"
 other = "Téléversé"
 
-[device_registration_prompt]
-other = "Entrez un nom pour cet appareil"
-
-[device_registration_registering]
-other = "Enregistrement de l'appareil..."
-
-[device_registration_updating]
-other = "Mise à jour de l'appareil..."
+[server_address_validating]
+hash = "sha1-7f28b844503e39828cd64563d6f79e87df9a9c77"
+other = "Validating new server address..."
 
 [settings_advanced]
 hash = "sha1-4d064726954a17487f94e931f5b157b733ec22ed"
@@ -641,8 +727,8 @@ hash = "sha1-2b9dc92af51847dda7770b3092771ac0f411e9b5"
 other = "Collections"
 
 [settings_compressed_downloads]
-hash = "sha1-13030966c5d891077dff211ba72997bbdc1fc031"
-other = "Téléchargements Compressés"
+hash = "sha1-a43e32473f03f674f028dc2f716cafdd6fd2cced"
+other = "Téléchargements Archivés"
 
 [settings_compressed_downloads_do_nothing]
 hash = "sha1-57e2785737374cab8197fe64ac4c90da88045788"
@@ -657,19 +743,76 @@ hash = "sha1-8b7f3d97b75d86dad90186e811d3b01b05894107"
 other = "Télécharger les illustrations"
 
 [settings_download_art_kind]
+hash = "sha1-1c156a844f2d347f7d5e3357142168765db30972"
 other = "Type d'illustration"
 
 [settings_download_art_kind_box2d]
+hash = "sha1-336ec73b2667dc33b18f1f621ab917672fc1262a"
 other = "Box2D"
 
 [settings_download_art_kind_box3d]
+hash = "sha1-930600350c355932a77add6470bf295a378c0485"
 other = "Box3D"
 
 [settings_download_art_kind_default]
+hash = "sha1-808d7dca8a74d84af27a2d6602c3d786de45fe1e"
 other = "Par défaut"
 
+[settings_download_art_kind_logo]
+hash = "sha1-83fce8327410848c9eb609acb21732c7c0fec96a"
+other = "Logo"
+
+[settings_download_art_kind_marquee]
+hash = "sha1-cd710fcc23c71a5b517bea1c0bd7c98026f0075e"
+other = "Marquee"
+
 [settings_download_art_kind_miximage]
+hash = "sha1-211950c5de78491829453dcda8daaf60931aaadb"
 other = "MixImage"
+
+[settings_download_art_kind_none]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "None"
+
+[settings_download_art_kind_title]
+hash = "sha1-768e0c1c69573fb588f61f1308a015c11468e05f"
+other = "Title"
+
+[settings_download_art_preview]
+hash = "sha1-5696362691e9738656d3c50e4f9795e97f837852"
+other = "Download Screenshot Preview"
+
+[settings_download_art_splash]
+hash = "sha1-a6c688e640f34b0579f988bd543c985234e34fd8"
+other = "Download Splash Art"
+
+[settings_download_emulationstation_art_bezel]
+hash = "sha1-5f86e96cc83dccbb8c3203a56b3b705778ad8ceb"
+other = "Télécharger le Cadre du Jeu"
+
+[settings_download_emulationstation_art_boxback]
+hash = "sha1-909f8d7c1006709bd203f4f6d72ef5c457434da7"
+other = "Télécharger l'Arrière de Boîte"
+
+[settings_download_emulationstation_art_fanart]
+hash = "sha1-cd71d347b9591e478ebcdac7686adfd7339c821a"
+other = "Télécharger le Fan Art du Jeu"
+
+[settings_download_emulationstation_art_manual]
+hash = "sha1-e2396ff8541865d65652cbc2a09d91330553a73d"
+other = "Télécharger le Manuel du Jeu"
+
+[settings_download_emulationstation_art_marquee]
+hash = "sha1-74cd2bdb61f457227363dcfd915fcea0d3068237"
+other = "Télécharger l'Image Marquee"
+
+[settings_download_emulationstation_art_thumbnail]
+hash = "sha1-dae58612d234c8df626a208658d263726abf4eda"
+other = "Télécharger la Miniature du Jeu"
+
+[settings_download_emulationstation_art_video]
+hash = "sha1-772e66478b57bbf0983623cc6aa9f24ec47703ad"
+other = "Télécharger la Vidéo du Jeu"
 
 [settings_download_timeout]
 hash = "sha1-86406d85cd2216df4f871ce0119581019810fd67"
@@ -736,8 +879,8 @@ hash = "sha1-3831d4e3e5ace348ba6c68e683f7605e4e030a9f"
 other = "Niveau de log"
 
 [settings_rebuild_cache]
-hash = "sha1-820f6b0deff7fdc081825ab624ce289175235630"
-other = "Actualiser le cache"
+hash = "sha1-1c4cc869d6c5c6fe0a49516c220a1f67ae5acc12"
+other = "Reconstruire le Cache"
 
 [settings_release_channel]
 hash = "sha1-ddb05bbae80d35657c69e0ff93b186f6c7c92ce2"
@@ -746,6 +889,10 @@ other = "Canal de diffusion"
 [settings_save_sync]
 hash = "sha1-3caa02c76bc2b97f136e706433de562fd060f48d"
 other = "Synchronisation des Sauvegardes"
+
+[settings_server_address]
+hash = "sha1-504d1e0c1e7da570942d8cb272d90ab7322cd26a"
+other = "Server Address"
 
 [settings_show_collections]
 hash = "sha1-4bbb632f02fd69807705c0179999c17d35c93b0f"
@@ -759,70 +906,33 @@ other = "Collections Intelligentes"
 hash = "sha1-e952af5b20cf922ecfcf9ce0ab42095e44133b65"
 other = "Collections Virtuelles"
 
+[settings_swap_face_buttons]
+hash = "sha1-40d2f959423b3e935b5f9256ded10a0ec259a13c"
+other = "Swap Face Buttons"
+
+[settings_switch_to_token]
+hash = "sha1-660fbc3eee5039b328c03dbbaf07e686d3225e29"
+other = "Switch to API Token"
+
 [settings_sync_artwork]
 hash = "sha1-20005772b1c3fee4aaff30697df5b4d236412f3a"
 other = "Précharger l'Artwork"
+
+[settings_sync_local_artwork]
+hash = "sha1-3d28f632e62c58dde573a3e907c712b9ad6cab24"
+other = "Download Missing Art"
 
 [settings_title]
 hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
 other = "Paramètres"
 
-[sync_history_empty]
-other = "No sync history found."
+[settings_token_switch_success]
+hash = "sha1-d3e086a01be446f94684e717514a11b4edfc5360"
+other = "Successfully switched to API Token!"
 
-[sync_history_no_cache]
-other = "Cache not available."
-
-[sync_history_title]
-other = "Sync History"
-
-[sync_menu_history]
-other = "View History"
-
-[sync_menu_sync_now]
-other = "Sync Now"
-
-[sync_menu_synced_games]
-other = "Synced Games"
-
-[sync_menu_title]
-other = "Save Sync"
-
-[synced_games_active_slot]
-other = "Active Slot"
-
-[synced_games_detail_error]
-other = "Failed to load save details."
-
-[synced_games_empty]
-other = "No synced games found."
-
-[synced_games_error]
-other = "Failed to load synced games."
-
-[synced_games_latest_file]
-other = "File"
-
-[synced_games_latest_save]
-other = "Latest Save"
-
-[synced_games_loading]
-other = "Loading synced games..."
-
-[synced_games_loading_detail]
-other = "Loading save details..."
-
-[synced_games_overview]
-other = "Overview"
-
-[synced_games_save_count]
-other = "Save Count"
-
-[synced_games_title]
-other = "Synced Games"
-
-[synced_games_total_saves]
-other = "Total Saves"
+[settings_tools]
+hash = "sha1-4fa8cc860c52b268dc6a3adcde7305e9415db5bb"
+other = "Tools"
 
 [startup_error_action_exit]
 hash = "sha1-f83b6fe3aebf13744e866019556d9129cd7a55be"
@@ -840,6 +950,10 @@ other = "Impossible de se connecter à RomM !\nVeuillez vérifier que le serveur
 hash = "sha1-d317b91a53c71f415dfc456ce167540ede7cf245"
 other = "Identifiants invalides !\nVeuillez vérifier votre nom d'utilisateur et mot de passe."
 
+[startup_error_credentials_invalid]
+hash = "sha1-847f08a807a2ce97da71d381980e139e8f494062"
+other = "Your credentials are invalid.\nPlease log in again."
+
 [startup_error_forbidden]
 hash = "sha1-ef2ddf692a2c1fcddb8a521e58378ae5e1b4758a"
 other = "Accès refusé !\nVérifiez les permissions du serveur."
@@ -856,9 +970,97 @@ other = "Erreur du serveur RomM !\nVeuillez consulter les logs du serveur RomM."
 hash = "sha1-fdcd33dfddf149f57480930de7859c965c0e8d46"
 other = "Connexion expirée !\nVeuillez vérifier votre connexion réseau."
 
+[startup_error_token_invalid]
+hash = "sha1-24065b3c24c0b35e98e5048c65a31edba5a60781"
+other = "Your API token is invalid or expired.\nPlease set up a new one."
+
 [startup_error_wrong_protocol]
 hash = "sha1-7c33b76e305eaf2db987d02472b4e0f2e4d896f8"
 other = "Erreur de protocole !\nVérifiez la configuration du serveur."
+
+[sync_history_col_game]
+hash = "sha1-e3e82846c32567811615378f30240185871e08e5"
+other = "Game"
+
+[sync_history_col_platform]
+hash = "sha1-123a7f2fcc9ae7cbbbd7c7627a483853a9708dab"
+other = "Platform"
+
+[sync_history_col_time]
+hash = "sha1-6c82e6dd86807ee3db07e3c82bec1ae1ce00b08b"
+other = "Time"
+
+[sync_history_empty]
+hash = "sha1-d0bae35c086a1181ea0134349fada0ff5df3f4ed"
+other = "No sync history found."
+
+[sync_history_no_cache]
+hash = "sha1-9c4c295e818624bbe347bc9f66a05d65b66dde06"
+other = "Cache not available."
+
+[sync_history_title]
+hash = "sha1-1fb44e19c1989c3d5e8a8d1e1bd66ba9cf5c178a"
+other = "Sync History"
+
+[sync_menu_history]
+hash = "sha1-8bc3b1ed449e35b901d74c3dbc468945062d2184"
+other = "View History"
+
+[sync_menu_save_mapping]
+hash = "sha1-5d0c0d9a1aa20dc06789a6f9290c7c3961a1b603"
+other = "Save Mapping"
+
+[sync_menu_sync_now]
+hash = "sha1-c9113495d010f79e5e533d627eeb19735b37038c"
+other = "Sync Now"
+
+[sync_menu_synced_games]
+hash = "sha1-c93a88a1c850e86ae2dd7fd3dd5171bfbdbef96e"
+other = "Synced Games"
+
+[sync_menu_title]
+hash = "sha1-3caa02c76bc2b97f136e706433de562fd060f48d"
+other = "Save Sync"
+
+[synced_games_active_slot]
+hash = "sha1-9f8500c79f84e5c5e9b7b9bd5c5e3ba8fbf6c212"
+other = "Active Slot"
+
+[synced_games_detail_error]
+hash = "sha1-a2aecc3a6c85765b9f9afc8f2e67166a70ad8cfd"
+other = "Failed to load save details."
+
+[synced_games_empty]
+hash = "sha1-65e71538637adb1b040ecde12910235bcbf1307e"
+other = "No synced games found."
+
+[synced_games_latest_file]
+hash = "sha1-2c3cafa4db3f3e1e51b3dff4303502dbe42b7a89"
+other = "File"
+
+[synced_games_latest_save]
+hash = "sha1-078008dfc92c2f4789089589c70c0033ad5174f9"
+other = "Latest Save"
+
+[synced_games_loading_detail]
+hash = "sha1-782c8308369d2e6d51cd21f1f8c86082273b3693"
+other = "Loading save details..."
+
+[synced_games_overview]
+hash = "sha1-0efc2e6be4c23b9a513d7ce0dcff8ed80e8912e7"
+other = "Overview"
+
+[synced_games_save_count]
+hash = "sha1-8c631ed1dfe186fc04dc843eafe87c9f38068717"
+other = "Save Count"
+
+[synced_games_title]
+hash = "sha1-c93a88a1c850e86ae2dd7fd3dd5171bfbdbef96e"
+other = "Synced Games"
+
+[synced_games_total_saves]
+hash = "sha1-53102df1e5388e7b93985f5db27f1d22cb89c0d6"
+other = "Total Saves"
 
 [time_105_minutes]
 hash = "sha1-18bf92f611e5f677d486ce65e647fada44f076ae"
@@ -883,18 +1085,6 @@ other = "15 Secondes"
 [time_180_seconds]
 hash = "sha1-fed010e9d942a4069ccbe7da3d8830fb1f128aa9"
 other = "180 Secondes"
-
-[time_1_day_ago]
-hash = "sha1-27bb80cd0b24b9f1ce4892b99f3bba9dadc76fa1"
-other = "il y a 1 jour"
-
-[time_1_hour_ago]
-hash = "sha1-ce72763360d1bbd74d895d07c8d3d794cbdba110"
-other = "il y a 1 heure"
-
-[time_1_minute_ago]
-hash = "sha1-68bef516aa8fe6ddcef15a6f751e11384e9a959a"
-other = "il y a 1 min"
 
 [time_240_seconds]
 hash = "sha1-df9c666732305363d51ed546af164749de94605b"
@@ -944,28 +1134,12 @@ other = "90 Minutes"
 hash = "sha1-f7ed27e9fabe0615c1cc86f2b93d6b03a38d742e"
 other = "90 Secondes"
 
-[time_days_ago]
-hash = "sha1-e642fccbcc07accdc3f64666fe7acfb9efd1bbb2"
-other = "il y a {{.Count}} jours"
-
-[time_hours_ago]
-hash = "sha1-fe929018a0701062d0e65bb537551f899a82fb7f"
-other = "il y a {{.Count}} heures"
-
-[time_just_now]
-hash = "sha1-a7f8e7cc0d43d21e5d1a4d0a3b0d5ff66a5da1ed"
-other = "à l'instant"
-
-[time_minutes_ago]
-hash = "sha1-d97a317f8c80c1d51152cccd31c16dd30b48b3a6"
-other = "il y a {{.Count}} mins"
-
 [update_available]
 hash = "sha1-678c7342e3859f9f76837180ff8b1901d504014d"
 other = "Mise à jour disponible : {{.Version}}"
 
 [update_check_error]
-hash = "sha1-2b01c888d71f0a498fa1b1ccc87acb16e0293126"
+hash = "sha1-016089cfeec8b3f8478787505db8bad5547191b1"
 other = "{{.Error}}"
 
 [update_check_for_updates]
@@ -1003,114 +1177,3 @@ other = "Taille : {{.Size}}"
 [update_up_to_date]
 hash = "sha1-a534c74416c491ff56e75a3335ea2ee9b4e5b4ad"
 other = "Vous avez la dernière version ({{.Version}})"
-
-[button_sync]
-other = "Sync"
-
-[collections_syncing]
-other = "Syncing collections..."
-
-[filter_platform]
-other = "Platform"
-
-[info_cfw]
-other = "CFW"
-
-[info_romm_version]
-other = "Version"
-
-[info_token_expires]
-other = "Expires"
-
-[info_token_name]
-other = "Token"
-
-[info_token_never_expires]
-other = "Never"
-
-[info_unknown]
-other = "Unknown"
-
-[login_auth_credentials]
-other = "Credentials"
-
-[login_auth_method]
-other = "Auth Method"
-
-[login_auth_pairing_code]
-other = "Pairing Code"
-
-[login_auth_title]
-other = "Authentication"
-
-[login_error_invalid_code]
-other = "Invalid or expired pairing code.\nPlease try again."
-
-[login_pairing_code]
-other = "Pairing Code"
-
-[login_server_title]
-other = "Server"
-
-[login_validating_connection]
-other = "Validating connection..."
-
-[save_mapping_no_platforms]
-other = "No platforms with multiple emulators found."
-
-[save_mapping_title]
-other = "Save Sync Mappings"
-
-[server_address_validating]
-other = "Validating new server address..."
-
-[settings_download_art_kind_marquee]
-other = "Marquee"
-
-[settings_download_art_kind_none]
-other = "None"
-
-[settings_download_art_kind_title]
-other = "Title"
-
-[settings_download_art_preview]
-other = "Download Screenshot Preview"
-
-[settings_download_art_splash]
-other = "Download Splash Art"
-
-[settings_server_address]
-other = "Server Address"
-
-[settings_swap_face_buttons]
-other = "Swap Face Buttons"
-
-[settings_switch_to_token]
-other = "Switch to API Token"
-
-[settings_sync_local_artwork]
-other = "Download Missing Art"
-
-[settings_token_switch_success]
-other = "Successfully switched to API Token!"
-
-[settings_tools]
-other = "Tools"
-
-[startup_error_credentials_invalid]
-other = "Your credentials are invalid.\nPlease log in again."
-
-[startup_error_token_invalid]
-other = "Your API token is invalid or expired.\nPlease set up a new one."
-
-[sync_history_col_game]
-other = "Game"
-
-[sync_history_col_platform]
-other = "Platform"
-
-[sync_history_col_time]
-other = "Time"
-
-[sync_menu_save_mapping]
-other = "Save Mapping"
