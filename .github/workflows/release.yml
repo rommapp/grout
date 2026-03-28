@@ -249,15 +249,11 @@ jobs:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Download ARM64 build artifacts
+      - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: arm64-artifacts
-
-      - name: Download ARM32 build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: arm32-artifacts
+          pattern: arm*-artifacts
+          merge-multiple: true
 
       - name: Package universal assets
         run: task package:spruce
