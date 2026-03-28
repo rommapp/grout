@@ -90,7 +90,7 @@ jobs:
           GROUT_VERSION: ${{ needs.prepare.outputs.version }}
 
       - name: Package ARM64 platforms
-        run: task package:next package:muos package:knulli package:spruce package:rocknix package:trimui package:minui package:batocera
+        run: task package:next package:muos package:knulli package:rocknix package:trimui package:minui package:batocera
 
       - name: Create distributions
         run: |
@@ -235,9 +235,36 @@ jobs:
             dist/Grout-Allium.zip
             dist/Grout-Onion.zip
             dist/Grout-MinUI-arm32.zip
+  package-arm-universal:
+    needs: [prepare, build-arm64, build-arm32]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package universal assets
+        run: task package:spruce
+
+      - name: Create distributions
+        run: |
+          cd dist/Spruce && zip -r Grout.spruce.zip Grout && mv Grout.spruce.zip ../Grout.spruce.zip && cd ../..
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: arm-universal-artifacts
+          path: |
+            dist/Grout.spruce.zip
 
   release:
-    needs: [prepare, build-arm64, build-amd64, build-x86, build-arm32]
+    needs: [prepare, build-arm64, build-amd64, build-x86, build-arm32, package-arm-universal]
     runs-on: ubuntu-22.04
     steps:
       - name: Download all artifacts
