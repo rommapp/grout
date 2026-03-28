@@ -134,40 +134,74 @@ func ScanSaves(config *internal.Config) []LocalSave {
 				continue
 			}
 
-			saveFileCount := 0
-			for _, entry := range entries {
-				if entry.IsDir() || strings.HasPrefix(entry.Name(), ".") {
-					continue
+			if IsDirectorySavePlatform(fsSlug) {
+				// Directory-based saves (e.g., PPSSPP): each subdirectory is a save
+				for _, entry := range entries {
+					if !entry.IsDir() || strings.HasPrefix(entry.Name(), ".") {
+						continue
+					}
+
+					title, found := LookupPSPTitle(entry.Name())
+					if !found {
+						logger.Debug("No GameDB match for save directory", "dir", entry.Name(), "fsSlug", rommFSSlug)
+						continue
+					}
+
+					rom, err := cm.GetRomByNameLookup(rommFSSlug, title)
+					if err != nil {
+						logger.Debug("No cache match for directory save", "dir", entry.Name(), "title", title, "fsSlug", rommFSSlug)
+						continue
+					}
+
+					logger.Debug("Matched directory save to ROM", "dir", entry.Name(), "romID", rom.ID, "romName", rom.Name)
+
+					saves = append(saves, LocalSave{
+						RomID:           rom.ID,
+						RomName:         rom.Name,
+						FSSlug:          rommFSSlug,
+						FileName:        entry.Name() + ".zip",
+						FilePath:        filepath.Join(saveDir, entry.Name()),
+						EmulatorDir:     emuDir,
+						IsDirectorySave: true,
+					})
+				}
+			} else {
+				// File-based saves: scan for individual save files
+				saveFileCount := 0
+				for _, entry := range entries {
+					if entry.IsDir() || strings.HasPrefix(entry.Name(), ".") {
+						continue
+					}
+
+					ext := strings.ToLower(filepath.Ext(entry.Name()))
+					if !ValidSaveExtensions[ext] {
+						continue
+					}
+
+					saveFileCount++
+					nameNoExt := strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name()))
+
+					rom, err := cm.GetRomByFSLookup(rommFSSlug, nameNoExt)
+					if err != nil {
+						logger.Debug("No cache match for save file", "file", entry.Name(), "fsSlug", rommFSSlug, "nameNoExt", nameNoExt)
+						continue
+					}
+
+					logger.Debug("Matched save to ROM", "file", entry.Name(), "romID", rom.ID, "romName", rom.Name)
+
+					saves = append(saves, LocalSave{
+						RomID:       rom.ID,
+						RomName:     rom.Name,
+						FSSlug:      rommFSSlug,
+						FileName:    entry.Name(),
+						FilePath:    filepath.Join(saveDir, entry.Name()),
+						EmulatorDir: emuDir,
+					})
 				}
 
-				ext := strings.ToLower(filepath.Ext(entry.Name()))
-				if !ValidSaveExtensions[ext] {
-					continue
+				if saveFileCount > 0 {
+					logger.Debug("Scanned emulator directory", "path", saveDir, "saveFiles", saveFileCount)
 				}
-
-				saveFileCount++
-				nameNoExt := strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name()))
-
-				rom, err := cm.GetRomByFSLookup(rommFSSlug, nameNoExt)
-				if err != nil {
-					logger.Debug("No cache match for save file", "file", entry.Name(), "fsSlug", rommFSSlug, "nameNoExt", nameNoExt)
-					continue
-				}
-
-				logger.Debug("Matched save to ROM", "file", entry.Name(), "romID", rom.ID, "romName", rom.Name)
-
-				saves = append(saves, LocalSave{
-					RomID:       rom.ID,
-					RomName:     rom.Name,
-					FSSlug:      rommFSSlug,
-					FileName:    entry.Name(),
-					FilePath:    filepath.Join(saveDir, entry.Name()),
-					EmulatorDir: emuDir,
-				})
-			}
-
-			if saveFileCount > 0 {
-				logger.Debug("Scanned emulator directory", "path", saveDir, "saveFiles", saveFileCount)
 			}
 		}
 	}
@@ -494,7 +528,18 @@ func upload(client *romm.Client, deviceID string, item *SyncItem) bool {
 		Overwrite: item.ForceOverwrite || item.RemoteSave != nil,
 	}
 
-	uploadedSave, err := client.UploadSaveWithQuery(query, item.LocalSave.FilePath)
+	uploadPath := item.LocalSave.FilePath
+	if item.LocalSave.IsDirectorySave {
+		zipPath, zipErr := ZipDirectory(item.LocalSave.FilePath)
+		if zipErr != nil {
+			logger.Error("Failed to zip directory save", "path", item.LocalSave.FilePath, "error", zipErr)
+			return false
+		}
+		defer os.Remove(zipPath)
+		uploadPath = zipPath
+	}
+
+	uploadedSave, err := client.UploadSaveWithQuery(query, uploadPath)
 	if err != nil {
 		logger.Error("Failed to upload save", "romID", item.LocalSave.RomID, "romName", item.LocalSave.RomName, "error", err)
 		return false
@@ -571,19 +616,47 @@ func download(client *romm.Client, config *internal.Config, deviceID string, ite
 		return false
 	}
 
-	if err := os.MkdirAll(filepath.Dir(savePath), 0755); err != nil {
-		logger.Error("Failed to create save directory", "path", filepath.Dir(savePath), "error", err)
-		return false
-	}
+	if item.LocalSave.IsDirectorySave {
+		// Write zip to temp, then extract to the save directory
+		tmpZip, err := os.CreateTemp("", "grout-save-dl-*.zip")
+		if err != nil {
+			logger.Error("Failed to create temp file for directory save", "error", err)
+			return false
+		}
+		tmpZipPath := tmpZip.Name()
+		defer os.Remove(tmpZipPath)
 
-	if err := os.WriteFile(savePath, data, 0644); err != nil {
-		logger.Error("Failed to write save file", "path", savePath, "error", err)
-		return false
+		if _, err := tmpZip.Write(data); err != nil {
+			tmpZip.Close()
+			logger.Error("Failed to write downloaded save zip", "error", err)
+			return false
+		}
+		tmpZip.Close()
+
+		// Remove existing save directory before extracting
+		os.RemoveAll(savePath)
+
+		if err := UnzipToDirectory(tmpZipPath, filepath.Dir(savePath)); err != nil {
+			logger.Error("Failed to extract directory save", "path", savePath, "error", err)
+			return false
+		}
+	} else {
+		if err := os.MkdirAll(filepath.Dir(savePath), 0755); err != nil {
+			logger.Error("Failed to create save directory", "path", filepath.Dir(savePath), "error", err)
+			return false
+		}
+
+		if err := os.WriteFile(savePath, data, 0644); err != nil {
+			logger.Error("Failed to write save file", "path", savePath, "error", err)
+			return false
+		}
 	}
 
 	t := item.RemoteSave.UpdatedAt.Truncate(time.Second)
-	if err := os.Chtimes(savePath, t, t); err != nil {
-		logger.Warn("Failed to set save file mtime", "path", savePath, "error", err)
+	if !item.LocalSave.IsDirectorySave {
+		if err := os.Chtimes(savePath, t, t); err != nil {
+			logger.Warn("Failed to set save file mtime", "path", savePath, "error", err)
+		}
 	}
 
 	if err := client.MarkDeviceSynced(item.RemoteSave.ID, deviceID); err != nil {
