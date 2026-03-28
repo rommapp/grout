@@ -1,6 +1,6 @@
 {
   "name": "Grout",
-  "version": "v4.8.0.1-beta.5",
+  "version": "v4.7.0.0",
   "type": "TOOL",
   "description": "A RomM client for NextUI, muOS, Knulli, and Spruce v4.",
   "author": "The RomM Team",
