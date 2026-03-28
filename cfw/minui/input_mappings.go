@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
@@ -13,20 +14,44 @@ import (
 //go:embed input_mappings/*.json
 var embeddedInputMappings embed.FS
 
-// GetInputMappingBytes returns the embedded input mapping JSON for the current device.
-// Only arm32 Miyoo devices need custom keyboard mappings. All arm64 devices
-// (TrimUI, Miyoo Flip, MagicX, GKD Pixel, etc.) use standard SDL controller input.
-func GetInputMappingBytes() ([]byte, error) {
+type Device string
+
+const (
+	DeviceMiyoo    Device = "miyoo"
+	DeviceAnbernic Device = "anbernic"
+	DeviceGeneric  Device = "generic"
+)
+
+func DetectDevice() Device {
 	logger := gaba.GetLogger()
 	logger.Debug("Detecting MinUI device type", "arch", runtime.GOARCH)
 
-	if runtime.GOARCH != "arm" {
-		// arm64 devices use standard SDL controller input
-		return nil, nil
+	if runtime.GOARCH == "arm" {
+		return DeviceMiyoo
 	}
 
-	// arm32 = Miyoo Mini / Mini Plus / A30 — needs custom keyboard mapping
-	filename := "input_mappings/miyoo.json"
+	// Anbernic devices use the Allwinner H616 SoC
+	compatible, err := os.ReadFile("/sys/firmware/devicetree/base/compatible")
+	if err == nil && strings.Contains(string(compatible), "allwinner,h616") {
+		return DeviceAnbernic
+	}
+
+	// TrimUI (a133p), Miyoo Flip, and others use standard SDL controller input
+	return DeviceGeneric
+}
+
+func GetInputMappingBytes() ([]byte, error) {
+	device := DetectDevice()
+
+	var filename string
+	switch device {
+	case DeviceMiyoo:
+		filename = "input_mappings/miyoo.json"
+	case DeviceAnbernic:
+		filename = "input_mappings/anbernic.json"
+	default:
+		return nil, nil
+	}
 
 	overridePath := filepath.Join("overrides", "cfw", "minui", filename)
 	data, err := os.ReadFile(overridePath)
