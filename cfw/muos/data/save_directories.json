@@ -96,7 +96,7 @@
   ],
   "famicom": [
     "file/FCEUmm",
-    "file/BNES",
+    "file/bnes",
     "file/Mesen",
     "file/Nestopia",
     "file/QuickNES"
@@ -225,7 +225,7 @@
   ],
   "nes": [
     "file/FCEUmm",
-    "file/BNES",
+    "file/bnes",
     "file/Mesen",
     "file/Nestopia",
     "file/QuickNES"
@@ -311,6 +311,7 @@
     "file/bsnes",
     "file/bsnes2014",
     "file/bsnes-mercury",
+    "file/bSNES",
     "file/ChimeraSNES",
     "file/Mesen-S",
     "file/Snes9x 2002",
@@ -338,7 +339,8 @@
     "file/Supafaust",
     "file/bsnes",
     "file/bsnes2014",
-    "file/bsnes-mercury",
+    "file/bsnes-mercury",    
+    "file/bSNES",
     "file/ChimeraSNES",
     "file/Mesen-S",
     "file/Snes9x 2002",
