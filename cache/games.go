@@ -129,7 +129,7 @@ func anySliceToStrings(items []any) []string {
 func resolveLookupID(tx *sql.Tx, lookupTable, value string, idCache map[string]int64) (int64, error) {
 	// Create a unique key for the map (e.g., "genres:Action")
 	cacheKey := lookupTable + ":" + value
-	
+
 	// If we already looked this up recently, return it instantly!
 	if id, ok := idCache[cacheKey]; ok {
 		return id, nil
@@ -141,12 +141,12 @@ func resolveLookupID(tx *sql.Tx, lookupTable, value string, idCache map[string]i
 	}
 	var id int64
 	err = tx.QueryRow("SELECT id FROM "+lookupTable+" WHERE name = ?", value).Scan(&id)
-	
+
 	// Save it to the map so we never query the DB for this exact string again
 	if err == nil {
 		idCache[cacheKey] = id
 	}
-	
+
 	return id, err
 }
 

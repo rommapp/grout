@@ -126,8 +126,7 @@ type RomFile struct {
 type GetRomsQuery struct {
 	Offset              int    `qs:"offset,omitempty"`
 	Limit               int    `qs:"limit,omitempty"`
-	PlatformID   		int    `qs:"platform_id,omitempty"`  // Keep for backwards compatibility
-	PlatformIDs  		[]int  `qs:"platform_ids,omitempty"` // Add this for newer RomM versions
+	PlatformIDs         []int  `qs:"platform_ids,omitempty"`
 	CollectionID        int    `qs:"collection_id,omitempty"`
 	SmartCollectionID   int    `qs:"smart_collection_id,omitempty"`
 	VirtualCollectionID string `qs:"virtual_collection_id,omitempty"`
@@ -140,7 +139,7 @@ type GetRomsQuery struct {
 }
 
 func (q GetRomsQuery) Valid() bool {
-	return q.Limit > 0 || q.PlatformID > 0 || q.CollectionID > 0 || q.SmartCollectionID > 0 || q.VirtualCollectionID != "" || q.Search != "" || q.OrderBy != "" || q.OrderDir != ""
+	return q.Limit > 0 || len(q.PlatformIDs) > 0 || q.CollectionID > 0 || q.SmartCollectionID > 0 || q.VirtualCollectionID != "" || q.Search != "" || q.OrderBy != "" || q.OrderDir != ""
 }
 
 type GetRomByHashQuery struct {

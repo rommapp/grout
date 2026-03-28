@@ -145,8 +145,8 @@ func (cm *Manager) enableBulkLoadMode() {
 	pragmas := []string{
 		"PRAGMA synchronous = OFF",
 		"PRAGMA journal_mode = OFF",
-		"PRAGMA cache_size = -4000",    // -4000 means exactly 4MB of RAM!
-		"PRAGMA temp_store = DEFAULT",  // Use the SD card for temp tables, not RAM!
+		"PRAGMA cache_size = -4000",   // -4000 means exactly 4MB of RAM!
+		"PRAGMA temp_store = DEFAULT", // Use the SD card for temp tables, not RAM!
 		"PRAGMA locking_mode = EXCLUSIVE",
 	}
 	for _, p := range pragmas {
@@ -431,13 +431,14 @@ func (cm *Manager) SyncPlatformGames(platforms []romm.Platform) (int, error) {
 	totalGames := 0
 
 	for _, platform := range platforms {
-		if err := cm.fetchPlatformGames(platform, nil); err != nil {
+		count, err := cm.fetchPlatformGames(platform, nil)
+		if err != nil {
 			logger.Error("Failed to sync platform games", "platform", platform.Name, "error", err)
 			cm.RecordPlatformSyncFailure(platform.ID)
 			continue
 		}
-		cm.RecordPlatformSyncSuccess(platform.ID, platform.ROMCount)
-		totalGames += platform.ROMCount
+		cm.RecordPlatformSyncSuccess(platform.ID, count)
+		totalGames += count
 		logger.Debug("Synced platform games", "platform", platform.Name)
 	}
 
