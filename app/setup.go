@@ -5,6 +5,7 @@ import (
 	"grout/cache"
 	"grout/cfw"
 	"grout/cfw/allium"
+	"grout/cfw/minui"
 	"grout/cfw/muos"
 	"grout/cfw/onion"
 	"grout/internal"
@@ -49,6 +50,10 @@ func setup() SetupResult {
 					mappingBytes, mappingErr = allium.GetInputMappingBytes()
 				case cfw.Onion:
 					mappingBytes, mappingErr = onion.GetInputMappingBytes()
+				case cfw.MinUI:
+					if environment.IsMiyoo() {
+						mappingBytes, mappingErr = minui.GetInputMappingBytes()
+					}
 				}
 				if mappingBytes != nil && mappingErr == nil {
 					gaba.SetInputMappingBytes(mappingBytes)
