@@ -95,14 +95,14 @@ tasks:
   minui:
     cmds:
       - rm -rf dist/MinUI
-      - mkdir -p dist/MinUI/Grout/lib64
-      - mkdir -p dist/MinUI/Grout/lib32
-      - cp build64/grout dist/MinUI/Grout/grout64
-      - cp build32/grout dist/MinUI/Grout/grout32
-      - cp scripts/MinUI/launch.sh README.md LICENSE dist/MinUI/Grout
-      - cp -R build64/lib/* dist/MinUI/Grout/lib64/
-      - cp -R vendored/miyoo/* dist/MinUI/Grout/lib32/
-      - chmod a+x dist/MinUI/Grout/grout64 dist/MinUI/Grout/grout32 dist/MinUI/Grout/launch.sh
+      - mkdir -p dist/MinUI/Grout.pak/lib64
+      - mkdir -p dist/MinUI/Grout.pak/lib32
+      - cp build64/grout dist/MinUI/Grout.pak/grout64
+      - cp build32/grout dist/MinUI/Grout.pak/grout32
+      - cp scripts/MinUI/launch.sh README.md LICENSE dist/MinUI/Grout.pak
+      - cp -R build64/lib/* dist/MinUI/Grout.pak/lib64/
+      - cp -R vendored/miyoo/* dist/MinUI/Grout.pak/lib32/
+      - chmod a+x dist/MinUI/Grout.pak/grout64 dist/MinUI/Grout.pak/grout32 dist/MinUI/Grout.pak/launch.sh
     silent: true
 
   batocera:

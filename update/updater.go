@@ -251,7 +251,7 @@ func getLaunchScriptPath(c cfw.CFW) string {
 	case cfw.Onion:
 		return "Grout/launch.sh"
 	case cfw.MinUI:
-		return "Grout/launch.sh"
+		return "Grout.pak/launch.sh"
 	case cfw.Batocera:
 		return "Grout.sh"
 	default:
