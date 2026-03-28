@@ -1,0 +1,35 @@
+version: '3'
+
+tasks:
+
+  next:
+    desc: Deploy to NextUI device via ADB
+    cmds:
+      - adb shell rm -rf /mnt/SDCARD/Tools/tg5040/Grout.pak
+      - adb push dist/Grout.pak /mnt/SDCARD/Tools/tg5040
+      - adb push config-platformless.json /mnt/SDCARD/Tools/tg5040/Grout.pak/config.json
+    silent: true
+
+  muos-sd1:
+    desc: Deploy to muOS device via ADB (SD1)
+    cmds:
+      - adb shell rm -rf /mnt/mmc/MUOS/application/Grout
+      - adb push dist/muOS/Grout /mnt/mmc/MUOS/application
+      - adb push config-platformless.json /mnt/mmc/MUOS/application/Grout/config.json
+    silent: true
+
+  muos-sd2:
+    desc: Deploy to muOS device via ADB (SD2)
+    cmds:
+      - adb shell rm -rf /mnt/sdcard/MUOS/application/Grout
+      - adb push dist/muOS/Grout /mnt/sdcard/MUOS/application
+      - adb push config-platformless.json /mnt/sdcard/MUOS/application/Grout/config.json
+    silent: true
+
+  knulli:
+    desc: Deploy to Knulli device via ADB
+    cmds:
+      - adb shell rm -rf /userdata/roms/ports/Grout
+      - adb push dist/Knulli/Grout /userdata/roms/ports
+      - adb push config-platformless.json /userdata/roms/ports/Grout/config.json
+    silent: true

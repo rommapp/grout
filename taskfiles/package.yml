@@ -1,0 +1,135 @@
+version: '3'
+
+tasks:
+
+  all:
+    desc: Package for all platforms
+    deps: [ next, muos, knulli, spruce, rocknix, trimui, allium, onion, minui, minui-arm32, batocera, batocera-x86, batocera-amd64 ]
+    cmds:
+      - echo "Packaging complete (13 platforms)"
+    silent: true
+
+  next:
+    cmds:
+      - rm -rf dist/Grout.pak
+      - mkdir -p dist/Grout.pak/lib
+      - cp build64/grout scripts/NextUI/launch.sh README.md LICENSE pak.json dist/Grout.pak
+      - cp -R build64/lib/* dist/Grout.pak/lib/
+      - chmod a+x dist/Grout.pak/grout dist/Grout.pak/launch.sh
+    silent: true
+
+  muos:
+    cmds:
+      - rm -rf dist/muOS dist/Grout.muxapp
+      - mkdir -p dist/muOS/Grout/lib
+      - cp build64/grout scripts/muOS/mux_launch.sh README.md LICENSE dist/muOS/Grout
+      - cp -R build64/lib/* dist/muOS/Grout/lib/
+      - cp -R scripts/muOS/resources dist/muOS/Grout/
+      - chmod a+x dist/muOS/Grout/grout dist/muOS/Grout/mux_launch.sh
+      - cd dist/muOS && zip -qr ../Grout.muxapp Grout
+    silent: true
+
+  knulli:
+    cmds:
+      - rm -rf dist/Knulli
+      - mkdir -p dist/Knulli/Grout/lib
+      - cp build64/grout scripts/Knulli/Grout.sh scripts/Knulli/logo.png README.md LICENSE dist/Knulli/Grout
+      - cp -R build64/lib/* dist/Knulli/Grout/lib/
+      - chmod a+x dist/Knulli/Grout/grout dist/Knulli/Grout/Grout.sh
+    silent: true
+
+  spruce:
+    cmds:
+      - rm -rf dist/Spruce
+      - mkdir -p dist/Spruce/Grout/grout/lib
+      - cp scripts/Spruce/* README.md LICENSE dist/Spruce/Grout
+      - cp build64/grout dist/Spruce/Grout/grout
+      - cp -R build64/lib/* dist/Spruce/Grout/grout/lib/
+      - chmod a+x dist/Spruce/Grout/grout/grout dist/Spruce/Grout/launch.sh dist/Spruce/Grout/launch-universal.sh
+    silent: true
+
+  allium:
+    cmds:
+      - rm -rf dist/Allium
+      - mkdir -p dist/Allium/Grout.pak/grout/lib
+      - cp -R scripts/Allium/* dist/Allium/Grout.pak
+      - cp build32/grout README.md LICENSE dist/Allium/Grout.pak/grout
+      - cp -R vendored/miyoo/* dist/Allium/Grout.pak/grout/lib/
+    silent: true
+
+  onion:
+    cmds:
+      - rm -rf dist/Onion
+      - mkdir -p dist/Onion/Grout/grout/lib
+      - cp -R scripts/Onion/* dist/Onion/Grout
+      - cp build32/grout README.md LICENSE dist/Onion/Grout/grout
+      - cp -R vendored/miyoo/* dist/Onion/Grout/grout/lib/
+    silent: true
+
+  rocknix:
+    cmds:
+      - rm -rf dist/ROCKNIX
+      - mkdir -p dist/ROCKNIX/Grout/lib
+      - cp scripts/ROCKNIX/Grout.sh dist/ROCKNIX/
+      - cp build64/grout scripts/ROCKNIX/logo.png README.md LICENSE dist/ROCKNIX/Grout/
+      - cp -R build64/lib/* dist/ROCKNIX/Grout/lib/
+      - chmod a+x dist/ROCKNIX/Grout/grout dist/ROCKNIX/Grout.sh
+    silent: true
+
+  trimui:
+    cmds:
+      - rm -rf dist/Trimui
+      - mkdir -p dist/Trimui/Grout/grout/lib
+      - cp scripts/Trimui/* README.md LICENSE dist/Trimui/Grout
+      - cp build64/grout dist/Trimui/Grout/grout
+      - cp -R build64/lib/* dist/Trimui/Grout/grout/lib/
+      - chmod a+x dist/Trimui/Grout/grout/grout dist/Trimui/Grout/launch.sh
+    silent: true
+
+  minui:
+    cmds:
+      - rm -rf dist/MinUI-arm64
+      - mkdir -p dist/MinUI-arm64/Grout/lib
+      - cp build64/grout scripts/MinUI/launch.sh README.md LICENSE dist/MinUI-arm64/Grout
+      - cp -R build64/lib/* dist/MinUI-arm64/Grout/lib/
+      - chmod a+x dist/MinUI-arm64/Grout/grout dist/MinUI-arm64/Grout/launch.sh
+    silent: true
+
+  minui-arm32:
+    cmds:
+      - rm -rf dist/MinUI-arm32
+      - mkdir -p dist/MinUI-arm32/Grout/lib
+      - cp build32/grout scripts/MinUI/launch.sh README.md LICENSE dist/MinUI-arm32/Grout
+      - cp -R vendored/miyoo/* dist/MinUI-arm32/Grout/lib/
+      - chmod a+x dist/MinUI-arm32/Grout/grout dist/MinUI-arm32/Grout/launch.sh
+    silent: true
+
+  batocera:
+    cmds:
+      - rm -rf dist/Batocera-arm64
+      - mkdir -p dist/Batocera-arm64/Grout/lib
+      - cp scripts/Batocera/Grout.sh dist/Batocera-arm64/
+      - cp build64/grout README.md LICENSE dist/Batocera-arm64/Grout/
+      - cp -R build64/lib/* dist/Batocera-arm64/Grout/lib/
+      - chmod a+x dist/Batocera-arm64/Grout/grout dist/Batocera-arm64/Grout.sh
+    silent: true
+
+  batocera-x86:
+    cmds:
+      - rm -rf dist/Batocera-x86
+      - mkdir -p dist/Batocera-x86/Grout/lib
+      - cp scripts/Batocera/Grout.sh dist/Batocera-x86/
+      - cp buildx86/grout README.md LICENSE dist/Batocera-x86/Grout/
+      - cp -R buildx86/lib/* dist/Batocera-x86/Grout/lib/
+      - chmod a+x dist/Batocera-x86/Grout/grout dist/Batocera-x86/Grout.sh
+    silent: true
+
+  batocera-amd64:
+    cmds:
+      - rm -rf dist/Batocera-amd64
+      - mkdir -p dist/Batocera-amd64/Grout/lib
+      - cp scripts/Batocera/Grout.sh dist/Batocera-amd64/
+      - cp build/grout README.md LICENSE dist/Batocera-amd64/Grout/
+      - cp -R build/lib/* dist/Batocera-amd64/Grout/lib/
+      - chmod a+x dist/Batocera-amd64/Grout/grout dist/Batocera-amd64/Grout.sh
+    silent: true

@@ -1,5 +1,15 @@
 version: '3'
 
+output: prefixed
+
+includes:
+  build: ./taskfiles/build.yml
+  code: ./taskfiles/code.yml
+  deploy: ./taskfiles/deploy.yml
+  i18n: ./taskfiles/i18n.yml
+  media: ./taskfiles/media.yml
+  package: ./taskfiles/package.yml
+
 vars:
   IMAGE_NAME: grout-build
   CONTAINER_NAME: grout-extract
@@ -9,396 +19,50 @@ vars:
 
 tasks:
 
-  build-arm64:
-    desc: Build for ARM64
+  default:
+    desc: List available tasks
     cmds:
-      - rm -rf build64
-      - docker buildx build {{.NO_CACHE}} --platform=linux/arm64 --build-arg GITHUB_ACTIONS=false {{.VERSION_ARG}} --label {{.LABEL}} --load -t {{.IMAGE_NAME}} -f docker/Dockerfile .
+      - task --list
     silent: true
 
-  build-amd64:
-    desc: Build for AMD64 (x86_64)
+  clean:
+    desc: Remove build artifacts and dangling Docker images
     cmds:
-      - rm -rf build64
-      - docker buildx build {{.NO_CACHE}} --load --platform=linux/amd64 --build-arg GITHUB_ACTIONS=false {{.VERSION_ARG}} --label {{.LABEL}} -t {{.IMAGE_NAME}}-amd64 -f docker/Dockerfile .
-    silent: true
-
-  build-x86:
-    desc: Build for x86 (32-bit)
-    cmds:
-      - rm -rf buildx86
-      - docker buildx build {{.NO_CACHE}} --load --platform=linux/386 --build-arg GITHUB_ACTIONS=false {{.VERSION_ARG}} --label {{.LABEL}} -t {{.IMAGE_NAME}}-x86 -f docker/Dockerfile .
-    silent: true
-
-  build-arm32:
-    desc: Build for ARM32
-    cmds:
-      - rm -rf build32
-      - docker buildx build {{.NO_CACHE}} --platform=linux/arm/v7 --build-arg GITHUB_ACTIONS=false {{.VERSION_ARG}} --label {{.LABEL}} --load -t {{.IMAGE_NAME}} -f docker/32.Dockerfile .
-    silent: true
-
-  build-arm64-local:
-    desc: Build for ARM64 using local gabagool workspace
-    cmds:
-      - rm -rf build64
-      - cd .. && docker buildx build {{.NO_CACHE}} --platform=linux/arm64 --build-arg USE_LOCAL_GABAGOOL=true --build-arg GITHUB_ACTIONS=false {{.VERSION_ARG}} --label {{.LABEL}} --load -f grout/docker/Dockerfile -t {{.IMAGE_NAME}} .
-    silent: true
-
-  build-arm32-local:
-    desc: Build for ARM32 using local gabagool workspace
-    cmds:
-      - rm -rf build32
-      - cd .. && docker buildx build {{.NO_CACHE}} --platform=linux/arm/v7 --build-arg USE_LOCAL_GABAGOOL=true --build-arg GITHUB_ACTIONS=false {{.VERSION_ARG}} --label {{.LABEL}} --load -f grout/docker/32.Dockerfile -t {{.IMAGE_NAME}} .
-    silent: true
-
-  extract-arm64:
-    desc: Extract binary and libraries from ARM64 Docker image
-    cmds:
-      - mkdir -p build64/lib
-      - docker rm {{.CONTAINER_NAME}} 2>/dev/null || true
-      - docker create --name {{.CONTAINER_NAME}} --label {{.LABEL}} {{.IMAGE_NAME}}
-      - docker cp {{.CONTAINER_NAME}}:/build/grout build64/grout
-      - docker cp {{.CONTAINER_NAME}}:/usr/lib/aarch64-linux-gnu/libSDL2_gfx-1.0.so.0.0.2 build64/lib/libSDL2_gfx-1.0.so.0
-      - docker rm {{.CONTAINER_NAME}}
-    silent: true
-
-  extract-amd64:
-    desc: Extract binary and libraries from AMD64 Docker image
-    cmds:
-      - mkdir -p build/lib
-      - docker rm {{.CONTAINER_NAME}} 2>/dev/null || true
-      - docker create --name {{.CONTAINER_NAME}} --label {{.LABEL}} {{.IMAGE_NAME}}-amd64
-      - docker cp {{.CONTAINER_NAME}}:/build/grout build/grout
-      - docker cp {{.CONTAINER_NAME}}:/usr/lib/x86_64-linux-gnu/libSDL2_gfx-1.0.so.0.0.2 build/lib/libSDL2_gfx-1.0.so.0
-      - docker rm {{.CONTAINER_NAME}}
-    silent: true
-
-  extract-x86:
-    desc: Extract binary and libraries from x86 Docker image
-    cmds:
-      - mkdir -p buildx86/lib
-      - docker rm {{.CONTAINER_NAME}} 2>/dev/null || true
-      - docker create --name {{.CONTAINER_NAME}} --label {{.LABEL}} {{.IMAGE_NAME}}-x86
-      - docker cp {{.CONTAINER_NAME}}:/build/grout buildx86/grout
-      - docker cp {{.CONTAINER_NAME}}:/usr/lib/i386-linux-gnu/libSDL2_gfx-1.0.so.0.0.2 buildx86/lib/libSDL2_gfx-1.0.so.0
-      - docker rm {{.CONTAINER_NAME}}
-    silent: true
-
-  extract-arm32:
-    desc: Extract binary and libraries from ARM32 Docker image
-    cmds:
-      - mkdir -p build32/lib
-      - docker rm {{.CONTAINER_NAME}} 2>/dev/null || true
-      - docker create --name {{.CONTAINER_NAME}} --label {{.LABEL}} {{.IMAGE_NAME}}
-      - docker cp {{.CONTAINER_NAME}}:/build/grout build32/grout
-#      - docker cp {{.CONTAINER_NAME}}:/usr/lib/arm-linux-gnueabihf/libSDL2_gfx-1.0.so.0.0.2 build32/lib/libSDL2_gfx-1.0.so.0 # TODO replace with custom SDL build for Miyoo
-      - docker rm {{.CONTAINER_NAME}}
-    silent: true
-
-  package:
-    desc: Package for all platforms
-    deps: [ package-next, package-muos, package-knulli, package-spruce, package-rocknix, package-trimui, package-allium, package-onion, package-minui, package-minui-arm32, package-batocera, package-batocera-x86, package-batocera-amd64 ]
-    silent: true
-
-  package-next:
-    desc: Package for NextUI
-    cmds:
-      - rm -rf dist/Grout.pak
-      - mkdir -p dist/Grout.pak/lib
-      - cp build64/grout scripts/NextUI/launch.sh README.md LICENSE pak.json dist/Grout.pak
-      - cp -R build64/lib/* dist/Grout.pak/lib/
-      - chmod a+x dist/Grout.pak/grout dist/Grout.pak/launch.sh
-    silent: true
-
-  package-muos:
-    desc: Package for muOS
-    cmds:
-      - rm -rf dist/muOS dist/Grout.muxapp
-      - mkdir -p dist/muOS/Grout/lib
-      - cp build64/grout scripts/muOS/mux_launch.sh README.md LICENSE dist/muOS/Grout
-      - cp -R build64/lib/* dist/muOS/Grout/lib/
-      - cp -R scripts/muOS/resources dist/muOS/Grout/
-      - chmod a+x dist/muOS/Grout/grout dist/muOS/Grout/mux_launch.sh
-      - cd dist/muOS && zip -r ../Grout.muxapp Grout
-    silent: true
-
-  package-knulli:
-    desc: Package for Knulli
-    cmds:
-      - rm -rf dist/Knulli
-      - mkdir -p dist/Knulli/Grout/lib
-      - cp build64/grout scripts/Knulli/Grout.sh scripts/Knulli/logo.png README.md LICENSE dist/Knulli/Grout
-      - cp -R build64/lib/* dist/Knulli/Grout/lib/
-      - chmod a+x dist/Knulli/Grout/grout dist/Knulli/Grout/Grout.sh
-    silent: true
-
-  package-spruce:
-    desc: Package for Spruce
-    cmds:
-      - rm -rf dist/Spruce
-      - mkdir -p dist/Spruce/Grout/grout/lib
-      - cp scripts/Spruce/* README.md LICENSE dist/Spruce/Grout
-      - cp build64/grout dist/Spruce/Grout/grout
-      - cp -R build64/lib/* dist/Spruce/Grout/grout/lib/
-      - chmod a+x dist/Spruce/Grout/grout/grout dist/Spruce/Grout/launch.sh dist/Spruce/Grout/launch-universal.sh
-    silent: true
-
-  package-allium:
-    desc: Package for Allium
-    cmds:
-      - rm -rf dist/Allium
-      - mkdir -p dist/Allium/Grout.pak/grout/lib
-      - cp -R scripts/Allium/* dist/Allium/Grout.pak
-      - cp build32/grout README.md LICENSE dist/Allium/Grout.pak/grout
-      - cp -R vendored/miyoo/* dist/Allium/Grout.pak/grout/lib/
-    silent: true
-
-  package-onion:
-    desc: Package for Onion
-    cmds:
-      - rm -rf dist/Onion
-      - mkdir -p dist/Onion/Grout/grout/lib
-      - cp -R scripts/Onion/* dist/Onion/Grout
-      - cp build32/grout README.md LICENSE dist/Onion/Grout/grout
-      - cp -R vendored/miyoo/* dist/Onion/Grout/grout/lib/
-    silent: true
-
-  package-rocknix:
-    desc: Package for ROCKNIX
-    cmds:
-      - rm -rf dist/ROCKNIX
-      - mkdir -p dist/ROCKNIX/Grout/lib
-      - cp scripts/ROCKNIX/Grout.sh dist/ROCKNIX/
-      - cp build64/grout scripts/ROCKNIX/logo.png README.md LICENSE dist/ROCKNIX/Grout/
-      - cp -R build64/lib/* dist/ROCKNIX/Grout/lib/
-      - chmod a+x dist/ROCKNIX/Grout/grout dist/ROCKNIX/Grout.sh
-    silent: true
-
-  package-trimui:
-    desc: Package for Trimui
-    cmds:
-      - rm -rf dist/Trimui
-      - mkdir -p dist/Trimui/Grout/grout/lib
-      - cp scripts/Trimui/* README.md LICENSE dist/Trimui/Grout
-      - cp build64/grout dist/Trimui/Grout/grout
-      - cp -R build64/lib/* dist/Trimui/Grout/grout/lib/
-      - chmod a+x dist/Trimui/Grout/grout/grout dist/Trimui/Grout/launch.sh
-    silent: true
-
-  package-minui:
-    desc: Package MinUI for ARM64
-    cmds:
-      - rm -rf dist/MinUI-arm64
-      - mkdir -p dist/MinUI-arm64/Grout/lib
-      - cp build64/grout scripts/MinUI/launch.sh README.md LICENSE dist/MinUI-arm64/Grout
-      - cp -R build64/lib/* dist/MinUI-arm64/Grout/lib/
-      - chmod a+x dist/MinUI-arm64/Grout/grout dist/MinUI-arm64/Grout/launch.sh
-    silent: true
-
-  package-minui-arm32:
-    desc: Package MinUI for ARM32
-    cmds:
-      - rm -rf dist/MinUI-arm32
-      - mkdir -p dist/MinUI-arm32/Grout/lib
-      - cp build32/grout scripts/MinUI/launch.sh README.md LICENSE dist/MinUI-arm32/Grout
-      - cp -R vendored/miyoo/* dist/MinUI-arm32/Grout/lib/
-      - chmod a+x dist/MinUI-arm32/Grout/grout dist/MinUI-arm32/Grout/launch.sh
-    silent: true
-
-  package-batocera:
-    desc: Package for Batocera (ARM64)
-    cmds:
-      - rm -rf dist/Batocera-arm64
-      - mkdir -p dist/Batocera-arm64/Grout/lib
-      - cp scripts/Batocera/Grout.sh dist/Batocera-arm64/
-      - cp build64/grout README.md LICENSE dist/Batocera-arm64/Grout/
-      - cp -R build64/lib/* dist/Batocera-arm64/Grout/lib/
-      - chmod a+x dist/Batocera-arm64/Grout/grout dist/Batocera-arm64/Grout.sh
-    silent: true
-
-  package-batocera-x86:
-    desc: Package for Batocera (x86 32-bit)
-    cmds:
-      - rm -rf dist/Batocera-x86
-      - mkdir -p dist/Batocera-x86/Grout/lib
-      - cp scripts/Batocera/Grout.sh dist/Batocera-x86/
-      - cp buildx86/grout README.md LICENSE dist/Batocera-x86/Grout/
-      - cp -R buildx86/lib/* dist/Batocera-x86/Grout/lib/
-      - chmod a+x dist/Batocera-x86/Grout/grout dist/Batocera-x86/Grout.sh
-    silent: true
-
-  package-batocera-amd64:
-    desc: Package for Batocera (AMD64/x86_64)
-    cmds:
-      - rm -rf dist/Batocera-amd64
-      - mkdir -p dist/Batocera-amd64/Grout/lib
-      - cp scripts/Batocera/Grout.sh dist/Batocera-amd64/
-      - cp build/grout README.md LICENSE dist/Batocera-amd64/Grout/
-      - cp -R build/lib/* dist/Batocera-amd64/Grout/lib/
-      - chmod a+x dist/Batocera-amd64/Grout/grout dist/Batocera-amd64/Grout.sh
-    silent: true
-
-  batocera-amd64:
-    desc: Build and package Batocera for AMD64 (x86_64 PC)
-    cmds:
-      - task: build-amd64
-      - task: extract-amd64
-      - task: package-batocera-amd64
+      - rm -rf build64 build buildx86 build32 dist *.log
+      - docker image prune --filter "label={{.LABEL}}" -f >/dev/null 2>&1 || true
     silent: true
 
   all:
     desc: Build and package for all platforms
+    vars:
+      LOCAL: "false"
+    deps:
+      - task: build:arm64
+        vars: { LOCAL: "{{.LOCAL}}" }
+      - task: build:arm32
+        vars: { LOCAL: "{{.LOCAL}}" }
+      - task: build:x86
+      - task: build:amd64
     cmds:
-      - task: build-arm64
-      - task: extract-arm64
-      - task: build-arm32
-      - task: extract-arm32
-      - task: package
+      - task: package:all
     silent: true
 
   all-arm64:
     desc: Build and package for all ARM64 platforms
     cmds:
-      - task: build-arm64
-      - task: extract-arm64
-      - task: package-next
-      - task: package-muos
-      - task: package-knulli
-      - task: package-spruce
-      - task: package-rocknix
-      - task: package-trimui
+      - task: build:arm64
+      - task: package:next
+      - task: package:muos
+      - task: package:knulli
+      - task: package:spruce
+      - task: package:rocknix
+      - task: package:trimui
     silent: true
 
   all-arm32:
     desc: Build and package for all ARM32 platforms
     cmds:
-      - task: build-arm32
-      - task: extract-arm32
-      - task: package-allium
-      - task: package-onion
-    silent: true
-
-  all-local:
-    desc: Build (with local gabagool) and package for all platforms
-    cmds:
-      - task: build-arm64-local
-      - task: extract-arm64
-      - task: build-arm32-local
-      - task: extract-arm32
-      - task: package
-    silent: true
-
-  adb-next:
-    desc: Deploy to NextUI device via ADB
-    cmds:
-      - adb shell rm -rf /mnt/SDCARD/Tools/tg5040/Grout.pak
-      - adb push dist/Grout.pak /mnt/SDCARD/Tools/tg5040
-      - adb push config-platformless.json /mnt/SDCARD/Tools/tg5040/Grout.pak/config.json
-    silent: true
-
-  adb-muos-sd1:
-    desc: Deploy to muOS device via ADB (SD1)
-    cmds:
-      - adb shell rm -rf /mnt/mmc/MUOS/application/Grout
-      - adb push dist/muOS/Grout /mnt/mmc/MUOS/application
-      - adb push config-platformless.json /mnt/mmc/MUOS/application/Grout/config.json
-    silent: true
-
-  adb-muos-sd2:
-    desc: Deploy to muOS device via ADB (SD2)
-    cmds:
-      - adb shell rm -rf /mnt/sdcard/MUOS/application/Grout
-      - adb push dist/muOS/Grout /mnt/sdcard/MUOS/application
-      - adb push config-platformless.json /mnt/sdcard/MUOS/application/Grout/config.json
-    silent: true
-
-  adb-knulli:
-    desc: Deploy to Knulli device via ADB
-    cmds:
-      - adb shell rm -rf /userdata/roms/ports/Grout
-      - adb push dist/Knulli/Grout /userdata/roms/ports
-      - adb push config-platformless.json /userdata/roms/ports/Grout/config.json
-    silent: true
-
-  i18n:
-    desc: Extract messages and find missing translations
-    cmds:
-      - task: i18n:extract
-      - task: i18n:merge
-    silent: true
-
-  i18n:extract:
-    desc: Extract i18n messages from source code
-    cmds:
-      - goi18n extract -format=toml -outdir=resources/locales .
-    silent: true
-
-  i18n:merge:
-    desc: Find missing translations for all locales
-    vars:
-      LANGS: es fr de it pt ja ru
-    cmds:
-      - mkdir -p translations_todo
-      - |
-        for lang in {{.LANGS}}; do
-          goi18n merge -sourceLanguage en -outdir resources/locales -format toml \
-            resources/locales/active.en.toml resources/locales/active.${lang}.toml
-          if [ -f resources/locales/translate.${lang}.toml ]; then
-            mv resources/locales/translate.${lang}.toml translations_todo/${lang}.toml
-            echo "Created translations_todo/${lang}.toml"
-          else
-            echo "No missing translations for ${lang}"
-          fi
-        done
-      - |
-        if [ -z "$(ls -A translations_todo 2>/dev/null)" ]; then
-          echo "All translations are complete!"
-          rmdir translations_todo 2>/dev/null || true
-        else
-          echo "Translation files needing work are in translations_todo/"
-        fi
-    silent: true
-
-  lint:
-    desc: Run Go code style checks (fmt, vet, staticcheck)
-    cmds:
-      - go fmt ./...
-      - go vet ./...
-      - staticcheck ./...
-    silent: true
-
-  mp4-to-webp:
-    desc: Convert MP4 to WebP (interactive)
-    interactive: true
-    cmds:
-      - |
-        read -p "Enter MP4 input path: " INPUT_PATH
-        read -p "Enter WEBP output path: " OUTPUT_PATH
-        [[ ! "$OUTPUT_PATH" =~ \.webp$ ]] && OUTPUT_PATH="${OUTPUT_PATH}.webp"
-        ffmpeg -i "$INPUT_PATH" -vcodec libwebp -filter:v fps=fps=20 -lossless 0 -compression_level 3 -q:v 70 -loop 0 -preset picture -an -vsync 0 -s 1024:768 "$OUTPUT_PATH"
-
-  resize-user-guide-images:
-    desc: Resize user guide images to 1024px width
-    dir: .github/resources/user_guide
-    cmds:
-      - for img in *.png; do sips -Z 1024 "$img" --out "$img"; done
-    silent: true
-
-  gen-platforms:
-    desc: Generate platforms.json from markdown docs
-    cmds:
-      - go run tools/gen-platforms/main.go
-    silent: true
-
-  clean:
-    desc: Remove build artifacts
-    cmds:
-      - rm -rf build64 build buildx86 build32 dist
-    silent: true
-
-  hooks-setup:
-    desc: Install git hooks for development
-    cmds:
-      - git config core.hooksPath .githooks
-      - echo "Git hooks installed from .githooks/"
+      - task: build:arm32
+      - task: package:allium
+      - task: package:onion
     silent: true

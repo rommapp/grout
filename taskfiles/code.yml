@@ -1,0 +1,24 @@
+version: '3'
+
+tasks:
+
+  lint:
+    desc: Run Go code style checks (fmt, vet, staticcheck)
+    cmds:
+      - go fmt ./...
+      - go vet ./...
+      - staticcheck ./...
+    silent: true
+
+  gen-platforms:
+    desc: Generate platforms.json from markdown docs
+    cmds:
+      - go run tools/gen-platforms/main.go
+    silent: true
+
+  hooks-setup:
+    desc: Install git hooks for development
+    cmds:
+      - git config core.hooksPath .githooks
+      - echo "Git hooks installed from .githooks/"
+    silent: true

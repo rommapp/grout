@@ -1,0 +1,42 @@
+version: '3'
+
+tasks:
+
+  default:
+    desc: Extract messages and find missing translations
+    cmds:
+      - task: extract
+      - task: merge
+    silent: true
+
+  extract:
+    desc: Extract i18n messages from source code
+    cmds:
+      - goi18n extract -format=toml -outdir=resources/locales .
+    silent: true
+
+  merge:
+    desc: Find missing translations for all locales
+    vars:
+      LANGS: es fr de it pt ja ru
+    cmds:
+      - mkdir -p translations_todo
+      - |
+        for lang in {{.LANGS}}; do
+          goi18n merge -sourceLanguage en -outdir resources/locales -format toml \
+            resources/locales/active.en.toml resources/locales/active.${lang}.toml
+          if [ -f resources/locales/translate.${lang}.toml ]; then
+            mv resources/locales/translate.${lang}.toml translations_todo/${lang}.toml
+            echo "Created translations_todo/${lang}.toml"
+          else
+            echo "No missing translations for ${lang}"
+          fi
+        done
+      - |
+        if [ -z "$(ls -A translations_todo 2>/dev/null)" ]; then
+          echo "All translations are complete!"
+          rmdir translations_todo 2>/dev/null || true
+        else
+          echo "Translation files needing work are in translations_todo/"
+        fi
+    silent: true
