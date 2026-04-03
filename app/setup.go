@@ -107,6 +107,9 @@ func initFramework(currentCFW cfw.CFW) {
 	if currentCFW == cfw.Spruce && spruce.DetectDevice() == spruce.DeviceA30 {
 		orientation = gaba.OrientationRotate270
 	}
+	if currentCFW == cfw.MinUI && minui.DetectDevice() == minui.DeviceZero28 {
+		orientation = gaba.OrientationRotate90
+	}
 
 	gaba.Init(gaba.Options{
 		WindowTitle:          "Grout",

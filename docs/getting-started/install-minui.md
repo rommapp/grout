@@ -6,10 +6,11 @@ This guide will help you install Grout on devices running [MinUI][minui].
 
 Grout has been tested on the following devices running MinUI:
 
-| Manufacturer | Device        |
-|--------------|---------------|
-| Miyoo        | A30           |
-| Miyoo        | Mini Plus     |
+| Manufacturer | Device      |
+|--------------|-------------|
+| Miyoo        | A30         |
+| Miyoo        | Mini Plus   |
+| Magicx       | Mini Zero28 |
 
 _Please help verify compatibility on other devices by reporting your results!_
 
