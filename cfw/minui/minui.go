@@ -15,11 +15,26 @@ var (
 	SaveDirectories = jsonutil.MustLoadJSONMap[string, []string](embeddedFiles, "data/save_directories.json")
 )
 
+var cachedBasePath string
+
 func GetBasePath() string {
 	if basePath := os.Getenv("BASE_PATH"); basePath != "" {
 		return basePath
 	}
-	return "/mnt/SDCARD"
+
+	if cachedBasePath != "" {
+		return cachedBasePath
+	}
+
+	for _, candidate := range []string{"/mnt/SDCARD", "/mnt/sdcard"} {
+		if _, err := os.Stat(candidate); err == nil {
+			cachedBasePath = candidate
+			return cachedBasePath
+		}
+	}
+
+	cachedBasePath = "/mnt/mmc"
+	return cachedBasePath
 }
 
 func GetRomDirectory() string {
@@ -61,4 +76,3 @@ func RomFolderBase(path string, tagParser func(string) string) string {
 	}
 	return path
 }
-
