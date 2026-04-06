@@ -6,16 +6,17 @@ This guide will help you install Grout on devices running [muOS][muos].
 
 Grout has been tested on the following devices running muOS 2508.4 Loose Goose:
 
-| Manufacturer | Device    |
-|--------------|-----------|
-| Anbernic     | RG34XX    |
-| Anbernic     | RG34XXSP  |
-| Anbernic     | RG35XX-H  |
-| Anbernic     | RG35XXSP  |
-| Anbernic     | RG40XXV   |
-| Anbernic     | RG CUBE   |
-| TrimUI       | Brick     |
-| TrimUI       | Smart Pro |
+| Manufacturer | Device      |
+|--------------|-------------|
+| Anbernic     | RG34XX      |
+| Anbernic     | RG34XXSP    |
+| Anbernic     | RG35XX Plus |
+| Anbernic     | RG35XX-H    |
+| Anbernic     | RG35XXSP    |
+| Anbernic     | RG40XXV     |
+| Anbernic     | RG CUBE     |
+| TrimUI       | Brick       |
+| TrimUI       | Smart Pro   |
 
 _Please help verify compatibility on other devices by reporting your results!_
 
