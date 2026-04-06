@@ -10,7 +10,10 @@ Grout has been tested on the following devices running MinUI:
 |--------------|-------------|
 | Miyoo        | A30         |
 | Miyoo        | Mini Plus   |
+| Miyoo        | Flip V2     |
 | Magicx       | Mini Zero28 |
+| Trimui       | Smart Pro   |
+| Trimui       | Brick       |
 
 _Please help verify compatibility on other devices by reporting your results!_
 
