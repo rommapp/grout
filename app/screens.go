@@ -38,4 +38,5 @@ const (
 	ScreenServerAddress
 	ScreenToolsSettings
 	ScreenSwitchToToken
+	ScreenInputMapping
 )

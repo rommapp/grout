@@ -4,6 +4,7 @@ import (
 	"errors"
 	"grout/internal"
 	"grout/romm"
+	"os"
 	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -89,6 +90,29 @@ func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (AdvancedSett
 			return output, nil
 		}
 
+		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_input_mapping", Other: "Input Mapping"}, nil) {
+			output.Action = AdvancedSettingsActionInputMapping
+			return output, nil
+		}
+
+		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_reset_input_mapping", Other: "Reset Input Mapping"}, nil) {
+			if err := os.Remove("input_mapping.json"); err != nil {
+				gaba.GetLogger().Error("Failed to delete input mapping", "error", err)
+			} else {
+				gaba.SetInputMappingBytes(nil)
+				gaba.ConfirmationMessage(
+					i18n.Localize(&goi18n.Message{ID: "input_mapping_reset", Other: "Input mapping reset. Grout needs to restart to apply changes."}, nil),
+					[]gaba.FooterHelpItem{
+						{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_exit", Other: "Exit"}, nil)},
+					},
+					gaba.MessageOptions{},
+				)
+				os.Exit(0)
+			}
+			output.Action = AdvancedSettingsActionResetInputMapping
+			return output, nil
+		}
+
 	}
 
 	s.applySettings(config, result.Items)
@@ -165,6 +189,17 @@ func (s *AdvancedSettingsScreen) buildMenuItems(config *internal.Config) []gaba.
 			},
 			SelectedOption: logLevelToIndex(config.LogLevel),
 		},
+		{
+			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_input_mapping", Other: "Input Mapping"}, nil)},
+			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
+		},
+	}
+
+	if _, err := os.Stat("input_mapping.json"); err == nil {
+		items = append(items, gaba.ItemWithOptions{
+			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_reset_input_mapping", Other: "Reset Input Mapping"}, nil)},
+			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
+		})
 	}
 
 	return items

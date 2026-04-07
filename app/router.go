@@ -247,4 +247,10 @@ func registerScreens(r *router.Router, state *AppState) {
 		return screen.Draw(input.(ui.ServerAddressInput))
 	})
 
+	r.Register(ScreenInputMapping, func(input any) (any, error) {
+		screen := ui.NewInputMappingScreen()
+		screen.Execute()
+		return nil, nil
+	})
+
 }
