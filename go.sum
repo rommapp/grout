@@ -8,6 +8,10 @@ github.com/BrandonKowalski/gabagool/v2 v2.14.0 h1:e6uc9MPY16ig7SWDrmzYneU6cN4XoI
 github.com/BrandonKowalski/gabagool/v2 v2.14.0/go.mod h1:Iq/YFTz7+w8O78IE21kOkHbg3a4ZD2mjcd0S/jVhI94=
 github.com/BrandonKowalski/gabagool/v2 v2.15.0 h1:zjsxiWFnE6z24KtZMCZGJI1CQFhSMZrVnSFx7YuStwc=
 github.com/BrandonKowalski/gabagool/v2 v2.15.0/go.mod h1:Iq/YFTz7+w8O78IE21kOkHbg3a4ZD2mjcd0S/jVhI94=
+github.com/BrandonKowalski/gabagool/v2 v2.16.0 h1:TdXwKyP5v8JBesp941JfKmvo0IxGC5A3xPfuZwFrIcg=
+github.com/BrandonKowalski/gabagool/v2 v2.16.0/go.mod h1:Iq/YFTz7+w8O78IE21kOkHbg3a4ZD2mjcd0S/jVhI94=
+github.com/BrandonKowalski/gabagool/v2 v2.17.0 h1:OaGnrGXpKUR3r2xcmsSUChZbfWgCRNZAzeXTBJuYw3A=
+github.com/BrandonKowalski/gabagool/v2 v2.17.0/go.mod h1:Iq/YFTz7+w8O78IE21kOkHbg3a4ZD2mjcd0S/jVhI94=
 github.com/BurntSushi/toml v1.6.0 h1:dRaEfpa2VI55EwlIW72hMRHdWouJeRF7TPYhI+AUQjk=
 github.com/BurntSushi/toml v1.6.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/andybalholm/brotli v1.2.0 h1:ukwgCxwYrmACq68yiUqwIWnGY0cTPox/M94sVwToPjQ=

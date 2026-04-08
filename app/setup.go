@@ -58,12 +58,6 @@ func setup() SetupResult {
 }
 
 func setupInputMapping(currentCFW cfw.CFW) {
-	gaba.SetLogFilename("grout.log")
-
-	if environment.IsDevelopment() {
-		return
-	}
-
 	cwd, err := os.Getwd()
 	if err != nil {
 		return
@@ -72,6 +66,10 @@ func setupInputMapping(currentCFW cfw.CFW) {
 	cwdMappingPath := filepath.Join(cwd, "input_mapping.json")
 	if fileutil.FileExists(cwdMappingPath) {
 		os.Setenv("INPUT_MAPPING_PATH", cwdMappingPath)
+		return
+	}
+
+	if environment.IsDevelopment() {
 		return
 	}
 

@@ -101,7 +101,7 @@ func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (AdvancedSett
 			} else {
 				gaba.SetInputMappingBytes(nil)
 				gaba.ConfirmationMessage(
-					i18n.Localize(&goi18n.Message{ID: "input_mapping_reset", Other: "Input mapping reset. Grout needs to restart to apply changes."}, nil),
+					i18n.Localize(&goi18n.Message{ID: "input_mapping_reset", Other: "Input mapping reset.\nGrout needs to restart to apply changes."}, nil),
 					[]gaba.FooterHelpItem{
 						{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_exit", Other: "Exit"}, nil)},
 					},
