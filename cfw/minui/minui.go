@@ -50,7 +50,7 @@ func GetBaseSavePath() string {
 }
 
 func GetArtDirectory(romDir string) string {
-	return filepath.Join(romDir, ".media")
+	return filepath.Join(romDir, ".res")
 }
 
 func GetBIOSFilePaths(relativePath, platformFSSlug string) []string {
