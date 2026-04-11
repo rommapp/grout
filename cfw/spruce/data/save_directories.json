@@ -160,7 +160,9 @@
     "SwanStation"
   ],
   "ps2": [],
-  "psp": [],
+  "psp": [
+    "PPSSPP (External)"
+  ],
   "pokemon-mini": [
     "PokeMini"
   ],
