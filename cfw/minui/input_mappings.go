@@ -19,11 +19,12 @@ var embeddedInputMappings embed.FS
 type Device string
 
 const (
-	DeviceMiyoo    Device = "miyoo"
-	DeviceAnbernic Device = "anbernic"
-	DeviceZero28   Device = "zero28"
-	DeviceTrimui   Device = "trimui"
-	DeviceGeneric  Device = "generic"
+	DeviceMiyoo     Device = "miyoo"
+	DeviceMiyooFlip Device = "miyooflip"
+	DeviceAnbernic  Device = "anbernic"
+	DeviceZero28    Device = "zero28"
+	DeviceTrimui    Device = "trimui"
+	DeviceGeneric   Device = "generic"
 )
 
 func detectDeviceByEnv() Device {
@@ -36,6 +37,8 @@ func detectDeviceByEnv() Device {
 		return DeviceTrimui
 	case "zero28":
 		return DeviceZero28
+	case "my355":
+		return DeviceMiyooFlip
 	default:
 		logger.Warn("Unknown MinUI device type", "value", deviceType)
 		return DeviceGeneric
@@ -58,6 +61,11 @@ func DetectDevice() Device {
 	}
 	if err == nil && strings.Contains(string(compatible), "allwinner,a133") && minuiDeviceType == DeviceZero28 {
 		return DeviceZero28
+	}
+
+	switch minuiDeviceType {
+	case DeviceMiyooFlip:
+		return minuiDeviceType
 	}
 
 	return DeviceGeneric

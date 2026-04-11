@@ -98,24 +98,30 @@ func setupInputMapping(currentCFW cfw.CFW) {
 }
 
 func initFramework(currentCFW cfw.CFW) {
-	if preConfig, err := internal.LoadConfig(); err == nil {
-		gaba.SetFlipFaceButtons(preConfig.SwapFaceButtons)
-	}
-	orientation := gaba.OrientationNormal
-	if currentCFW == cfw.Spruce && spruce.DetectDevice() == spruce.DeviceA30 {
-		orientation = gaba.OrientationRotate270
-	}
-	if currentCFW == cfw.MinUI && minui.DetectDevice() == minui.DeviceZero28 {
-		orientation = gaba.OrientationRotate90
-	}
-
-	gaba.Init(gaba.Options{
+	gabaOptions := gaba.Options{
 		WindowTitle:          "Grout",
 		PrimaryThemeColorHex: 0x007C77,
 		ShowBackground:       true,
 		IsNextUI:             currentCFW == cfw.NextUI,
-		DisplayOrientation:   orientation,
-	})
+		DisplayOrientation:   gaba.OrientationNormal,
+	}
+	if preConfig, err := internal.LoadConfig(); err == nil {
+		gaba.SetFlipFaceButtons(preConfig.SwapFaceButtons)
+	}
+	if currentCFW == cfw.Spruce && spruce.DetectDevice() == spruce.DeviceA30 {
+		gabaOptions.DisplayOrientation = gaba.OrientationRotate270
+	}
+	if currentCFW == cfw.MinUI && minui.DetectDevice() == minui.DeviceZero28 {
+		gabaOptions.DisplayOrientation = gaba.OrientationRotate90
+	}
+
+	if currentCFW == cfw.MinUI && minui.DetectDevice() == minui.DeviceMiyooFlip {
+		gabaOptions.DisabledInputSources = gaba.DisabledInputSources{
+			Keyboard: true,
+			Joystick: true,
+		}
+	}
+	gaba.Init(gabaOptions)
 
 	gaba.RegisterChord("unlock-kid-mode", []buttons.VirtualButton{
 		buttons.VirtualButtonL1,
