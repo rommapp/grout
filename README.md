@@ -36,16 +36,6 @@
 
 ---
 
-## Features at a Glance
-
-- Download games wirelessly from your RomM instance
-- Download box art
-- Download and verify BIOS files
-- Save Sync
-- Platform directory mapping configurable on device
-
----
-
 ## Documentation
 
 Full documentation is available at **[grout.romm.app](https://grout.romm.app)**.

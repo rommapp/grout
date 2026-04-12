@@ -6,10 +6,18 @@ This guide will help you install Grout on devices running [MinUI][minui].
 
 Grout has been tested on the following devices running MinUI:
 
-| Manufacturer | Device        |
-|--------------|---------------|
-| Miyoo        | A30           |
-| Miyoo        | Mini Plus     |
+| Manufacturer | Device      |
+|--------------|-------------|
+| Anbernic     | RG 35xxsp   |
+| Anbernic     | RG CubeXX   |
+| Miyoo        | A30         |
+| Miyoo        | Mini Plus   |
+| Miyoo        | Flip V2     |
+| Miyoo        | Mini Flip   |
+| Magicx       | Mini Zero28 |
+| Powkiddy     | RGB30       |
+| Trimui       | Smart Pro   |
+| Trimui       | Brick       |
 
 _Please help verify compatibility on other devices by reporting your results!_
 

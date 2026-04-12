@@ -100,6 +100,8 @@ func buildTransitionFunc(state *AppState, quitOnBack bool, initialShowCollection
 			return transitionSaveMapping(ctx, result)
 		case ScreenServerAddress:
 			return transitionServerAddress(ctx, result)
+		case ScreenInputMapping:
+			return popOrExit(stack)
 		}
 
 		return router.ScreenExit, nil
@@ -752,6 +754,13 @@ func transitionAdvancedSettings(ctx *transitionContext, result any) (router.Scre
 			Config: ctx.state.Config,
 			Host:   ctx.state.Host,
 		}
+
+	case ui.AdvancedSettingsActionInputMapping:
+		ctx.stack.Push(ScreenAdvancedSettings, pushInput, r)
+		return ScreenInputMapping, nil
+
+	case ui.AdvancedSettingsActionResetInputMapping:
+		return popOrExit(ctx.stack)
 
 	default:
 		if ctx.state.AutoUpdate != nil {

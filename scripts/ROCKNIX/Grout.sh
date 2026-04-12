@@ -11,7 +11,7 @@ fi
 
 export CFW=ROCKNIX
 export LD_LIBRARY_PATH="$CUR_DIR/Grout/lib:$LD_LIBRARY_PATH"
-export FLIP_FACE_BUTTONS=1
+#export FLIP_FACE_BUTTONS=1
 
 ./grout
 

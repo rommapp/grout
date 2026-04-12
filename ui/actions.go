@@ -101,6 +101,8 @@ const (
 	AdvancedSettingsActionRebuildCache
 	AdvancedSettingsActionSyncArtwork
 	AdvancedSettingsActionServerAddress
+	AdvancedSettingsActionInputMapping
+	AdvancedSettingsActionResetInputMapping
 	AdvancedSettingsActionBack
 )
 

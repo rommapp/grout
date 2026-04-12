@@ -1,20 +1,25 @@
 {
   "3do": [],
-  "3ds": [],
-  "acpc": [
-    "CPC"
-  ],
   "amiga": [
     "AMIGA"
   ],
+  "acpc": [
+    "CPC"
+  ],
   "arcade": [
-    "ARCADE"
+    "ARCADE",
+    "CPS1",
+    "CPS2",
+    "CPS3",
+    "FBNEO",
+    "MAME2003PLUS",
+    "NAOMI"
   ],
   "arduboy": [
     "ARDUBOY"
   ],
-  "atari-st": [
-    "ATARIST"
+  "atari800": [
+    "EIGHTHUNDRED"
   ],
   "atari2600": [
     "ATARI"
@@ -25,19 +30,31 @@
   "atari7800": [
     "SEVENTYEIGHTHUNDRED"
   ],
-  "c128": [],
-  "c64": [
-    "COMMODORE"
+  "jaguar": [],
+  "lynx": [
+    "LYNX"
+  ],
+  "atari-st": [
+    "ATARIST"
   ],
   "cave-story": [],
   "colecovision": [
     "COLECO"
   ],
+  "c128": [],
+  "c64": [
+    "COMMODORE"
+  ],
   "cpet": [],
+  "vic-20": [
+    "VIC20"
+  ],
+  "dos": [
+    "DOS"
+  ],
   "dc": [
     "DC"
   ],
-  "dos": [],
   "fairchild-channel-f": [
     "FAIRCHILD"
   ],
@@ -47,15 +64,13 @@
   "fds": [
     "FDS"
   ],
+  "galaksija": [],
   "g-and-w": [
     "GW"
   ],
-  "galaksija": [],
-  "gamegear": [
-    "GG"
-  ],
   "gb": [
-    "GB"
+    "GB",
+    "SGB"
   ],
   "gba": [
     "GBA"
@@ -63,29 +78,24 @@
   "gbc": [
     "GBC"
   ],
-  "genesis": [
-    "MD"
-  ],
   "intellivision": [
     "INTELLIVISION"
   ],
   "j2me": [],
-  "jaguar": [],
-  "lynx": [
-    "LYNX"
+  "mega-duck-slash-cougar-boy": [
+    "MEGADUCK"
   ],
-  "mega-duck-slash-cougar-boy": [],
   "msx": [
     "MSX"
   ],
-  "n64": [
-    "N64"
-  ],
-  "nds": [
-    "NDS"
+  "neogeoaes": [
+    "NEOGEO"
   ],
   "neo-geo-cd": [
     "NEOCD"
+  ],
+  "neogeomvs": [
+    "NEOGEO"
   ],
   "neo-geo-pocket": [
     "NGP"
@@ -93,8 +103,13 @@
   "neo-geo-pocket-color": [
     "NGPC"
   ],
-  "neogeoaes": [],
-  "neogeomvs": [],
+  "3ds": [],
+  "n64": [
+    "N64"
+  ],
+  "nds": [
+    "NDS"
+  ],
   "nes": [
     "FC"
   ],
@@ -104,8 +119,13 @@
   "openbor": [
     "OPENBOR"
   ],
+  "supergrafx": [
+    "SGFX"
+  ],
   "pc-8000": [],
-  "pc-9800-series": [],
+  "pc-9800-series": [
+    "PC98"
+  ],
   "pc-fx": [],
   "philips-cd-i": [],
   "pico": [
@@ -116,8 +136,8 @@
     "PICO8",
     "FAKE08"
   ],
-  "pokemon-mini": [
-    "POKE"
+  "psx": [
+    "PS"
   ],
   "ps2": [
     "PS2"
@@ -125,42 +145,60 @@
   "psp": [
     "PSP"
   ],
-  "psx": [
-    "PS"
+  "pokemon-mini": [
+    "POKE"
   ],
-  "saturn": [],
+  "satellaview": [
+    "SATELLAVIEW"
+  ],
+  "scummvm": [
+    "SCUMMVM"
+  ],
   "sega32": [
     "THIRTYTWOX"
   ],
   "segacd": [
     "SEGACD"
   ],
-  "sfam": [
-    "SFC"
+  "gamegear": [
+    "GG"
   ],
-  "sg1000": [
-    "SEGASGONE"
-  ],
-  "sharp-x68000": [
-    "X68000"
+  "genesis": [
+    "MD",
+    "MSUMD"
   ],
   "sms": [
     "MS"
   ],
-  "snes": [
-    "SFC"
+  "saturn": [
+    "SATURN"
   ],
-  "supergrafx": [
-    "SGFX"
+  "sg1000": [
+    "SEGASGONE"
+  ],
+  "x1": [],
+  "sharp-x68000": [
+    "X68000"
+  ],
+  "sufami-turbo": [
+    "SUFAMI"
+  ],
+  "sfam": [
+    "SFC",
+    "MSU1"
+  ],
+  "snes": [
+    "SFC",
+    "MSU1"
   ],
   "supervision": [
     "SUPERVISION"
   ],
-  "tg16": [
-    "PCE"
-  ],
   "tic-80": [
     "TIC"
+  ],
+  "tg16": [
+    "PCE"
   ],
   "turbografx-cd": [
     "PCECD"
@@ -168,8 +206,8 @@
   "vectrex": [
     "VECTREX"
   ],
-  "vic-20": [
-    "VIC20"
+  "videopac-g7400": [
+    "VIDEOPAC"
   ],
   "virtualboy": [
     "VB"
@@ -180,9 +218,8 @@
   "wonderswan-color": [
     "WSC"
   ],
-  "x1": [],
-  "zx81": [],
   "zxs": [
     "ZXS"
-  ]
+  ],
+  "zx81": []
 }

@@ -21,6 +21,7 @@ const (
 	DeviceMiyooMini Device = "MIYOOMINI"
 	DeviceMiyooFlip Device = "MIYOOFLIP"
 	DeviceTrimui    Device = "TRIMUI"
+	DevicePixel     Device = "PIXEL"
 	DeviceUnknown   Device = "UNKNOWN"
 )
 
@@ -38,6 +39,8 @@ func DetectDevice() Device {
 		return DeviceMiyooFlip
 	case "TRIMUI":
 		return DeviceTrimui
+	case "PIXEL":
+		return DevicePixel
 	default:
 		logger.Warn("Unknown Spruce device type", "value", os.Getenv(DeviceType))
 		return DeviceUnknown
@@ -58,6 +61,8 @@ func GetInputMappingBytesForDevice(device Device) ([]byte, error) {
 		filename = "input_mappings/miyoo.json"
 	case DeviceA30:
 		filename = "input_mappings/a30.json"
+	case DevicePixel:
+		filename = "input_mappings/gkd_pixel_2.json"
 	default:
 		// TrimUI, Miyoo Flip, and unknown devices use standard SDL controller input
 		return nil, nil

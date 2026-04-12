@@ -8,6 +8,7 @@ import (
 	"grout/cfw/minui"
 	"grout/cfw/muos"
 	"grout/cfw/onion"
+	"grout/cfw/rocknix"
 	"grout/cfw/spruce"
 	"grout/internal"
 	"grout/internal/environment"
@@ -57,12 +58,6 @@ func setup() SetupResult {
 }
 
 func setupInputMapping(currentCFW cfw.CFW) {
-	gaba.SetLogFilename("grout.log")
-
-	if environment.IsDevelopment() {
-		return
-	}
-
 	cwd, err := os.Getwd()
 	if err != nil {
 		return
@@ -71,6 +66,10 @@ func setupInputMapping(currentCFW cfw.CFW) {
 	cwdMappingPath := filepath.Join(cwd, "input_mapping.json")
 	if fileutil.FileExists(cwdMappingPath) {
 		os.Setenv("INPUT_MAPPING_PATH", cwdMappingPath)
+		return
+	}
+
+	if environment.IsDevelopment() {
 		return
 	}
 
@@ -87,6 +86,8 @@ func setupInputMapping(currentCFW cfw.CFW) {
 		mappingBytes, mappingErr = minui.GetInputMappingBytes()
 	case cfw.Spruce:
 		mappingBytes, mappingErr = spruce.GetInputMappingBytes()
+	case cfw.ROCKNIX:
+		mappingBytes, mappingErr = rocknix.GetInputMappingBytes()
 	}
 
 	if mappingBytes != nil && mappingErr == nil {
@@ -97,21 +98,30 @@ func setupInputMapping(currentCFW cfw.CFW) {
 }
 
 func initFramework(currentCFW cfw.CFW) {
-	if preConfig, err := internal.LoadConfig(); err == nil {
-		gaba.SetFlipFaceButtons(preConfig.SwapFaceButtons)
-	}
-	orientation := gaba.OrientationNormal
-	if currentCFW == cfw.Spruce && spruce.DetectDevice() == spruce.DeviceA30 {
-		orientation = gaba.OrientationRotate270
-	}
-
-	gaba.Init(gaba.Options{
+	gabaOptions := gaba.Options{
 		WindowTitle:          "Grout",
 		PrimaryThemeColorHex: 0x007C77,
 		ShowBackground:       true,
 		IsNextUI:             currentCFW == cfw.NextUI,
-		DisplayOrientation:   orientation,
-	})
+		DisplayOrientation:   gaba.OrientationNormal,
+	}
+	if preConfig, err := internal.LoadConfig(); err == nil {
+		gaba.SetFlipFaceButtons(preConfig.SwapFaceButtons)
+	}
+	if currentCFW == cfw.Spruce && spruce.DetectDevice() == spruce.DeviceA30 {
+		gabaOptions.DisplayOrientation = gaba.OrientationRotate270
+	}
+	if currentCFW == cfw.MinUI && minui.DetectDevice() == minui.DeviceZero28 {
+		gabaOptions.DisplayOrientation = gaba.OrientationRotate90
+	}
+
+	if currentCFW == cfw.MinUI && minui.DetectDevice() == minui.DeviceMiyooFlip {
+		gabaOptions.DisabledInputSources = gaba.DisabledInputSources{
+			Keyboard: true,
+			Joystick: true,
+		}
+	}
+	gaba.Init(gabaOptions)
 
 	gaba.RegisterChord("unlock-kid-mode", []buttons.VirtualButton{
 		buttons.VirtualButtonL1,

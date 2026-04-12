@@ -17,9 +17,6 @@ Can't find what you're looking for? [Open an issue](https://github.com/rommapp/g
 ??? question "Which devices and firmware are supported?"
     See the [Quick Start Guide](../getting-started/index.md) for the full list of supported platforms and installation instructions.
 
-??? question "Hey! What about Miyoo devices?"
-    Grout is not currently supported on Miyoo devices. We hope to change that in the future.
-
 ---
 
 ## Connection & Login

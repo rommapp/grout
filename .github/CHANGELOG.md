@@ -1,73 +1,45 @@
 # v4.8.0.0
-
 ## New Platform Support
-
 - **Spruce Universal Distribution**: Single zip with both ARM32 and ARM64 binaries, supporting A30, Miyoo Mini Flip, Miyoo Flip, TrimUI Brick, and TrimUI Smart Pro. Per-device input mappings and A30 screen rotation. - @pawndev
-- **MinUI Universal Distribution**: Single zip with both ARM32 and ARM64 binaries, supporting Miyoo Mini, Miyoo Mini Plus, Miyoo A30, Miyoo Flip, TrimUI, and Anbernic devices
+- **MinUI Universal Distribution**: Single zip with both ARM32 and ARM64 binaries, supporting Miyoo Mini, Miyoo Mini Plus, Miyoo A30, Miyoo Flip, MagicX Zero28, TrimUI, and Anbernic devices. Anbernic devices auto-detected via device tree - @BrandonKowalski & @pawndev
 - **Allium and Onion OS Support**: ARM32 support for Miyoo Mini devices
 - **Batocera x86 and AMD64**: Added x86 (32-bit) and AMD64 (64-bit) Batocera builds alongside existing ARM64
-
 ## In-App Updater Overhaul
-
 - **Full Distribution Updates**: The updater now replaces the entire install (binary, launch scripts, shared libraries) instead of just the binary. Uses a staging directory so the update is applied cleanly on next launch
 - **SHA256 Integrity Verification**: Downloaded updates are verified against checksums published in the versions file
 - **Static Versions File**: Update checks now fetch a static JSON file from GitHub Pages instead of querying the GitHub API, eliminating rate limits and pagination issues
 - **Fixed Beta Version Comparison**: Prerelease identifiers are now compared numerically (beta.10 is correctly newer than beta.6)
-
 ## EmulationStation Integration
-
 - **Artwork Downloads**: Download game marquee, logo, bezel, fanart, box back, thumbnail, video, and manual artwork for EmulationStation-based CFWs (Knulli, ROCKNIX, Batocera) - @pawndev
 - **Gamelist.xml Integration**: Downloaded artwork is registered in gamelist.xml for Knulli, ROCKNIX, and Batocera - @pawndev
-
+## PSP Save Sync
+- **PSP Directory Save Sync**: Full directory-based save sync for PSP with zip upload/download
+- **PARAM.SFO Parser**: Replaced static GameDB with a PARAM.SFO parser for accurate PSP save title resolution
 ## Authentication
-
 - **API Token Authentication**: New pairing code authentication flow as an alternative to username/password
-
 ## Performance
-
 - **Miyoo Memory Optimization**: Streaming architecture for cache population prevents OOM crashes on 128MB Miyoo devices. Processes one platform at a time with aggressive GC between platforms - *first contribution by @ljtilley*
 - **SQLite Tuning**: Reduced SQLite cache from unbounded to 4MB, temporary tables stored on disk instead of RAM - @ljtilley
 - **Batched Database Inserts**: Mega-batch junction table inserts with lookup ID caching for faster cache rebuilds - @ljtilley
 - **Pointer Receivers**: Rom methods changed from value to pointer receivers, reducing memory copies during UI rendering
-
 ## Bug Fixes
-
-- Fixed data race in auto-update between background goroutine and UI thread
 - Fixed save directories for PSX and PSP on muOS - @klinkertinlegs
 - Corrected muOS emulator save directory names across all platforms - @klinkertinlegs
+- Fixed various save data locations across multiple platforms - @klinkertinlegs
+- Updated Spruce save directories to match available emulators and directories - @ljtilley
+- Updated Spruce platforms.json to reflect all supported systems - @ljtilley
 - Fixed Onion and Allium save directory mappings (#170)
 - Fixed image paths with special characters in EmulationStation artwork - @pawndev
 - Fixed Knulli continually restarting Grout when Quick Resume is enabled
-- Fixed version injection for beta builds (was reading stale pak.json instead of CI version)
 - Fixed release artifact paths for non-ARM64 distributions
-- Removed protocol auto-detection (unnecessary network requests on every failed connection)
-
-## Documentation
-
-- Added MinUI installation guide
-- Added Onion CFW quirks section
-- Added NTP/time sync instructions for save sync compatibility - @klinkertinlegs
-- Standardized tested device tables across all install guides
-- Updated all platform mapping docs for Allium and Onion
-
+- Fixed Anbernic input mappings for MinUI - @klinkertinlegs
+- Fixed default GBA platform on MinUI to use gpsp
 ## i18n
-
-- Translations updated for all 7 languages (Spanish, French, German, Italian, Portuguese, Japanese, Russian)
-
-## Internal
-
-- Restructured taskfile into separate includes per concern
-- Removed dead code (DownloadRoms, fetchAllGames, protocol detection)
-- Extracted `resolveAssetURL` and `appendJunctionFilters` helpers to reduce duplication
-- Broke `setup()` into focused functions
-
+- Translations updated. Thanks @claude! :rofl:
 ## Contributors
-
 Thanks to @pawndev, @ljtilley, @klinkertinlegs, and @from-nibly for their contributions to this release!
 
-Special thanks to @ljtilley and @klinkertinlegs for their first contributions to Grout!
-
----
+Shout out to @ljtilley and @klinkertinlegs for their first contributions!
 
 # v4.7.0.0
 

@@ -454,6 +454,30 @@ other = "Usuário"
 hash = "sha1-2da600bf9404843107a9531694f654e5662959e0"
 other = "Versão"
 
+[input_capture_complete]
+hash = "sha1-810a04f2906b40e820edc03bc4674572c244cbfc"
+other = "Mapeamento de entrada concluído!"
+
+[input_capture_instruction]
+hash = "sha1-75b83210644feefbdf43ba55f8f2d6cb060f3cbc"
+other = "Pressione e segure cada botão quando solicitado."
+
+[input_capture_released_early]
+hash = "sha1-3d9191b67ab8025c99014b2917effed8d9445abc"
+other = "Solto cedo demais!"
+
+[input_capture_title]
+hash = "sha1-b167509bc65ae322b3838b115fbbc0b914337a30"
+other = "Mapeamento de entrada do Grout"
+
+[input_mapping_reset]
+hash = "sha1-e6c1aa60c76e7878543a9bb32e6f49e48366aaa9"
+other = "Mapeamento redefinido.\nGrout precisa reiniciar."
+
+[input_mapping_saved]
+hash = "sha1-d9a25e2dd90b3d04a5faab8a8ff4ac7303fea893"
+other = "Mapeamento salvo.\nGrout precisa reiniciar."
+
 [log_level_debug]
 hash = "sha1-bd604d99e75e45d38bc7ac8fc714cde0097d901f"
 other = "Debug"
@@ -870,9 +894,17 @@ other = "Nível de Log"
 hash = "sha1-1c4cc869d6c5c6fe0a49516c220a1f67ae5acc12"
 other = "Reconstruir Cache"
 
+[settings_input_mapping]
+hash = "sha1-e6440268de38ea4ad967835f250b6784af4abc80"
+other = "Mapeamento de entrada"
+
 [settings_release_channel]
 hash = "sha1-ddb05bbae80d35657c69e0ff93b186f6c7c92ce2"
 other = "Canal de lançamento"
+
+[settings_reset_input_mapping]
+hash = "sha1-183dd9fdc86acd17acfa7540ffd59e7db45bf6ec"
+other = "Redefinir mapeamento de entrada"
 
 [settings_save_sync]
 hash = "sha1-3caa02c76bc2b97f136e706433de562fd060f48d"

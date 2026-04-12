@@ -7,8 +7,9 @@ This table shows the mappings of RomM Fs Slug to Spruce's platform folders.
 | 3DO Interactive Multiplayer   | 3do                        | *(none)*            |
 | Amiga                         | amiga                      | AMIGA               |
 | Amstrad CPC                   | acpc                       | CPC                 |
-| Arcade                        | arcade                     | ARCADE              |
+| Arcade                        | arcade                     | ARCADE, CPS1, CPS2, CPS3, FBNEO, MAME2003PLUS, NAOMI |
 | Arduboy                       | arduboy                    | ARDUBOY             |
+| Atari 800                     | atari800                   | EIGHTHUNDRED        |
 | Atari 2600                    | atari2600                  | ATARI               |
 | Atari 5200                    | atari5200                  | FIFTYTWOHUNDRED     |
 | Atari 7800                    | atari7800                  | SEVENTYEIGHTHUNDRED |
@@ -21,23 +22,23 @@ This table shows the mappings of RomM Fs Slug to Spruce's platform folders.
 | Commodore C64/128/MAX         | c64                        | COMMODORE           |
 | Commodore PET                 | cpet                       | *(none)*            |
 | Commodore VIC-20              | vic-20                     | VIC20               |
-| DOS                           | dos                        | *(none)*            |
+| DOS                           | dos                        | DOS                 |
 | Dreamcast                     | dc                         | DC                  |
 | Fairchild Channel F           | fairchild-channel-f        | FAIRCHILD           |
 | Family Computer               | famicom                    | FC                  |
 | Family Computer Disk System   | fds                        | FDS                 |
 | Galaksija                     | galaksija                  | *(none)*            |
 | Game & Watch                  | g-and-w                    | GW                  |
-| Game Boy                      | gb                         | GB                  |
+| Game Boy                      | gb                         | GB, SGB             |
 | Game Boy Advance              | gba                        | GBA                 |
 | Game Boy Color                | gbc                        | GBC                 |
 | Intellivision                 | intellivision              | INTELLIVISION       |
 | J2ME                          | j2me                       | *(none)*            |
-| Mega Duck/Cougar Boy          | mega-duck-slash-cougar-boy | *(none)*            |
+| Mega Duck/Cougar Boy          | mega-duck-slash-cougar-boy | MEGADUCK            |
 | MSX                           | msx                        | MSX                 |
-| Neo Geo AES                   | neogeoaes                  | *(none)*            |
+| Neo Geo AES                   | neogeoaes                  | NEOGEO              |
 | Neo Geo CD                    | neo-geo-cd                 | NEOCD               |
-| Neo Geo MVS                   | neogeomvs                  | *(none)*            |
+| Neo Geo MVS                   | neogeomvs                  | NEOGEO              |
 | Neo Geo Pocket                | neo-geo-pocket             | NGP                 |
 | Neo Geo Pocket Color          | neo-geo-pocket-color       | NGPC                |
 | Nintendo 3DS                  | 3ds                        | *(none)*            |
@@ -48,7 +49,7 @@ This table shows the mappings of RomM Fs Slug to Spruce's platform folders.
 | OpenBOR                       | openbor                    | OPENBOR             |
 | PC Engine SuperGrafx          | supergrafx                 | SGFX                |
 | PC-8000                       | pc-8000                    | *(none)*            |
-| PC-9800 Series                | pc-9800-series             | *(none)*            |
+| PC-9800 Series                | pc-9800-series             | PC98                |
 | PC-FX                         | pc-fx                      | *(none)*            |
 | Philips CD-i                  | philips-cd-i               | *(none)*            |
 | PICO-8                        | pico                       | PICO8, FAKE08       |
@@ -57,22 +58,26 @@ This table shows the mappings of RomM Fs Slug to Spruce's platform folders.
 | PlayStation 2                 | ps2                        | PS2                 |
 | PlayStation Portable          | psp                        | PSP                 |
 | Pokemon Mini                  | pokemon-mini               | POKE                |
+| Satellaview                   | satellaview                | SATELLAVIEW         |
+| ScummVM                       | scummvm                    | SCUMMVM             |
 | Sega 32X                      | sega32                     | THIRTYTWOX          |
 | Sega CD                       | segacd                     | SEGACD              |
 | Sega Game Gear                | gamegear                   | GG                  |
-| Sega Genesis                  | genesis                    | MD                  |
+| Sega Genesis                  | genesis                    | MD, MSUMD           |
 | Sega Master System            | sms                        | MS                  |
-| Sega Saturn                   | saturn                     | *(none)*            |
+| Sega Saturn                   | saturn                     | SATURN              |
 | SG-1000                       | sg1000                     | SEGASGONE           |
 | Sharp X1                      | x1                         | *(none)*            |
 | Sharp X68000                  | sharp-x68000               | X68000              |
-| Super Famicom                 | sfam                       | SFC                 |
-| Super Nintendo                | snes                       | SFC                 |
+| Sufami Turbo                  | sufami-turbo               | SUFAMI              |
+| Super Famicom                 | sfam                       | SFC, MSU1           |
+| Super Nintendo                | snes                       | SFC, MSU1           |
 | Supervision                   | supervision                | SUPERVISION         |
 | TIC-80                        | tic-80                     | TIC                 |
 | TurboGrafx-16                 | tg16                       | PCE                 |
 | TurboGrafx-CD                 | turbografx-cd              | PCECD               |
 | Vectrex                       | vectrex                    | VECTREX             |
+| Videopac+ G7400               | videopac-g7400             | VIDEOPAC            |
 | Virtual Boy                   | virtualboy                 | VB                  |
 | WonderSwan                    | wonderswan                 | WS                  |
 | WonderSwan Color              | wonderswan-color           | WSC                 |

@@ -1,6 +1,6 @@
 {
   "name": "Grout",
-  "version": "v4.7.0.0",
+  "version": "v4.8.1.0",
   "type": "TOOL",
   "description": "A RomM client for NextUI, muOS, Knulli, and Spruce v4.",
   "author": "The RomM Team",
@@ -37,7 +37,10 @@
     "v4.6.1.7": "Added in the ability to filter the games list with more than just search.",
     "v4.6.1.8": "Hotfix for Spruce launch script. Sorry about that!",
     "v4.7.0.0": "Support for new features in RomM v4.7.0. See the changelog for more info.",
-    "v4.8.0.1-beta.5": "CI work complete. We just need all hands on deck."
+    "v4.8.0.1-beta.5": "CI work complete. We just need all hands on deck.",
+    "v4.8.0.0": "Support for RomM v4.8.0",
+    "v4.8.0.1": "Add GKD Pixel 2 support on Spruce. Thanks for the assist theycallmeboxy!",
+    "v4.8.1.0": "Add GKD Pixel 2 support on Spruce. Thanks for the assist theycallmeboxy!"
   },
   "screenshots": [],
   "platforms": [

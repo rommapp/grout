@@ -9,6 +9,10 @@ if [ -d "../.update" ]; then
 fi
 
 export CFW=MinUI
+# Set the device type for MinUI
+# This $PLATFORM is automatically set by MinUI, we map it another variable just to remember where it comes from.
+# Possible values: miyoomini trimuismart rg35xx rg35xxplus my355 tg5040 zero28 rgb30 m17 gkdpixel my282 magicmini
+export MINUI_DEVICE="$PLATFORM"
 
 ARCH=$(uname -m)
 case "$ARCH" in
