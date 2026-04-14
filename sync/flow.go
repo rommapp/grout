@@ -6,6 +6,7 @@ import (
 	"grout/cfw"
 	"grout/internal"
 	"grout/internal/fileutil"
+	"grout/internal/pspdb"
 	"grout/romm"
 	"grout/version"
 	"os"
@@ -123,6 +124,7 @@ func ScanSaves(config *internal.Config) []LocalSave {
 
 		for _, emuDir := range emulatorDirs {
 			saveDir := filepath.Join(baseSavePath, emuDir)
+			logger.Debug("Checking save directory", "path", saveDir, "fsSlug", rommFSSlug)
 
 			if _, err := os.Stat(saveDir); os.IsNotExist(err) {
 				continue
@@ -135,34 +137,70 @@ func ScanSaves(config *internal.Config) []LocalSave {
 			}
 
 			if IsDirectorySavePlatform(fsSlug) {
-				// Directory-based saves (e.g., PPSSPP): each subdirectory is a save
+				// Directory-based saves (e.g., PPSSPP): group all directories that
+				// share the same Game ID and title into a single LocalSave, so that
+				// DATA00/DATA01/INSDIR etc. are synced together as one zip.
+				type pspGroup struct {
+					title string
+					dirs  []string
+				}
+				groups := make(map[string]*pspGroup)
+
 				for _, entry := range entries {
 					if !entry.IsDir() || strings.HasPrefix(entry.Name(), ".") {
 						continue
 					}
+					gameID := extractPSPGameID(entry.Name())
+					dirPath := filepath.Join(saveDir, entry.Name())
 
-					title, found := ReadPSPSaveTitle(filepath.Join(saveDir, entry.Name()))
-					if !found {
-						logger.Debug("No PARAM.SFO found in save directory", "dir", entry.Name(), "fsSlug", rommFSSlug)
-						continue
+					if _, ok := groups[gameID]; !ok {
+						groups[gameID] = &pspGroup{}
+					}
+					groups[gameID].dirs = append(groups[gameID].dirs, dirPath)
+
+					if groups[gameID].title == "" {
+						if title, ok := ReadPSPSaveTitle(dirPath); ok {
+							groups[gameID].title = title
+						}
+					}
+				}
+
+				for gameID, group := range groups {
+					// Normalize the Game ID to match pspdb keys (no hyphens or spaces)
+					cleanGameID := strings.NewReplacer("-", "", " ", "").Replace(gameID)
+
+					// Prefer the canonical title from pspdb, fall back to PARAM.SFO
+					title, inDB := pspdb.Titles[cleanGameID]
+					if !inDB {
+						if group.title != "" {
+							title = group.title
+							logger.Debug("PSP game ID not in pspdb, using PARAM.SFO title", "gameID", gameID, "title", title)
+						} else {
+							logger.Debug("No title found for PSP game ID, skipping", "gameID", gameID, "fsSlug", rommFSSlug)
+							continue
+						}
 					}
 
 					rom, err := cm.GetRomByNameLookup(rommFSSlug, title)
 					if err != nil {
-						logger.Debug("No cache match for directory save", "dir", entry.Name(), "title", title, "fsSlug", rommFSSlug)
+						logger.Debug("No cache match for PSP save group", "gameID", gameID, "title", title, "inDB", inDB, "fsSlug", rommFSSlug)
 						continue
 					}
 
-					logger.Debug("Matched directory save to ROM", "dir", entry.Name(), "romID", rom.ID, "romName", rom.Name)
+					sort.Strings(group.dirs)
+
+					logger.Debug("Matched PSP save group to ROM", "gameID", gameID, "title", group.title, "dirCount", len(group.dirs), "romID", rom.ID, "romName", rom.Name)
 
 					saves = append(saves, LocalSave{
 						RomID:           rom.ID,
 						RomName:         rom.Name,
 						FSSlug:          rommFSSlug,
-						FileName:        entry.Name() + ".zip",
-						FilePath:        filepath.Join(saveDir, entry.Name()),
+						FileName:        gameID + ".zip",
+						FilePath:        group.dirs[0],
 						EmulatorDir:     emuDir,
 						IsDirectorySave: true,
+						GameID:          gameID,
+						RelatedDirs:     group.dirs,
 					})
 				}
 			} else {
@@ -520,6 +558,11 @@ func upload(client *romm.Client, deviceID string, item *SyncItem) bool {
 		emulator = "unknown"
 	}
 
+	// Edge-case for psp emulator, this is not consistent across CFW
+	if emulator == "SAVEDATA" {
+		emulator = "PPSSPP"
+	}
+
 	query := romm.UploadSaveQuery{
 		RomID:     item.LocalSave.RomID,
 		DeviceID:  deviceID,
@@ -530,9 +573,13 @@ func upload(client *romm.Client, deviceID string, item *SyncItem) bool {
 
 	uploadPath := item.LocalSave.FilePath
 	if item.LocalSave.IsDirectorySave {
-		zipPath, zipErr := ZipDirectory(item.LocalSave.FilePath)
+		dirs := item.LocalSave.RelatedDirs
+		if len(dirs) == 0 {
+			dirs = []string{item.LocalSave.FilePath}
+		}
+		zipPath, zipErr := ZipDirectories(dirs)
 		if zipErr != nil {
-			logger.Error("Failed to zip directory save", "path", item.LocalSave.FilePath, "error", zipErr)
+			logger.Error("Failed to zip directory save", "gameID", item.LocalSave.GameID, "dirCount", len(dirs), "error", zipErr)
 			return false
 		}
 		defer os.Remove(zipPath)
@@ -585,14 +632,34 @@ func download(client *romm.Client, config *internal.Config, deviceID string, ite
 			if err := os.MkdirAll(backupDir, 0755); err != nil {
 				logger.Error("Failed to create backup directory, aborting download", "path", backupDir, "error", err)
 				return false
-			} else if err := fileutil.CopyFile(item.LocalSave.FilePath, backupPath); err != nil {
-				logger.Error("Failed to backup save before download, aborting download", "path", item.LocalSave.FilePath, "error", err)
-				return false
-			} else {
-				logger.Debug("Backed up save before download", "backup", backupPath)
-				if config != nil && config.SaveBackupLimit > 0 {
-					cleanupBackups(backupDir, base, config.SaveBackupLimit)
+			}
+
+			var backupErr error
+			if item.LocalSave.IsDirectorySave {
+				// Zip all related directories into the backup path
+				dirs := item.LocalSave.RelatedDirs
+				if len(dirs) == 0 {
+					dirs = []string{item.LocalSave.FilePath}
 				}
+				zipPath, zipErr := ZipDirectories(dirs)
+				if zipErr != nil {
+					backupErr = zipErr
+				} else {
+					defer os.Remove(zipPath)
+					backupErr = fileutil.CopyFile(zipPath, backupPath)
+				}
+			} else {
+				backupErr = fileutil.CopyFile(item.LocalSave.FilePath, backupPath)
+			}
+
+			if backupErr != nil {
+				logger.Error("Failed to backup save before download, aborting download", "path", item.LocalSave.FilePath, "error", backupErr)
+				return false
+			}
+
+			logger.Debug("Backed up save before download", "backup", backupPath)
+			if config != nil && config.SaveBackupLimit > 0 {
+				cleanupBackups(backupDir, base, config.SaveBackupLimit)
 			}
 		}
 	}
@@ -637,8 +704,16 @@ func download(client *romm.Client, config *internal.Config, deviceID string, ite
 		}
 		tmpZip.Close()
 
-		// Remove existing save directory before extracting
-		os.RemoveAll(savePath)
+		// Remove all existing save directories before extracting.
+		// For multi-dir PSP saves (DATA00, DATA01, INSDIR…), RelatedDirs holds
+		// all of them; fall back to savePath for single-dir or remote-only cases.
+		dirsToRemove := item.LocalSave.RelatedDirs
+		if len(dirsToRemove) == 0 {
+			dirsToRemove = []string{savePath}
+		}
+		for _, dir := range dirsToRemove {
+			os.RemoveAll(dir)
+		}
 
 		if err := UnzipToDirectory(tmpZipPath, filepath.Dir(savePath)); err != nil {
 			logger.Error("Failed to extract directory save", "path", savePath, "error", err)
@@ -827,6 +902,27 @@ func cleanupBackups(backupDir string, baseName string, limit int) {
 			logger.Debug("Removed old backup", "path", path)
 		}
 	}
+}
+
+// extractPSPGameID extracts the Game ID from a PSP save directory name.
+// Two rules are applied in this order:
+//  1. If the name contains an underscore, the Game ID is the part before it
+//     (e.g. "UCUS98751_DATA00" → "UCUS98751", "UCUS98751_INSDIR" → "UCUS98751").
+//  2. Otherwise, try to shrink prefixes from longest to shortest against
+//     pspdb.Titles until a known Game ID is found
+//     (e.g. "UCUS98653PROFILE00" → "UCUS98653").
+//
+// Falls back to the full directory name if no match is found.
+func extractPSPGameID(dirName string) string {
+	if idx := strings.Index(dirName, "_"); idx > 0 {
+		return dirName[:idx]
+	}
+	for l := len(dirName) - 1; l > 0; l-- {
+		if _, ok := pspdb.Titles[dirName[:l]]; ok {
+			return dirName[:l]
+		}
+	}
+	return dirName
 }
 
 func ResolveSaveDirectory(fsSlug string, config *internal.Config) string {
