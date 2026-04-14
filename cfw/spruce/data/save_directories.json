@@ -150,18 +150,19 @@
     "fake-08-64"
   ],
   "pico-8": [
-    "fake-08-32",
+    "fake-08",
     "fake-08-64"
   ],
   "psx": [
-    "PCSX-ReARMed-32",
+    "PCSX-ReARMed",
+    "PCSX-ReARMed",
     "DuckSwanStation Xtreme Amped",
     "PCSX-ReARMed-64",
     "SwanStation"
   ],
   "ps2": [],
   "psp": [
-    "PPSSPP (External)"
+    "../.config/ppsspp/PSP/SAVEDATA"
   ],
   "pokemon-mini": [
     "PokeMini"
@@ -205,14 +206,14 @@
     "Snes9x"
   ],
   "sfam": [
-    "ChimeraSNES-32",
+    "ChimeraSNES",
     "ChimeraSNES-64",
     "Supafaust",
     "Snes9x",
     "Snes9x 2010"
   ],
   "snes": [
-    "ChimeraSNES-32",
+    "ChimeraSNES",
     "ChimeraSNES-64",
     "Supafaust",
     "Snes9x",
