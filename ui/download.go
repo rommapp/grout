@@ -502,7 +502,6 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 				artFileName = g.FsNameNoExt + ".png"
 			}
 			artLocation := filepath.Join(artDir, artFileName)
-
 			coverURL := g.GetArtworkURL(config.ArtKind, host)
 			gamelistRomEntry.ArtLocation.ImagePath = artLocation
 
