@@ -22,7 +22,8 @@ tasks:
       - docker create --name {{.CONTAINER_NAME}}-{{.BUILD_DIR}} --label {{.LABEL}} {{.IMAGE_TAG}} >/dev/null 2>&1
       - echo "Extracting {{.BUILD_DIR}}..."
       - docker cp {{.CONTAINER_NAME}}-{{.BUILD_DIR}}:/build/grout {{.BUILD_DIR}}/grout
-      - 'if [ -n "{{.LIB_PATH}}" ]; then docker cp {{.CONTAINER_NAME}}-{{.BUILD_DIR}}:{{.LIB_PATH}} {{.BUILD_DIR}}/lib/libSDL2_gfx-1.0.so.0; fi'
+      - 'if [ -n "{{.GFX_PATH}}" ]; then docker cp {{.CONTAINER_NAME}}-{{.BUILD_DIR}}:{{.GFX_PATH}} {{.BUILD_DIR}}/lib/libSDL2_gfx-1.0.so.0; fi'
+      - 'if [ -n "{{.TTF_PATH}}" ]; then docker cp {{.CONTAINER_NAME}}-{{.BUILD_DIR}}:{{.TTF_PATH}} {{.BUILD_DIR}}/lib/libSDL2_ttf-2.0.so.0; fi'
       - docker rm {{.CONTAINER_NAME}}-{{.BUILD_DIR}} >/dev/null 2>&1
       - docker image prune --filter "label={{.LABEL}}" -f >/dev/null 2>&1 || true
       - echo "Extract {{.BUILD_DIR}} complete"
@@ -35,7 +36,11 @@ tasks:
       - task: _build
         vars: { PLATFORM: linux/arm64, BUILD_DIR: build64, IMAGE_TAG: "{{.IMAGE_NAME}}-arm64", DOCKERFILE: docker/Dockerfile, LOCAL: "{{.LOCAL}}" }
       - task: _extract
-        vars: { BUILD_DIR: build64, IMAGE_TAG: "{{.IMAGE_NAME}}-arm64", LIB_PATH: /usr/lib/aarch64-linux-gnu/libSDL2_gfx-1.0.so.0.0.2 }
+        vars: { 
+          BUILD_DIR: build64, IMAGE_TAG: "{{.IMAGE_NAME}}-arm64",
+          GFX_PATH: /usr/lib/aarch64-linux-gnu/libSDL2_gfx-1.0.so.0.0.2,
+          TTF_PATH: /usr/lib/aarch64-linux-gnu/libSDL2_ttf-2.0.so.0.14.1
+        }
 
   amd64:
     desc: Build and extract for AMD64 (x86_64)
@@ -43,7 +48,11 @@ tasks:
       - task: _build
         vars: { PLATFORM: linux/amd64, BUILD_DIR: build, IMAGE_TAG: "{{.IMAGE_NAME}}-amd64", DOCKERFILE: docker/Dockerfile }
       - task: _extract
-        vars: { BUILD_DIR: build, IMAGE_TAG: "{{.IMAGE_NAME}}-amd64", LIB_PATH: /usr/lib/x86_64-linux-gnu/libSDL2_gfx-1.0.so.0.0.2 }
+        vars: {
+          BUILD_DIR: build, IMAGE_TAG: "{{.IMAGE_NAME}}-amd64",
+          GFX_PATH: /usr/lib/x86_64-linux-gnu/libSDL2_gfx-1.0.so.0.0.2,
+          TTF_PATH: /usr/lib/x86_64-linux-gnu/libSDL2_ttf-2.0.so.0.14.1
+        }
 
   x86:
     desc: Build and extract for x86 (32-bit)
@@ -51,7 +60,11 @@ tasks:
       - task: _build
         vars: { PLATFORM: linux/386, BUILD_DIR: buildx86, IMAGE_TAG: "{{.IMAGE_NAME}}-x86", DOCKERFILE: docker/Dockerfile }
       - task: _extract
-        vars: { BUILD_DIR: buildx86, IMAGE_TAG: "{{.IMAGE_NAME}}-x86", LIB_PATH: /usr/lib/i386-linux-gnu/libSDL2_gfx-1.0.so.0.0.2 }
+        vars: {
+          BUILD_DIR: buildx86, IMAGE_TAG: "{{.IMAGE_NAME}}-x86",
+          GFX_PATH: /usr/lib/i386-linux-gnu/libSDL2_gfx-1.0.so.0.0.2,
+          TTF_PATH: /usr/lib/i386-linux-gnu/libSDL2_ttf-2.0.so.0.14.1
+        }
 
   arm32:
     desc: Build and extract for ARM32
@@ -60,6 +73,6 @@ tasks:
     cmds:
       - task: _build
         vars: { PLATFORM: linux/arm/v7, BUILD_DIR: build32, IMAGE_TAG: "{{.IMAGE_NAME}}-arm32", DOCKERFILE: docker/32.Dockerfile, LOCAL: "{{.LOCAL}}" }
-      # TODO: add LIB_PATH once custom SDL build for Miyoo is ready
+      # TODO: add GFX_PATH and TTF_PATH once custom SDL build for Miyoo is ready
       - task: _extract
-        vars: { BUILD_DIR: build32, IMAGE_TAG: "{{.IMAGE_NAME}}-arm32", LIB_PATH: "" }
+        vars: { BUILD_DIR: build32, IMAGE_TAG: "{{.IMAGE_NAME}}-arm32", GFX_PATH: "", TTF_PATH: "" }

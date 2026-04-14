@@ -134,3 +134,13 @@ tasks:
       - cp -R build/lib/* dist/Batocera-amd64/Grout/lib/
       - chmod a+x dist/Batocera-amd64/Grout/grout dist/Batocera-amd64/Grout.sh
     silent: true
+
+  retrodeck:
+    cmds:
+      - rm -rf dist/RetroDECK
+      - mkdir -p dist/RetroDECK/Grout/lib
+      - cp scripts/RetroDECK/Grout.sh dist/RetroDECK/
+      - cp build/grout README.md LICENSE dist/RetroDECK/Grout/
+      - cp -R build/lib/* dist/RetroDECK/Grout/lib/
+      - chmod a+x dist/RetroDECK/Grout/grout dist/RetroDECK/Grout.sh
+    silent: true
