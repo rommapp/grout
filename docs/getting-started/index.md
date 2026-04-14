@@ -27,6 +27,7 @@ Choose your platform:
 - [ROCKNIX Installation](install-rocknix.md)
 - [Spruce Installation](install-spruce.md)
 - [TrimUI Installation](install-trimui.md)
+- [RetroDECK Installation](install-retrodeck.md)
 
 ### Step 2: Launch and Select Language
 
