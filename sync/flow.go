@@ -10,6 +10,7 @@ import (
 	"grout/version"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	gosync "sync"
@@ -182,6 +183,10 @@ func ScanSaves(config *internal.Config) []LocalSave {
 					nameNoExt := strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name()))
 
 					rom, err := cm.GetRomByFSLookup(rommFSSlug, nameNoExt)
+					if err != nil && config != nil && config.SubfolderPerGame && cfw.GetCFW() == cfw.MinUI {
+						cleanName := stripSaveParentheses(nameNoExt)
+						rom, err = cm.GetRomByNameLookup(rommFSSlug, cleanName)
+					}
 					if err != nil {
 						logger.Debug("No cache match for save file", "file", entry.Name(), "fsSlug", rommFSSlug, "nameNoExt", nameNoExt)
 						continue
@@ -197,13 +202,12 @@ func ScanSaves(config *internal.Config) []LocalSave {
 						FilePath:    filepath.Join(saveDir, entry.Name()),
 						EmulatorDir: emuDir,
 					})
-				}
-
 				if saveFileCount > 0 {
 					logger.Debug("Scanned emulator directory", "path", saveDir, "saveFiles", saveFileCount)
 				}
 			}
 		}
+	}
 	}
 
 	logger.Debug("Completed save scan", "matched", len(saves))
@@ -607,10 +611,16 @@ func download(client *romm.Client, config *internal.Config, deviceID string, ite
 	if savePath == "" {
 		saveDir := ResolveSaveDirectory(item.LocalSave.FSSlug, config)
 		if saveDir != "" {
-			fileName := item.RemoteSave.FileName
-			if item.LocalSave.RomFileName != "" {
+			var fileName string
+			if config != nil && config.SubfolderPerGame && cfw.GetCFW() == cfw.MinUI {
+				cleanName := stripSaveParentheses(item.LocalSave.RomName)
+				tag := filepath.Base(saveDir)
+				fileName = fmt.Sprintf("%s (%s).%s", cleanName, tag, item.RemoteSave.FileExtension)
+			} else if item.LocalSave.RomFileName != "" {
 				romNameNoExt := strings.TrimSuffix(item.LocalSave.RomFileName, filepath.Ext(item.LocalSave.RomFileName))
 				fileName = romNameNoExt + "." + item.RemoteSave.FileExtension
+			} else {
+				fileName = item.RemoteSave.FileName
 			}
 			savePath = filepath.Join(saveDir, fileName)
 		}
@@ -827,6 +837,11 @@ func cleanupBackups(backupDir string, baseName string, limit int) {
 			logger.Debug("Removed old backup", "path", path)
 		}
 	}
+}
+
+func stripSaveParentheses(name string) string {
+	re := regexp.MustCompile(`\s*\([^)]*\)`)
+	return strings.TrimSpace(re.ReplaceAllString(name, ""))
 }
 
 func ResolveSaveDirectory(fsSlug string, config *internal.Config) string {

@@ -77,6 +77,7 @@ type Config struct {
 	AdditionalDownloads          AdditionalDownloads         `json:"additional_downloads,omitempty"`
 
 	SwapFaceButtons       bool              `json:"swap_face_buttons,omitempty"`
+	SubfolderPerGame      bool              `json:"subfolder_per_game,omitempty"`
 	PlatformOrder         []string          `json:"platform_order,omitempty"`
 	SaveDirectoryMappings map[string]string `json:"save_directory_mappings,omitempty"`
 	SlotPreferences       map[string]string `json:"-"`                           // Stored in save_slots.json, not config.json
@@ -218,6 +219,10 @@ func SaveConfig(config *Config) error {
 	}
 
 	return nil
+}
+
+func (c Config) IsSubfolderPerGame() bool {
+    return c.SubfolderPerGame
 }
 
 func InitKidMode(config *Config) {

@@ -16,6 +16,7 @@ import (
 type RomScanConfig interface {
 	GetDirectoryMapping(fsSlug string) (relativePath string, ok bool)
 	ResolveRommFSSlug(cfwKey string) string
+	IsSubfolderPerGame() bool
 }
 
 type LocalRomFile struct {
@@ -103,6 +104,52 @@ func scanRomsByPlatform(baseRomDir string, platformMap map[string][]string, conf
 						result[fsSlug] = append(result[fsSlug], roms...)
 						logger.Debug("Found ROMs for platform", "fsSlug", fsSlug, "dir", dirName, "count", len(roms))
 					}
+				}
+			}
+		}
+	} else if currentCFW == MinUI && config != nil && config.IsSubfolderPerGame() {
+		// 5 Game Handheld mode: ROMs are in /Roms/GameName (TAG)/ top-level folders
+		entries, err := os.ReadDir(baseRomDir)
+		if err != nil {
+			logger.Error("Failed to read ROM directory", "path", baseRomDir, "error", err)
+			return result
+		}
+
+		for _, entry := range entries {
+			if !entry.IsDir() || strings.HasPrefix(entry.Name(), ".") {
+				continue
+			}
+
+			dirName := entry.Name()
+			tag := stringutil.ParseTag(dirName)
+			if tag == "" {
+				continue
+			}
+
+			// Find which fsSlug this tag belongs to
+			for fsSlug, cfwDirs := range platformMap {
+				matched := false
+				for _, cfwDir := range cfwDirs {
+					cfwTag := stringutil.ParseTag(cfwDir)
+					if cfwTag == tag {
+						matched = true
+						break
+					}
+				}
+				if !matched {
+					continue
+				}
+
+				rommFSSlug := fsSlug
+				if config != nil {
+					rommFSSlug = config.ResolveRommFSSlug(fsSlug)
+				}
+
+				romDir := filepath.Join(baseRomDir, dirName)
+				roms := scanRomDirectory(rommFSSlug, romDir)
+				if len(roms) > 0 {
+					result[rommFSSlug] = append(result[rommFSSlug], roms...)
+					logger.Debug("Found ROMs for platform (5GH mode)", "fsSlug", rommFSSlug, "dir", dirName, "count", len(roms))
 				}
 			}
 		}

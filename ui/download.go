@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"grout/cfw"
+	"grout/cfw/minui"
 	"grout/cfw/muos"
 	"grout/internal"
 	"grout/internal/artutil"
@@ -19,6 +20,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -234,7 +236,21 @@ func (s *DownloadScreen) draw(input DownloadInput) (DownloadOutput, error) {
 				ext := strings.ToLower(filepath.Ext(g.Files[0].FileName))
 				if ext == ".zip" || ext == ".7z" {
 					romDirectory := input.Config.GetPlatformRomDirectory(gamePlatform)
-					archivePath := filepath.Join(romDirectory, g.Files[0].FileName)
+					var archivePath string
+					var extractDir string
+					var cleanName string
+					var gameFolder string
+
+					if input.Config.SubfolderPerGame && cfw.GetCFW() == cfw.MinUI {
+						tag := extractPlatformTag(romDirectory)
+						cleanName = stripParentheses(g.FsNameNoExt)
+						gameFolder = fmt.Sprintf("%s (%s)", cleanName, tag)
+						extractDir = filepath.Join(minui.GetRomDirectory(), gameFolder)
+						archivePath = filepath.Join(extractDir, g.Files[0].FileName)
+					} else {
+						extractDir = romDirectory
+						archivePath = filepath.Join(romDirectory, g.Files[0].FileName)
+					}
 
 					progress := &atomic.Float64{}
 					_, err := gaba.ProcessMessage(
@@ -252,12 +268,12 @@ func (s *DownloadScreen) draw(input DownloadInput) (DownloadOutput, error) {
 							if ext == ".7z" {
 								archiveFiles, extractErr = fileutil.SevenZipFileNames(archivePath)
 								if extractErr == nil {
-									extractErr = fileutil.Un7zip(archivePath, romDirectory, progress)
+									extractErr = fileutil.Un7zip(archivePath, extractDir, progress)
 								}
 							} else {
 								archiveFiles, extractErr = fileutil.ZipFileNames(archivePath)
 								if extractErr == nil {
-									extractErr = fileutil.Unzip(archivePath, romDirectory, progress)
+									extractErr = fileutil.Unzip(archivePath, extractDir, progress)
 								}
 							}
 
@@ -280,10 +296,33 @@ func (s *DownloadScreen) draw(input DownloadInput) (DownloadOutput, error) {
 										}
 									}
 								}
-								for i, entry := range gamelistEntries {
-									if entry.Game.ID == g.ID {
-										gamelistEntries[i].GamePath = filepath.Join(romDirectory, gamePath)
-										break
+
+								// Write m3u and rename extracted file if SubfolderPerGame
+								if input.Config.SubfolderPerGame && cfw.GetCFW() == cfw.MinUI {
+									realExt := filepath.Ext(gamePath)
+									cleanFileName := cleanName + realExt
+									oldPath := filepath.Join(extractDir, gamePath)
+									newPath := filepath.Join(extractDir, cleanFileName)
+									if err := os.Rename(oldPath, newPath); err != nil {
+										logger.Warn("Failed to rename extracted ROM", "from", oldPath, "to", newPath, "error", err)
+										cleanFileName = gamePath // fallback to original name
+									}
+									m3uPath := filepath.Join(extractDir, gameFolder+".m3u")
+									if err := os.WriteFile(m3uPath, []byte(cleanFileName), 0644); err != nil {
+										logger.Warn("Failed to write m3u file", "path", m3uPath, "error", err)
+									}
+									for i, entry := range gamelistEntries {
+										if entry.Game.ID == g.ID {
+											gamelistEntries[i].GamePath = newPath
+											break
+										}
+									}
+								} else {
+									for i, entry := range gamelistEntries {
+										if entry.Game.ID == g.ID {
+											gamelistEntries[i].GamePath = filepath.Join(romDirectory, gamePath)
+											break
+										}
 									}
 								}
 							}
@@ -297,6 +336,54 @@ func (s *DownloadScreen) draw(input DownloadInput) (DownloadOutput, error) {
 						continue
 					}
 				}
+			}
+		}
+	}
+
+	// Write m3u for SubfolderPerGame when not unzipping
+	if input.Config.SubfolderPerGame && !input.Config.UnzipDownloads && cfw.GetCFW() == cfw.MinUI {
+		for _, g := range input.SelectedGames {
+			if g.HasMultipleFiles {
+				continue
+			}
+
+			completed := slices.ContainsFunc(res.Completed, func(d gaba.Download) bool {
+				return d.DisplayName == g.Name
+			})
+			if !completed {
+				continue
+			}
+
+			if len(g.Files) == 0 {
+				continue
+			}
+
+			ext := strings.ToLower(filepath.Ext(g.Files[0].FileName))
+
+			gamePlatform := input.Platform
+			if input.Platform.ID == 0 && g.PlatformID != 0 {
+				gamePlatform = romm.Platform{
+					ID:     g.PlatformID,
+					FSSlug: g.PlatformFSSlug,
+					Name:   g.PlatformDisplayName,
+				}
+			}
+
+			romDirectory := input.Config.GetPlatformRomDirectory(gamePlatform)
+			tag := extractPlatformTag(romDirectory)
+			cleanName := stripParentheses(g.FsNameNoExt)
+			gameFolder := fmt.Sprintf("%s (%s)", cleanName, tag)
+			subdir := filepath.Join(minui.GetRomDirectory(), gameFolder)
+
+			if err := os.MkdirAll(subdir, 0755); err != nil {
+				logger.Warn("Failed to create game subfolder for m3u", "dir", subdir, "error", err)
+				continue
+			}
+
+			romFileName := cleanName + ext
+			m3uPath := filepath.Join(subdir, gameFolder+".m3u")
+			if err := os.WriteFile(m3uPath, []byte(romFileName), 0644); err != nil {
+				logger.Warn("Failed to write m3u file", "path", m3uPath, "error", err)
 			}
 		}
 	}
@@ -378,7 +465,20 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 					}
 				}
 			}
-			downloadLocation = filepath.Join(romDirectory, fileToDownload.FileName)
+			if config.SubfolderPerGame && cfw.GetCFW() == cfw.MinUI {
+				tag := extractPlatformTag(romDirectory)
+				cleanName := stripParentheses(g.FsNameNoExt)
+				gameFolder := fmt.Sprintf("%s (%s)", cleanName, tag)
+				subdir := filepath.Join(minui.GetRomDirectory(), gameFolder)
+				if err := os.MkdirAll(subdir, 0755); err != nil {
+					gaba.GetLogger().Warn("Failed to create game subfolder", "dir", subdir, "error", err)
+				}
+				ext := filepath.Ext(fileToDownload.FileName)
+				cleanFileName := cleanName + ext
+				downloadLocation = filepath.Join(subdir, cleanFileName)
+			} else {
+				downloadLocation = filepath.Join(romDirectory, fileToDownload.FileName)
+			}
 			sourceURL, _ = url.JoinPath(host.URL(), "/api/roms/", strconv.Itoa(g.ID), "content", fileToDownload.FileName)
 			sourceURL += "?" + url.Values{"file_ids": {strconv.Itoa(fileToDownload.ID)}}.Encode()
 		}
@@ -456,7 +556,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 			artMarqueeDir := config.GetArtMarqueeDirectory(gamePlatform)
 			if config.AdditionalDownloads.Marquee != artutil.ArtKindNone && artMarqueeDir != "" {
 				marqueeArtFileName := g.FsNameNoExt
-				// is cfw is ES based, use -marquee suffix to avoid conflicts with cover art
+				// if cfw is ES based, use -marquee suffix to avoid conflicts with cover art
 				if cfw.GetCFW().IsBasedOnEmulationStation() {
 					marqueeArtFileName += "-marquee.png"
 				} else {
@@ -497,7 +597,14 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 
 			artBezelDir := config.GetArtBezelDirectory(gamePlatform)
 			if config.AdditionalDownloads.Bezel && artBezelDir != "" {
-				bezelArtLocation := filepath.Join(artBezelDir, artFileName)
+				bezelArtFileName := g.FsNameNoExt
+				// if cfw is ES based, use -bezel suffix to avoid conflicts with cover art
+				if cfw.GetCFW().IsBasedOnEmulationStation() {
+					bezelArtFileName += "-bezel.png"
+				} else {
+					bezelArtFileName += ".png"
+				}
+				bezelArtLocation := filepath.Join(artBezelDir, bezelArtFileName)
 				if bezelURL := g.GetBezelURL(host); bezelURL != "" {
 					gamelistRomEntry.ArtLocation.BezelPath = bezelArtLocation
 					artDownloads = append(artDownloads, artDownload{
@@ -526,7 +633,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 			boxbackDir := config.GetBoxbackDirectory(gamePlatform)
 			if config.AdditionalDownloads.BoxBack && boxbackDir != "" {
 				boxbackArtFileName := g.FsNameNoExt
-				// is cfw is ES based, use -boxback suffix to avoid conflicts with cover art
+				// if cfw is ES based, use -boxback suffix to avoid conflicts with cover art
 				if cfw.GetCFW().IsBasedOnEmulationStation() {
 					boxbackArtFileName += "-boxback.png"
 				} else {
@@ -547,7 +654,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 			fanartDir := config.GetFanartDirectory(gamePlatform)
 			if config.AdditionalDownloads.Fanart && fanartDir != "" {
 				fanartFileName := g.FsNameNoExt
-				// is cfw is ES based, use -fanart suffix to avoid conflicts with cover art
+				// if cfw is ES based, use -fanart suffix to avoid conflicts with cover art
 				if cfw.GetCFW().IsBasedOnEmulationStation() {
 					fanartFileName += "-fanart.png"
 				} else {
@@ -564,12 +671,26 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 					})
 				}
 			}
-
 		}
 		gamesSummaries = append(gamesSummaries, gamelistRomEntry)
 	}
 
 	return downloads, artDownloads, gamesSummaries
+}
+
+func stripParentheses(name string) string {
+	re := regexp.MustCompile(`\s*\([^)]*\)`)
+	return strings.TrimSpace(re.ReplaceAllString(name, ""))
+}
+
+func extractPlatformTag(romDirectory string) string {
+	base := filepath.Base(romDirectory)
+	start := strings.LastIndex(base, "(")
+	end := strings.LastIndex(base, ")")
+	if start >= 0 && end > start {
+		return base[start+1 : end]
+	}
+	return base
 }
 
 func (s *DownloadScreen) downloadArt(artDownloads []artDownload, downloadedGames []romm.Rom, headers map[string]string, progress *atomic.Float64, insecureSkipVerify bool) {

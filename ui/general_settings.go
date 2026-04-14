@@ -67,6 +67,8 @@ func (s *GeneralSettingsScreen) buildMenuItems(config *internal.Config) []gaba.I
 	c := cfw.GetCFW()
 	isMuOS := c == cfw.MuOS
 	isESBasedOS := c == cfw.Knulli || c == cfw.ROCKNIX
+	isMinUI := atomic.Bool{}
+	isMinUI.Store(c == cfw.MinUI)
 	showArtKind := atomic.Bool{}
 	showArtKind.Store(config.DownloadArt)
 	displayDownloadArtPreview := atomic.Bool{}
@@ -105,6 +107,15 @@ func (s *GeneralSettingsScreen) buildMenuItems(config *internal.Config) []gaba.I
 				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_compressed_downloads_do_nothing", Other: "Do Nothing"}, nil), Value: false},
 			},
 			SelectedOption: boolToIndex(!config.UnzipDownloads),
+		},
+		{
+			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_subfolder_per_game", Other: "5 Game Handheld"}, nil)},
+			Options: []gaba.Option{
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_false", Other: "False"}, nil), Value: false},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_true", Other: "True"}, nil), Value: true},
+			},
+			SelectedOption: boolToIndex(config.SubfolderPerGame),
+			VisibleWhen:    &isMinUI,
 		},
 		{
 			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_art", Other: "Download Art"}, nil)},
@@ -269,6 +280,11 @@ func (s *GeneralSettingsScreen) applySettings(config *internal.Config, items []g
 		case i18n.Localize(&goi18n.Message{ID: "settings_compressed_downloads", Other: "Archived Downloads"}, nil):
 			if val, ok := item.Options[item.SelectedOption].Value.(bool); ok {
 				config.UnzipDownloads = val
+			}
+
+		case i18n.Localize(&goi18n.Message{ID: "settings_subfolder_per_game", Other: "5 Game Handheld"}, nil):
+			if val, ok := item.Options[item.SelectedOption].Value.(bool); ok {
+				config.SubfolderPerGame = val
 			}
 
 		case i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_marquee", Other: "Download Marquee Image"}, nil):
