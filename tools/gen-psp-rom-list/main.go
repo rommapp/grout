@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"go/format"
-	"io"
-	"net/http"
 	"os"
 	"sort"
 	"strings"
@@ -13,29 +11,23 @@ import (
 
 const GameDBPSPURL = "https://github.com/niemasd/GameDB-PSP/releases/latest/download/PSP.titles.json"
 
+// vendoredPath is relative to the project root. The generator is invoked by
+// go generate from internal/pspdb/, so we go up two levels to reach the root.
+const vendoredPath = "../../vendored/pspdb/PSP.titles.json"
+
 // outputPath is relative to the working directory set by go generate,
 // which is the source directory of the package containing the directive
 // (i.e. internal/pspdb/).
 const outputPath = "pspdb_generated.go"
 
 func main() {
-	fmt.Println("Fetching PSP title database from", GameDBPSPURL)
+	fmt.Printf("Reading PSP title database from %s\n", vendoredPath)
 
-	resp, err := http.Get(GameDBPSPURL)
+	data, err := os.ReadFile(vendoredPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to fetch PSP titles: %v\n", err)
-		os.Exit(1)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		fmt.Fprintf(os.Stderr, "unexpected HTTP status: %s\n", resp.Status)
-		os.Exit(1)
-	}
-
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to read response body: %v\n", err)
+		fmt.Fprintf(os.Stderr, "failed to read vendored file: %v\n", err)
+		fmt.Fprintf(os.Stderr, "hint: run the following to update the vendored file:\n")
+		fmt.Fprintf(os.Stderr, "  curl -sL %s -o vendored/pspdb/PSP.titles.json\n", GameDBPSPURL)
 		os.Exit(1)
 	}
 
