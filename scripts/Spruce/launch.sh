@@ -10,6 +10,13 @@ fi
 
 export CFW=SPRUCE
 
+# Sprig is an alternative OS developed by the Spruce team for the Miyoo Mini.
+# Both Spruce and Sprig are compatible with our grout package, so we treat Sprig
+# as MiyooMini to reuse the same platform configuration.
+if [ -d "/mnt/SDCARD/sprig" ]; then
+    PLATFORM="MiyooMini"
+fi
+
 case "$PLATFORM" in
 
 ############################################################

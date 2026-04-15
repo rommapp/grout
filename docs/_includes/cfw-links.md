@@ -7,4 +7,6 @@
 [onion]: https://onionui.github.io
 [rocknix]: https://rocknix.org
 [spruce]: https://spruceui.github.io/
+[sprigui]: https://github.com/spruceUI/sprigUI
+[twigui]: https://github.com/spruceUI/twigUI
 [trimui]: https://github.com/trimui
