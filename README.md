@@ -9,7 +9,7 @@
       A RomM Client for your retro doo-dad.
     </h3>
 
-[Allium][allium] · [Batocera][batocera] · [Knulli][knulli] · [MinUI][minui] · [muOS][muos] · [NextUI][nextui] · [Onion][onion] · [ROCKNIX][rocknix] · [Spruce][spruce] · [TrimUI][trimui]
+[Allium][allium] · [Batocera][batocera] · [Knulli][knulli] · [MinUI][minui] · [muOS][muos] · [NextUI][nextui] · [Onion][onion] · [ROCKNIX][rocknix] · [Spruce][spruce] · [SprigUI][sprigui] · [TwigUI][twigui] · [TrimUI][trimui]
 
 <br>
 
@@ -95,6 +95,8 @@ If you enjoy using Grout and feel inclined to pay it forward, go do something ni
 [onion]: https://onionui.github.io
 [rocknix]: https://rocknix.org
 [spruce]: https://spruceui.github.io/
+[sprigui]: https://github.com/spruceUI/sprigUI
+[twigui]: https://github.com/spruceUI/twigUI
 [trimui]: https://github.com/trimui
 
 <!-- Badges -->
