@@ -138,8 +138,9 @@ tasks:
   retrodeck:
     cmds:
       - rm -rf dist/RetroDECK
-      - mkdir -p dist/RetroDECK/Grout/lib
+      - mkdir -p dist/RetroDECK/Grout/{lib,media}
       - cp scripts/RetroDECK/Grout.sh dist/RetroDECK/
+      - cp scripts/RetroDECK/media/* dist/RetroDECK/Grout/media/
       - cp build/grout README.md LICENSE dist/RetroDECK/Grout/
       - cp -R build/lib/* dist/RetroDECK/Grout/lib/
       - chmod a+x dist/RetroDECK/Grout/grout dist/RetroDECK/Grout.sh

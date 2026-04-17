@@ -14,13 +14,31 @@ _Please help verify compatibility on other devices by reporting your results!_
 
 ## Installation Steps
 
+### Automatic (Recommended)
+
+Here is an all-in-one install script that will install Grout and add it as a non-Steam game.
+
+```bash
+curl -o- https://raw.githubusercontent.com/rommapp/grout/refs/heads/main/scripts/RetroDECK/install.sh | bash
+```
+
+```bash
+wget -qO- https://raw.githubusercontent.com/rommapp/grout/refs/heads/main/scripts/RetroDECK/install.sh | bash
+```
+
+### Manual
+
 1. Ensure your device has RetroDECK installed.
 2. Download the [latest Grout release](https://github.com/rommapp/grout/releases/latest/download/Grout-RetroDECK.zip) for
    RetroDECK.
 3. Unzip the downloaded archive.
 4. Copy the `Grout` folder to your home directory (`/home/deck/grout/`)
 5. Copy the `Grout.sh` file to the same Ports directory (`/home/deck/grout/Grout.sh`)
-6. Open Steam and add Grout as a non-Steam game with this command: `/home/deck/grout/Grout.sh %command%`
+6. Open Steam and add Grout as a non-Steam game:
+   - Target: `env`
+   - Start In: `/home/deck/grout/`
+   - Launch options: `/home/deck/grout/Grout.sh`
+   - You'll find game media in `/home/deck/grout/Grout/media/`
 7. Launch Grout from Steam and enjoy!
 
 ## Update
