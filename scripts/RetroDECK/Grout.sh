@@ -1,5 +1,5 @@
 #!/bin/bash
-CUR_DIR="$(dirname "$0")"
+CUR_DIR="$(realpath "$(dirname "$0")")"
 cd "$CUR_DIR/Grout" || exit 1
 
 # Apply pending update

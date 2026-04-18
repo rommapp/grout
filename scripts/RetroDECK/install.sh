@@ -32,6 +32,6 @@ nonsteam add -w \
   --allow-overlay
 
 echo "Cleaning up..."
-rm install.sh nonsteam
+rm nonsteam
 
 echo "Done! Please restart Steam for changes to take effect."
