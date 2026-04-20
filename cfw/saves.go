@@ -8,6 +8,7 @@ import (
 	"grout/cfw/muos"
 	"grout/cfw/nextui"
 	"grout/cfw/onion"
+	"grout/cfw/retrodeck"
 	"grout/cfw/rocknix"
 	"grout/cfw/spruce"
 	"grout/cfw/trimui"
@@ -37,6 +38,8 @@ func EmulatorFolderMap(c CFW) map[string][]string {
 		return batocera.Platforms
 	case MinUI:
 		return minui.SaveDirectories
+	case RetroDECK:
+		return retrodeck.Platforms
 	default:
 		return nil
 	}
