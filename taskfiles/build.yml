@@ -43,7 +43,8 @@ tasks:
           "libSDL2_ttf-2.0.so.0",
           "libjpeg.so.62",
           "libtiff.so.5",
-          "libwebp.so.6"
+          "libwebp.so.6",
+          "libjbig.so.0"
         ],}
 
   amd64:
@@ -59,7 +60,8 @@ tasks:
           "libSDL2_ttf-2.0.so.0",
           "libjpeg.so.62",
           "libtiff.so.5",
-          "libwebp.so.6"
+          "libwebp.so.6",
+          "libjbig.so.0"
         ],}
 
   x86:
@@ -75,7 +77,8 @@ tasks:
           "libSDL2_ttf-2.0.so.0",
           "libjpeg.so.62",
           "libtiff.so.5",
-          "libwebp.so.6"
+          "libwebp.so.6",
+          "libjbig.so.0"
         ],}
 
   arm32:
