@@ -2,6 +2,12 @@
   "3do": [
     "3do"
   ],
+  "3ds": [
+    "n3ds"
+  ],
+  "64dd": [
+    "n64dd"
+  ],
   "acorn-archimedes": [
     "archimedes"
   ],
@@ -12,9 +18,7 @@
     "amstradcpc"
   ],
   "amiga": [
-    "amiga",
-    "amiga1200",
-    "amiga600"
+    "amiga"
   ],
   "amiga-cd32": [
     "amigacd32"
@@ -22,11 +26,11 @@
   "amstrad-gx4000": [
     "gx4000"
   ],
-  "appleii": [
-    "apple2"
-  ],
   "apple-iigs": [
     "apple2gs"
+  ],
+  "appleii": [
+    "apple2"
   ],
   "arcade": [
     "arcade"
@@ -40,6 +44,9 @@
   "astrocade": [
     "astrocde"
   ],
+  "atari-st": [
+    "atarist"
+  ],
   "atari2600": [
     "atari2600"
   ],
@@ -52,14 +59,18 @@
   "atari800": [
     "atari800"
   ],
-  "atari-st": [
-    "atarist"
-  ],
-  "atari-xegs": [
+  "atari8bit": [
+    "atari800",
     "atarixe"
   ],
   "bbcmicro": [
     "bbcmicro"
+  ],
+  "c-plus-4": [
+    "plus4"
+  ],
+  "c16": [
+    "plus4"
   ],
   "c64": [
     "c64"
@@ -76,9 +87,6 @@
   "commodore-cdtv": [
     "cdtv"
   ],
-  "c-plus-4": [
-    "plus4"
-  ],
   "creativision": [
     "crvision"
   ],
@@ -88,14 +96,17 @@
   "dos": [
     "dos"
   ],
+  "dragon-32-slash-64": [
+    "dragon32"
+  ],
   "epoch-super-cassette-vision": [
     "scv"
   ],
-  "famicom": [
-    "famicom"
-  ],
   "fairchild-channel-f": [
     "channelf"
+  ],
+  "famicom": [
+    "famicom"
   ],
   "fds": [
     "fds"
@@ -129,7 +140,8 @@
   ],
   "genesis": [
     "genesis",
-    "megadrive"
+    "megadrive",
+    "megadrivejp"
   ],
   "hartung": [
     "gmaster"
@@ -155,14 +167,19 @@
   "model2": [
     "model2"
   ],
+  "model3": [
+    "model2"
+  ],
   "msx": [
-    "msx",
-    "msx1"
+    "msx"
+  ],
+  "msx-turbo": [
+    "msxturbor"
   ],
   "msx2": [
     "msx2"
   ],
-  "msx-turbo": [
+  "msx2plus": [
     "msxturbor"
   ],
   "mugen": [
@@ -173,9 +190,6 @@
   ],
   "n64": [
     "n64"
-  ],
-  "64dd": [
-    "n64dd"
   ],
   "nds": [
     "nds"
@@ -193,20 +207,26 @@
   "neogeoaes": [
     "neogeo"
   ],
+  "neogeomvs": [
+    "neogeo"
+  ],
   "nes": [
     "nes"
   ],
+  "new-nintendo-3ds": [
+    "n3ds"
+  ],
   "ngc": [
     "gc"
-  ],
-  "3ds": [
-    "n3ds"
   ],
   "odyssey-2": [
     "odyssey2"
   ],
   "openbor": [
     "openbor"
+  ],
+  "oric": [
+    "oric"
   ],
   "palm-os": [
     "palm"
@@ -217,11 +237,21 @@
   "pc-9800-series": [
     "pc98"
   ],
+  "pc-booter": [
+    "pc"
+  ],
+  "pc-engine": [
+    "pcengine",
+    "tg16"
+  ],
   "pc-fx": [
     "pcfx"
   ],
   "philips-cd-i": [
     "cdimono1"
+  ],
+  "pico": [
+    "pico8"
   ],
   "pokemon-mini": [
     "pokemini"
@@ -257,28 +287,75 @@
     "sega32xna"
   ],
   "segacd": [
-    "megacd",
-    "megacdjp",
     "segacd"
   ],
-  "sfc": [
+  "sfam": [
     "sfc"
   ],
   "sg1000": [
     "sg-1000"
   ],
+  "sharp-x68000": [
+    "x68000"
+  ],
   "sms": [
     "mastersystem",
     "mark3"
   ],
+  "snes": [
+    "snes",
+    "snesna"
+  ],
+  "spectravideo": [
+    "spectravideo"
+  ],
   "stv": [
     "stv"
+  ],
+  "sufami-turbo": [
+    "sufami"
+  ],
+  "super-acan": [
+    "supracan"
   ],
   "supergrafx": [
     "supergrafx"
   ],
+  "supervision": [
+    "supervision"
+  ],
   "switch": [
     "switch"
+  ],
+  "tg16": [
+    "tg16",
+    "pcengine"
+  ],
+  "thomson-mo5": [
+    "moto"
+  ],
+  "thomson-to": [
+    "moto",
+    "to8"
+  ],
+  "ti-99": [
+    "ti99"
+  ],
+  "ti-994a": [
+    "ti99"
+  ],
+  "to8": [
+    "to8"
+  ],
+  "turbografx-cd": [
+    "pcenginecd",
+    "tg-cd"
+  ],
+  "uzebox": [
+    "uzebox"
+  ],
+  "vectrex": [
+    "vectrex"
   ],
   "vic-20": [
     "vic20"
@@ -286,28 +363,43 @@
   "virtualboy": [
     "virtualboy"
   ],
+  "vsmile": [
+    "vsmile"
+  ],
+  "wasm-4": [
+    "wasm4"
+  ],
   "wii": [
     "wii"
   ],
   "wiiu": [
     "wiiu"
   ],
+  "win": [
+    "windows9x"
+  ],
+  "win3x": [
+    "windows3x"
+  ],
   "wonderswan": [
     "wonderswan"
+  ],
+  "wonderswan-color": [
+    "wonderswancolor"
   ],
   "x1": [
     "x1"
   ],
-  "sharp-x68000": [
-    "x68000"
-  ],
   "xbox": [
     "xbox"
+  ],
+  "z-machine": [
+    "zmachine"
   ],
   "zx81": [
     "zx81"
   ],
-  "zxspectrum": [
+  "zxs": [
     "zxspectrum"
   ]
 }
