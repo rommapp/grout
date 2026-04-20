@@ -5,12 +5,13 @@ NONSTEAM_VERSION=0.7.0
 NONSTEAM_URL=https://github.com/cameronhimself/nonsteam/releases/download/$NONSTEAM_VERSION/nonsteam-linux-x64-$NONSTEAM_VERSION.tar.gz
 
 echo "Creating installation directory..."
-mkdir -p $HOME/grout && cd $HOME/grout
+mkdir -p "$HOME/grout" && cd "$HOME/grout"
 export PATH="$HOME/grout:$PATH"
 
 echo "Downloading and extracting Grout..."
 curl -sL -o grout.zip $GROUT_URL
 unzip  -d . -o -qq grout.zip
+chmod +x Grout.sh Grout/grout
 rm grout.zip
 
 echo "Downloading and extracting nonsteam..."
