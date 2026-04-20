@@ -60,7 +60,9 @@
     "atari800"
   ],
   "atari8bit": [
-    "atari800",
+    "atari8bit"
+  ],
+  "atari-xegs": [
     "atarixe"
   ],
   "bbcmicro": [
@@ -180,7 +182,7 @@
     "msx2"
   ],
   "msx2plus": [
-    "msxturbor"
+    "msx2plus"
   ],
   "mugen": [
     "mugen"
