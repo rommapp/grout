@@ -40,7 +40,7 @@ func FillGamesMetadata(entries []gamelist.RomGameEntry) {
 			logger.Warn("Failed to add games to ES gamelist.xml", "error", err)
 		}
 		scheduleESRestart()
-	case Spruce, Allium, Onion:
+	case Spruce, Allium, Onion, Koriki:
 		if err := gamelist.AddRomGamesToGamelist(entries, gamelist.MiyooGameListFileName); err != nil {
 			logger.Warn("Failed to add games to miyoogamelist.xml", "error", err)
 		}

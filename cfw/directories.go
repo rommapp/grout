@@ -4,6 +4,7 @@ import (
 	"grout/cfw/allium"
 	"grout/cfw/batocera"
 	"grout/cfw/knulli"
+	"grout/cfw/koriki"
 	"grout/cfw/minui"
 	"grout/cfw/muos"
 	"grout/cfw/nextui"
@@ -33,6 +34,8 @@ func GetRomDirectory() string {
 		return allium.GetRomDirectory()
 	case Onion:
 		return onion.GetRomDirectory()
+	case Koriki:
+		return koriki.GetRomDirectory()
 	case Batocera:
 		return batocera.GetRomDirectory()
 	case MinUI:
@@ -72,6 +75,8 @@ func GetBIOSDirectory() string {
 		return allium.GetBIOSDirectory()
 	case Onion:
 		return onion.GetBIOSDirectory()
+	case Koriki:
+		return koriki.GetBIOSDirectory()
 	case Batocera:
 		return batocera.GetBIOSDirectory()
 	case MinUI:
@@ -121,6 +126,8 @@ func GetArtDirectory(romDir string, platformFSSlug, platformName string) string 
 		return allium.GetArtDirectory(romDir)
 	case Onion:
 		return onion.GetArtDirectory(romDir)
+	case Koriki:
+		return koriki.GetArtDirectory(romDir)
 	case Batocera:
 		return batocera.GetArtDirectory(romDir)
 	case MinUI:
@@ -167,6 +174,8 @@ func BaseSavePath() string {
 		return allium.GetBaseSavePath()
 	case Onion:
 		return onion.GetBaseSavePath()
+	case Koriki:
+		return koriki.GetBaseSavePath()
 	case Batocera:
 		return batocera.GetBaseSavePath()
 	case MinUI:

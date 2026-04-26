@@ -1,0 +1,178 @@
+{
+  "acpc": [
+    "CPC (CrocoDS)"
+  ],
+  "amiga": [
+    "PUAE 2021"
+  ],
+  "arcade": [
+    "MAME 2003-Plus",
+    "FB Alpha 2012 CPS-1",
+    "FB Alpha 2012 CPS-2",
+    "FB Alpha 2012 CPS-3",
+    "FB Alpha 2012 Neo Geo",
+    "FinalBurn Neo"
+  ],
+  "arduboy": [
+    "Ardens"
+  ],
+  "atari-st": [
+    "Hatari"
+  ],
+  "atari2600": [
+    "Stella 2014"
+  ],
+  "atari5200": [
+    "a5200"
+  ],
+  "atari7800": [
+    "ProSystem"
+  ],
+  "c64": [
+    "VICE x64, fast"
+  ],
+  "colecovision": [
+    "blueMSX"
+  ],
+  "dc": [
+    "Flycast"
+  ],
+  "dos": [
+    "DOSBox-Pure"
+  ],
+  "fairchild-channel-f": [
+    "FreeChaF"
+  ],
+  "famicom": [
+    "FCEUmm"
+  ],
+  "fds": [
+    "FCEUmm"
+  ],
+  "g-and-w": [
+    "Handheld Electronic"
+  ],
+  "gamegear": [
+    "PicoDrive"
+  ],
+  "gb": [
+    "Gambatte"
+  ],
+  "gba": [
+    "gpSP",
+    "mGBA"
+  ],
+  "gbc": [
+    "Gambatte"
+  ],
+  "genesis": [
+    "PicoDrive"
+  ],
+  "intellivision": [
+    "FreeIntv"
+  ],
+  "lynx": [
+    "Handy"
+  ],
+  "mega-duck-slash-cougar-boy": [
+    "SameDuck"
+  ],
+  "msx": [
+    "blueMSX"
+  ],
+  "n64": [
+    "Mupen64Plus-Next"
+  ],
+  "nds": [
+    "DraStic"
+  ],
+  "neo-geo-cd": [
+    "NeoCD"
+  ],
+  "neo-geo-pocket": [
+    "Beetle NeoPop"
+  ],
+  "neo-geo-pocket-color": [
+    "Beetle NeoPop"
+  ],
+  "neogeoaes": [
+    "FB Alpha 2012 Neo Geo"
+  ],
+  "neogeomvs": [
+    "FB Alpha 2012 Neo Geo"
+  ],
+  "nes": [
+    "FCEUmm"
+  ],
+  "odyssey": [
+    "Odyssey2"
+  ],
+  "pico-8": [
+    "FAKE-08"
+  ],
+  "pokemon-mini": [
+    "PokeMini"
+  ],
+  "psx": [
+    "PCSX-ReARMed"
+  ],
+  "saturn": [
+    "Beetle Saturn"
+  ],
+  "sega32": [
+    "PicoDrive"
+  ],
+  "segacd": [
+    "PicoDrive"
+  ],
+  "sfam": [
+    "Supafaust",
+    "Snes9x"
+  ],
+  "sg1000": [
+    "Gearsystem"
+  ],
+  "sharp-x68000": [
+    "PX68k"
+  ],
+  "sms": [
+    "PicoDrive"
+  ],
+  "snes": [
+    "Beetle Supafaust",
+    "Snes9x"
+  ],
+  "supergrafx": [
+    "Beetle SuperGrafx"
+  ],
+  "supervision": [
+    "Potator"
+  ],
+  "tg16": [
+    "Beetle PCE Fast"
+  ],
+  "tic-80": [
+    "TIC-80"
+  ],
+  "turbografx-cd": [
+    "Beetle PCE Fast"
+  ],
+  "vectrex": [
+    "vecx"
+  ],
+  "vic-20": [
+    "VICE xvic"
+  ],
+  "virtualboy": [
+    "Beetle VB"
+  ],
+  "wonderswan": [
+    "Beetle Cygne"
+  ],
+  "wonderswan-color": [
+    "Beetle Cygne"
+  ],
+  "zxs": [
+    "Fuse"
+  ]
+}

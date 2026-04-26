@@ -49,6 +49,8 @@ func GetDistributionAssetName(c cfw.CFW) string {
 		return "Grout-Allium.zip"
 	case cfw.Onion:
 		return "Grout-Onion.zip"
+	case cfw.Koriki:
+		return "Grout-Koriki.zip"
 	case cfw.MinUI:
 		return "Grout-MinUI.zip"
 	case cfw.Batocera:
@@ -84,7 +86,7 @@ func getInstallRoot(c cfw.CFW) (string, error) {
 	switch c {
 	case cfw.NextUI:
 		levels = 1 // zip has no wrapper dir
-	case cfw.Spruce, cfw.Allium, cfw.Onion, cfw.Trimui:
+	case cfw.Spruce, cfw.Allium, cfw.Onion, cfw.Trimui, cfw.Koriki:
 		levels = 3 // binary is nested: e.g. Grout.pak/grout/grout
 	}
 
@@ -94,7 +96,6 @@ func getInstallRoot(c cfw.CFW) (string, error) {
 	}
 	return root, nil
 }
-
 
 // CheckForUpdate checks for available updates based on the release channel.
 // For ReleaseChannelMatchRomM, the host parameter is required to fetch the RomM version.
@@ -249,6 +250,8 @@ func getLaunchScriptPath(c cfw.CFW) string {
 	case cfw.Allium:
 		return "Grout.pak/launch.sh"
 	case cfw.Onion:
+		return "Grout/launch.sh"
+	case cfw.Koriki:
 		return "Grout/launch.sh"
 	case cfw.MinUI:
 		return "Grout.pak/launch.sh"
