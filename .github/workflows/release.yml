@@ -219,12 +219,13 @@ jobs:
           GROUT_VERSION: ${{ needs.prepare.outputs.version }}
 
       - name: Package ARM32 platforms
-        run: task package:allium package:onion
+        run: task package:allium package:onion package:koriki
 
       - name: Create distributions
         run: |
           cd dist/Allium && zip -r ../Grout-Allium.zip Grout.pak && cd ../..
           cd dist/Onion && zip -r ../Grout-Onion.zip Grout && cd ../..
+          cd dist/Koriki && zip -r ../Grout-Koriki.zip .simplemenu App && cd ../..
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -233,6 +234,7 @@ jobs:
           path: |
             dist/Grout-Allium.zip
             dist/Grout-Onion.zip
+            dist/Grout-Koriki.zip
             build32/grout
   package-arm-universal:
     needs: [prepare, build-arm64, build-arm32]
@@ -296,6 +298,7 @@ jobs:
             **/Grout.spruce.zip
             **/Grout-Allium.zip
             **/Grout-Onion.zip
+            **/Grout-Koriki.zip
             **/Grout-Knulli.zip
             **/Grout-ROCKNIX.zip
             **/Grout-Trimui.zip
@@ -375,6 +378,7 @@ jobs:
             "Grout-Trimui.zip"
             "Grout-Allium.zip"
             "Grout-Onion.zip"
+            "Grout-Koriki.zip"
             "Grout-MinUI.zip"
             "Grout-Batocera-arm64.zip"
             "Grout-Batocera-amd64.zip"

@@ -72,6 +72,7 @@ nav:
       - MinUI: getting-started/install-minui.md
       - muOS: getting-started/install-muos.md
       - NextUI: getting-started/install-nextui.md
+      - Koriki: getting-started/install-koriki.md
       - Onion: getting-started/install-onion.md
       - ROCKNIX: getting-started/install-rocknix.md
       - Spruce: getting-started/install-spruce.md
@@ -84,6 +85,7 @@ nav:
           - Allium: platforms/allium.md
           - Batocera: platforms/BATOCERA.md
           - Knulli: platforms/knulli.md
+          - Koriki: platforms/koriki.md
           - MinUI: platforms/minui.md
           - muOS: platforms/muos.md
           - NextUI: platforms/nextui.md

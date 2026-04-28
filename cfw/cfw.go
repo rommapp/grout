@@ -17,6 +17,7 @@ const (
 	Trimui   CFW = "TRIMUI"
 	Allium   CFW = "ALLIUM"
 	Onion    CFW = "ONION"
+	Koriki   CFW = "KORIKI"
 	Batocera CFW = "BATOCERA"
 	MinUI    CFW = "MINUI"
 )
@@ -26,11 +27,11 @@ func GetCFW() CFW {
 	cfw := CFW(cfwEnv)
 
 	switch cfw {
-	case MuOS, NextUI, Knulli, Spruce, ROCKNIX, Trimui, Allium, Onion, Batocera, MinUI:
+	case MuOS, NextUI, Knulli, Spruce, ROCKNIX, Trimui, Allium, Onion, Koriki, Batocera, MinUI:
 		return cfw
 	default:
 		log.SetOutput(os.Stderr)
-		log.Fatalf("Unsupported CFW: '%s'. Valid options: NextUI, muOS, Knulli, Spruce, ROCKNIX, Trimui, Allium, Onion, Batocera, MinUI", cfwEnv)
+		log.Fatalf("Unsupported CFW: '%s'. Valid options: NextUI, muOS, Knulli, Spruce, ROCKNIX, Trimui, Allium, Onion, Koriki, Batocera, MinUI", cfwEnv)
 		return ""
 	}
 }

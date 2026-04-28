@@ -9,7 +9,7 @@
       A RomM Client for your retro doo-dad.
     </h3>
 
-[Allium][allium] · [Batocera][batocera] · [Knulli][knulli] · [MinUI][minui] · [muOS][muos] · [NextUI][nextui] · [Onion][onion] · [ROCKNIX][rocknix] · [Spruce][spruce] · [SprigUI][sprigui] · [TwigUI][twigui] · [TrimUI][trimui]
+[Allium][allium] · [Batocera][batocera] · [Knulli][knulli] · [Koriki][koriki] · [MinUI][minui] · [muOS][muos] · [NextUI][nextui] · [Onion][onion] · [ROCKNIX][rocknix] · [Spruce][spruce] · [SprigUI][sprigui] · [TwigUI][twigui] · [TrimUI][trimui]
 
 <br>
 
@@ -89,6 +89,7 @@ If you enjoy using Grout and feel inclined to pay it forward, go do something ni
 [allium]: https://github.com/goweiwen/Allium
 [batocera]: https://batocera.org
 [knulli]: https://knulli.org
+[koriki]: https://github.com/Rparadise-Team/Koriki
 [minui]: https://github.com/shauninman/MinUI
 [muos]: https://muos.dev
 [nextui]: https://nextui.loveretro.games
