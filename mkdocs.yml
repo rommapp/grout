@@ -76,6 +76,7 @@ nav:
       - ROCKNIX: getting-started/install-rocknix.md
       - Spruce: getting-started/install-spruce.md
       - TrimUI: getting-started/install-trimui.md
+      - RetroDECK: getting-started/install-retrodeck.md
   - Usage:
       - User Guide: usage/guide.md
       - Settings Reference: usage/settings.md
@@ -91,6 +92,7 @@ nav:
           - ROCKNIX: platforms/rocknix.md
           - Spruce: platforms/spruce.md
           - TrimUI: platforms/trimui.md
+          - RetroDECK: platforms/RETRODECK.md
   - Contributing:
       - contributing/index.md
       - Development Guide: contributing/development.md
