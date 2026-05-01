@@ -67,6 +67,7 @@ nav:
   - Quick Start:
       - getting-started/index.md
       - Allium: getting-started/install-allium.md
+      - ArkOS / dArkOS: getting-started/install-arkos.md
       - Batocera: getting-started/install-batocera.md
       - Knulli: getting-started/install-knulli.md
       - MinUI: getting-started/install-minui.md
@@ -83,6 +84,7 @@ nav:
       - Save Sync: usage/save-sync.md
       - CFW Specific Info:
           - Allium: platforms/allium.md
+          - ArkOS / dArkOS: platforms/arkos.md
           - Batocera: platforms/BATOCERA.md
           - Knulli: platforms/knulli.md
           - Koriki: platforms/koriki.md

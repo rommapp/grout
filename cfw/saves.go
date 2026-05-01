@@ -2,6 +2,7 @@ package cfw
 
 import (
 	"grout/cfw/allium"
+	"grout/cfw/arkos"
 	"grout/cfw/batocera"
 	"grout/cfw/knulli"
 	"grout/cfw/koriki"
@@ -28,6 +29,8 @@ func EmulatorFolderMap(c CFW) map[string][]string {
 		return spruce.SaveDirectories
 	case ROCKNIX:
 		return rocknix.Platforms // ROCKNIX stores saves alongside ROMs
+	case ArkOS:
+		return arkos.Platforms // ArkOS stores saves alongside ROMs
 	case Allium:
 		return allium.SaveDirectories
 	case Onion:
