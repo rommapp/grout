@@ -65,4 +65,5 @@ tasks:
       - task: build:arm32
       - task: package:allium
       - task: package:onion
+      - task: package:koriki
     silent: true

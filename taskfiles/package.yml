@@ -4,9 +4,9 @@ tasks:
 
   all:
     desc: Package for all platforms
-    deps: [ next, muos, knulli, spruce, rocknix, trimui, allium, onion, minui, batocera, batocera-x86, batocera-amd64 ]
+    deps: [ next, muos, knulli, spruce, rocknix, trimui, allium, onion, koriki, minui, batocera, batocera-x86, batocera-amd64 ]
     cmds:
-      - echo "Packaging complete (13 platforms)"
+      - echo "Packaging complete (14 platforms)"
     silent: true
 
   next:
@@ -70,6 +70,19 @@ tasks:
       - cp -R scripts/Onion/* dist/Onion/Grout
       - cp build32/grout README.md LICENSE dist/Onion/Grout/grout
       - cp -R vendored/miyoo/* dist/Onion/Grout/grout/lib/
+    silent: true
+
+  koriki:
+    cmds:
+      - rm -rf dist/Koriki
+      - mkdir -p dist/Koriki/App/Grout/grout/lib
+      - mkdir -p dist/Koriki/.simplemenu/apps/Imgs
+      - cp scripts/Koriki/launch.sh README.md LICENSE dist/Koriki/App/Grout
+      - cp build32/grout dist/Koriki/App/Grout/grout/
+      - cp -R vendored/miyoo/* dist/Koriki/App/Grout/grout/lib/
+      - cp scripts/Koriki/Grout.sh dist/Koriki/.simplemenu/apps/Grout.sh
+      - cp scripts/Koriki/grout.png dist/Koriki/.simplemenu/apps/Imgs/Grout.png
+      - chmod a+x dist/Koriki/App/Grout/launch.sh dist/Koriki/.simplemenu/apps/Grout.sh
     silent: true
 
   rocknix:

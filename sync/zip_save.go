@@ -8,9 +8,17 @@ import (
 	"strings"
 )
 
-// ZipDirectory creates a zip file from a directory, preserving the directory structure.
+// ZipDirectory creates a zip file from a single directory.
 // Returns the path to the temporary zip file. Caller is responsible for cleanup.
 func ZipDirectory(dirPath string) (string, error) {
+	return ZipDirectories([]string{dirPath})
+}
+
+// ZipDirectories creates a zip file containing multiple directories.
+// Each directory is preserved as a top-level subdirectory in the archive,
+// allowing a single zip to hold e.g. UCUS98751_DATA00/, UCUS98751_DATA01/, UCUS98751_INSDIR/.
+// Returns the path to the temporary zip file. Caller is responsible for cleanup.
+func ZipDirectories(dirPaths []string) (string, error) {
 	tmpFile, err := os.CreateTemp("", "grout-save-*.zip")
 	if err != nil {
 		return "", err
@@ -20,9 +28,20 @@ func ZipDirectory(dirPath string) (string, error) {
 	w := zip.NewWriter(tmpFile)
 	defer w.Close()
 
-	baseName := filepath.Base(dirPath)
+	for _, dirPath := range dirPaths {
+		if err := addDirToZip(w, dirPath); err != nil {
+			os.Remove(tmpFile.Name())
+			return "", err
+		}
+	}
 
-	err = filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
+	return tmpFile.Name(), nil
+}
+
+// addDirToZip walks dirPath and writes all its contents into w,
+// preserving the directory's base name as the top-level entry in the archive.
+func addDirToZip(w *zip.Writer, dirPath string) error {
+	return filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -58,15 +77,6 @@ func ZipDirectory(dirPath string) (string, error) {
 		_, err = io.Copy(fw, f)
 		return err
 	})
-
-	if err != nil {
-		os.Remove(tmpFile.Name())
-		return "", err
-	}
-
-	_ = baseName // used implicitly via filepath.Rel
-
-	return tmpFile.Name(), nil
 }
 
 // UnzipToDirectory extracts a zip file to a target directory.

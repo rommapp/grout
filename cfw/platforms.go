@@ -4,6 +4,7 @@ import (
 	"grout/cfw/allium"
 	"grout/cfw/batocera"
 	"grout/cfw/knulli"
+	"grout/cfw/koriki"
 	"grout/cfw/minui"
 	"grout/cfw/muos"
 	"grout/cfw/nextui"
@@ -30,6 +31,7 @@ func buildPlatformAliasMap() map[string][]string {
 		trimui.Platforms,
 		allium.Platforms,
 		onion.Platforms,
+		koriki.Platforms,
 		batocera.Platforms,
 		minui.Platforms,
 		retrodeck.Platforms,
@@ -132,6 +134,8 @@ func GetPlatformMap(c CFW) map[string][]string {
 		return allium.Platforms
 	case Onion:
 		return onion.Platforms
+	case Koriki:
+		return koriki.Platforms
 	case Batocera:
 		return batocera.Platforms
 	case MinUI:

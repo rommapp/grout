@@ -1,6 +1,11 @@
-# Installation Guide for Spruce
+# Installation Guide for Spruce / SprigUI / TwigUI
 
-This guide will help you install Grout on devices running [Spruce][spruce] v4.
+This guide will help you install Grout on devices running [Spruce][spruce] v4,
+[SprigUI][sprigui], or [TwigUI][twigui].
+
+> [!NOTE]
+> SprigUI and TwigUI are alternative operating systems developed by the Spruce team.
+> All three are fully supported by the same Grout package for Spruce.
 
 ## Tested Devices
 

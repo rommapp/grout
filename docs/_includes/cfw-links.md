@@ -1,11 +1,14 @@
 [allium]: https://github.com/goweiwen/Allium
 [batocera]: https://batocera.org
 [knulli]: https://knulli.org
+[koriki]: https://github.com/Rparadise-Team/Koriki
 [minui]: https://github.com/shauninman/MinUI
 [muos]: https://muos.dev
 [nextui]: https://nextui.loveretro.games
 [onion]: https://onionui.github.io
 [rocknix]: https://rocknix.org
 [spruce]: https://spruceui.github.io/
+[sprigui]: https://github.com/spruceUI/sprigUI
+[twigui]: https://github.com/spruceUI/twigUI
 [trimui]: https://github.com/trimui
 [retrodeck]: https://retrodeck.net

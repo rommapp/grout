@@ -75,6 +75,7 @@
     "External"
   ],
   "psp": [
+    "../../../.config/ppsspp/PSP/SAVEDATA",
     "PPSSPP (External)",
     "PPSSPP"
   ],

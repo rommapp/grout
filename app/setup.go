@@ -5,6 +5,7 @@ import (
 	"grout/cache"
 	"grout/cfw"
 	"grout/cfw/allium"
+	"grout/cfw/koriki"
 	"grout/cfw/minui"
 	"grout/cfw/muos"
 	"grout/cfw/onion"
@@ -82,6 +83,8 @@ func setupInputMapping(currentCFW cfw.CFW) {
 		mappingBytes, mappingErr = allium.GetInputMappingBytes()
 	case cfw.Onion:
 		mappingBytes, mappingErr = onion.GetInputMappingBytes()
+	case cfw.Koriki:
+		mappingBytes, mappingErr = koriki.GetInputMappingBytes()
 	case cfw.MinUI:
 		mappingBytes, mappingErr = minui.GetInputMappingBytes()
 	case cfw.Spruce:

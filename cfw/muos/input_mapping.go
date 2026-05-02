@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
@@ -17,8 +18,9 @@ var embeddedInputMappings embed.FS
 type Device string
 
 const (
-	DeviceAnbernic Device = "anbernic"
-	DeviceTrimui   Device = "trimui"
+	DeviceAnbernic       Device = "anbernic"
+	DeviceTrimui         Device = "trimui"
+	DeviceTrimuiSmartPro Device = "trimui-smart-pro"
 )
 
 // DetectDevice detects the device type when running on muOS by checking input devices.
@@ -32,6 +34,14 @@ func DetectDevice() Device {
 
 	if err != nil || len(output) == 0 {
 		return DeviceAnbernic
+	}
+
+	if len(output) >= 1 {
+		for _, line := range strings.Split(string(output), "\n") {
+			if strings.Contains(line, "TRIMUI Smart Pro") {
+				return DeviceTrimuiSmartPro
+			}
+		}
 	}
 
 	return DeviceTrimui
@@ -51,6 +61,8 @@ func GetInputMappingBytesForDevice(device Device) ([]byte, error) {
 		filename = "input_mappings/anbernic.json"
 	case DeviceTrimui:
 		filename = "input_mappings/trimui.json"
+	case DeviceTrimuiSmartPro:
+		filename = "input_mappings/trimui-smart-pro.json"
 	default:
 		filename = "input_mappings/anbernic.json"
 	}
