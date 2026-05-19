@@ -9,5 +9,5 @@ dependencies = [
     "mkdocs-glightbox>=0.5.2",
     "mkdocs-material>=9.7.1",
     "pillow>=12.2.0",
-    "pymdown-extensions>=10.20.1",
+    "pymdown-extensions>=10.21.3",
 ]
