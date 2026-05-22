@@ -199,6 +199,16 @@ func (s *DownloadScreen) draw(input DownloadInput) (DownloadOutput, error) {
 					logger.Warn("Failed to remove temp zip file", "path", tmpZipPath, "error", err)
 				}
 
+				// Update the gamelist entry to point to the extracted file
+				// instead of the (now deleted) temporary zip.
+				newGamePath := resolveExtractedGamePath(romDirectory, extractDir, g.FsNameNoExt)
+				for i, entry := range gamelistEntries {
+					if entry.Game.ID == g.ID {
+						gamelistEntries[i].GamePath = newGamePath
+						break
+					}
+				}
+
 				return nil, nil
 			},
 		)
@@ -570,6 +580,42 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 	}
 
 	return downloads, artDownloads, gamesSummaries
+}
+
+// resolveExtractedGamePath returns the best path for a multi-file ROM after extraction.
+func resolveExtractedGamePath(romDirectory, extractDir, fsNameNoExt string) string {
+	logger := gaba.GetLogger()
+
+	m3uPath := filepath.Join(romDirectory, fsNameNoExt+".m3u")
+	if _, err := os.Stat(m3uPath); err == nil {
+		logger.Debug("Multi-file ROM gamelist path resolved to .m3u in rom directory", "path", m3uPath)
+		return m3uPath
+	}
+	entries, err := os.ReadDir(extractDir)
+	if err != nil {
+		logger.Debug("Multi-file ROM gamelist path falling back to extract directory (unreadable)", "path", extractDir, "error", err)
+		return extractDir
+	}
+	var firstFile string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		if strings.ToLower(filepath.Ext(entry.Name())) == ".m3u" {
+			p := filepath.Join(extractDir, entry.Name())
+			logger.Debug("Multi-file ROM gamelist path resolved to .m3u in extract directory", "path", p)
+			return p
+		}
+		if firstFile == "" {
+			firstFile = filepath.Join(extractDir, entry.Name())
+		}
+	}
+	if firstFile != "" {
+		logger.Debug("Multi-file ROM gamelist path resolved to first file (no .m3u found)", "path", firstFile)
+		return firstFile
+	}
+	logger.Debug("Multi-file ROM gamelist path falling back to extract directory (no files found)", "path", extractDir)
+	return extractDir
 }
 
 func (s *DownloadScreen) downloadArt(artDownloads []artDownload, downloadedGames []romm.Rom, headers map[string]string, progress *atomic.Float64, insecureSkipVerify bool) {
