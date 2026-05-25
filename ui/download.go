@@ -378,6 +378,14 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 			downloadLocation = filepath.Join(tmpDir, fmt.Sprintf("grout_multirom_%d.zip", g.ID))
 			sourceURL, _ = url.JoinPath(host.URL(), "/api/roms/", strconv.Itoa(g.ID), "content", g.FsName)
 		} else {
+			// Skip games with no file metadata to avoid an out-of-range panic.
+			// This can happen when the cached row was written without a
+			// `files` array (e.g. after an incremental cache update).
+			if len(g.Files) == 0 {
+				gaba.GetLogger().Warn("Skipping ROM with no file metadata; refresh the library to repopulate it",
+					"game", g.Name, "id", g.ID, "fs_name", g.FsName)
+				continue
+			}
 			// Find the file to download - use selected file if specified, otherwise first file
 			fileToDownload := g.Files[0]
 			if selectedFileID > 0 {
