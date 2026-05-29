@@ -93,7 +93,7 @@ jobs:
           GROUT_VERSION: ${{ needs.prepare.outputs.version }}
 
       - name: Package ARM64 platforms
-        run: task package:next package:muos package:knulli package:rocknix package:trimui package:batocera
+        run: task package:next package:muos package:knulli package:rocknix package:amberelec package:trimui package:batocera
 
       - name: Create distributions
         run: |
@@ -101,6 +101,7 @@ jobs:
           cd dist/muOS && zip -r Grout.muxapp Grout && mv Grout.muxapp ../Grout.muxapp && cd ../..
           cd dist/Knulli && zip -r ../Grout-Knulli.zip Grout && cd ../..
           cd dist/ROCKNIX && zip -r ../Grout-ROCKNIX.zip Grout.sh Grout && cd ../..
+          cd dist/AmberELEC && zip -r ../Grout-AmberELEC.zip Grout.sh Grout && cd ../..
           cd dist/Trimui && zip -r ../Grout-Trimui.zip Grout && cd ../..
           cd dist/Batocera-arm64 && zip -r ../Grout-Batocera-arm64.zip Grout.sh Grout && cd ../..
 
@@ -113,6 +114,7 @@ jobs:
             dist/Grout.muxapp
             dist/Grout-Knulli.zip
             dist/Grout-ROCKNIX.zip
+            dist/Grout-AmberELEC.zip
             dist/Grout-Trimui.zip
             dist/Grout-Batocera-arm64.zip
             build64/grout
@@ -301,6 +303,7 @@ jobs:
             **/Grout-Koriki.zip
             **/Grout-Knulli.zip
             **/Grout-ROCKNIX.zip
+            **/Grout-AmberELEC.zip
             **/Grout-Trimui.zip
             **/Grout-MinUI.zip
             **/Grout-Batocera-arm64.zip
@@ -375,6 +378,7 @@ jobs:
             "Grout-Knulli.zip"
             "Grout.spruce.zip"
             "Grout-ROCKNIX.zip"
+            "Grout-AmberELEC.zip"
             "Grout-Trimui.zip"
             "Grout-Allium.zip"
             "Grout-Onion.zip"

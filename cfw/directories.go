@@ -1,6 +1,7 @@
 package cfw
 
 import (
+	"grout/cfw/amberelec"
 	"grout/cfw/allium"
 	"grout/cfw/batocera"
 	"grout/cfw/knulli"
@@ -18,6 +19,8 @@ import (
 // GetRomDirectory returns the ROM directory for the current CFW.
 func GetRomDirectory() string {
 	switch GetCFW() {
+	case AmberELEC:
+		return amberelec.GetRomDirectory()
 	case MuOS:
 		return muos.GetRomDirectory()
 	case NextUI:
@@ -59,6 +62,8 @@ func RomFolderBase(path string, tagParser func(string) string) string {
 // GetBIOSDirectory returns the BIOS directory for the current CFW.
 func GetBIOSDirectory() string {
 	switch GetCFW() {
+	case AmberELEC:
+		return amberelec.GetBIOSDirectory()
 	case MuOS:
 		return muos.GetBIOSDirectory()
 	case NextUI:
@@ -110,6 +115,8 @@ func GetPlatformRomDirectory(relativePath, platformFSSlug string) string {
 // GetArtDirectory returns the artwork directory for a platform.
 func GetArtDirectory(romDir string, platformFSSlug, platformName string) string {
 	switch GetCFW() {
+	case AmberELEC:
+		return amberelec.GetArtDirectory(romDir)
 	case NextUI:
 		return nextui.GetArtDirectory(romDir)
 	case Knulli:
@@ -158,6 +165,8 @@ func GetArtSplashDirectory(romDir string, platformFSSlug, platformName string) s
 // BaseSavePath returns the base save path for the current CFW.
 func BaseSavePath() string {
 	switch GetCFW() {
+	case AmberELEC:
+		return amberelec.GetBaseSavePath()
 	case MuOS:
 		return muos.GetBaseSavePath()
 	case NextUI:
@@ -186,6 +195,8 @@ func BaseSavePath() string {
 
 func GetArtMarqueeDirectory(romDir string, platformFSSlug, platformName string) string {
 	switch GetCFW() {
+	case AmberELEC:
+		return amberelec.GetArtDirectory(romDir)
 	case ROCKNIX:
 		return rocknix.GetArtDirectory(romDir)
 	case Knulli:
@@ -199,6 +210,8 @@ func GetArtMarqueeDirectory(romDir string, platformFSSlug, platformName string) 
 
 func GetArtVideoDirectory(romDir string, platformFSSlug, platformName string) string {
 	switch GetCFW() {
+	case AmberELEC:
+		return amberelec.GetVideoDirectory(romDir)
 	case ROCKNIX:
 		return rocknix.GetVideoDirectory(romDir)
 	case Knulli:
@@ -213,6 +226,8 @@ func GetArtVideoDirectory(romDir string, platformFSSlug, platformName string) st
 
 func GetArtThumbnailDirectory(romDir string, platformFSSlug, platformName string) string {
 	switch GetCFW() {
+	case AmberELEC:
+		return amberelec.GetArtDirectory(romDir)
 	case ROCKNIX:
 		return rocknix.GetArtDirectory(romDir)
 	case Knulli:
@@ -226,6 +241,8 @@ func GetArtThumbnailDirectory(romDir string, platformFSSlug, platformName string
 
 func GetArtBezelDirectory(romDir string, platformFSSlug, platformName string) string {
 	switch GetCFW() {
+	case AmberELEC:
+		return amberelec.GetBezelDirectory(romDir)
 	case ROCKNIX:
 		return rocknix.GetBezelDirectory(romDir)
 	case Knulli:
@@ -239,6 +256,8 @@ func GetArtBezelDirectory(romDir string, platformFSSlug, platformName string) st
 
 func GetManualDirectory(romDir string, platformFSSlug, platformName string) string {
 	switch GetCFW() {
+	case AmberELEC:
+		return amberelec.GetManualDirectory(romDir)
 	case ROCKNIX:
 		return rocknix.GetManualDirectory(romDir)
 	case Knulli:
@@ -252,6 +271,8 @@ func GetManualDirectory(romDir string, platformFSSlug, platformName string) stri
 
 func GetBoxbackDirectory(romDir string, platformFSSlug, platformName string) string {
 	switch GetCFW() {
+	case AmberELEC:
+		return amberelec.GetArtDirectory(romDir)
 	case ROCKNIX:
 		return rocknix.GetArtDirectory(romDir)
 	case Knulli:
@@ -265,6 +286,8 @@ func GetBoxbackDirectory(romDir string, platformFSSlug, platformName string) str
 
 func GetFanartDirectory(romDir string, platformFSSlug, platformName string) string {
 	switch GetCFW() {
+	case AmberELEC:
+		return amberelec.GetArtDirectory(romDir)
 	case ROCKNIX:
 		return rocknix.GetArtDirectory(romDir)
 	case Knulli:

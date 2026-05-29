@@ -176,6 +176,7 @@ You can change these mappings later from [Settings](settings.md#directory-mappin
 Grout uses platform mappings to determine where to save downloaded games on your device. Each Custom Firmware (CFW) uses
 different folder naming conventions. Use these references to see the exact folder names used by your CFW:
 
+- AmberELEC - ES-DE style folder names with AmberELEC-specific handheld variants (e.g., `gb`, `gbh`, `snesh`)
 - [KNULLI](../platforms/knulli.md) - ES-DE style folder names (e.g., `gb`, `snes`, `psx`)
 - [muOS](../platforms/muos.md) - Mixed short codes and descriptive names (e.g., `gb`, `Nintendo Game Boy`)
 - [NextUI](../platforms/nextui.md) - Descriptive names with tags (e.g., `Game Boy (GB)`)

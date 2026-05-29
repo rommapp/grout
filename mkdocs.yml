@@ -67,6 +67,7 @@ nav:
   - Quick Start:
       - getting-started/index.md
       - Allium: getting-started/install-allium.md
+      - AmberELEC: getting-started/install-amberelec.md
       - Batocera: getting-started/install-batocera.md
       - Knulli: getting-started/install-knulli.md
       - MinUI: getting-started/install-minui.md

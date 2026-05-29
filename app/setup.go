@@ -4,6 +4,7 @@ import (
 	"errors"
 	"grout/cache"
 	"grout/cfw"
+	"grout/cfw/amberelec"
 	"grout/cfw/allium"
 	"grout/cfw/koriki"
 	"grout/cfw/minui"
@@ -77,6 +78,8 @@ func setupInputMapping(currentCFW cfw.CFW) {
 	var mappingBytes []byte
 	var mappingErr error
 	switch currentCFW {
+	case cfw.AmberELEC:
+		mappingBytes, mappingErr = amberelec.GetInputMappingBytes()
 	case cfw.MuOS:
 		mappingBytes, mappingErr = muos.GetInputMappingBytes()
 	case cfw.Allium:

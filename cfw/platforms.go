@@ -1,6 +1,7 @@
 package cfw
 
 import (
+	"grout/cfw/amberelec"
 	"grout/cfw/allium"
 	"grout/cfw/batocera"
 	"grout/cfw/knulli"
@@ -22,6 +23,7 @@ var platformAliasMap = buildPlatformAliasMap()
 func buildPlatformAliasMap() map[string][]string {
 	// Combine all platform maps to find aliases across all CFWs
 	allMaps := []map[string][]string{
+		amberelec.Platforms,
 		knulli.Platforms,
 		muos.Platforms,
 		nextui.Platforms,
@@ -116,6 +118,8 @@ func GetPlatformAliases(fsSlug string) []string {
 // GetPlatformMap returns the platform mapping for the given CFW.
 func GetPlatformMap(c CFW) map[string][]string {
 	switch c {
+	case AmberELEC:
+		return amberelec.Platforms
 	case MuOS:
 		return muos.Platforms
 	case NextUI:

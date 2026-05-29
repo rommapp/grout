@@ -4,9 +4,9 @@ tasks:
 
   all:
     desc: Package for all platforms
-    deps: [ next, muos, knulli, spruce, rocknix, trimui, allium, onion, koriki, minui, batocera, batocera-x86, batocera-amd64 ]
+    deps: [ next, muos, knulli, spruce, rocknix, amberelec, trimui, allium, onion, koriki, minui, batocera, batocera-x86, batocera-amd64 ]
     cmds:
-      - echo "Packaging complete (14 platforms)"
+      - echo "Packaging complete (15 platforms)"
     silent: true
 
   next:
@@ -93,6 +93,16 @@ tasks:
       - cp build64/grout scripts/ROCKNIX/logo.png README.md LICENSE dist/ROCKNIX/Grout/
       - cp -R build64/lib/* dist/ROCKNIX/Grout/lib/
       - chmod a+x dist/ROCKNIX/Grout/grout dist/ROCKNIX/Grout.sh
+    silent: true
+
+  amberelec:
+    cmds:
+      - rm -rf dist/AmberELEC
+      - mkdir -p dist/AmberELEC/Grout/lib
+      - cp scripts/AmberELEC/Grout.sh dist/AmberELEC/
+      - cp build64/grout scripts/ROCKNIX/logo.png README.md LICENSE dist/AmberELEC/Grout/
+      - cp -R build64/lib/* dist/AmberELEC/Grout/lib/
+      - chmod a+x dist/AmberELEC/Grout/grout dist/AmberELEC/Grout.sh
     silent: true
 
   trimui:
