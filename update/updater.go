@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"grout/cfw"
 	"grout/internal"
+	"grout/internal/appdir"
 	"grout/romm"
 	"grout/version"
 	"io"
@@ -192,7 +193,7 @@ func PerformUpdate(c cfw.CFW, downloadURL string, expectedSize int64, expectedSH
 		return err
 	}
 
-	tmpZip := filepath.Join(os.TempDir(), "grout-update.zip")
+	tmpZip := filepath.Join(appdir.TmpDir(), "grout-update.zip")
 	defer os.Remove(tmpZip)
 
 	if err := downloadFile(downloadURL, tmpZip, expectedSize, progress); err != nil {
@@ -208,7 +209,7 @@ func PerformUpdate(c cfw.CFW, downloadURL string, expectedSize int64, expectedSH
 	// Extract the full zip to a staging directory at the install root.
 	// The launch script will copy everything over on next startup,
 	// avoiding issues with overwriting running files.
-	updateDir := filepath.Join(installRoot, ".update")
+	updateDir := appdir.UpdateStagingDir(installRoot)
 	os.RemoveAll(updateDir)
 
 	if err := extractZip(tmpZip, updateDir); err != nil {
@@ -311,7 +312,7 @@ func extractZip(zipPath, destDir string) error {
 
 // CleanupUpdateArtifacts removes any leftover files from a previous update.
 func CleanupUpdateArtifacts() {
-	os.Remove(filepath.Join(os.TempDir(), "grout-update.zip"))
+	os.Remove(filepath.Join(appdir.TmpDir(), "grout-update.zip"))
 }
 
 func verifySHA256(filePath, expected string) error {

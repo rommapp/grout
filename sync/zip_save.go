@@ -2,6 +2,7 @@ package sync
 
 import (
 	"archive/zip"
+	"grout/internal/appdir"
 	"io"
 	"os"
 	"path/filepath"
@@ -19,7 +20,7 @@ func ZipDirectory(dirPath string) (string, error) {
 // allowing a single zip to hold e.g. UCUS98751_DATA00/, UCUS98751_DATA01/, UCUS98751_INSDIR/.
 // Returns the path to the temporary zip file. Caller is responsible for cleanup.
 func ZipDirectories(dirPaths []string) (string, error) {
-	tmpFile, err := os.CreateTemp("", "grout-save-*.zip")
+	tmpFile, err := os.CreateTemp(appdir.TmpDir(), "grout-save-*.zip")
 	if err != nil {
 		return "", err
 	}
