@@ -177,6 +177,7 @@ Grout uses platform mappings to determine where to save downloaded games on your
 different folder naming conventions. Use these references to see the exact folder names used by your CFW:
 
 - [KNULLI](../platforms/knulli.md) - ES-DE style folder names (e.g., `gb`, `snes`, `psx`)
+- [EmuDeck / ES-DE](../platforms/esde.md) - ES-DE style folder names (e.g., `gb`, `snes`, `psx`)
 - [muOS](../platforms/muos.md) - Mixed short codes and descriptive names (e.g., `gb`, `Nintendo Game Boy`)
 - [NextUI](../platforms/nextui.md) - Descriptive names with tags (e.g., `Game Boy (GB)`)
 - [ROCKNIX](../platforms/rocknix.md) - ES-DE style folder names (e.g., `gb`, `snes`, `psx`)

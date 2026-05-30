@@ -33,7 +33,7 @@ brew install sdl2 sdl2_image sdl2_ttf sdl2_gfx
     - `WINDOW_WIDTH` (optional)
     - `WINDOW_HEIGHT` (optional)
     - `NITRATES` [true | false] (optional) This is used for Gabagool development debugging
-    - `CFW` [MUOS | KNULLI | SPRUCE | NEXTUI] (mandatory), this controls how Grout interacts with and places files
+    - `CFW` [MUOS | KNULLI | SPRUCE | NEXTUI | ESDE] (mandatory), this controls how Grout interacts with and places files
     - `BASE_PATH` (mandatory), this acts as the root path like you would have on a handheld (e.g. `/mmc/sdcard` on
       muOS). Have the subdirectory structure of this path match the CFW you are working on.
 5. Run / Debug `app/grout.go`, making sure to reference the `.env` file in your run configuration.
@@ -93,6 +93,7 @@ After building, you can package for individual platforms:
 | `task package-next`   | NextUI (TrimUI) | `build/Grout.pak/`                        |
 | `task package-muos`   | muOS            | `build/muOS/Grout/`, `build/Grout.muxapp` |
 | `task package-knulli` | Knulli          | `build/Knulli/Grout/`                     |
+| `task package-esde`   | EmuDeck / ES-DE | `dist/ESDE/`                              |
 | `task package-spruce` | Spruce          | `build/Spruce/Grout/`                     |
 
 Each packaging task copies the binary, launch scripts from `scripts/<platform>/`, shared libraries, and documentation

@@ -4,9 +4,9 @@ tasks:
 
   all:
     desc: Package for all platforms
-    deps: [ next, muos, knulli, spruce, rocknix, trimui, allium, onion, koriki, minui, batocera, batocera-x86, batocera-amd64 ]
+    deps: [ next, muos, knulli, spruce, rocknix, trimui, allium, onion, koriki, minui, batocera, batocera-x86, batocera-amd64, esde ]
     cmds:
-      - echo "Packaging complete (14 platforms)"
+      - echo "Packaging complete (15 platforms)"
     silent: true
 
   next:
@@ -146,4 +146,14 @@ tasks:
       - cp build/grout README.md LICENSE dist/Batocera-amd64/Grout/
       - cp -R build/lib/* dist/Batocera-amd64/Grout/lib/
       - chmod a+x dist/Batocera-amd64/Grout/grout dist/Batocera-amd64/Grout.sh
+    silent: true
+
+  esde:
+    cmds:
+      - rm -rf dist/ESDE
+      - mkdir -p dist/ESDE/Grout/lib
+      - cp scripts/ESDE/Grout.sh dist/ESDE/
+      - cp build/grout scripts/ESDE/logo.png README.md LICENSE dist/ESDE/Grout/
+      - cp -R build/lib/* dist/ESDE/Grout/lib/
+      - chmod a+x dist/ESDE/Grout/grout dist/ESDE/Grout.sh
     silent: true
