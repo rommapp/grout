@@ -24,7 +24,7 @@ func EmulatorFolderMap(c CFW) map[string][]string {
 	case NextUI:
 		return nextui.SaveDirectories
 	case Knulli:
-		return knulli.Platforms // Knulli uses platforms map for save directories
+		return knulli.SaveDirectories
 	case Spruce:
 		return spruce.SaveDirectories
 	case ROCKNIX:
