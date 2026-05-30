@@ -4,9 +4,9 @@ tasks:
 
   all:
     desc: Package for all platforms
-    deps: [ next, muos, knulli, spruce, rocknix, trimui, allium, onion, koriki, minui, batocera, batocera-x86, batocera-amd64 ]
+    deps: [ next, muos, knulli, spruce, rocknix, trimui, allium, onion, koriki, minui, batocera, batocera-x86, batocera-amd64, retrodeck ]
     cmds:
-      - echo "Packaging complete (14 platforms)"
+      - echo "Packaging complete (15 platforms)"
     silent: true
 
   next:

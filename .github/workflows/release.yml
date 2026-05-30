@@ -308,6 +308,7 @@ jobs:
             **/Grout-Batocera-arm64.zip
             **/Grout-Batocera-x86.zip
             **/Grout-Batocera-amd64.zip
+            **/Grout-RetroDECK.zip
             **/grout
           draft: false
           prerelease: ${{ inputs.beta }}
@@ -385,6 +386,7 @@ jobs:
             "Grout-Batocera-arm64.zip"
             "Grout-Batocera-amd64.zip"
             "Grout-Batocera-x86.zip"
+            "Grout-RetroDECK.zip"
           )
 
           # Build the assets JSON object

@@ -36,7 +36,7 @@ tasks:
       - task: _build
         vars: { PLATFORM: linux/arm64, BUILD_DIR: build64, IMAGE_TAG: "{{.IMAGE_NAME}}-arm64", DOCKERFILE: docker/Dockerfile, LOCAL: "{{.LOCAL}}" }
       - task: _extract
-        vars: { BUILD_DIR: build, IMAGE_TAG: "{{.IMAGE_NAME}}-amd64", LIBS_PATH: "/usr/lib/aarch64-linux-gnu/", LIBS: [
+        vars: { BUILD_DIR: build64, IMAGE_TAG: "{{.IMAGE_NAME}}-arm64", LIBS_PATH: "/usr/lib/aarch64-linux-gnu/", LIBS: [
           "libSDL2-2.0.so.0", 
           "libSDL2_image-2.0.so.0",
           "libSDL2_gfx-1.0.so.0",
@@ -61,7 +61,8 @@ tasks:
           "libjpeg.so.62",
           "libtiff.so.5",
           "libwebp.so.6",
-          "libjbig.so.0"
+          "libjbig.so.0",
+          "libdeflate.so.0"
         ],}
 
   x86:
@@ -70,7 +71,7 @@ tasks:
       - task: _build
         vars: { PLATFORM: linux/386, BUILD_DIR: buildx86, IMAGE_TAG: "{{.IMAGE_NAME}}-x86", DOCKERFILE: docker/Dockerfile }
       - task: _extract
-        vars: { BUILD_DIR: build, IMAGE_TAG: "{{.IMAGE_NAME}}-amd64", LIBS_PATH: "/usr/lib/i386-linux-gnu/", LIBS: [
+        vars: { BUILD_DIR: buildx86, IMAGE_TAG: "{{.IMAGE_NAME}}-x86", LIBS_PATH: "/usr/lib/i386-linux-gnu/", LIBS: [
           "libSDL2-2.0.so.0", 
           "libSDL2_image-2.0.so.0",
           "libSDL2_gfx-1.0.so.0",
@@ -78,7 +79,8 @@ tasks:
           "libjpeg.so.62",
           "libtiff.so.5",
           "libwebp.so.6",
-          "libjbig.so.0"
+          "libjbig.so.0",
+          "libdeflate.so.0"
         ],}
 
   arm32:
