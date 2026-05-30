@@ -258,6 +258,8 @@ func getLaunchScriptPath(c cfw.CFW) string {
 		return "Grout.pak/launch.sh"
 	case cfw.Batocera:
 		return "Grout.sh"
+	case cfw.RetroDECK:
+		return "Grout.sh"
 	default:
 		return ""
 	}
