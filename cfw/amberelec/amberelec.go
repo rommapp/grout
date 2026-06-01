@@ -17,6 +17,7 @@ type Device string
 
 const (
 	DeviceGeneric Device = "generic"
+	DeviceRG351P  Device = "rg351p"
 	DeviceRG351V  Device = "rg351v"
 )
 
@@ -35,6 +36,8 @@ func DetectDevice() Device {
 	}
 
 	switch strings.ToUpper(strings.TrimSpace(string(arch))) {
+	case "RG351P":
+		return DeviceRG351P
 	case "RG351V":
 		return DeviceRG351V
 	default:
@@ -45,6 +48,8 @@ func DetectDevice() Device {
 func GetInputMappingBytes() ([]byte, error) {
 	var filename string
 	switch DetectDevice() {
+	case DeviceRG351P:
+		filename = "input_mappings/rg351p.json"
 	case DeviceRG351V:
 		filename = "input_mappings/rg351v.json"
 	default:

@@ -1,0 +1,33 @@
+{
+  "keyboard_map": {},
+  "controller_button_map": {
+    "0": 5,
+    "1": 6,
+    "2": 7,
+    "3": 8,
+    "4": 14,
+    "6": 13,
+    "8": 15,
+    "9": 9,
+    "10": 11,
+    "11": 1,
+    "12": 3,
+    "13": 2,
+    "14": 4
+  },
+  "controller_hat_map": {},
+  "joystick_axis_map": {
+    "4": {
+      "positive_button": 12,
+      "negative_button": 0,
+      "threshold": 16000
+    },
+    "5": {
+      "positive_button": 10,
+      "negative_button": 0,
+      "threshold": 16000
+    }
+  },
+  "joystick_button_map": {},
+  "joystick_hat_map": {}
+}
