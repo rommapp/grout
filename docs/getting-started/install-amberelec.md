@@ -13,9 +13,10 @@ _Please help verify compatibility on your device by reporting your results!_
 1. Ensure your device is running AmberELEC.
 2. Download the [latest Grout release](https://github.com/rommapp/grout/releases/latest/download/Grout-AmberELEC.zip) for AmberELEC.
 3. Unzip the downloaded archive.
-4. Copy the Grout folder and `Grout.sh` to your Ports directory, typically `/storage/roms/ports`.
-5. Refresh your ports list from the frontend if Grout does not appear immediately.
-6. Launch Grout from the `Ports` menu and enjoy.
+4. Create the directory `/storage/roms/ports/Grout.sh/`.
+5. Copy the extracted data, that includes `Grout.sh` into `/storage/roms/ports/Grout.sh/`, so you end up with `/storage/roms/ports/Grout.sh/Grout.sh` as AmberELEC's EmulationStation will launch the port directly when the folder name matches the executable inside it.
+6. Refresh your ports list from the frontend if Grout does not appear immediately.
+7. Launch Grout from the `Ports` menu and enjoy.
 
 ## Important Configuration
 
@@ -31,7 +32,8 @@ select `Check for Updates`. If a new version is available, follow the on-screen 
 
 ### Manual update
 
-To update Grout, download the latest release and replace the existing Grout folder and `Grout.sh` in `/storage/roms/ports`.
+To update Grout, download the latest release and replace the existing `Grout.sh` launcher and `Grout` folder inside
+`/storage/roms/ports/Grout.sh/`.
 If you have made any custom configurations, ensure to back them up before replacing the folder. Be sure to keep the
 `config.json` file if you do not want to authenticate again, and configure platform folder mappings again.
 
