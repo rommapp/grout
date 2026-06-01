@@ -9,6 +9,8 @@ if [ -d ".update" ]; then
 fi
 
 export CFW=NEXTUI
+# This $PLATFORM is automatically set by NextUI, we map it another variable just to remember where it comes from.
+export NEXTUI_DEVICE="$PLATFORM"
 export LD_LIBRARY_PATH=$CUR_DIR/lib:$LD_LIBRARY_PATH
 
 ./grout
