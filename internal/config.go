@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"grout/cache"
 	"grout/cfw"
+	"grout/internal/appdir"
 	"grout/internal/artutil"
 	"grout/romm"
 	"os"
+	"path/filepath"
 	"sync/atomic"
 	"time"
 
@@ -114,7 +116,7 @@ func (c Config) ToLoggable() any {
 }
 
 func LoadConfig() (*Config, error) {
-	data, err := os.ReadFile("config.json")
+	data, err := os.ReadFile(filepath.Join(appdir.DataDir(), "config.json"))
 	if err != nil {
 		return nil, fmt.Errorf("reading config.json: %w", err)
 	}
@@ -212,7 +214,7 @@ func SaveConfig(config *Config) error {
 		return err
 	}
 
-	if err := os.WriteFile("config.json", pretty, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(appdir.DataDir(), "config.json"), pretty, 0644); err != nil {
 		gaba.GetLogger().Error("Failed to write config file", "error", err)
 		return err
 	}
@@ -258,7 +260,7 @@ func (c Config) GetDirectoryMapping(fsSlug string) (string, bool) {
 }
 
 func LoadSlotPreferences() map[string]string {
-	data, err := os.ReadFile("save_slots.json")
+	data, err := os.ReadFile(filepath.Join(appdir.DataDir(), "save_slots.json"))
 	if err != nil {
 		return nil
 	}
@@ -270,15 +272,16 @@ func LoadSlotPreferences() map[string]string {
 }
 
 func SaveSlotPreferences(config *Config) error {
+	slotPath := filepath.Join(appdir.DataDir(), "save_slots.json")
 	if len(config.SlotPreferences) == 0 {
-		os.Remove("save_slots.json")
+		os.Remove(slotPath)
 		return nil
 	}
 	pretty, err := json.MarshalIndent(config.SlotPreferences, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile("save_slots.json", pretty, 0644)
+	return os.WriteFile(slotPath, pretty, 0644)
 }
 
 func (c Config) GetSlotPreference(romID int) string {

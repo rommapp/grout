@@ -5,6 +5,7 @@ import (
 	"grout/cache"
 	"grout/cfw"
 	"grout/internal"
+	"grout/internal/appdir"
 	"grout/internal/fileutil"
 	"grout/internal/pspdb"
 	"grout/romm"
@@ -689,7 +690,7 @@ func download(client *romm.Client, config *internal.Config, deviceID string, ite
 
 	if item.LocalSave.IsDirectorySave {
 		// Write zip to temp, then extract to the save directory
-		tmpZip, err := os.CreateTemp("", "grout-save-dl-*.zip")
+		tmpZip, err := os.CreateTemp(appdir.TmpDir(), "grout-save-dl-*.zip")
 		if err != nil {
 			logger.Error("Failed to create temp file for directory save", "error", err)
 			return false

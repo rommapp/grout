@@ -7,6 +7,7 @@ import (
 	"grout/cfw"
 	"grout/cfw/muos"
 	"grout/internal"
+	"grout/internal/appdir"
 	"grout/internal/artutil"
 	"grout/internal/fileutil"
 	"grout/internal/gamelist"
@@ -165,7 +166,7 @@ func (s *DownloadScreen) draw(input DownloadInput) (DownloadOutput, error) {
 			}
 		}
 
-		tmpZipPath := filepath.Join(fileutil.TempDir(), fmt.Sprintf("grout_multirom_%d.zip", g.ID))
+		tmpZipPath := filepath.Join(appdir.TmpDir(), fmt.Sprintf("grout_multirom_%d.zip", g.ID))
 		romDirectory := input.Config.GetPlatformRomDirectory(gamePlatform)
 		extractDir := filepath.Join(romDirectory, g.FsNameNoExt)
 
@@ -374,7 +375,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 		sourceURL := ""
 
 		if g.HasMultipleFiles {
-			tmpDir := fileutil.TempDir()
+			tmpDir := appdir.TmpDir()
 			downloadLocation = filepath.Join(tmpDir, fmt.Sprintf("grout_multirom_%d.zip", g.ID))
 			sourceURL, _ = url.JoinPath(host.URL(), "/api/roms/", strconv.Itoa(g.ID), "content", g.FsName)
 		} else {

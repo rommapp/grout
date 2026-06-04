@@ -4,6 +4,7 @@ import (
 	"grout/cfw/batocera"
 	"grout/cfw/knulli"
 	"grout/cfw/muos"
+	"grout/cfw/retrodeck"
 	"grout/cfw/rocknix"
 	"grout/internal/emulationstation"
 	"grout/internal/gamelist"
@@ -26,6 +27,8 @@ func AddGroutToGamelist(c CFW) {
 		gamelist.AddGroutEntry(rocknix.GetGroutGamelist(), "./Grout.sh")
 	case Batocera:
 		gamelist.AddGroutEntry(batocera.GetGroutGamelist(), "./Grout/Grout.sh")
+	case RetroDECK:
+		gamelist.AddGroutEntry(retrodeck.GetGroutGamelist(), "./Grout.sh")
 	default:
 		return
 	}
@@ -35,7 +38,7 @@ func AddGroutToGamelist(c CFW) {
 func FillGamesMetadata(entries []gamelist.RomGameEntry) {
 	logger := gaba.GetLogger()
 	switch GetCFW() {
-	case Knulli, ROCKNIX, Batocera:
+	case Knulli, ROCKNIX, Batocera, RetroDECK:
 		if err := gamelist.AddRomGamesToGamelist(entries, gamelist.GameListFileName); err != nil {
 			logger.Warn("Failed to add games to ES gamelist.xml", "error", err)
 		}

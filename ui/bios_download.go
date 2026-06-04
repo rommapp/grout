@@ -5,6 +5,7 @@ import (
 	"grout/bios"
 	"grout/cfw"
 	"grout/internal"
+	"grout/internal/appdir"
 	"grout/internal/fileutil"
 	"grout/romm"
 	"os"
@@ -201,7 +202,7 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (BIOSDownloadOutput, 
 	baseURL := input.Host.URL()
 	for _, item := range selectedItems {
 		downloadURL := baseURL + item.firmware.DownloadURL
-		tempPath := filepath.Join(fileutil.TempDir(), fmt.Sprintf("bios_%s", item.firmware.FileName))
+		tempPath := filepath.Join(appdir.TmpDir(), fmt.Sprintf("bios_%s", item.firmware.FileName))
 
 		downloads = append(downloads, gaba.Download{
 			URL:         downloadURL,

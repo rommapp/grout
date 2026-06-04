@@ -2,6 +2,7 @@ package cache
 
 import (
 	"database/sql"
+	"grout/internal/appdir"
 	"grout/internal/fileutil"
 	"grout/romm"
 	"os"
@@ -446,27 +447,15 @@ func (cm *Manager) SyncPlatformGames(platforms []romm.Platform) (int, error) {
 }
 
 func getCacheDBPath() string {
-	wd, err := os.Getwd()
-	if err != nil {
-		return filepath.Join(os.TempDir(), ".cache", "grout.db")
-	}
-	return filepath.Join(wd, ".cache", "grout.db")
+	return filepath.Join(appdir.CacheDir(), "grout.db")
 }
 
 func GetArtworkCacheDir() string {
-	wd, err := os.Getwd()
-	if err != nil {
-		return filepath.Join(os.TempDir(), ".cache", "artwork")
-	}
-	return filepath.Join(wd, ".cache", "artwork")
+	return filepath.Join(appdir.CacheDir(), "artwork")
 }
 
 func GetCacheDir() string {
-	wd, err := os.Getwd()
-	if err != nil {
-		return filepath.Join(os.TempDir(), ".cache")
-	}
-	return filepath.Join(wd, ".cache")
+	return appdir.CacheDir()
 }
 
 // DeleteCacheFolder removes the entire cache directory and resets the singleton

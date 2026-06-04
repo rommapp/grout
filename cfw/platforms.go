@@ -9,6 +9,7 @@ import (
 	"grout/cfw/muos"
 	"grout/cfw/nextui"
 	"grout/cfw/onion"
+	"grout/cfw/retrodeck"
 	"grout/cfw/rocknix"
 	"grout/cfw/spruce"
 	"grout/cfw/trimui"
@@ -33,6 +34,7 @@ func buildPlatformAliasMap() map[string][]string {
 		koriki.Platforms,
 		batocera.Platforms,
 		minui.Platforms,
+		retrodeck.Platforms,
 	}
 
 	// Build reverse map: primary folder -> list of RomM slugs that use it as primary
@@ -138,6 +140,8 @@ func GetPlatformMap(c CFW) map[string][]string {
 		return batocera.Platforms
 	case MinUI:
 		return minui.Platforms
+	case RetroDECK:
+		return retrodeck.Platforms
 	default:
 		return nil
 	}

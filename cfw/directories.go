@@ -9,6 +9,7 @@ import (
 	"grout/cfw/muos"
 	"grout/cfw/nextui"
 	"grout/cfw/onion"
+	"grout/cfw/retrodeck"
 	"grout/cfw/rocknix"
 	"grout/cfw/spruce"
 	"grout/cfw/trimui"
@@ -40,6 +41,8 @@ func GetRomDirectory() string {
 		return batocera.GetRomDirectory()
 	case MinUI:
 		return minui.GetRomDirectory()
+	case RetroDECK:
+		return retrodeck.GetRomDirectory()
 	}
 	return ""
 }
@@ -81,6 +84,8 @@ func GetBIOSDirectory() string {
 		return batocera.GetBIOSDirectory()
 	case MinUI:
 		return minui.GetBIOSDirectory()
+	case RetroDECK:
+		return retrodeck.GetBIOSDirectory()
 	}
 	return ""
 }
@@ -132,6 +137,8 @@ func GetArtDirectory(romDir string, platformFSSlug, platformName string) string 
 		return batocera.GetArtDirectory(romDir)
 	case MinUI:
 		return minui.GetArtDirectory(romDir)
+	case RetroDECK:
+		return retrodeck.GetArtDirectory(romDir)
 	default:
 		return ""
 	}
@@ -180,6 +187,8 @@ func BaseSavePath() string {
 		return batocera.GetBaseSavePath()
 	case MinUI:
 		return minui.GetBaseSavePath()
+	case RetroDECK:
+		return retrodeck.GetBaseSavePath()
 	}
 	return ""
 }
@@ -192,6 +201,8 @@ func GetArtMarqueeDirectory(romDir string, platformFSSlug, platformName string) 
 		return knulli.GetArtDirectory(romDir)
 	case Batocera:
 		return batocera.GetArtDirectory(romDir)
+	case RetroDECK:
+		return retrodeck.GetArtDirectory(romDir)
 	default:
 		return ""
 	}
@@ -205,6 +216,8 @@ func GetArtVideoDirectory(romDir string, platformFSSlug, platformName string) st
 		return knulli.GetVideoDirectory(romDir)
 	case Batocera:
 		return batocera.GetVideoDirectory(romDir)
+	case RetroDECK:
+		return retrodeck.GetVideoDirectory(romDir)
 	default:
 		return ""
 
@@ -219,6 +232,8 @@ func GetArtThumbnailDirectory(romDir string, platformFSSlug, platformName string
 		return knulli.GetArtDirectory(romDir)
 	case Batocera:
 		return knulli.GetArtDirectory(romDir)
+	case RetroDECK:
+		return retrodeck.GetArtDirectory(romDir)
 	default:
 		return ""
 	}
@@ -232,6 +247,8 @@ func GetArtBezelDirectory(romDir string, platformFSSlug, platformName string) st
 		return knulli.GetBezelDirectory(romDir)
 	case Batocera:
 		return batocera.GetBezelDirectory(romDir)
+	case RetroDECK:
+		return retrodeck.GetBezelDirectory(romDir)
 	default:
 		return ""
 	}
@@ -245,6 +262,8 @@ func GetManualDirectory(romDir string, platformFSSlug, platformName string) stri
 		return knulli.GetManualDirectory(romDir)
 	case Batocera:
 		return batocera.GetManualDirectory(romDir)
+	case RetroDECK:
+		return retrodeck.GetManualDirectory(romDir)
 	default:
 		return ""
 	}
@@ -258,6 +277,8 @@ func GetBoxbackDirectory(romDir string, platformFSSlug, platformName string) str
 		return knulli.GetArtDirectory(romDir)
 	case Batocera:
 		return batocera.GetArtDirectory(romDir)
+	case RetroDECK:
+		return retrodeck.GetArtDirectory(romDir)
 	default:
 		return ""
 	}
@@ -271,6 +292,8 @@ func GetFanartDirectory(romDir string, platformFSSlug, platformName string) stri
 		return knulli.GetArtDirectory(romDir)
 	case Batocera:
 		return batocera.GetArtDirectory(romDir)
+	case RetroDECK:
+		return retrodeck.GetArtDirectory(romDir)
 	default:
 		return ""
 	}

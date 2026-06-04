@@ -36,14 +36,6 @@ func (pw *progressWriter) Write(p []byte) (int, error) {
 	return n, err
 }
 
-func TempDir() string {
-	wd, err := os.Getwd()
-	if err != nil {
-		return os.TempDir()
-	}
-	return filepath.Join(wd, ".tmp")
-}
-
 func CopyFile(src, dest string) error {
 	sourceFile, err := os.Open(src)
 	if err != nil {
