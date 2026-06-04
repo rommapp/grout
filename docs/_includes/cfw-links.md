@@ -1,5 +1,7 @@
 [allium]: https://github.com/goweiwen/Allium
 [batocera]: https://batocera.org
+[emudeck]: https://www.emudeck.com
+[es-de]: https://es-de.org
 [knulli]: https://knulli.org
 [koriki]: https://github.com/Rparadise-Team/Koriki
 [minui]: https://github.com/shauninman/MinUI

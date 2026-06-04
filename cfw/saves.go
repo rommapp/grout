@@ -3,6 +3,7 @@ package cfw
 import (
 	"grout/cfw/allium"
 	"grout/cfw/batocera"
+	"grout/cfw/esde"
 	"grout/cfw/knulli"
 	"grout/cfw/koriki"
 	"grout/cfw/minui"
@@ -38,6 +39,8 @@ func EmulatorFolderMap(c CFW) map[string][]string {
 		return trimui.SaveDirectories
 	case Batocera:
 		return batocera.Platforms
+	case ESDE:
+		return esde.SaveDirectories
 	case MinUI:
 		return minui.SaveDirectories
 	default:

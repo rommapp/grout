@@ -64,6 +64,11 @@ func GetDistributionAssetName(c cfw.CFW) string {
 		default:
 			return ""
 		}
+	case cfw.ESDE:
+		if runtime.GOARCH == "amd64" {
+			return "Grout-ESDE.zip"
+		}
+		return ""
 	default:
 		return ""
 	}
@@ -256,6 +261,8 @@ func getLaunchScriptPath(c cfw.CFW) string {
 	case cfw.MinUI:
 		return "Grout.pak/launch.sh"
 	case cfw.Batocera:
+		return "Grout.sh"
+	case cfw.ESDE:
 		return "Grout.sh"
 	default:
 		return ""

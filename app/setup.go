@@ -22,12 +22,14 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	buttons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
 	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
+	"github.com/veandco/go-sdl2/sdl"
 )
 
 type SetupResult struct {
@@ -57,6 +59,24 @@ func setup() SetupResult {
 		Config:    config,
 		Platforms: platforms,
 	}
+}
+
+func isSteamDeckHardware() bool {
+	for _, path := range []string{
+		"/sys/class/dmi/id/product_name",
+		"/sys/class/dmi/id/product_version",
+		"/sys/class/dmi/id/board_name",
+	} {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		value := strings.ToLower(strings.TrimSpace(string(data)))
+		if strings.Contains(value, "steam deck") || strings.Contains(value, "jupiter") || strings.Contains(value, "galileo") {
+			return true
+		}
+	}
+	return false
 }
 
 func setupInputMapping(currentCFW cfw.CFW) {
@@ -127,6 +147,14 @@ func initFramework(currentCFW cfw.CFW) {
 		}
 	}
 	gaba.Init(gabaOptions)
+
+	if currentCFW == cfw.ESDE || isSteamDeckHardware() {
+		// Steam Deck/Steam Input can emit continuous tiny analog-stick motion events,
+		// which flood SDL's event queue and make button input appear delayed or jittery.
+		// D-pad/buttons are sufficient for Grout navigation, so drop axis motion events.
+		sdl.EventState(sdl.CONTROLLERAXISMOTION, sdl.IGNORE)
+		sdl.EventState(sdl.JOYAXISMOTION, sdl.IGNORE)
+	}
 
 	gaba.RegisterChord("unlock-kid-mode", []buttons.VirtualButton{
 		buttons.VirtualButtonL1,

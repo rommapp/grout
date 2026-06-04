@@ -3,6 +3,7 @@ package cfw
 import (
 	"grout/cfw/allium"
 	"grout/cfw/batocera"
+	"grout/cfw/esde"
 	"grout/cfw/knulli"
 	"grout/cfw/koriki"
 	"grout/cfw/minui"
@@ -38,6 +39,8 @@ func GetRomDirectory() string {
 		return koriki.GetRomDirectory()
 	case Batocera:
 		return batocera.GetRomDirectory()
+	case ESDE:
+		return esde.GetRomDirectory()
 	case MinUI:
 		return minui.GetRomDirectory()
 	}
@@ -79,6 +82,8 @@ func GetBIOSDirectory() string {
 		return koriki.GetBIOSDirectory()
 	case Batocera:
 		return batocera.GetBIOSDirectory()
+	case ESDE:
+		return esde.GetBIOSDirectory()
 	case MinUI:
 		return minui.GetBIOSDirectory()
 	}
@@ -130,6 +135,8 @@ func GetArtDirectory(romDir string, platformFSSlug, platformName string) string 
 		return koriki.GetArtDirectory(romDir)
 	case Batocera:
 		return batocera.GetArtDirectory(romDir)
+	case ESDE:
+		return esde.GetArtDirectory(romDir)
 	case MinUI:
 		return minui.GetArtDirectory(romDir)
 	default:
@@ -178,6 +185,8 @@ func BaseSavePath() string {
 		return koriki.GetBaseSavePath()
 	case Batocera:
 		return batocera.GetBaseSavePath()
+	case ESDE:
+		return esde.GetBaseSavePath()
 	case MinUI:
 		return minui.GetBaseSavePath()
 	}
@@ -192,6 +201,8 @@ func GetArtMarqueeDirectory(romDir string, platformFSSlug, platformName string) 
 		return knulli.GetArtDirectory(romDir)
 	case Batocera:
 		return batocera.GetArtDirectory(romDir)
+	case ESDE:
+		return esde.GetArtDirectory(romDir)
 	default:
 		return ""
 	}
@@ -205,6 +216,8 @@ func GetArtVideoDirectory(romDir string, platformFSSlug, platformName string) st
 		return knulli.GetVideoDirectory(romDir)
 	case Batocera:
 		return batocera.GetVideoDirectory(romDir)
+	case ESDE:
+		return esde.GetVideoDirectory(romDir)
 	default:
 		return ""
 
@@ -219,6 +232,8 @@ func GetArtThumbnailDirectory(romDir string, platformFSSlug, platformName string
 		return knulli.GetArtDirectory(romDir)
 	case Batocera:
 		return knulli.GetArtDirectory(romDir)
+	case ESDE:
+		return esde.GetArtDirectory(romDir)
 	default:
 		return ""
 	}
@@ -232,6 +247,8 @@ func GetArtBezelDirectory(romDir string, platformFSSlug, platformName string) st
 		return knulli.GetBezelDirectory(romDir)
 	case Batocera:
 		return batocera.GetBezelDirectory(romDir)
+	case ESDE:
+		return esde.GetBezelDirectory(romDir)
 	default:
 		return ""
 	}
@@ -245,6 +262,8 @@ func GetManualDirectory(romDir string, platformFSSlug, platformName string) stri
 		return knulli.GetManualDirectory(romDir)
 	case Batocera:
 		return batocera.GetManualDirectory(romDir)
+	case ESDE:
+		return esde.GetManualDirectory(romDir)
 	default:
 		return ""
 	}
@@ -258,6 +277,8 @@ func GetBoxbackDirectory(romDir string, platformFSSlug, platformName string) str
 		return knulli.GetArtDirectory(romDir)
 	case Batocera:
 		return batocera.GetArtDirectory(romDir)
+	case ESDE:
+		return esde.GetArtDirectory(romDir)
 	default:
 		return ""
 	}
@@ -271,6 +292,8 @@ func GetFanartDirectory(romDir string, platformFSSlug, platformName string) stri
 		return knulli.GetArtDirectory(romDir)
 	case Batocera:
 		return batocera.GetArtDirectory(romDir)
+	case ESDE:
+		return esde.GetArtDirectory(romDir)
 	default:
 		return ""
 	}

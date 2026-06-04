@@ -1,0 +1,200 @@
+{
+  "3do": [
+    "retroarch/saves"
+  ],
+  "acpc": [
+    "retroarch/saves"
+  ],
+  "arcade": [
+    "retroarch/saves"
+  ],
+  "atari-st": [
+    "retroarch/saves"
+  ],
+  "atari2600": [
+    "retroarch/saves"
+  ],
+  "atari5200": [
+    "retroarch/saves"
+  ],
+  "atari7800": [
+    "retroarch/saves"
+  ],
+  "atari800": [
+    "retroarch/saves"
+  ],
+  "c128": [
+    "retroarch/saves"
+  ],
+  "c16": [
+    "retroarch/saves"
+  ],
+  "c64": [
+    "retroarch/saves"
+  ],
+  "colecovision": [
+    "retroarch/saves"
+  ],
+  "cpet": [
+    "retroarch/saves"
+  ],
+  "fairchild-channel-f": [
+    "retroarch/saves"
+  ],
+  "famicom": [
+    "retroarch/saves"
+  ],
+  "fds": [
+    "retroarch/saves"
+  ],
+  "gamegear": [
+    "retroarch/saves"
+  ],
+  "gb": [
+    "retroarch/saves"
+  ],
+  "gba": [
+    "retroarch/saves"
+  ],
+  "gbc": [
+    "retroarch/saves"
+  ],
+  "genesis": [
+    "retroarch/saves"
+  ],
+  "intellivision": [
+    "retroarch/saves"
+  ],
+  "jaguar": [
+    "retroarch/saves"
+  ],
+  "lynx": [
+    "retroarch/saves"
+  ],
+  "msx": [
+    "retroarch/saves"
+  ],
+  "n64": [
+    "retroarch/saves"
+  ],
+  "nds": [
+    "retroarch/saves"
+  ],
+  "neo-geo-cd": [
+    "retroarch/saves"
+  ],
+  "neo-geo-pocket": [
+    "retroarch/saves"
+  ],
+  "neo-geo-pocket-color": [
+    "retroarch/saves"
+  ],
+  "neogeoaes": [
+    "retroarch/saves"
+  ],
+  "neogeomvs": [
+    "retroarch/saves"
+  ],
+  "nes": [
+    "retroarch/saves"
+  ],
+  "odyssey": [
+    "retroarch/saves"
+  ],
+  "pc-8000": [
+    "retroarch/saves"
+  ],
+  "pc-9800-series": [
+    "retroarch/saves"
+  ],
+  "pc-fx": [
+    "retroarch/saves"
+  ],
+  "pico": [
+    "retroarch/saves"
+  ],
+  "pico-8": [
+    "retroarch/saves"
+  ],
+  "pokemon-mini": [
+    "retroarch/saves"
+  ],
+  "psx": [
+    "retroarch/saves"
+  ],
+  "saturn": [
+    "retroarch/saves"
+  ],
+  "sega32": [
+    "retroarch/saves"
+  ],
+  "segacd": [
+    "retroarch/saves"
+  ],
+  "sfam": [
+    "retroarch/saves"
+  ],
+  "sg1000": [
+    "retroarch/saves"
+  ],
+  "sharp-x68000": [
+    "retroarch/saves"
+  ],
+  "sms": [
+    "retroarch/saves"
+  ],
+  "snes": [
+    "retroarch/saves"
+  ],
+  "supergrafx": [
+    "retroarch/saves"
+  ],
+  "supervision": [
+    "retroarch/saves"
+  ],
+  "tg16": [
+    "retroarch/saves"
+  ],
+  "tic-80": [
+    "retroarch/saves"
+  ],
+  "turbografx-cd": [
+    "retroarch/saves"
+  ],
+  "vectrex": [
+    "retroarch/saves"
+  ],
+  "vic-20": [
+    "retroarch/saves"
+  ],
+  "videopac": [
+    "retroarch/saves"
+  ],
+  "virtualboy": [
+    "retroarch/saves"
+  ],
+  "wonderswan": [
+    "retroarch/saves"
+  ],
+  "wonderswan-color": [
+    "retroarch/saves"
+  ],
+  "x1": [
+    "retroarch/saves"
+  ],
+  "zx81": [
+    "retroarch/saves"
+  ],
+  "zxs": [
+    "retroarch/saves"
+  ],
+  "dc": [
+    "flycast"
+  ],
+  "psp": [
+    "ppsspp/PSP/SAVEDATA"
+  ],
+  "3ds": [
+    "citra/sdmc"
+  ]
+}

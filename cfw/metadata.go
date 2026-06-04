@@ -2,6 +2,7 @@ package cfw
 
 import (
 	"grout/cfw/batocera"
+	"grout/cfw/esde"
 	"grout/cfw/knulli"
 	"grout/cfw/muos"
 	"grout/cfw/rocknix"
@@ -26,6 +27,9 @@ func AddGroutToGamelist(c CFW) {
 		gamelist.AddGroutEntry(rocknix.GetGroutGamelist(), "./Grout.sh")
 	case Batocera:
 		gamelist.AddGroutEntry(batocera.GetGroutGamelist(), "./Grout/Grout.sh")
+	case ESDE:
+		gamelist.AddGroutEntry(esde.GetGroutGamelist(), "./Grout.sh")
+		return
 	default:
 		return
 	}
@@ -40,6 +44,10 @@ func FillGamesMetadata(entries []gamelist.RomGameEntry) {
 			logger.Warn("Failed to add games to ES gamelist.xml", "error", err)
 		}
 		scheduleESRestart()
+	case ESDE:
+		if err := gamelist.AddRomGamesToGamelist(entries, gamelist.GameListFileName); err != nil {
+			logger.Warn("Failed to add games to ES-DE gamelist.xml", "error", err)
+		}
 	case Spruce, Allium, Onion, Koriki:
 		if err := gamelist.AddRomGamesToGamelist(entries, gamelist.MiyooGameListFileName); err != nil {
 			logger.Warn("Failed to add games to miyoogamelist.xml", "error", err)
