@@ -8,6 +8,7 @@ import (
 	"grout/cfw/koriki"
 	"grout/cfw/minui"
 	"grout/cfw/muos"
+	"grout/cfw/nextui"
 	"grout/cfw/onion"
 	"grout/cfw/rocknix"
 	"grout/cfw/spruce"
@@ -118,7 +119,8 @@ func initFramework(currentCFW cfw.CFW) {
 		gabaOptions.DisplayOrientation = gaba.OrientationRotate90
 	}
 
-	if currentCFW == cfw.MinUI && minui.DetectDevice() == minui.DeviceMiyooFlip {
+	if (currentCFW == cfw.MinUI && minui.DetectDevice() == minui.DeviceMiyooFlip) ||
+		(currentCFW == cfw.NextUI && nextui.DetectDevice() == nextui.DeviceMiyooFlip) {
 		gabaOptions.DisabledInputSources = gaba.DisabledInputSources{
 			Keyboard: true,
 			Joystick: true,
