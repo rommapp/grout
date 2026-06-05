@@ -126,6 +126,7 @@ For detailed documentation on platform mapping, see the [User Guide](guide.md#pl
 
 Each CFW uses different folder naming conventions:
 
+- AmberELEC - ES-DE style folder names with AmberELEC-specific handheld variants (e.g., `gb`, `gbh`, `snesh`)
 - [KNULLI](../platforms/knulli.md) - ES-DE style folder names (e.g., `gb`, `snes`, `psx`)
 - [muOS](../platforms/muos.md) - Mixed short codes and descriptive names (e.g., `gb`, `Nintendo Game Boy`)
 - [NextUI](../platforms/nextui.md) - Descriptive names with tags (e.g., `Game Boy (GB)`)

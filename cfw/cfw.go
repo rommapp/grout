@@ -9,6 +9,7 @@ import (
 type CFW string
 
 const (
+	AmberELEC CFW = "AMBERELEC"
 	NextUI   CFW = "NEXTUI"
 	MuOS     CFW = "MUOS"
 	Knulli   CFW = "KNULLI"
@@ -27,18 +28,18 @@ func GetCFW() CFW {
 	cfw := CFW(cfwEnv)
 
 	switch cfw {
-	case MuOS, NextUI, Knulli, Spruce, ROCKNIX, Trimui, Allium, Onion, Koriki, Batocera, MinUI:
+	case AmberELEC, MuOS, NextUI, Knulli, Spruce, ROCKNIX, Trimui, Allium, Onion, Koriki, Batocera, MinUI:
 		return cfw
 	default:
 		log.SetOutput(os.Stderr)
-		log.Fatalf("Unsupported CFW: '%s'. Valid options: NextUI, muOS, Knulli, Spruce, ROCKNIX, Trimui, Allium, Onion, Koriki, Batocera, MinUI", cfwEnv)
+		log.Fatalf("Unsupported CFW: '%s'. Valid options: AmberELEC, NextUI, muOS, Knulli, Spruce, ROCKNIX, Trimui, Allium, Onion, Koriki, Batocera, MinUI", cfwEnv)
 		return ""
 	}
 }
 
 func (c CFW) IsBasedOnEmulationStation() bool {
 	switch c {
-	case Knulli, ROCKNIX, Batocera:
+	case AmberELEC, Knulli, ROCKNIX, Batocera:
 		return true
 	default:
 		return false

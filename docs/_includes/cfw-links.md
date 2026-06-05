@@ -1,4 +1,5 @@
 [allium]: https://github.com/goweiwen/Allium
+[amberelec]: https://amberelec.org
 [batocera]: https://batocera.org
 [knulli]: https://knulli.org
 [koriki]: https://github.com/Rparadise-Team/Koriki

@@ -41,6 +41,8 @@ func GetDistributionAssetName(c cfw.CFW) string {
 		return "Grout-Knulli.zip"
 	case cfw.Spruce:
 		return "Grout.spruce.zip"
+	case cfw.AmberELEC:
+		return "Grout-AmberELEC.zip"
 	case cfw.ROCKNIX:
 		return "Grout-ROCKNIX.zip"
 	case cfw.Trimui:
@@ -243,6 +245,8 @@ func getLaunchScriptPath(c cfw.CFW) string {
 		return "Grout/Grout.sh"
 	case cfw.Spruce:
 		return "Grout/launch.sh"
+	case cfw.AmberELEC:
+		return "Grout.sh"
 	case cfw.ROCKNIX:
 		return "Grout.sh"
 	case cfw.Trimui:

@@ -6,6 +6,7 @@ import (
 	"grout/internal/stringutil"
 	"grout/romm"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -37,8 +38,43 @@ type RomGameEntry struct {
 	Platform     *romm.Platform
 }
 
+func relativeGameListPath(baseDir, value string) string {
+	if value == "" {
+		return ""
+	}
+
+	if !filepath.IsAbs(value) {
+		relative := filepath.ToSlash(value)
+		if strings.HasPrefix(relative, "./") || strings.HasPrefix(relative, "../") {
+			return relative
+		}
+		return "./" + relative
+	}
+
+	relative, err := filepath.Rel(baseDir, value)
+	if err != nil {
+		return filepath.ToSlash(value)
+	}
+
+	relative = filepath.ToSlash(relative)
+	if relative == "." {
+		return "./"
+	}
+	if relative == ".." || strings.HasPrefix(relative, "../") {
+		return filepath.ToSlash(value)
+	}
+	if strings.HasPrefix(relative, "./") {
+		return relative
+	}
+
+	return "./" + relative
+}
+
 func (gl *GameList) AddRomGame(entry RomGameEntry) {
 	gameMetadata := make(map[string]string)
+	toGameListPath := func(value string) string {
+		return relativeGameListPath(entry.RomDirectory, value)
+	}
 	gameMetadata[NameElement] = stringutil.PrepareRomName(entry.Game.Name, entry.Game.Regions)
 	gameMetadata[DescElement] = entry.Game.Summary
 	gameMetadata[MD5Element] = entry.Game.Md5Hash
@@ -53,39 +89,39 @@ func (gl *GameList) AddRomGame(entry RomGameEntry) {
 	}
 
 	if entry.ArtLocation.ImagePath != "" {
-		gameMetadata[ImageElement] = entry.ArtLocation.ImagePath
+		gameMetadata[ImageElement] = toGameListPath(entry.ArtLocation.ImagePath)
 	}
 
 	if entry.ArtLocation.ThumbnailPath != "" {
-		gameMetadata[ThumbnailElement] = entry.ArtLocation.ThumbnailPath
+		gameMetadata[ThumbnailElement] = toGameListPath(entry.ArtLocation.ThumbnailPath)
 	}
 
 	if entry.ArtLocation.MarqueePath != "" {
-		gameMetadata[MarqueeElement] = entry.ArtLocation.MarqueePath
+		gameMetadata[MarqueeElement] = toGameListPath(entry.ArtLocation.MarqueePath)
 	}
 
 	if entry.ArtLocation.VideoPath != "" {
-		gameMetadata[VideoElement] = entry.ArtLocation.VideoPath
+		gameMetadata[VideoElement] = toGameListPath(entry.ArtLocation.VideoPath)
 	}
 
 	if entry.ArtLocation.BezelPath != "" {
-		gameMetadata[BezelElement] = entry.ArtLocation.BezelPath
+		gameMetadata[BezelElement] = toGameListPath(entry.ArtLocation.BezelPath)
 	}
 
 	if entry.ArtLocation.ManualPath != "" {
-		gameMetadata[ManualElement] = entry.ArtLocation.ManualPath
+		gameMetadata[ManualElement] = toGameListPath(entry.ArtLocation.ManualPath)
 	}
 
 	if entry.ArtLocation.BoxBackPath != "" {
-		gameMetadata[BoxbackElement] = entry.ArtLocation.BoxBackPath
+		gameMetadata[BoxbackElement] = toGameListPath(entry.ArtLocation.BoxBackPath)
 	}
 
 	if entry.ArtLocation.FanartPath != "" {
-		gameMetadata[FanartElement] = entry.ArtLocation.FanartPath
+		gameMetadata[FanartElement] = toGameListPath(entry.ArtLocation.FanartPath)
 	}
 
 	if entry.GamePath != "" {
-		gameMetadata[PathElement] = entry.GamePath
+		gameMetadata[PathElement] = toGameListPath(entry.GamePath)
 	}
 
 	maxPlayers := entry.Game.MaxPlayerCount()

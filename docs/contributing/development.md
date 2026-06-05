@@ -26,14 +26,14 @@ brew install sdl2 sdl2_image sdl2_ttf sdl2_gfx
 ## Getting Started
 
 1. Clone the [Grout](https://github.com/rommapp/grout) repository.
-2. Run `task hooks-setup` to install git hooks.
+2. Run `task code:hooks-setup` to install git hooks.
 3. Make a copy of `.env.dev` and save it as `.env` in the root of the cloned repository.
 4. Fill out the `.env` file. Here are descriptions of the various values you can set.
     - `ENVIRONMENT=DEV` (mandatory), this will disable some Gabagool features behind the scenes
     - `WINDOW_WIDTH` (optional)
     - `WINDOW_HEIGHT` (optional)
     - `NITRATES` [true | false] (optional) This is used for Gabagool development debugging
-    - `CFW` [MUOS | KNULLI | SPRUCE | NEXTUI] (mandatory), this controls how Grout interacts with and places files
+  - `CFW` (mandatory), set this to one of the supported values such as `AMBERELEC`, `MUOS`, `KNULLI`, `SPRUCE`, `NEXTUI`, `ROCKNIX`, `TRIMUI`, `ALLIUM`, `ONION`, `KORIKI`, `BATOCERA`, or `MINUI`
     - `BASE_PATH` (mandatory), this acts as the root path like you would have on a handheld (e.g. `/mmc/sdcard` on
       muOS). Have the subdirectory structure of this path match the CFW you are working on.
 5. Run / Debug `app/grout.go`, making sure to reference the `.env` file in your run configuration.
@@ -71,29 +71,32 @@ and use Docker for cross-compilation.
 task all
 
 # Or build with a local gabagool workspace (for gabagool development)
-task all-local
+task all LOCAL=true
 ```
 
 ### Build Process
 
 The build happens in two stages:
 
-1. **Docker Build** (`task build-arm64`) - Cross-compiles the Go binary for ARM64 Linux inside a Docker container. This
+1. **Docker Build** (`task build:arm64`) - Cross-compiles the Go binary for ARM64 Linux inside a Docker container. This
    ensures consistent builds regardless of your host OS and handles SDL2 dependencies.
 
-2. **Extract** (`task extract-arm64`) - Copies the compiled binary and required shared libraries (like `libSDL2_gfx`) from
-   the Docker container to the local `build64/` directory.
+2. **Extract** - `task build:arm64` also extracts the compiled binary and required shared libraries (like
+  `libSDL2_gfx`) from the Docker container to the local `build64/` directory.
 
 ### Platform-Specific Packaging
 
 After building, you can package for individual platforms:
 
-| Task                  | Platform        | Output Location                           |
-|-----------------------|-----------------|-------------------------------------------|
-| `task package-next`   | NextUI (TrimUI) | `build/Grout.pak/`                        |
-| `task package-muos`   | muOS            | `build/muOS/Grout/`, `build/Grout.muxapp` |
-| `task package-knulli` | Knulli          | `build/Knulli/Grout/`                     |
-| `task package-spruce` | Spruce          | `build/Spruce/Grout/`                     |
+| Task                     | Platform        | Output Location                         |
+|--------------------------|-----------------|-----------------------------------------|
+| `task package:next`      | NextUI (TrimUI) | `dist/Grout.pak/`                       |
+| `task package:muos`      | muOS            | `dist/muOS/Grout/`, `dist/Grout.muxapp` |
+| `task package:knulli`    | Knulli          | `dist/Knulli/Grout/`                    |
+| `task package:spruce`    | Spruce          | `dist/Spruce/Grout/`                    |
+| `task package:rocknix`   | ROCKNIX         | `dist/ROCKNIX/Grout/`                   |
+| `task package:amberelec` | AmberELEC       | `dist/AmberELEC/Grout/`                 |
+| `task package:trimui`    | TrimUI          | `dist/Trimui/Grout/`                    |
 
 Each packaging task copies the binary, launch scripts from `scripts/<platform>/`, shared libraries, and documentation
 into the appropriate directory structure for that CFW.
@@ -104,43 +107,49 @@ For rapid testing, you can deploy directly to a connected device, assuming that 
 
 ```shell
 # NextUI (TrimUI devices)
-task adb-next
+task deploy:next
 
 # muOS (SD card 1 or 2)
-task adb-muos-sd1
-task adb-muos-sd2
+task deploy:muos-sd1
+task deploy:muos-sd2
 
 # Knulli
-task adb-knulli
+task deploy:knulli
 ```
 
 These tasks will remove any existing installation and push the freshly built package to the device.
 
 ### Local Gabagool Development
 
-When developing gabagool alongside Grout, use the `-local` variants:
+When developing gabagool alongside Grout, pass `LOCAL=true`:
 
 ```shell
-task build-arm64-local   # Build using local gabagool via go.work
-task all-local     # Build and package all platforms with local gabagool
+task build:arm64 LOCAL=true   # Build using local gabagool via go.work
+task all LOCAL=true           # Build and package all platforms with local gabagool
 ```
 
 This requires a `go.work` file in the parent directory that references both projects.
 
 ### Output Structure
 
-After running `task all`, the `build/` directory will contain:
+After running `task all`, the build output is split between the architecture-specific build directories and the final
+packages in `dist/`:
 
 ```
-build/
+build64/
 ├── grout              # ARM64 Linux binary
-├── lib/               # Shared libraries
-│   └── libSDL2_gfx-1.0.so.0
+└── lib/
+  └── libSDL2_gfx-1.0.so.0
+
+dist/
 ├── Grout.pak/         # NextUI package
 ├── Grout.muxapp       # muOS archive (ready to install)
 ├── muOS/Grout/        # muOS package (unpacked)
 ├── Knulli/Grout/      # Knulli package
-└── Spruce/Grout/      # Spruce package
+├── Spruce/Grout/      # Spruce package
+├── ROCKNIX/Grout/     # ROCKNIX package
+├── AmberELEC/Grout/   # AmberELEC package
+└── Trimui/Grout/      # TrimUI package
 ```
 
 ## Helper Tools
@@ -171,7 +180,7 @@ The `i18n` task will:
 
 ```shell
 # Run all linters (fmt, vet, staticcheck)
-task lint
+task code:lint
 ```
 
 This runs `go fmt`, `go vet`, and `staticcheck` across the codebase.
@@ -183,10 +192,10 @@ Requires [staticcheck](https://staticcheck.dev/) to be installed (
 
 ```shell
 # Convert MP4 video to animated WebP (interactive, prompts for paths)
-task mp4-to-webp
+task media:mp4-to-webp
 
 # Resize all user guide screenshots to 1024px width
-task resize-user-guide-images
+task media:resize-user-guide-images
 ```
 
 The `mp4-to-webp` task is useful for creating animated preview images for documentation.

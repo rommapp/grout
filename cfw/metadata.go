@@ -1,6 +1,7 @@
 package cfw
 
 import (
+	"grout/cfw/amberelec"
 	"grout/cfw/batocera"
 	"grout/cfw/knulli"
 	"grout/cfw/muos"
@@ -20,6 +21,8 @@ func scheduleESRestart() {
 
 func AddGroutToGamelist(c CFW) {
 	switch c {
+	case AmberELEC:
+		gamelist.AddGroutEntry(amberelec.GetGroutGamelist(), "./Grout.sh")
 	case Knulli:
 		gamelist.AddGroutEntry(knulli.GetGroutGamelist(), "./Grout/Grout.sh")
 	case ROCKNIX:
@@ -35,7 +38,7 @@ func AddGroutToGamelist(c CFW) {
 func FillGamesMetadata(entries []gamelist.RomGameEntry) {
 	logger := gaba.GetLogger()
 	switch GetCFW() {
-	case Knulli, ROCKNIX, Batocera:
+	case AmberELEC, Knulli, ROCKNIX, Batocera:
 		if err := gamelist.AddRomGamesToGamelist(entries, gamelist.GameListFileName); err != nil {
 			logger.Warn("Failed to add games to ES gamelist.xml", "error", err)
 		}
