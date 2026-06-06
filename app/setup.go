@@ -5,6 +5,7 @@ import (
 	"grout/cache"
 	"grout/cfw"
 	"grout/cfw/allium"
+	"grout/cfw/arkos"
 	"grout/cfw/koriki"
 	"grout/cfw/minui"
 	"grout/cfw/muos"
@@ -92,6 +93,8 @@ func setupInputMapping(currentCFW cfw.CFW) {
 		mappingBytes, mappingErr = spruce.GetInputMappingBytes()
 	case cfw.ROCKNIX:
 		mappingBytes, mappingErr = rocknix.GetInputMappingBytes()
+	case cfw.ArkOS:
+		mappingBytes, mappingErr = arkos.GetInputMappingBytes()
 	}
 
 	if mappingBytes != nil && mappingErr == nil {

@@ -1,4 +1,6 @@
 [allium]: https://github.com/goweiwen/Allium
+[arkos]: https://github.com/christianhaitian/arkos
+[darkos]: https://github.com/christianhaitian/dArkOS
 [batocera]: https://batocera.org
 [knulli]: https://knulli.org
 [koriki]: https://github.com/Rparadise-Team/Koriki

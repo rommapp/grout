@@ -2,6 +2,7 @@ package cfw
 
 import (
 	"grout/cfw/allium"
+	"grout/cfw/arkos"
 	"grout/cfw/batocera"
 	"grout/cfw/knulli"
 	"grout/cfw/koriki"
@@ -36,6 +37,8 @@ func GetRomDirectory() string {
 		return onion.GetRomDirectory()
 	case Koriki:
 		return koriki.GetRomDirectory()
+	case ArkOS:
+		return arkos.GetRomDirectory()
 	case Batocera:
 		return batocera.GetRomDirectory()
 	case MinUI:
@@ -77,6 +80,8 @@ func GetBIOSDirectory() string {
 		return onion.GetBIOSDirectory()
 	case Koriki:
 		return koriki.GetBIOSDirectory()
+	case ArkOS:
+		return arkos.GetBIOSDirectory()
 	case Batocera:
 		return batocera.GetBIOSDirectory()
 	case MinUI:
@@ -128,6 +133,8 @@ func GetArtDirectory(romDir string, platformFSSlug, platformName string) string 
 		return onion.GetArtDirectory(romDir)
 	case Koriki:
 		return koriki.GetArtDirectory(romDir)
+	case ArkOS:
+		return arkos.GetArtDirectory(romDir)
 	case Batocera:
 		return batocera.GetArtDirectory(romDir)
 	case MinUI:
@@ -176,6 +183,8 @@ func BaseSavePath() string {
 		return onion.GetBaseSavePath()
 	case Koriki:
 		return koriki.GetBaseSavePath()
+	case ArkOS:
+		return arkos.GetBaseSavePath()
 	case Batocera:
 		return batocera.GetBaseSavePath()
 	case MinUI:
@@ -188,6 +197,8 @@ func GetArtMarqueeDirectory(romDir string, platformFSSlug, platformName string) 
 	switch GetCFW() {
 	case ROCKNIX:
 		return rocknix.GetArtDirectory(romDir)
+	case ArkOS:
+		return arkos.GetArtDirectory(romDir)
 	case Knulli:
 		return knulli.GetArtDirectory(romDir)
 	case Batocera:
@@ -201,13 +212,14 @@ func GetArtVideoDirectory(romDir string, platformFSSlug, platformName string) st
 	switch GetCFW() {
 	case ROCKNIX:
 		return rocknix.GetVideoDirectory(romDir)
+	case ArkOS:
+		return arkos.GetVideoDirectory(romDir)
 	case Knulli:
 		return knulli.GetVideoDirectory(romDir)
 	case Batocera:
 		return batocera.GetVideoDirectory(romDir)
 	default:
 		return ""
-
 	}
 }
 
@@ -215,6 +227,8 @@ func GetArtThumbnailDirectory(romDir string, platformFSSlug, platformName string
 	switch GetCFW() {
 	case ROCKNIX:
 		return rocknix.GetArtDirectory(romDir)
+	case ArkOS:
+		return arkos.GetArtDirectory(romDir)
 	case Knulli:
 		return knulli.GetArtDirectory(romDir)
 	case Batocera:
@@ -228,6 +242,8 @@ func GetArtBezelDirectory(romDir string, platformFSSlug, platformName string) st
 	switch GetCFW() {
 	case ROCKNIX:
 		return rocknix.GetBezelDirectory(romDir)
+	case ArkOS:
+		return arkos.GetBezelDirectory(romDir)
 	case Knulli:
 		return knulli.GetBezelDirectory(romDir)
 	case Batocera:
@@ -241,6 +257,8 @@ func GetManualDirectory(romDir string, platformFSSlug, platformName string) stri
 	switch GetCFW() {
 	case ROCKNIX:
 		return rocknix.GetManualDirectory(romDir)
+	case ArkOS:
+		return arkos.GetManualDirectory(romDir)
 	case Knulli:
 		return knulli.GetManualDirectory(romDir)
 	case Batocera:
@@ -254,6 +272,8 @@ func GetBoxbackDirectory(romDir string, platformFSSlug, platformName string) str
 	switch GetCFW() {
 	case ROCKNIX:
 		return rocknix.GetArtDirectory(romDir)
+	case ArkOS:
+		return arkos.GetArtDirectory(romDir)
 	case Knulli:
 		return knulli.GetArtDirectory(romDir)
 	case Batocera:
@@ -267,6 +287,8 @@ func GetFanartDirectory(romDir string, platformFSSlug, platformName string) stri
 	switch GetCFW() {
 	case ROCKNIX:
 		return rocknix.GetArtDirectory(romDir)
+	case ArkOS:
+		return arkos.GetArtDirectory(romDir)
 	case Knulli:
 		return knulli.GetArtDirectory(romDir)
 	case Batocera:
