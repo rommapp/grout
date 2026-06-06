@@ -13,7 +13,7 @@ hide:
 
 Download and manage games from your [RomM](https://romm.app) instance directly on your Linux based retro handheld.
 
-[Allium](getting-started/install-allium.md) · [Batocera](getting-started/install-batocera.md) · [Knulli](getting-started/install-knulli.md) · [MinUI](getting-started/install-minui.md) · [muOS](getting-started/install-muos.md) · [NextUI](getting-started/install-nextui.md) · [Onion](getting-started/install-onion.md) · [ROCKNIX](getting-started/install-rocknix.md) · [Spruce](getting-started/install-spruce.md) · [TrimUI](getting-started/install-trimui.md)
+[Allium](getting-started/install-allium.md) · [Batocera](getting-started/install-batocera.md) · [Knulli](getting-started/install-knulli.md) · [MinUI](getting-started/install-minui.md) · [muOS](getting-started/install-muos.md) · [NextUI](getting-started/install-nextui.md) · [Onion](getting-started/install-onion.md) · [ROCKNIX](getting-started/install-rocknix.md) · [Spruce](getting-started/install-spruce.md) · [TrimUI](getting-started/install-trimui.md) · [RetroDECK](getting-started/install-retrodeck.md)
 
 [:fontawesome-solid-gamepad: Get Started](getting-started/index.md){ .md-button .md-button--primary }
 &nbsp;&nbsp;
