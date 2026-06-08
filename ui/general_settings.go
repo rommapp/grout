@@ -66,7 +66,7 @@ func (s *GeneralSettingsScreen) Draw(input GeneralSettingsInput) (GeneralSetting
 func (s *GeneralSettingsScreen) buildMenuItems(config *internal.Config) []gaba.ItemWithOptions {
 	c := cfw.GetCFW()
 	isMuOS := c == cfw.MuOS
-	isESBasedOS := c == cfw.Knulli || c == cfw.ROCKNIX || c == cfw.RetroDECK
+	isESBasedOS := c == cfw.Knulli || c == cfw.ROCKNIX
 	showArtKind := atomic.Bool{}
 	showArtKind.Store(config.DownloadArt)
 	displayDownloadArtPreview := atomic.Bool{}

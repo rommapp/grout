@@ -27,8 +27,6 @@ func AddGroutToGamelist(c CFW) {
 		gamelist.AddGroutEntry(rocknix.GetGroutGamelist(), "./Grout.sh")
 	case Batocera:
 		gamelist.AddGroutEntry(batocera.GetGroutGamelist(), "./Grout/Grout.sh")
-	case RetroDECK:
-		gamelist.AddGroutEntry(retrodeck.GetGroutGamelist(), "./Grout.sh")
 	default:
 		return
 	}
@@ -38,13 +36,22 @@ func AddGroutToGamelist(c CFW) {
 func FillGamesMetadata(entries []gamelist.RomGameEntry) {
 	logger := gaba.GetLogger()
 	switch GetCFW() {
-	case Knulli, ROCKNIX, Batocera, RetroDECK:
-		if err := gamelist.AddRomGamesToGamelist(entries, gamelist.GameListFileName); err != nil {
+	case Knulli, ROCKNIX, Batocera:
+		if err := gamelist.AddRomGamesToGamelist(entries, gamelist.GameListFileName, nil); err != nil {
 			logger.Warn("Failed to add games to ES gamelist.xml", "error", err)
 		}
 		scheduleESRestart()
+	case RetroDECK:
+		options := &gamelist.AddRomGamesToGamelistOptions{
+			PathResolver: func(entry gamelist.RomGameEntry, filename gamelist.FileName) string {
+				return retrodeck.GetGamelistPath(entry.RomDirectory, string(filename))
+			},
+		}
+		if err := gamelist.AddRomGamesToGamelist(entries, gamelist.GameListFileName, options); err != nil {
+			logger.Warn("Failed to add games to ES gamelist.xml", "error", err)
+		}
 	case Spruce, Allium, Onion, Koriki:
-		if err := gamelist.AddRomGamesToGamelist(entries, gamelist.MiyooGameListFileName); err != nil {
+		if err := gamelist.AddRomGamesToGamelist(entries, gamelist.MiyooGameListFileName, nil); err != nil {
 			logger.Warn("Failed to add games to miyoogamelist.xml", "error", err)
 		}
 	case MuOS:

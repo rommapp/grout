@@ -6,6 +6,7 @@ import (
 	"grout/internal/stringutil"
 	"grout/romm"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -35,6 +36,17 @@ type RomGameEntry struct {
 	GamePath     string
 	RomDirectory string
 	Platform     *romm.Platform
+}
+
+// GamelistPathResolver handle gamelist file path
+type GamelistPathResolver func(entry RomGameEntry, filename FileName) string
+
+type AddRomGamesToGamelistOptions struct {
+	PathResolver GamelistPathResolver
+}
+
+func defaultGamelistPath(entry RomGameEntry, filename FileName) string {
+	return filepath.Join(entry.RomDirectory, string(filename))
 }
 
 func (gl *GameList) AddRomGame(entry RomGameEntry) {
@@ -130,13 +142,18 @@ func (gl *GameList) AddRomGame(entry RomGameEntry) {
 	gl.AdddOrUpdateEntry(entry.Game.Name, gameMetadata)
 }
 
-func AddRomGamesToGamelist(entry []RomGameEntry, gamelistFilename FileName) error {
+func AddRomGamesToGamelist(entry []RomGameEntry, gamelistFilename FileName, options *AddRomGamesToGamelistOptions) error {
+	resolver := defaultGamelistPath
+	if options != nil && options.PathResolver != nil {
+		resolver = options.PathResolver
+	}
+
 	gamelists := make(map[string]GameListEntry)
 	for _, game := range entry {
 		glEntry, exists := gamelists[game.Platform.FSSlug]
 		if !exists {
 			gl := New()
-			gamelistPath := fmt.Sprintf("%s/%s", game.RomDirectory, gamelistFilename)
+			gamelistPath := resolver(game, gamelistFilename)
 			if fileutil.FileExists(gamelistPath) {
 				data, err := os.ReadFile(gamelistPath)
 				if err != nil {
