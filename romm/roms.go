@@ -135,6 +135,7 @@ type GetRomsQuery struct {
 	UpdatedAfter        string `qs:"updated_after,omitempty"` // ISO8601 timestamp with timezone
 	WithFilterValues    bool   `qs:"with_filter_values"`
 	WithCharIndex       bool   `qs:"with_char_index"`
+	WithFiles           bool   `qs:"with_files"`
 }
 
 func (q GetRomsQuery) Valid() bool {

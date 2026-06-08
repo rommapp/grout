@@ -184,6 +184,7 @@ func (cm *Manager) fetchPlatformGames(platform romm.Platform, opts *fetchOpts) (
 			Offset:       offset,
 			Limit:        DefaultRomPageSize,
 			UpdatedAfter: opts.updatedAfter,
+			WithFiles:    true,
 		}
 
 		res, err := client.GetRoms(q)
