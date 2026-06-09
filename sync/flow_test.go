@@ -136,6 +136,16 @@ func TestMapOperationsToItems_DropsNoOpAndMapsActions(t *testing.T) {
 	}
 }
 
+func TestMapOperationsToItems_DropsDownloadWithoutSaveIdentity(t *testing.T) {
+	ops := []romm.SyncOperationSchema{
+		{Action: "download", RomID: 5, FileName: "x.srm"}, // no SaveID, no ServerUpdatedAt
+	}
+	items := mapOperationsToItems(ops, nil, nil, nil, nil)
+	if len(items) != 0 {
+		t.Errorf("expected malformed download op to be dropped, got %d items", len(items))
+	}
+}
+
 // --- buildClientSaveStates tests ---
 
 func TestBuildClientSaveStates_FileSlotEmulatorHash(t *testing.T) {

@@ -95,6 +95,11 @@ func mapOperationsToItems(
 			})
 
 		case "download":
+			stub := buildRemoteSaveStub(op)
+			if stub == nil {
+				logger.Error("Negotiate download op missing save identity (no save_id/server_updated_at)", "romID", op.RomID, "file", op.FileName)
+				continue
+			}
 			ls, ok := byKey[localKey{op.RomID, op.FileName}]
 			if !ok {
 				ls = resolveLocalSaveForDownload(op, resolvedRoms, cm)
@@ -105,12 +110,17 @@ func mapOperationsToItems(
 			}
 			items = append(items, SyncItem{
 				LocalSave:  ls,
-				RemoteSave: buildRemoteSaveStub(op),
+				RemoteSave: stub,
 				TargetSlot: slot,
 				Action:     ActionDownload,
 			})
 
 		case "conflict":
+			stub := buildRemoteSaveStub(op)
+			if stub == nil {
+				logger.Error("Negotiate conflict op missing save identity (no save_id/server_updated_at)", "romID", op.RomID, "file", op.FileName)
+				continue
+			}
 			ls, ok := byKey[localKey{op.RomID, op.FileName}]
 			if !ok {
 				logger.Warn("Negotiate conflict for unknown local save", "romID", op.RomID, "file", op.FileName)
@@ -122,7 +132,7 @@ func mapOperationsToItems(
 			}
 			items = append(items, SyncItem{
 				LocalSave:  ls,
-				RemoteSave: buildRemoteSaveStub(op),
+				RemoteSave: stub,
 				TargetSlot: slot,
 				Action:     ActionConflict,
 			})
@@ -470,7 +480,11 @@ func dirNewestMtimeAndSize(dirs []string) (time.Time, int64) {
 	var total int64
 	for _, dir := range dirs {
 		filepath.Walk(dir, func(_ string, info os.FileInfo, err error) error {
-			if err != nil || info.IsDir() {
+			if err != nil {
+				gaba.GetLogger().Warn("Walk error scanning directory save", "dir", dir, "error", err)
+				return nil
+			}
+			if info.IsDir() {
 				return nil
 			}
 			total += info.Size()

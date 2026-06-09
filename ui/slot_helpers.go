@@ -25,11 +25,11 @@ func BuildSlotOptions(config *internal.Config, romID int, slotNames []string) Sl
 	options := make([]gaba.Option, 0, len(slotNames)+2)
 
 	if len(slotNames) == 0 {
-		options = append(options, gaba.Option{DisplayName: defaultLabel, Value: "default"})
+		options = append(options, gaba.Option{DisplayName: defaultLabel, Value: "autosave"})
 	} else {
 		for _, name := range slotNames {
 			displayName := name
-			if name == "default" {
+			if name == "autosave" {
 				displayName = defaultLabel
 			}
 			options = append(options, gaba.Option{DisplayName: displayName, Value: name})

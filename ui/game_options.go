@@ -45,7 +45,7 @@ func (s *GameOptionsScreen) Draw(input GameOptionsInput) (GameOptionsOutput, err
 				summary, err := client.GetSaveSummary(input.Game.ID)
 				if err == nil {
 					for _, slot := range summary.Slots {
-						name := "default"
+						name := "autosave"
 						if slot.Slot != nil {
 							name = *slot.Slot
 						}

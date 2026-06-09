@@ -264,7 +264,7 @@ func (s *SyncedGamesScreen) showGameDetail(client *romm.Client, config *internal
 					r := &slotChangeResult{RomID: romID}
 					isNewSlot := true
 					for _, slot := range summary.Slots {
-						name := "default"
+						name := "autosave"
 						if slot.Slot != nil {
 							name = *slot.Slot
 						}
@@ -291,7 +291,7 @@ func (s *SyncedGamesScreen) showSlotSelector(config *internal.Config, romID int,
 
 	var slotNames []string
 	for _, slot := range summary.Slots {
-		name := "default"
+		name := "autosave"
 		if slot.Slot != nil {
 			name = *slot.Slot
 		}
@@ -358,7 +358,7 @@ func (s *SyncedGamesScreen) buildDetailSections(config *internal.Config, romID i
 	))
 
 	for _, slot := range summary.Slots {
-		slotName := "default"
+		slotName := "autosave"
 		if slot.Slot != nil {
 			slotName = *slot.Slot
 		}
