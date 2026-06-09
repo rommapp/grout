@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"grout/cfw"
 	"grout/romm"
 	"os"
 	"path/filepath"
@@ -9,6 +10,72 @@ import (
 )
 
 func ptrStr(s string) *string { return &s }
+
+// --- discovery fallback tests ---
+
+func TestBuildDiscoveryItems_NeverSyncedPulled(t *testing.T) {
+	uncovered := map[int]cfw.LocalRomFile{
+		303: {RomID: 303, RomName: "Pokemon", FSSlug: "gba", FileName: "Pokemon.gba"},
+	}
+	savesByRom := map[int][]romm.Save{
+		303: {
+			{ID: 228, RomID: 303, FileName: "Pokemon [2026].srm", FileExtension: "srm",
+				Slot: ptrStr("default"), UpdatedAt: time.Now()},
+		},
+	}
+
+	items := buildDiscoveryItems(uncovered, savesByRom, nil)
+
+	if len(items) != 1 {
+		t.Fatalf("expected 1 discovery item, got %d", len(items))
+	}
+	if items[0].Action != ActionDownload {
+		t.Errorf("expected ActionDownload, got %s", items[0].Action)
+	}
+	if items[0].RemoteSave == nil || items[0].RemoteSave.ID != 228 {
+		t.Errorf("expected RemoteSave 228, got %+v", items[0].RemoteSave)
+	}
+	if items[0].LocalSave.FSSlug != "gba" || items[0].LocalSave.RomFileName != "Pokemon.gba" {
+		t.Errorf("LocalSave not resolved: %+v", items[0].LocalSave)
+	}
+}
+
+func TestBuildDiscoveryItems_AlreadySyncedStillPulled(t *testing.T) {
+	// Discovery only runs when there is no local file, so a save this device synced
+	// before (then lost locally, e.g. after a reflash) MUST still be pulled.
+	uncovered := map[int]cfw.LocalRomFile{303: {RomID: 303, FSSlug: "gba", FileName: "P.gba"}}
+	savesByRom := map[int][]romm.Save{
+		303: {{ID: 228, RomID: 303, FileName: "P.srm", FileExtension: "srm",
+			Slot: ptrStr("default"), UpdatedAt: time.Now(),
+			DeviceSyncs: []romm.DeviceSaveSync{{DeviceID: "dev-1"}}}},
+	}
+
+	items := buildDiscoveryItems(uncovered, savesByRom, nil)
+
+	if len(items) != 1 {
+		t.Fatalf("expected already-synced save to still be pulled, got %d items", len(items))
+	}
+	if items[0].RemoteSave == nil || items[0].RemoteSave.ID != 228 {
+		t.Errorf("expected RemoteSave 228, got %+v", items[0].RemoteSave)
+	}
+}
+
+func TestBuildDiscoveryItems_NullSlotIncluded(t *testing.T) {
+	uncovered := map[int]cfw.LocalRomFile{303: {RomID: 303, FSSlug: "gba", FileName: "P.gba"}}
+	savesByRom := map[int][]romm.Save{
+		303: {{ID: 223, RomID: 303, FileName: "P.srm", FileExtension: "srm",
+			Slot: nil, UpdatedAt: time.Now()}},
+	}
+
+	items := buildDiscoveryItems(uncovered, savesByRom, nil)
+
+	if len(items) != 1 {
+		t.Fatalf("expected null-slot save to be included, got %d items", len(items))
+	}
+	if items[0].RemoteSave == nil || items[0].RemoteSave.ID != 223 {
+		t.Errorf("expected RemoteSave 223, got %+v", items[0].RemoteSave)
+	}
+}
 
 func ptrInt(i int) *int              { return &i }
 func ptrTime(t time.Time) *time.Time { return &t }

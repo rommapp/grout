@@ -14,10 +14,14 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	gosync "sync"
 	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
+
+// maxConcurrentRequests bounds the per-ROM save fetches in the discovery fallback.
+const maxConcurrentRequests = 8
 
 func ResolveSaveSync(client *romm.Client, config *internal.Config, deviceID string) (SyncResult, error) {
 	logger := gaba.GetLogger()
@@ -27,6 +31,13 @@ func ResolveSaveSync(client *romm.Client, config *internal.Config, deviceID stri
 	logger.Debug("Scanned local saves", "count", len(localSaves))
 
 	states := buildClientSaveStates(localSaves, config)
+
+	// Diagnostic: log exactly what we send the orchestrator (rom/slot/hash).
+	for _, s := range states {
+		logger.Debug("Negotiate request save",
+			"romID", s.RomID, "file", s.FileName, "slot", s.Slot,
+			"emulator", s.Emulator, "hasHash", s.ContentHash != "", "size", s.FileSizeBytes)
+	}
 
 	resp, err := client.Negotiate(romm.SyncNegotiatePayload{
 		DeviceID: deviceID,
@@ -41,16 +52,171 @@ func ResolveSaveSync(client *romm.Client, config *internal.Config, deviceID stri
 		"downloads", resp.TotalDownload,
 		"conflicts", resp.TotalConflict,
 		"no_ops", resp.TotalNoOp,
+		"operations", len(resp.Operations),
 	)
+	// Diagnostic: log every operation the orchestrator returned (action/slot/reason).
+	for _, op := range resp.Operations {
+		saveID := 0
+		if op.SaveID != nil {
+			saveID = *op.SaveID
+		}
+		slot := ""
+		if op.Slot != nil {
+			slot = *op.Slot
+		}
+		logger.Debug("Negotiate op",
+			"action", op.Action, "romID", op.RomID, "saveID", saveID,
+			"file", op.FileName, "slot", slot, "reason", op.Reason)
+	}
 
 	scan := cfw.ScanRoms(config)
 	resolvedRoms := ResolveLocalRoms(scan)
 	cm := cache.GetCacheManager()
 
 	items := mapOperationsToItems(resp.Operations, localSaves, resolvedRoms, cm, config)
+
+	// Discovery fallback: the orchestrator only volunteers downloads for non-null-slot
+	// saves the device hasn't already synced, and never surfaces null-slot ("archival" /
+	// web-UI) saves at all. So for locally-present ROMs that have no local save and no
+	// negotiate op, query the server directly and pull the best server save. Discovery
+	// only runs when there is no local file, so it safely restores saves after an SD
+	// reflash / fresh install (persistent device_id, lost local files).
+	discovered := discoverRemoteOnlySaves(client, config, deviceID, localSaves, items, resolvedRoms)
+	if len(discovered) > 0 {
+		logger.Debug("Discovery fallback found remote-only saves", "count", len(discovered))
+		items = append(items, discovered...)
+	}
+
 	logger.Debug("Total sync items resolved", "count", len(items))
 
 	return SyncResult{Items: items, SessionID: resp.SessionID}, nil
+}
+
+// buildDiscoveryItems turns server saves for uncovered ROMs into download items.
+// Discovery only runs for ROMs that have NO local save, so there is nothing to
+// clobber: we pull the best server save regardless of this device's prior sync
+// state. This restores saves after an SD reflash / fresh install (where the
+// device_id persists but local files are gone), which the orchestrator's
+// deletion-propagation model would otherwise suppress. Null-slot ("archival" /
+// web-UI) saves are included, since negotiate never surfaces them. Pure function:
+// the caller supplies the fetched saves keyed by ROM ID.
+func buildDiscoveryItems(uncovered map[int]cfw.LocalRomFile, savesByRom map[int][]romm.Save, config *internal.Config) []SyncItem {
+	logger := gaba.GetLogger()
+	var items []SyncItem
+
+	for romID, rom := range uncovered {
+		saves := savesByRom[romID]
+		if len(saves) == 0 {
+			continue
+		}
+
+		preferredSlot := "autosave"
+		if config != nil {
+			preferredSlot = config.GetSlotPreference(romID)
+		}
+		best := SelectSaveForSlot(saves, preferredSlot)
+		if best == nil {
+			continue
+		}
+
+		ls := LocalSave{
+			RomID:       romID,
+			RomName:     rom.RomName,
+			FSSlug:      rom.FSSlug,
+			RomFileName: rom.FileName,
+		}
+		if IsDirectorySavePlatform(ls.FSSlug) {
+			ls.IsDirectorySave = true
+		}
+
+		logger.Debug("Discovery: remote-only save for ROM without local save",
+			"romID", romID, "romName", rom.RomName, "saveID", best.ID,
+			"file", best.FileName, "fetched", len(saves))
+
+		items = append(items, SyncItem{
+			LocalSave:  ls,
+			RemoteSave: best,
+			TargetSlot: preferredSlot,
+			Action:     ActionDownload,
+		})
+	}
+
+	return items
+}
+
+// discoverRemoteOnlySaves finds locally-present ROMs that have no local save and were
+// not covered by a negotiate operation, fetches their server saves, and builds download
+// items for any save this device has never synced.
+func discoverRemoteOnlySaves(client *romm.Client, config *internal.Config, deviceID string, localSaves []LocalSave, items []SyncItem, resolvedRoms map[int]cfw.LocalRomFile) []SyncItem {
+	logger := gaba.GetLogger()
+
+	covered := make(map[int]bool, len(localSaves)+len(items))
+	for _, ls := range localSaves {
+		covered[ls.RomID] = true
+	}
+	for _, it := range items {
+		covered[it.LocalSave.RomID] = true
+	}
+
+	uncovered := make(map[int]cfw.LocalRomFile)
+	for romID, rom := range resolvedRoms {
+		if !covered[romID] {
+			uncovered[romID] = rom
+		}
+	}
+	if len(uncovered) == 0 {
+		return nil
+	}
+
+	logger.Debug("Discovery: checking remote saves for ROMs without local saves", "count", len(uncovered))
+
+	savesByRom := fetchSavesForRoms(client, deviceID, uncovered)
+	return buildDiscoveryItems(uncovered, savesByRom, config)
+}
+
+// fetchSavesForRoms queries the server for each ROM's saves with bounded concurrency.
+// ROMs whose fetch errors are logged and omitted.
+func fetchSavesForRoms(client *romm.Client, deviceID string, uncovered map[int]cfw.LocalRomFile) map[int][]romm.Save {
+	logger := gaba.GetLogger()
+
+	type result struct {
+		romID int
+		saves []romm.Save
+		err   error
+	}
+
+	results := make(chan result, len(uncovered))
+	sem := make(chan struct{}, maxConcurrentRequests)
+	var wg gosync.WaitGroup
+
+	for romID := range uncovered {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			saves, err := client.GetSaves(romm.SaveQuery{RomID: id, DeviceID: deviceID})
+			results <- result{romID: id, saves: saves, err: err}
+		}(romID)
+	}
+
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	out := make(map[int][]romm.Save, len(uncovered))
+	for r := range results {
+		if r.err != nil {
+			logger.Warn("Discovery: failed to fetch saves for ROM", "romID", r.romID, "error", r.err)
+			continue
+		}
+		if len(r.saves) > 0 {
+			out[r.romID] = r.saves
+		}
+	}
+	return out
 }
 
 // mapOperationsToItems converts negotiate operations into executable SyncItems,
