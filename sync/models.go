@@ -54,6 +54,11 @@ func (item *SyncItem) Resolve(action SyncAction) {
 	item.Action = action
 }
 
+type SyncResult struct {
+	Items     []SyncItem
+	SessionID int
+}
+
 type SyncReport struct {
 	Uploaded   int
 	Downloaded int

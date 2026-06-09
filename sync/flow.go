@@ -249,6 +249,97 @@ func ScanSaves(config *internal.Config) []LocalSave {
 	return saves
 }
 
+// buildClientSaveStates converts scanned local saves into the negotiate payload,
+// computing a content hash per save (composite for directory saves, MD5 for files)
+// and the slot from the user's per-ROM preference (default "autosave").
+func buildClientSaveStates(localSaves []LocalSave, config *internal.Config) []romm.ClientSaveState {
+	logger := gaba.GetLogger()
+	states := make([]romm.ClientSaveState, 0, len(localSaves))
+
+	for _, ls := range localSaves {
+		slot := "autosave"
+		if config != nil {
+			slot = config.GetSlotPreference(ls.RomID)
+		}
+
+		emulator := filepath.Base(ls.EmulatorDir)
+		if emulator == "." || emulator == "" {
+			emulator = ""
+		} else if emulator == "SAVEDATA" {
+			emulator = "PPSSPP"
+		}
+
+		var updatedAt time.Time
+		var size int64
+
+		if ls.IsDirectorySave {
+			dirs := ls.RelatedDirs
+			if len(dirs) == 0 {
+				dirs = []string{ls.FilePath}
+			}
+			updatedAt, size = dirNewestMtimeAndSize(dirs)
+		} else {
+			info, err := os.Stat(ls.FilePath)
+			if err != nil {
+				logger.Warn("Cannot stat local save, skipping from negotiate", "path", ls.FilePath, "error", err)
+				continue
+			}
+			updatedAt = info.ModTime().Truncate(time.Second)
+			size = info.Size()
+		}
+
+		state := romm.ClientSaveState{
+			RomID:         ls.RomID,
+			FileName:      ls.FileName,
+			Slot:          slot,
+			Emulator:      emulator,
+			UpdatedAt:     updatedAt,
+			FileSizeBytes: size,
+		}
+		if hash, err := saveContentHash(ls); err == nil {
+			state.ContentHash = hash
+		} else {
+			logger.Warn("Failed to hash local save; sending without content_hash", "romID", ls.RomID, "error", err)
+		}
+
+		states = append(states, state)
+	}
+
+	return states
+}
+
+// saveContentHash returns the server-compatible content hash for a local save.
+func saveContentHash(ls LocalSave) (string, error) {
+	if ls.IsDirectorySave {
+		dirs := ls.RelatedDirs
+		if len(dirs) == 0 {
+			dirs = []string{ls.FilePath}
+		}
+		return fileutil.ComputeDirsCompositeHash(dirs)
+	}
+	return fileutil.ComputeMD5(ls.FilePath)
+}
+
+// dirNewestMtimeAndSize returns the newest file mtime (sec-truncated) and total
+// byte size across the given directories.
+func dirNewestMtimeAndSize(dirs []string) (time.Time, int64) {
+	var newest time.Time
+	var total int64
+	for _, dir := range dirs {
+		filepath.Walk(dir, func(_ string, info os.FileInfo, err error) error {
+			if err != nil || info.IsDir() {
+				return nil
+			}
+			total += info.Size()
+			if mt := info.ModTime(); mt.After(newest) {
+				newest = mt
+			}
+			return nil
+		})
+	}
+	return newest.Truncate(time.Second), total
+}
+
 // FetchRemoteSaves fetches saves with device_id for each ROM that has a local save.
 // This returns full save data including device_syncs for conflict detection.
 func FetchRemoteSaves(client *romm.Client, localSaves []LocalSave, deviceID string) (map[int][]romm.Save, error) {

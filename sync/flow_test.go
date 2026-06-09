@@ -538,3 +538,45 @@ func TestNewSaveUploadActions(t *testing.T) {
 		}
 	}
 }
+
+func TestBuildClientSaveStates_FileSlotEmulatorHash(t *testing.T) {
+	dir := t.TempDir()
+	p := filepath.Join(dir, "Mario.srm")
+	if err := os.WriteFile(p, []byte("savedata"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	mtime := time.Date(2025, 6, 1, 12, 0, 0, 0, time.UTC)
+	if err := os.Chtimes(p, mtime, mtime); err != nil {
+		t.Fatal(err)
+	}
+	local := []LocalSave{{
+		RomID:       7,
+		FileName:    "Mario.srm",
+		FilePath:    p,
+		EmulatorDir: "mgba",
+	}}
+
+	states := buildClientSaveStates(local, nil)
+	if len(states) != 1 {
+		t.Fatalf("got %d states", len(states))
+	}
+	s := states[0]
+	if s.RomID != 7 || s.FileName != "Mario.srm" {
+		t.Errorf("rom/file = %d/%s", s.RomID, s.FileName)
+	}
+	if s.Slot != "autosave" {
+		t.Errorf("slot = %q, want autosave", s.Slot)
+	}
+	if s.Emulator != "mgba" {
+		t.Errorf("emulator = %q", s.Emulator)
+	}
+	if s.FileSizeBytes != int64(len("savedata")) {
+		t.Errorf("size = %d", s.FileSizeBytes)
+	}
+	if !s.UpdatedAt.Equal(mtime) {
+		t.Errorf("updated_at = %v, want %v", s.UpdatedAt, mtime)
+	}
+	if s.ContentHash == "" {
+		t.Error("expected a content hash for a file save")
+	}
+}
