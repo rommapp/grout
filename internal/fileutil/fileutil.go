@@ -3,6 +3,7 @@ package fileutil
 import (
 	"archive/zip"
 	"bufio"
+	"crypto/md5"
 	"crypto/sha1"
 	"fmt"
 	"hash/crc32"
@@ -321,6 +322,23 @@ func ComputeCRC32(filePath string) (string, error) {
 	}
 
 	return fmt.Sprintf("%08X", hash.Sum32()), nil
+}
+
+// ComputeMD5 returns the lowercase hex MD5 of a file's bytes.
+// Matches the server's plain-file content hash (md5, hex).
+func ComputeMD5(filePath string) (string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to open file: %w", err)
+	}
+	defer file.Close()
+
+	hash := md5.New()
+	buf := make([]byte, 8192)
+	if _, err := io.CopyBuffer(hash, file, buf); err != nil {
+		return "", fmt.Errorf("failed to compute hash: %w", err)
+	}
+	return fmt.Sprintf("%x", hash.Sum(nil)), nil
 }
 
 // ComputeSHA1 computes the SHA1 hash of a file and returns it as a lowercase hex string
