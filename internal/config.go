@@ -287,7 +287,7 @@ func (c Config) GetSlotPreference(romID int) string {
 			return slot
 		}
 	}
-	return "default"
+	return "autosave"
 }
 
 func (c *Config) SetSlotPreference(romID int, slot string) {
@@ -295,7 +295,7 @@ func (c *Config) SetSlotPreference(romID int, slot string) {
 		c.SlotPreferences = make(map[string]string)
 	}
 	key := fmt.Sprintf("%d", romID)
-	if slot == "default" {
+	if slot == "autosave" {
 		delete(c.SlotPreferences, key)
 	} else {
 		c.SlotPreferences[key] = slot

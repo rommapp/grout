@@ -213,7 +213,7 @@ func (s *SaveSyncScreen) resolveMultiSlotDownloads(config *internal.Config, item
 		options := make([]gaba.Option, 0, len(c.slots))
 		for _, slot := range c.slots {
 			displayName := slot
-			if slot == "default" {
+			if slot == "autosave" {
 				displayName = defaultLabel
 			}
 			options = append(options, gaba.Option{DisplayName: displayName, Value: slot})
