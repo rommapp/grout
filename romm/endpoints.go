@@ -32,6 +32,9 @@ const (
 	endpointDevices    = "/api/devices"
 	endpointDeviceByID = "/api/devices/%s"
 
+	endpointSyncNegotiate       = "/api/sync/negotiate"
+	endpointSyncSessionComplete = "/api/sync/sessions/%d/complete"
+
 	endpointTokenExchange = "/api/client-tokens/exchange"
 	endpointCurrentUser   = "/api/users/me"
 )
