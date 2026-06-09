@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/bodgit/sevenzip"
@@ -339,6 +340,94 @@ func ComputeMD5(filePath string) (string, error) {
 		return "", fmt.Errorf("failed to compute hash: %w", err)
 	}
 	return fmt.Sprintf("%x", hash.Sum(nil)), nil
+}
+
+// compositeFromPairs joins "name:hash" lines (sorted by name) and MD5s the result.
+func compositeFromPairs(pairs map[string]string) string {
+	names := make([]string, 0, len(pairs))
+	for n := range pairs {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	lines := make([]string, 0, len(names))
+	for _, n := range names {
+		lines = append(lines, n+":"+pairs[n])
+	}
+	sum := md5.Sum([]byte(strings.Join(lines, "\n")))
+	return fmt.Sprintf("%x", sum)
+}
+
+// ComputeCompositeZipHash hashes a zip the way the RomM server does: md5 of each
+// non-directory entry, then md5 of the sorted "name:filehash" lines joined by "\n".
+func ComputeCompositeZipHash(zipPath string) (string, error) {
+	r, err := zip.OpenReader(zipPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to open zip: %w", err)
+	}
+	defer r.Close()
+
+	pairs := make(map[string]string, len(r.File))
+	for _, f := range r.File {
+		if f.FileInfo().IsDir() {
+			continue
+		}
+		rc, err := f.Open()
+		if err != nil {
+			return "", fmt.Errorf("failed to open zip entry %s: %w", f.Name, err)
+		}
+		h := md5.New()
+		if _, err := io.Copy(h, rc); err != nil {
+			rc.Close()
+			return "", fmt.Errorf("failed to hash zip entry %s: %w", f.Name, err)
+		}
+		rc.Close()
+		pairs[f.Name] = fmt.Sprintf("%x", h.Sum(nil))
+	}
+	return compositeFromPairs(pairs), nil
+}
+
+// ComputeDirsCompositeHash computes the composite hash for one or more save
+// directories WITHOUT writing a temporary zip, mirroring how addDirToZip names
+// entries (relative to each directory's parent) so the result equals the hash
+// the server computes for the uploaded zip. Dot-prefixed files/dirs are skipped.
+func ComputeDirsCompositeHash(dirPaths []string) (string, error) {
+	pairs := make(map[string]string)
+	for _, dirPath := range dirPaths {
+		parent := filepath.Dir(dirPath)
+		walkErr := filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			rel, relErr := filepath.Rel(parent, path)
+			if relErr != nil {
+				return relErr
+			}
+			if strings.HasPrefix(filepath.Base(rel), ".") {
+				if info.IsDir() {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+			if info.IsDir() {
+				return nil // directory entries are excluded from the hash
+			}
+			f, openErr := os.Open(path)
+			if openErr != nil {
+				return openErr
+			}
+			defer f.Close()
+			h := md5.New()
+			if _, copyErr := io.Copy(h, f); copyErr != nil {
+				return copyErr
+			}
+			pairs[rel] = fmt.Sprintf("%x", h.Sum(nil))
+			return nil
+		})
+		if walkErr != nil {
+			return "", fmt.Errorf("failed to walk %s: %w", dirPath, walkErr)
+		}
+	}
+	return compositeFromPairs(pairs), nil
 }
 
 // ComputeSHA1 computes the SHA1 hash of a file and returns it as a lowercase hex string
