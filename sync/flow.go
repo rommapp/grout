@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"errors"
 	"fmt"
 	"grout/cache"
 	"grout/cfw"
@@ -13,13 +14,10 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	gosync "sync"
 	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
-
-const maxConcurrentRequests = 8
 
 func ResolveSaveSync(client *romm.Client, config *internal.Config, deviceID string) (SyncResult, error) {
 	logger := gaba.GetLogger()
@@ -180,7 +178,7 @@ func resolveLocalSaveForDownload(op romm.SyncOperationSchema, resolvedRoms map[i
 	return ls
 }
 
-func ExecuteSaveSync(client *romm.Client, config *internal.Config, deviceID string, items []SyncItem, progressFn func(current, total int)) SyncReport {
+func ExecuteSaveSync(client *romm.Client, config *internal.Config, deviceID string, items []SyncItem, sessionID int, progressFn func(current, total int)) SyncReport {
 	report := ExecuteActions(client, config, deviceID, items, progressFn)
 
 	cm := cache.GetCacheManager()
@@ -204,6 +202,16 @@ func ExecuteSaveSync(client *romm.Client, config *internal.Config, deviceID stri
 				record.SaveID = item.RemoteSave.ID
 			}
 			cm.RecordSaveSync(record)
+		}
+	}
+
+	if sessionID > 0 {
+		if err := client.CompleteSession(sessionID, romm.SyncCompletePayload{
+			OperationsCompleted: report.Uploaded + report.Downloaded,
+			OperationsFailed:    report.Errors,
+		}); err != nil {
+			// On-demand client has no retry queue; the server expires stale sessions.
+			gaba.GetLogger().Warn("Failed to complete sync session (leaving for server to expire)", "sessionID", sessionID, "error", err)
 		}
 	}
 
@@ -469,235 +477,28 @@ func dirNewestMtimeAndSize(dirs []string) (time.Time, int64) {
 	return newest.Truncate(time.Second), total
 }
 
-// FetchRemoteSaves fetches saves with device_id for each ROM that has a local save.
-// This returns full save data including device_syncs for conflict detection.
-func FetchRemoteSaves(client *romm.Client, localSaves []LocalSave, deviceID string) (map[int][]romm.Save, error) {
-	logger := gaba.GetLogger()
-
-	seen := make(map[int]bool)
-	for _, ls := range localSaves {
-		seen[ls.RomID] = true
-	}
-
-	romIDs := make([]int, 0, len(seen))
-	for id := range seen {
-		romIDs = append(romIDs, id)
-	}
-
-	logger.Debug("Fetching remote saves", "romCount", len(romIDs))
-
-	type fetchResult struct {
-		romID int
-		saves []romm.Save
-		err   error
-	}
-
-	results := make(chan fetchResult, len(romIDs))
-	sem := make(chan struct{}, maxConcurrentRequests)
-	var wg gosync.WaitGroup
-
-	for _, romID := range romIDs {
-		wg.Add(1)
-		go func(id int) {
-			defer wg.Done()
-			sem <- struct{}{}
-			defer func() { <-sem }()
-
-			saves, err := client.GetSaves(romm.SaveQuery{RomID: id, DeviceID: deviceID})
-			results <- fetchResult{romID: id, saves: saves, err: err}
-		}(romID)
-	}
-
-	go func() {
-		wg.Wait()
-		close(results)
-	}()
-
-	result := make(map[int][]romm.Save)
-	for r := range results {
-		if r.err != nil {
-			return nil, fmt.Errorf("rom %d: %w", r.romID, r.err)
-		}
-		if len(r.saves) > 0 {
-			result[r.romID] = r.saves
-			logger.Debug("Fetched remote saves", "romID", r.romID, "count", len(r.saves))
-		}
-	}
-
-	return result, nil
-}
-
-func LocalSavesWithoutRemote(localSaves []LocalSave, remoteSaves map[int][]romm.Save) []LocalSave {
-	var filtered []LocalSave
-	for _, ls := range localSaves {
-		if _, ok := remoteSaves[ls.RomID]; !ok {
-			filtered = append(filtered, ls)
-		}
-	}
-	return filtered
-}
-
-func NewSaveUploadActions(saves []LocalSave, config *internal.Config) []SyncItem {
-	var items []SyncItem
-	for _, ls := range saves {
-		targetSlot := "default"
-		if config != nil {
-			targetSlot = config.GetSlotPreference(ls.RomID)
-		}
-		items = append(items, SyncItem{
-			LocalSave:  ls,
-			TargetSlot: targetSlot,
-			Action:     ActionUpload,
-		})
-	}
-	return items
-}
-
-func DetermineActions(localSaves []LocalSave, remoteSaves map[int][]romm.Save, deviceID string, config *internal.Config) []SyncItem {
-	logger := gaba.GetLogger()
-	var items []SyncItem
-
-	for _, ls := range localSaves {
-		saves, ok := remoteSaves[ls.RomID]
-		if !ok {
-			continue
-		}
-
-		preferredSlot := "default"
-		if config != nil {
-			preferredSlot = config.GetSlotPreference(ls.RomID)
-		}
-
-		remoteSave := selectSaveForSync(saves, preferredSlot)
-
-		// Check if the selected save is actually in the preferred slot or a fallback
-		remoteSlot := "default"
-		if remoteSave != nil && remoteSave.Slot != nil {
-			remoteSlot = *remoteSave.Slot
-		}
-
-		var action SyncAction
-		if remoteSave != nil && remoteSlot != preferredSlot {
-			// Fallback save from a different slot — don't compare against it.
-			// Upload to populate the preferred slot instead.
-			action = ActionUpload
-			remoteSave = nil
-		} else {
-			action = determineAction(remoteSave, &ls, deviceID)
-		}
-
-		logger.Debug("Determined sync action",
-			"romID", ls.RomID,
-			"romName", ls.RomName,
-			"action", action.String(),
-			"preferredSlot", preferredSlot,
-			"remoteSlot", remoteSlot,
-		)
-
-		items = append(items, SyncItem{
-			LocalSave:  ls,
-			RemoteSave: remoteSave,
-			TargetSlot: preferredSlot,
-			Action:     action,
-		})
-	}
-
-	return items
-}
-
-func determineAction(remoteSave *romm.Save, localSave *LocalSave, deviceID string) SyncAction {
-	logger := gaba.GetLogger()
-
-	if remoteSave == nil {
-		logger.Debug("No remote save found, will upload", "romID", localSave.RomID)
-		return ActionUpload
-	}
-
-	localInfo, err := os.Stat(localSave.FilePath)
-	if err != nil {
-		logger.Debug("Cannot stat local save, will download", "path", localSave.FilePath, "error", err)
-		return ActionDownload
-	}
-	// Truncate all times to second precision — the server may drop sub-second
-	// precision between the upload response and subsequent fetches.
-	localMtime := localInfo.ModTime().Truncate(time.Second)
-	remoteUpdatedAt := remoteSave.UpdatedAt.Truncate(time.Second)
-
-	for _, ds := range remoteSave.DeviceSyncs {
-		if ds.DeviceID == deviceID {
-			lastSyncedAt := ds.LastSyncedAt.Truncate(time.Second)
-			localChanged := localMtime.After(lastSyncedAt)
-			remoteChanged := remoteUpdatedAt.After(lastSyncedAt)
-
-			if localChanged && remoteChanged {
-				logger.Debug("Both local and remote changed since last sync, conflict",
-					"romID", localSave.RomID, "localMtime", localMtime, "remoteUpdatedAt", remoteUpdatedAt, "lastSyncedAt", lastSyncedAt)
-				return ActionConflict
-			}
-
-			if ds.IsCurrent {
-				if localMtime.After(remoteUpdatedAt) {
-					logger.Debug("Device current, local newer, will upload",
-						"romID", localSave.RomID, "localMtime", localMtime, "remoteUpdatedAt", remoteUpdatedAt)
-					return ActionUpload
-				}
-				logger.Debug("Device current, local not newer, skipping",
-					"romID", localSave.RomID, "localMtime", localMtime, "remoteUpdatedAt", remoteUpdatedAt)
-				return ActionSkip
-			}
-			logger.Debug("Device in sync list but not current, will download",
-				"romID", localSave.RomID, "deviceID", deviceID)
-			return ActionDownload
-		}
-	}
-
-	if localMtime.After(remoteUpdatedAt) {
-		logger.Debug("Device not tracked, local newer, will upload",
-			"romID", localSave.RomID, "localMtime", localMtime, "remoteUpdatedAt", remoteUpdatedAt)
-		return ActionUpload
-	}
-	if !localMtime.Before(remoteUpdatedAt) {
-		logger.Debug("Device not tracked, mtime matches remote, skipping",
-			"romID", localSave.RomID, "localMtime", localMtime, "remoteUpdatedAt", remoteUpdatedAt)
-		return ActionSkip
-	}
-	logger.Debug("Device not tracked, local older, will download",
-		"romID", localSave.RomID, "localMtime", localMtime, "remoteUpdatedAt", remoteUpdatedAt)
-	return ActionDownload
-}
-
-// SelectSaveForSlot picks the latest save from the given slot.
-// Falls back to the most recently updated save if the slot has no saves.
+// SelectSaveForSlot picks the latest save in preferredSlot, falling back to the
+// most recently updated save across all slots. Used by the multi-slot download UI.
 func SelectSaveForSlot(saves []romm.Save, preferredSlot string) *romm.Save {
-	return selectSaveForSync(saves, preferredSlot)
-}
-
-// selectSaveForSync picks the latest save from the preferred slot.
-// Falls back to the most recently updated save if the preferred slot has no saves.
-func selectSaveForSync(saves []romm.Save, preferredSlot string) *romm.Save {
 	if len(saves) == 0 {
 		return nil
 	}
-
-	// Find the latest save in the preferred slot
 	var best *romm.Save
-	for i, s := range saves {
-		slotName := "default"
-		if s.Slot != nil {
-			slotName = *s.Slot
+	for i := range saves {
+		slot := "autosave"
+		if saves[i].Slot != nil {
+			slot = *saves[i].Slot
 		}
-		if slotName != preferredSlot {
+		if slot != preferredSlot {
 			continue
 		}
-		if best == nil || s.UpdatedAt.After(best.UpdatedAt) {
+		if best == nil || saves[i].UpdatedAt.After(best.UpdatedAt) {
 			best = &saves[i]
 		}
 	}
 	if best != nil {
 		return best
 	}
-
-	// Fallback: latest save across all slots
 	best = &saves[0]
 	for i := 1; i < len(saves); i++ {
 		if saves[i].UpdatedAt.After(best.UpdatedAt) {
@@ -730,10 +531,14 @@ func ExecuteActions(client *romm.Client, config *internal.Config, deviceID strin
 			if progressFn != nil {
 				progressFn(current, actionable)
 			}
-			if upload(client, deviceID, item) {
+			switch upload(client, deviceID, item) {
+			case uploadOK:
 				item.Success = true
 				report.Uploaded++
-			} else {
+			case uploadConflict:
+				item.Action = ActionConflict
+				report.Conflicts++
+			default:
 				report.Errors++
 			}
 
@@ -762,12 +567,19 @@ func ExecuteActions(client *romm.Client, config *internal.Config, deviceID strin
 	return report
 }
 
-func upload(client *romm.Client, deviceID string, item *SyncItem) bool {
-	logger := gaba.GetLogger()
+type uploadOutcome int
 
+const (
+	uploadErr uploadOutcome = iota
+	uploadOK
+	uploadConflict
+)
+
+func upload(client *romm.Client, deviceID string, item *SyncItem) uploadOutcome {
+	logger := gaba.GetLogger()
 	logger.Debug("Uploading save", "romID", item.LocalSave.RomID, "romName", item.LocalSave.RomName, "file", item.LocalSave.FilePath)
 
-	slot := "default"
+	slot := "autosave"
 	if item.TargetSlot != "" {
 		slot = item.TargetSlot
 	} else if item.RemoteSave != nil && item.RemoteSave.Slot != nil {
@@ -778,9 +590,7 @@ func upload(client *romm.Client, deviceID string, item *SyncItem) bool {
 	if emulator == "." || emulator == "" {
 		emulator = "unknown"
 	}
-
-	// Edge-case for psp emulator, this is not consistent across CFW
-	if emulator == "SAVEDATA" {
+	if emulator == "SAVEDATA" { // PSP folder name varies across CFW
 		emulator = "PPSSPP"
 	}
 
@@ -791,6 +601,10 @@ func upload(client *romm.Client, deviceID string, item *SyncItem) bool {
 		Slot:      slot,
 		Overwrite: item.ForceOverwrite || item.RemoteSave != nil,
 	}
+	if slot == "autosave" {
+		query.Autocleanup = true
+		query.AutocleanupLimit = 10
+	}
 
 	uploadPath := item.LocalSave.FilePath
 	if item.LocalSave.IsDirectorySave {
@@ -800,8 +614,8 @@ func upload(client *romm.Client, deviceID string, item *SyncItem) bool {
 		}
 		zipPath, zipErr := ZipDirectories(dirs)
 		if zipErr != nil {
-			logger.Error("Failed to zip directory save", "gameID", item.LocalSave.GameID, "dirCount", len(dirs), "error", zipErr)
-			return false
+			logger.Error("Failed to zip directory save", "gameID", item.LocalSave.GameID, "error", zipErr)
+			return uploadErr
 		}
 		defer os.Remove(zipPath)
 		uploadPath = zipPath
@@ -809,23 +623,24 @@ func upload(client *romm.Client, deviceID string, item *SyncItem) bool {
 
 	uploadedSave, err := client.UploadSaveWithQuery(query, uploadPath)
 	if err != nil {
-		logger.Error("Failed to upload save", "romID", item.LocalSave.RomID, "romName", item.LocalSave.RomName, "error", err)
-		return false
+		if errors.Is(err, romm.ErrConflict) {
+			logger.Warn("Upload rejected with 409; surfacing as conflict", "romID", item.LocalSave.RomID, "error", err)
+			return uploadConflict
+		}
+		logger.Error("Failed to upload save", "romID", item.LocalSave.RomID, "error", err)
+		return uploadErr
 	}
 
-	// Truncate to second precision — the server returns UpdatedAt without
-	// sub-second precision on subsequent fetches, so local mtime must match.
+	// Match server precision so the next scan doesn't see a spurious change.
 	t := uploadedSave.UpdatedAt.Truncate(time.Second)
 	if err := os.Chtimes(item.LocalSave.FilePath, t, t); err != nil {
-		logger.Warn("Failed to set save file mtime after upload", "path", item.LocalSave.FilePath, "error", err)
+		logger.Warn("Failed to set save mtime after upload", "path", item.LocalSave.FilePath, "error", err)
 	}
+	// No MarkDeviceSynced: the server upserts last_synced_at automatically on
+	// upload because device_id is supplied.
 
-	if err := client.MarkDeviceSynced(uploadedSave.ID, deviceID); err != nil {
-		logger.Warn("Failed to confirm upload sync state", "saveID", uploadedSave.ID, "error", err)
-	}
-
-	logger.Debug("Upload successful", "romID", item.LocalSave.RomID, "romName", item.LocalSave.RomName)
-	return true
+	logger.Debug("Upload successful", "romID", item.LocalSave.RomID)
+	return uploadOK
 }
 
 func download(client *romm.Client, config *internal.Config, deviceID string, item *SyncItem) bool {
@@ -885,7 +700,7 @@ func download(client *romm.Client, config *internal.Config, deviceID string, ite
 		}
 	}
 
-	data, err := client.DownloadSaveByID(item.RemoteSave.ID, deviceID, true)
+	data, err := client.DownloadSaveByID(item.RemoteSave.ID, deviceID, false)
 	if err != nil {
 		logger.Error("Failed to download save", "romID", item.LocalSave.RomID, "saveID", item.RemoteSave.ID, "error", err)
 		return false
@@ -959,7 +774,7 @@ func download(client *romm.Client, config *internal.Config, deviceID string, ite
 		}
 	}
 
-	if err := client.MarkDeviceSynced(item.RemoteSave.ID, deviceID); err != nil {
+	if err := client.ConfirmSaveDownloaded(item.RemoteSave.ID, deviceID); err != nil {
 		logger.Warn("Failed to confirm save download", "saveID", item.RemoteSave.ID, "error", err)
 	}
 
@@ -967,115 +782,6 @@ func download(client *romm.Client, config *internal.Config, deviceID string, ite
 	return true
 }
 
-func DiscoverRemoteSaves(client *romm.Client, config *internal.Config, localSaves []LocalSave, deviceID string) ([]SyncItem, error) {
-	logger := gaba.GetLogger()
-
-	scan := cfw.ScanRoms(config)
-	resolved := ResolveLocalRoms(scan)
-	if len(resolved) == 0 {
-		return nil, nil
-	}
-
-	coveredRomIDs := make(map[int]bool)
-	for _, ls := range localSaves {
-		coveredRomIDs[ls.RomID] = true
-	}
-
-	var uncoveredRomIDs []int
-	for romID := range resolved {
-		if !coveredRomIDs[romID] {
-			uncoveredRomIDs = append(uncoveredRomIDs, romID)
-		}
-	}
-
-	if len(uncoveredRomIDs) == 0 {
-		logger.Debug("All local ROMs already have local saves")
-		return nil, nil
-	}
-
-	logger.Debug("Checking remote saves for ROMs without local saves", "count", len(uncoveredRomIDs))
-
-	type discoverResult struct {
-		romID int
-		saves []romm.Save
-		err   error
-	}
-
-	results := make(chan discoverResult, len(uncoveredRomIDs))
-	sem := make(chan struct{}, maxConcurrentRequests)
-	var wg gosync.WaitGroup
-
-	for _, romID := range uncoveredRomIDs {
-		wg.Add(1)
-		go func(id int) {
-			defer wg.Done()
-			sem <- struct{}{}
-			defer func() { <-sem }()
-
-			saves, err := client.GetSaves(romm.SaveQuery{RomID: id, DeviceID: deviceID})
-			results <- discoverResult{romID: id, saves: saves, err: err}
-		}(romID)
-	}
-
-	go func() {
-		wg.Wait()
-		close(results)
-	}()
-
-	var items []SyncItem
-	for r := range results {
-		if r.err != nil {
-			return nil, fmt.Errorf("rom %d: %w", r.romID, r.err)
-		}
-
-		preferredSlot := "default"
-		if config != nil {
-			preferredSlot = config.GetSlotPreference(r.romID)
-		}
-		remoteSave := selectSaveForSync(r.saves, preferredSlot)
-		if remoteSave == nil {
-			continue
-		}
-
-		rom := resolved[r.romID]
-		logger.Debug("Found remote save for ROM without local save",
-			"romID", r.romID, "romName", rom.RomName, "saveFile", remoteSave.FileName)
-
-		item := SyncItem{
-			LocalSave: LocalSave{
-				RomID:       r.romID,
-				RomName:     rom.RomName,
-				FSSlug:      rom.FSSlug,
-				RomFileName: rom.FileName,
-			},
-			RemoteSave: remoteSave,
-			TargetSlot: preferredSlot,
-			Action:     ActionDownload,
-		}
-
-		// Detect multiple distinct slots for first-time downloads
-		slotSet := make(map[string]bool)
-		for _, save := range r.saves {
-			slot := "default"
-			if save.Slot != nil {
-				slot = *save.Slot
-			}
-			slotSet[slot] = true
-		}
-		if len(slotSet) > 1 {
-			for slot := range slotSet {
-				item.AvailableSlots = append(item.AvailableSlots, slot)
-			}
-			sort.Strings(item.AvailableSlots)
-			item.AllRemoteSaves = r.saves
-		}
-
-		items = append(items, item)
-	}
-
-	logger.Debug("Remote-only saves to download", "count", len(items))
-	return items, nil
-}
 
 func cleanupBackups(backupDir string, baseName string, limit int) {
 	if limit <= 0 {

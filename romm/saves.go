@@ -139,11 +139,6 @@ func (c *Client) ConfirmSaveDownloaded(saveID int, deviceID string) error {
 	return c.doRequest("POST", path, nil, body, nil)
 }
 
-// MarkDeviceSynced confirms this device has the latest save state.
-// Used after both uploads and downloads.
-func (c *Client) MarkDeviceSynced(saveID int, deviceID string) error {
-	return c.ConfirmSaveDownloaded(saveID, deviceID)
-}
 
 func (c *Client) GetSaveSummary(romID int) (SaveSummary, error) {
 	var summary SaveSummary
@@ -187,12 +182,6 @@ func (c *Client) UpdateSave(saveID int, savePath string) (Save, error) {
 	return res, nil
 }
 
-func (c *Client) UploadSave(romID int, savePath string, emulator string) (Save, error) {
-	return c.UploadSaveWithQuery(UploadSaveQuery{
-		RomID:    romID,
-		Emulator: emulator,
-	}, savePath)
-}
 
 func (c *Client) UploadSaveWithQuery(query UploadSaveQuery, savePath string) (Save, error) {
 	file, err := os.Open(savePath)
