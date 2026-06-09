@@ -21,34 +21,163 @@ import (
 
 const maxConcurrentRequests = 8
 
-func ResolveSaveSync(client *romm.Client, config *internal.Config, deviceID string) ([]SyncItem, error) {
+func ResolveSaveSync(client *romm.Client, config *internal.Config, deviceID string) (SyncResult, error) {
 	logger := gaba.GetLogger()
-	logger.Debug("Starting save sync resolve", "deviceID", deviceID)
+	logger.Debug("Starting save sync resolve (negotiate)", "deviceID", deviceID)
 
 	localSaves := ScanSaves(config)
 	logger.Debug("Scanned local saves", "count", len(localSaves))
 
-	remoteSaves, err := FetchRemoteSaves(client, localSaves, deviceID)
+	states := buildClientSaveStates(localSaves, config)
+
+	resp, err := client.Negotiate(romm.SyncNegotiatePayload{
+		DeviceID: deviceID,
+		Saves:    states,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch remote saves: %w", err)
+		return SyncResult{}, fmt.Errorf("negotiate failed: %w", err)
 	}
-	logger.Debug("Fetched remote saves", "count", len(remoteSaves))
+	logger.Debug("Negotiate response",
+		"sessionID", resp.SessionID,
+		"uploads", resp.TotalUpload,
+		"downloads", resp.TotalDownload,
+		"conflicts", resp.TotalConflict,
+		"no_ops", resp.TotalNoOp,
+	)
 
-	newSaves := LocalSavesWithoutRemote(localSaves, remoteSaves)
-	logger.Debug("Local saves without remote", "count", len(newSaves))
+	scan := cfw.ScanRoms(config)
+	resolvedRoms := ResolveLocalRoms(scan)
+	cm := cache.GetCacheManager()
 
-	var allItems []SyncItem
-	allItems = append(allItems, NewSaveUploadActions(newSaves, config)...)
-	allItems = append(allItems, DetermineActions(localSaves, remoteSaves, deviceID, config)...)
+	items := mapOperationsToItems(resp.Operations, localSaves, resolvedRoms, cm, config)
+	logger.Debug("Total sync items resolved", "count", len(items))
 
-	remoteOnly, err := DiscoverRemoteSaves(client, config, localSaves, deviceID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to discover remote saves: %w", err)
+	return SyncResult{Items: items, SessionID: resp.SessionID}, nil
+}
+
+// mapOperationsToItems converts negotiate operations into executable SyncItems,
+// dropping no_op. Order is preserved. Downloads with no local file are resolved
+// from the local ROM scan / cache for path determination.
+func mapOperationsToItems(
+	ops []romm.SyncOperationSchema,
+	localSaves []LocalSave,
+	resolvedRoms map[int]cfw.LocalRomFile,
+	cm *cache.Manager,
+	config *internal.Config,
+) []SyncItem {
+	logger := gaba.GetLogger()
+
+	type localKey struct {
+		romID    int
+		fileName string
 	}
-	allItems = append(allItems, remoteOnly...)
+	byKey := make(map[localKey]LocalSave, len(localSaves))
+	for _, ls := range localSaves {
+		byKey[localKey{ls.RomID, ls.FileName}] = ls
+	}
 
-	logger.Debug("Total sync items resolved", "count", len(allItems))
-	return allItems, nil
+	items := make([]SyncItem, 0, len(ops))
+	for _, op := range ops {
+		switch op.Action {
+		case "upload":
+			ls, ok := byKey[localKey{op.RomID, op.FileName}]
+			if !ok {
+				logger.Warn("Negotiate upload for unknown local save", "romID", op.RomID, "file", op.FileName)
+				continue
+			}
+			slot := "autosave"
+			if config != nil {
+				slot = config.GetSlotPreference(ls.RomID)
+			}
+			items = append(items, SyncItem{
+				LocalSave:  ls,
+				RemoteSave: buildRemoteSaveStub(op),
+				TargetSlot: slot,
+				Action:     ActionUpload,
+			})
+
+		case "download":
+			ls, ok := byKey[localKey{op.RomID, op.FileName}]
+			if !ok {
+				ls = resolveLocalSaveForDownload(op, resolvedRoms, cm, config)
+			}
+			slot := "autosave"
+			if config != nil {
+				slot = config.GetSlotPreference(op.RomID)
+			}
+			items = append(items, SyncItem{
+				LocalSave:  ls,
+				RemoteSave: buildRemoteSaveStub(op),
+				TargetSlot: slot,
+				Action:     ActionDownload,
+			})
+
+		case "conflict":
+			ls, ok := byKey[localKey{op.RomID, op.FileName}]
+			if !ok {
+				logger.Warn("Negotiate conflict for unknown local save", "romID", op.RomID, "file", op.FileName)
+				continue
+			}
+			items = append(items, SyncItem{
+				LocalSave:  ls,
+				RemoteSave: buildRemoteSaveStub(op),
+				Action:     ActionConflict,
+			})
+
+		case "no_op":
+			// nothing to do
+		default:
+			logger.Warn("Unknown negotiate action", "action", op.Action, "romID", op.RomID)
+		}
+	}
+	return items
+}
+
+// buildRemoteSaveStub builds a *romm.Save from a negotiate operation for execution.
+func buildRemoteSaveStub(op romm.SyncOperationSchema) *romm.Save {
+	if op.SaveID == nil && op.ServerUpdatedAt == nil {
+		return nil
+	}
+	save := &romm.Save{
+		RomID:    op.RomID,
+		FileName: op.FileName,
+		Emulator: op.Emulator,
+	}
+	if op.SaveID != nil {
+		save.ID = *op.SaveID
+	}
+	if op.Slot != nil {
+		save.Slot = op.Slot
+	}
+	if op.ServerUpdatedAt != nil {
+		save.UpdatedAt = *op.ServerUpdatedAt
+	}
+	if ext := filepath.Ext(op.FileName); ext != "" {
+		save.FileExtension = strings.TrimPrefix(ext, ".")
+	}
+	return save
+}
+
+// resolveLocalSaveForDownload builds a LocalSave for a download whose file does
+// not exist locally yet, resolving ROM metadata for path determination.
+func resolveLocalSaveForDownload(op romm.SyncOperationSchema, resolvedRoms map[int]cfw.LocalRomFile, cm *cache.Manager, config *internal.Config) LocalSave {
+	ls := LocalSave{RomID: op.RomID, FileName: op.FileName}
+
+	if rom, ok := resolvedRoms[op.RomID]; ok {
+		ls.RomName = rom.RomName
+		ls.FSSlug = rom.FSSlug
+		ls.RomFileName = rom.FileName
+	} else if cm != nil {
+		if roms, err := cm.GetGamesByIDs([]int{op.RomID}); err == nil && len(roms) > 0 {
+			ls.RomName = roms[0].Name
+			ls.FSSlug = roms[0].PlatformFSSlug
+		}
+	}
+
+	if IsDirectorySavePlatform(ls.FSSlug) {
+		ls.IsDirectorySave = true
+	}
+	return ls
 }
 
 func ExecuteSaveSync(client *romm.Client, config *internal.Config, deviceID string, items []SyncItem, progressFn func(current, total int)) SyncReport {

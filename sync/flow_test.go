@@ -539,6 +539,42 @@ func TestNewSaveUploadActions(t *testing.T) {
 	}
 }
 
+func ptrInt(i int) *int              { return &i }
+func ptrTime(t time.Time) *time.Time { return &t }
+
+func TestMapOperationsToItems_DropsNoOpAndMapsActions(t *testing.T) {
+	local := []LocalSave{
+		{RomID: 1, RomName: "Mario", FileName: "Mario.srm", FilePath: "/x/Mario.srm", FSSlug: "snes"},
+		{RomID: 2, RomName: "Zelda", FileName: "Zelda.srm", FilePath: "/x/Zelda.srm", FSSlug: "snes"},
+	}
+	ops := []romm.SyncOperationSchema{
+		{Action: "upload", RomID: 1, FileName: "Mario.srm"},
+		{Action: "conflict", RomID: 2, FileName: "Zelda.srm", SaveID: ptrInt(20), ServerUpdatedAt: ptrTime(time.Now())},
+		{Action: "no_op", RomID: 99, FileName: "skip.srm"},
+		{Action: "download", RomID: 3, FileName: "Metroid.srm", SaveID: ptrInt(30), ServerUpdatedAt: ptrTime(time.Now())},
+	}
+
+	items := mapOperationsToItems(ops, local, nil, nil, nil)
+
+	var got []string
+	for _, it := range items {
+		got = append(got, it.Action.String())
+	}
+	// no_op dropped; order preserved
+	if len(items) != 3 {
+		t.Fatalf("expected 3 items, got %d (%v)", len(items), got)
+	}
+	if items[0].Action != ActionUpload || items[0].LocalSave.RomID != 1 {
+		t.Errorf("item0 = %+v", items[0])
+	}
+	if items[1].Action != ActionConflict || items[1].RemoteSave == nil || items[1].RemoteSave.ID != 20 {
+		t.Errorf("item1 = %+v", items[1])
+	}
+	if items[2].Action != ActionDownload || items[2].LocalSave.RomID != 3 {
+		t.Errorf("item2 = %+v", items[2])
+	}
+}
+
 func TestBuildClientSaveStates_FileSlotEmulatorHash(t *testing.T) {
 	dir := t.TempDir()
 	p := filepath.Join(dir, "Mario.srm")
