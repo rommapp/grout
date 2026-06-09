@@ -370,6 +370,26 @@ func createTables(db *sql.DB) error {
 		return err
 	}
 
+	// Current per-save sync state (one row per device+rom+file), upserted after each
+	// successful upload/download. Distinct from the append-only save_sync_history log.
+	// Gives downloaded saves a stable slot identity so they aren't re-uploaded to a
+	// different slot on the next sync.
+	_, err = tx.Exec(`
+		CREATE TABLE IF NOT EXISTS save_sync_state (
+			device_id TEXT NOT NULL,
+			rom_id INTEGER NOT NULL,
+			file_name TEXT NOT NULL,
+			slot TEXT NOT NULL,
+			save_id INTEGER,
+			content_hash TEXT,
+			synced_at TEXT NOT NULL,
+			PRIMARY KEY (device_id, rom_id, file_name)
+		)
+	`)
+	if err != nil {
+		return err
+	}
+
 	_, err = tx.Exec(`
 		INSERT OR REPLACE INTO cache_metadata (key, value, updated_at)
 		VALUES ('schema_version', ?, ?)

@@ -2,6 +2,7 @@ package sync
 
 import (
 	"grout/cfw"
+	"grout/internal"
 	"grout/romm"
 	"os"
 	"path/filepath"
@@ -232,7 +233,7 @@ func TestBuildClientSaveStates_FileSlotEmulatorHash(t *testing.T) {
 		EmulatorDir: "mgba",
 	}}
 
-	states := buildClientSaveStates(local, nil)
+	states := buildClientSaveStates(local, nil, nil)
 	if len(states) != 1 {
 		t.Fatalf("got %d states", len(states))
 	}
@@ -254,5 +255,34 @@ func TestBuildClientSaveStates_FileSlotEmulatorHash(t *testing.T) {
 	}
 	if s.ContentHash == "" {
 		t.Error("expected a content hash for a file save")
+	}
+}
+
+func TestBuildClientSaveStates_SlotPrecedence(t *testing.T) {
+	dir := t.TempDir()
+	p := filepath.Join(dir, "Mario.srm")
+	if err := os.WriteFile(p, []byte("savedata"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	local := []LocalSave{{RomID: 7, FileName: "Mario.srm", FilePath: p, EmulatorDir: "mgba"}}
+
+	// 1. Recorded slot wins over the autosave default when there's no explicit preference.
+	recorded := map[saveKey]string{{romID: 7, fileName: "Mario.srm"}: "default"}
+	states := buildClientSaveStates(local, nil, recorded)
+	if len(states) != 1 || states[0].Slot != "default" {
+		t.Fatalf("recorded slot should win: got %+v", states)
+	}
+
+	// 2. Explicit user preference wins over the recorded slot.
+	cfg := &internal.Config{SlotPreferences: map[string]string{"7": "quicksave"}}
+	states = buildClientSaveStates(local, cfg, recorded)
+	if len(states) != 1 || states[0].Slot != "quicksave" {
+		t.Fatalf("explicit preference should win over record: got %+v", states)
+	}
+
+	// 3. No preference and no record → autosave default.
+	states = buildClientSaveStates(local, nil, nil)
+	if len(states) != 1 || states[0].Slot != "autosave" {
+		t.Fatalf("default should be autosave: got %+v", states)
 	}
 }

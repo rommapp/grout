@@ -36,6 +36,88 @@ func (cm *Manager) RecordSaveSync(record SaveSyncRecord) error {
 	return err
 }
 
+// SaveSyncState is the current synced state of one local save (one row per
+// device+rom+file). Upserted after each successful upload/download.
+type SaveSyncState struct {
+	RomID       int
+	FileName    string
+	Slot        string
+	SaveID      int
+	ContentHash string
+	SyncedAt    time.Time
+}
+
+// UpsertSaveState records (or updates) the current synced state for a local save.
+func (cm *Manager) UpsertSaveState(deviceID string, state SaveSyncState) error {
+	if cm == nil || !cm.initialized {
+		return nil
+	}
+
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
+
+	_, err := cm.db.Exec(`
+		INSERT INTO save_sync_state (device_id, rom_id, file_name, slot, save_id, content_hash, synced_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(device_id, rom_id, file_name) DO UPDATE SET
+			slot = excluded.slot,
+			save_id = excluded.save_id,
+			content_hash = excluded.content_hash,
+			synced_at = excluded.synced_at
+	`, deviceID, state.RomID, state.FileName, state.Slot, state.SaveID, state.ContentHash, nowUTC())
+
+	if err != nil {
+		gaba.GetLogger().Error("Failed to upsert save sync state", "romID", state.RomID, "file", state.FileName, "error", err)
+	}
+	return err
+}
+
+// GetSaveStates returns all current save-sync states for a device.
+func (cm *Manager) GetSaveStates(deviceID string) []SaveSyncState {
+	if cm == nil || !cm.initialized {
+		return nil
+	}
+
+	cm.mu.RLock()
+	defer cm.mu.RUnlock()
+
+	rows, err := cm.db.Query(`
+		SELECT rom_id, file_name, slot, save_id, content_hash, synced_at
+		FROM save_sync_state
+		WHERE device_id = ?
+	`, deviceID)
+	if err != nil {
+		gaba.GetLogger().Error("Failed to get save sync states", "error", err)
+		return nil
+	}
+	defer rows.Close()
+
+	var states []SaveSyncState
+	for rows.Next() {
+		var s SaveSyncState
+		var saveID *int
+		var contentHash *string
+		var syncedAt string
+		if err := rows.Scan(&s.RomID, &s.FileName, &s.Slot, &saveID, &contentHash, &syncedAt); err != nil {
+			continue
+		}
+		if saveID != nil {
+			s.SaveID = *saveID
+		}
+		if contentHash != nil {
+			s.ContentHash = *contentHash
+		}
+		if parsed, err := time.Parse(time.RFC3339, syncedAt); err == nil {
+			s.SyncedAt = parsed
+		}
+		states = append(states, s)
+	}
+	if err := rows.Err(); err != nil {
+		gaba.GetLogger().Error("Error iterating save sync state rows", "error", err)
+	}
+	return states
+}
+
 func (cm *Manager) GetSaveSyncHistory(deviceID string) []SaveSyncRecord {
 	if cm == nil || !cm.initialized {
 		return nil

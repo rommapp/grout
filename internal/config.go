@@ -290,6 +290,18 @@ func (c Config) GetSlotPreference(romID int) string {
 	return "autosave"
 }
 
+// SlotPreferenceExplicit returns the user-set slot preference for a ROM and whether
+// one was explicitly set (vs. the implicit "autosave" default). Lets an explicit user
+// choice win over a recorded last-synced slot.
+func (c Config) SlotPreferenceExplicit(romID int) (string, bool) {
+	if c.SlotPreferences != nil {
+		if slot, ok := c.SlotPreferences[fmt.Sprintf("%d", romID)]; ok {
+			return slot, true
+		}
+	}
+	return "", false
+}
+
 func (c *Config) SetSlotPreference(romID int, slot string) {
 	if c.SlotPreferences == nil {
 		c.SlotPreferences = make(map[string]string)

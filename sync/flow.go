@@ -30,7 +30,8 @@ func ResolveSaveSync(client *romm.Client, config *internal.Config, deviceID stri
 	localSaves := ScanSaves(config)
 	logger.Debug("Scanned local saves", "count", len(localSaves))
 
-	states := buildClientSaveStates(localSaves, config)
+	recordedSlots := loadRecordedSlots(deviceID)
+	states := buildClientSaveStates(localSaves, config, recordedSlots)
 
 	// Diagnostic: log exactly what we send the orchestrator (rom/slot/hash).
 	for _, s := range states {
@@ -89,6 +90,28 @@ func ResolveSaveSync(client *romm.Client, config *internal.Config, deviceID stri
 
 	logger.Debug("Total sync items resolved", "count", len(items))
 
+	// TEMP diagnostic: final per-game decision. Remove once save sync is validated.
+	for i := range items {
+		it := items[i]
+		remoteID := 0
+		remoteSlot := "<nil>"
+		if it.RemoteSave != nil {
+			remoteID = it.RemoteSave.ID
+			if it.RemoteSave.Slot != nil {
+				remoteSlot = *it.RemoteSave.Slot
+			}
+		}
+		logger.Debug("Sync decision",
+			"romID", it.LocalSave.RomID,
+			"romName", it.LocalSave.RomName,
+			"action", it.Action.String(),
+			"targetSlot", it.TargetSlot,
+			"remoteSaveID", remoteID,
+			"remoteSlot", remoteSlot,
+			"localFile", it.LocalSave.FileName,
+			"hasLocalPath", it.LocalSave.FilePath != "")
+	}
+
 	return SyncResult{Items: items, SessionID: resp.SessionID}, nil
 }
 
@@ -107,6 +130,9 @@ func buildDiscoveryItems(uncovered map[int]cfw.LocalRomFile, savesByRom map[int]
 	for romID, rom := range uncovered {
 		saves := savesByRom[romID]
 		if len(saves) == 0 {
+			// TEMP diagnostic: downloaded game with no local save AND no server save.
+			logger.Debug("Discovery: no server saves for ROM",
+				"romID", romID, "romName", rom.RomName)
 			continue
 		}
 
@@ -570,15 +596,71 @@ func ScanSaves(config *internal.Config) []LocalSave {
 // buildClientSaveStates converts scanned local saves into the negotiate payload,
 // computing a content hash per save (composite for directory saves, MD5 for files)
 // and the slot from the user's per-ROM preference (default "autosave").
-func buildClientSaveStates(localSaves []LocalSave, config *internal.Config) []romm.ClientSaveState {
+// saveKey identifies a local save for save-state record lookups.
+type saveKey struct {
+	romID    int
+	fileName string
+}
+
+// loadRecordedSlots reads the persisted save-sync state for a device into a slot
+// lookup keyed by (rom_id, file_name).
+func loadRecordedSlots(deviceID string) map[saveKey]string {
+	cm := cache.GetCacheManager()
+	if cm == nil {
+		return nil
+	}
+	states := cm.GetSaveStates(deviceID)
+	if len(states) == 0 {
+		return nil
+	}
+	out := make(map[saveKey]string, len(states))
+	for _, s := range states {
+		out[saveKey{s.RomID, s.FileName}] = s.Slot
+	}
+	return out
+}
+
+// recordSaveState upserts the current synced state for a local save after a
+// successful upload or download, so subsequent syncs report the same slot/identity.
+func recordSaveState(deviceID string, romID int, fileName, slot string, saveID int, contentHash string) {
+	cm := cache.GetCacheManager()
+	if cm == nil || fileName == "" {
+		return
+	}
+	if err := cm.UpsertSaveState(deviceID, cache.SaveSyncState{
+		RomID:       romID,
+		FileName:    fileName,
+		Slot:        slot,
+		SaveID:      saveID,
+		ContentHash: contentHash,
+	}); err != nil {
+		gaba.GetLogger().Warn("Failed to record save state", "romID", romID, "file", fileName, "error", err)
+	}
+}
+
+// resolveReportedSlot determines which slot a local save is reported under during
+// negotiate. Precedence: explicit user preference > recorded last-synced slot >
+// "autosave" default. This gives downloaded saves a stable slot identity so they are
+// not spuriously re-uploaded to a different slot on the next sync.
+func resolveReportedSlot(ls LocalSave, config *internal.Config, recordedSlots map[saveKey]string) string {
+	slot := "autosave"
+	if rec, ok := recordedSlots[saveKey{ls.RomID, ls.FileName}]; ok && rec != "" {
+		slot = rec
+	}
+	if config != nil {
+		if pref, ok := config.SlotPreferenceExplicit(ls.RomID); ok {
+			slot = pref
+		}
+	}
+	return slot
+}
+
+func buildClientSaveStates(localSaves []LocalSave, config *internal.Config, recordedSlots map[saveKey]string) []romm.ClientSaveState {
 	logger := gaba.GetLogger()
 	states := make([]romm.ClientSaveState, 0, len(localSaves))
 
 	for _, ls := range localSaves {
-		slot := "autosave"
-		if config != nil {
-			slot = config.GetSlotPreference(ls.RomID)
-		}
+		slot := resolveReportedSlot(ls, config, recordedSlots)
 
 		emulator := filepath.Base(ls.EmulatorDir)
 		if emulator == "." || emulator == "" {
@@ -827,6 +909,10 @@ func upload(client *romm.Client, deviceID string, item *SyncItem) uploadOutcome 
 	// No MarkDeviceSynced: the server upserts last_synced_at automatically on
 	// upload because device_id is supplied.
 
+	// Record the synced state so the next scan reports this save under the same slot.
+	hash, _ := saveContentHash(item.LocalSave)
+	recordSaveState(deviceID, item.LocalSave.RomID, item.LocalSave.FileName, slot, uploadedSave.ID, hash)
+
 	logger.Debug("Upload successful", "romID", item.LocalSave.RomID)
 	return uploadOK
 }
@@ -966,7 +1052,26 @@ func download(client *romm.Client, config *internal.Config, deviceID string, ite
 		logger.Warn("Failed to confirm save download", "saveID", item.RemoteSave.ID, "error", err)
 	}
 
-	logger.Debug("Download successful", "romID", item.LocalSave.RomID, "romName", item.LocalSave.RomName, "path", savePath)
+	// Record synced state. A null-slot ("archival") save is recorded as "autosave"
+	// so the next sync promotes it to the autosave slot (matching Argosy); a named-slot
+	// save keeps its slot so it isn't re-uploaded elsewhere. fileName matches what was
+	// written to disk, so the next ScanSaves looks it up correctly.
+	recordSlot := "autosave"
+	if item.RemoteSave.Slot != nil && *item.RemoteSave.Slot != "" {
+		recordSlot = *item.RemoteSave.Slot
+	}
+	recordFileName := item.LocalSave.FileName
+	if recordFileName == "" {
+		recordFileName = filepath.Base(savePath)
+	}
+	hash, _ := saveContentHash(LocalSave{
+		FilePath:        savePath,
+		IsDirectorySave: item.LocalSave.IsDirectorySave,
+		RelatedDirs:     item.LocalSave.RelatedDirs,
+	})
+	recordSaveState(deviceID, item.LocalSave.RomID, recordFileName, recordSlot, item.RemoteSave.ID, hash)
+
+	logger.Debug("Download successful", "romID", item.LocalSave.RomID, "romName", item.LocalSave.RomName, "path", savePath, "recordedSlot", recordSlot)
 	return true
 }
 
