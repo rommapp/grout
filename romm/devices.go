@@ -25,6 +25,7 @@ type RegisterDeviceRequest struct {
 	Platform      string `json:"platform"`
 	Client        string `json:"client"`
 	ClientVersion string `json:"client_version"`
+	SyncMode      string `json:"sync_mode,omitempty"`
 	IPAddress     string `json:"ip_address,omitempty"`
 	MACAddress    string `json:"mac_address,omitempty"`
 	Hostname      string `json:"hostname,omitempty"`

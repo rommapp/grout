@@ -87,6 +87,7 @@ func RegisterDevice(client *romm.Client, name string) (romm.Device, error) {
 		Platform:      string(cfw.GetCFW()),
 		Client:        "grout",
 		ClientVersion: version.Get().Version,
+		SyncMode:      "api",
 	})
 }
 
