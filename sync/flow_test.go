@@ -131,6 +131,9 @@ func TestMapOperationsToItems_DropsNoOpAndMapsActions(t *testing.T) {
 	if items[2].Action != ActionDownload || items[2].LocalSave.RomID != 3 {
 		t.Errorf("item2 = %+v", items[2])
 	}
+	if items[2].RemoteSave == nil || items[2].RemoteSave.ID != 30 {
+		t.Errorf("item2 RemoteSave = %+v", items[2].RemoteSave)
+	}
 }
 
 // --- buildClientSaveStates tests ---

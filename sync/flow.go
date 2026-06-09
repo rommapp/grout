@@ -97,7 +97,7 @@ func mapOperationsToItems(
 		case "download":
 			ls, ok := byKey[localKey{op.RomID, op.FileName}]
 			if !ok {
-				ls = resolveLocalSaveForDownload(op, resolvedRoms, cm, config)
+				ls = resolveLocalSaveForDownload(op, resolvedRoms, cm)
 			}
 			slot := "autosave"
 			if config != nil {
@@ -116,9 +116,14 @@ func mapOperationsToItems(
 				logger.Warn("Negotiate conflict for unknown local save", "romID", op.RomID, "file", op.FileName)
 				continue
 			}
+			slot := "autosave"
+			if config != nil {
+				slot = config.GetSlotPreference(ls.RomID)
+			}
 			items = append(items, SyncItem{
 				LocalSave:  ls,
 				RemoteSave: buildRemoteSaveStub(op),
+				TargetSlot: slot,
 				Action:     ActionConflict,
 			})
 
@@ -158,7 +163,7 @@ func buildRemoteSaveStub(op romm.SyncOperationSchema) *romm.Save {
 
 // resolveLocalSaveForDownload builds a LocalSave for a download whose file does
 // not exist locally yet, resolving ROM metadata for path determination.
-func resolveLocalSaveForDownload(op romm.SyncOperationSchema, resolvedRoms map[int]cfw.LocalRomFile, cm *cache.Manager, config *internal.Config) LocalSave {
+func resolveLocalSaveForDownload(op romm.SyncOperationSchema, resolvedRoms map[int]cfw.LocalRomFile, cm *cache.Manager) LocalSave {
 	ls := LocalSave{RomID: op.RomID, FileName: op.FileName}
 
 	if rom, ok := resolvedRoms[op.RomID]; ok {
@@ -433,11 +438,12 @@ func buildClientSaveStates(localSaves []LocalSave, config *internal.Config) []ro
 			UpdatedAt:     updatedAt,
 			FileSizeBytes: size,
 		}
-		if hash, err := saveContentHash(ls); err == nil {
-			state.ContentHash = hash
-		} else {
-			logger.Warn("Failed to hash local save; sending without content_hash", "romID", ls.RomID, "error", err)
+		hash, err := saveContentHash(ls)
+		if err != nil {
+			logger.Warn("Failed to hash local save; skipping from negotiate", "romID", ls.RomID, "path", ls.FilePath, "error", err)
+			continue
 		}
+		state.ContentHash = hash
 
 		states = append(states, state)
 	}
@@ -632,9 +638,11 @@ func upload(client *romm.Client, deviceID string, item *SyncItem) uploadOutcome 
 	}
 
 	// Match server precision so the next scan doesn't see a spurious change.
-	t := uploadedSave.UpdatedAt.Truncate(time.Second)
-	if err := os.Chtimes(item.LocalSave.FilePath, t, t); err != nil {
-		logger.Warn("Failed to set save mtime after upload", "path", item.LocalSave.FilePath, "error", err)
+	if !item.LocalSave.IsDirectorySave {
+		t := uploadedSave.UpdatedAt.Truncate(time.Second)
+		if err := os.Chtimes(item.LocalSave.FilePath, t, t); err != nil {
+			logger.Warn("Failed to set save mtime after upload", "path", item.LocalSave.FilePath, "error", err)
+		}
 	}
 	// No MarkDeviceSynced: the server upserts last_synced_at automatically on
 	// upload because device_id is supplied.
@@ -781,7 +789,6 @@ func download(client *romm.Client, config *internal.Config, deviceID string, ite
 	logger.Debug("Download successful", "romID", item.LocalSave.RomID, "romName", item.LocalSave.RomName, "path", savePath)
 	return true
 }
-
 
 func cleanupBackups(backupDir string, baseName string, limit int) {
 	if limit <= 0 {
