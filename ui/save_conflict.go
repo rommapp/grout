@@ -13,6 +13,7 @@ type SaveConflictInput struct {
 	Items           []sync.SyncItem
 	AllItems        []sync.SyncItem // Full items list (passed through for transition)
 	ConflictIndices map[int]int     // Conflict index → AllItems index (passed through)
+	SessionID       int             // Sync session ID (passed through)
 }
 
 type SaveConflictOutput struct {
@@ -20,6 +21,7 @@ type SaveConflictOutput struct {
 	Items           []sync.SyncItem
 	AllItems        []sync.SyncItem // Passed through from input
 	ConflictIndices map[int]int     // Passed through from input
+	SessionID       int             // Sync session ID (passed through)
 }
 
 type SaveConflictScreen struct{}
@@ -34,6 +36,7 @@ func (s *SaveConflictScreen) Draw(input SaveConflictInput) (SaveConflictOutput, 
 		Items:           input.Items,
 		AllItems:        input.AllItems,
 		ConflictIndices: input.ConflictIndices,
+		SessionID:       input.SessionID,
 	}
 
 	items := s.buildMenuItems(input.Items)
