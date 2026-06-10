@@ -183,7 +183,7 @@ func TestMapOperationsToItems_DropsNoOpAndMapsActions(t *testing.T) {
 	// rom 3 has no local save, so it must be present as an installed ROM for its
 	// download to be accepted (downloads are gated on local ROM presence).
 	resolved := map[int]cfw.LocalRomFile{3: {RomID: 3, RomName: "Metroid", FSSlug: "snes", FileName: "Metroid.gba"}}
-	items := mapOperationsToItems(ops, local, resolved, nil, nil)
+	items := mapOperationsToItems(ops, local, resolved, nil, nil, nil)
 
 	byAction := map[SyncAction]SyncItem{}
 	for _, it := range items {
@@ -212,7 +212,7 @@ func TestMapOperationsToItems_DropsDownloadWithoutSaveIdentity(t *testing.T) {
 	ops := []romm.SyncOperationSchema{
 		{Action: "download", RomID: 5, FileName: "x.srm"}, // no SaveID, no ServerUpdatedAt
 	}
-	items := mapOperationsToItems(ops, nil, resolved, nil, nil)
+	items := mapOperationsToItems(ops, nil, resolved, nil, nil, nil)
 	if len(items) != 0 {
 		t.Errorf("expected malformed download op to be dropped, got %d items", len(items))
 	}
@@ -232,7 +232,7 @@ func TestMapOperationsToItems_DownloadGatedToInstalledAndDeduped(t *testing.T) {
 		{Action: "download", RomID: 10, SaveID: ptrInt(234), FileName: "AW [a].srm", Slot: ptrStr("autosave"), ServerUpdatedAt: ptrTime(now)},
 	}
 
-	items := mapOperationsToItems(ops, nil, resolved, nil, nil)
+	items := mapOperationsToItems(ops, nil, resolved, nil, nil, nil)
 
 	if len(items) != 1 {
 		t.Fatalf("expected 1 item (installed + deduped), got %d", len(items))
@@ -246,6 +246,39 @@ func TestMapOperationsToItems_DownloadGatedToInstalledAndDeduped(t *testing.T) {
 	}
 	if it.LocalSave.FSSlug != "gba" || it.LocalSave.RomFileName != "Pokemon.gba" {
 		t.Errorf("local save not resolved from installed ROM: %+v", it.LocalSave)
+	}
+}
+
+func TestMapOperationsToItems_SkipsOtherSlotDownloadWhenLocalSaveExists(t *testing.T) {
+	// The ROM already has a local save synced under "autosave". The server offers a
+	// "default"-slot save for the same ROM — grout manages one slot per ROM, so it must
+	// NOT pull the other slot (which would clobber the local save and flip-flop).
+	local := []LocalSave{{RomID: 303, FileName: "Pokemon.srm", FilePath: "/x/Pokemon.srm", FSSlug: "gba"}}
+	recorded := map[saveKey]string{{romID: 303, fileName: "Pokemon.srm"}: "autosave"}
+	ops := []romm.SyncOperationSchema{
+		{Action: "download", RomID: 303, SaveID: ptrInt(228), FileName: "P [d].srm", Slot: ptrStr("default"), ServerUpdatedAt: ptrTime(time.Now())},
+	}
+
+	items := mapOperationsToItems(ops, local, nil, nil, nil, recorded)
+
+	if len(items) != 0 {
+		t.Fatalf("expected other-slot download to be skipped, got %d", len(items))
+	}
+}
+
+func TestMapOperationsToItems_AcceptsSameSlotDownloadWhenLocalSaveExists(t *testing.T) {
+	// A download for the ROM's own (managed) slot — e.g. the server copy is newer — is
+	// legitimate and must be applied.
+	local := []LocalSave{{RomID: 303, FileName: "Pokemon.srm", FilePath: "/x/Pokemon.srm", FSSlug: "gba"}}
+	recorded := map[saveKey]string{{romID: 303, fileName: "Pokemon.srm"}: "autosave"}
+	ops := []romm.SyncOperationSchema{
+		{Action: "download", RomID: 303, SaveID: ptrInt(235), FileName: "P [a].srm", Slot: ptrStr("autosave"), ServerUpdatedAt: ptrTime(time.Now())},
+	}
+
+	items := mapOperationsToItems(ops, local, nil, nil, nil, recorded)
+
+	if len(items) != 1 || items[0].RemoteSave == nil || items[0].RemoteSave.ID != 235 {
+		t.Fatalf("expected same-slot download to be applied, got %+v", items)
 	}
 }
 

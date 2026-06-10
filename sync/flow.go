@@ -74,7 +74,7 @@ func ResolveSaveSync(client *romm.Client, config *internal.Config, deviceID stri
 	resolvedRoms := ResolveLocalRoms(scan)
 	cm := cache.GetCacheManager()
 
-	items := mapOperationsToItems(resp.Operations, localSaves, resolvedRoms, cm, config)
+	items := mapOperationsToItems(resp.Operations, localSaves, resolvedRoms, cm, config, recordedSlots)
 
 	// Discovery fallback: the orchestrator only volunteers downloads for non-null-slot
 	// saves the device hasn't already synced, and never surfaces null-slot ("archival" /
@@ -254,6 +254,7 @@ func mapOperationsToItems(
 	resolvedRoms map[int]cfw.LocalRomFile,
 	cm *cache.Manager,
 	config *internal.Config,
+	recordedSlots map[saveKey]string,
 ) []SyncItem {
 	logger := gaba.GetLogger()
 
@@ -262,8 +263,14 @@ func mapOperationsToItems(
 		fileName string
 	}
 	byKey := make(map[localKey]LocalSave, len(localSaves))
+	// localByRom holds one local save per ROM. grout manages a single save (one slot)
+	// per ROM, so a ROM that already has a local save only ever syncs that save's slot.
+	localByRom := make(map[int]LocalSave, len(localSaves))
 	for _, ls := range localSaves {
 		byKey[localKey{ls.RomID, ls.FileName}] = ls
+		if _, ok := localByRom[ls.RomID]; !ok {
+			localByRom[ls.RomID] = ls
+		}
 	}
 
 	// A ROM is "installed" if it has a local save or a local ROM file. Downloads are
@@ -310,6 +317,22 @@ func mapOperationsToItems(
 			if buildRemoteSaveStub(op) == nil {
 				logger.Error("Negotiate download op missing save identity (no save_id/server_updated_at)", "romID", op.RomID, "file", op.FileName)
 				continue
+			}
+			// grout keeps one save (one slot) per ROM. If the ROM already has a local
+			// save, only its own slot is managed — a download for any other slot is the
+			// orchestrator offering an alternate-slot save we don't use here, and pulling
+			// it would clobber the local save and flip-flop on every sync. Skip it.
+			if ls, ok := localByRom[op.RomID]; ok {
+				managedSlot := resolveReportedSlot(ls, config, recordedSlots)
+				opSlot := "autosave"
+				if op.Slot != nil && *op.Slot != "" {
+					opSlot = *op.Slot
+				}
+				if opSlot != managedSlot {
+					logger.Debug("Skipping download: ROM's local save is in a different slot",
+						"romID", op.RomID, "opSlot", opSlot, "managedSlot", managedSlot, "file", op.FileName)
+					continue
+				}
 			}
 			downloadOps[op.RomID] = append(downloadOps[op.RomID], op)
 
