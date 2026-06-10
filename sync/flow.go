@@ -311,7 +311,7 @@ func mapOperationsToItems(
 
 		case "download":
 			if !installed[op.RomID] {
-				logger.Debug("Skipping download: ROM not installed locally", "romID", op.RomID, "file", op.FileName)
+				logger.Debug("Skipping download: ROM not downloaded locally", "romID", op.RomID, "file", op.FileName)
 				continue
 			}
 			if buildRemoteSaveStub(op) == nil {
