@@ -1148,31 +1148,40 @@ func (cm *Manager) GetRomByFSLookup(fsSlug, fsNameNoExt string) (romm.Rom, error
 // case-insensitive / normalized matching (see pickLenientMatch). Caller must hold
 // cm.mu (read lock). Returns the matched ROM and true on success.
 func (cm *Manager) lenientFSLookup(fsSlug, fsNameNoExt string) (romm.Rom, bool) {
+	// Fetch only the lightweight match keys (not the full data_json blob) for the whole
+	// platform, then point-query just the matched row's JSON. Avoids loading hundreds of
+	// large JSON blobs that would be discarded.
 	rows, err := cm.db.Query(`
-		SELECT name, fs_name_no_ext, data_json FROM games WHERE platform_fs_slug = ?
+		SELECT id, name, fs_name_no_ext FROM games WHERE platform_fs_slug = ?
 	`, fsSlug)
 	if err != nil {
 		return romm.Rom{}, false
 	}
-	defer rows.Close()
 
-	var names, fsNames, jsons []string
+	var ids []int
+	var names, fsNames []string
 	for rows.Next() {
-		var n, fn, j string
-		if rows.Scan(&n, &fn, &j) == nil {
+		var id int
+		var n, fn string
+		if rows.Scan(&id, &n, &fn) == nil {
+			ids = append(ids, id)
 			names = append(names, n)
 			fsNames = append(fsNames, fn)
-			jsons = append(jsons, j)
 		}
 	}
+	rows.Close()
 
 	idx := pickLenientMatch(fsNameNoExt, fsNames, names)
 	if idx < 0 {
 		return romm.Rom{}, false
 	}
 
+	var dataJSON string
+	if err := cm.db.QueryRow(`SELECT data_json FROM games WHERE id = ? LIMIT 1`, ids[idx]).Scan(&dataJSON); err != nil {
+		return romm.Rom{}, false
+	}
 	var game romm.Rom
-	if err := json.Unmarshal([]byte(jsons[idx]), &game); err != nil {
+	if err := json.Unmarshal([]byte(dataJSON), &game); err != nil {
 		return romm.Rom{}, false
 	}
 	gaba.GetLogger().Debug("Lenient ROM match",

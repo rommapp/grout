@@ -41,10 +41,11 @@ type Save struct {
 		MissingFromFs  bool      `json:"missing_from_fs"`
 		CreatedAt      time.Time `json:"created_at"`
 		UpdatedAt      time.Time `json:"updated_at"`
-	} `json:"Screenshot"`
+	} `json:"screenshot"`
 
 	// New fields for device-aware saves
 	Slot        *string          `json:"slot,omitempty"`
+	ContentHash *string          `json:"content_hash,omitempty"`
 	DeviceSyncs []DeviceSaveSync `json:"device_syncs,omitempty"`
 }
 
@@ -94,8 +95,11 @@ func (uq UploadSaveQuery) Valid() bool {
 }
 
 type SaveContentQuery struct {
-	DeviceID   string `qs:"device_id,omitempty"`
-	Optimistic bool   `qs:"optimistic,omitempty"`
+	DeviceID string `qs:"device_id,omitempty"`
+	// No omitempty: the server defaults optimistic to true, and grout deliberately
+	// sends optimistic=false so the device isn't marked synced until the file is
+	// written and POST /downloaded confirms it. omitempty would drop the false value.
+	Optimistic bool `qs:"optimistic"`
 }
 
 func (scq SaveContentQuery) Valid() bool {
@@ -139,7 +143,6 @@ func (c *Client) ConfirmSaveDownloaded(saveID int, deviceID string) error {
 	return c.doRequest("POST", path, nil, body, nil)
 }
 
-
 func (c *Client) GetSaveSummary(romID int) (SaveSummary, error) {
 	var summary SaveSummary
 	query := SaveSummaryQuery{RomID: romID}
@@ -181,7 +184,6 @@ func (c *Client) UpdateSave(saveID int, savePath string) (Save, error) {
 
 	return res, nil
 }
-
 
 func (c *Client) UploadSaveWithQuery(query UploadSaveQuery, savePath string) (Save, error) {
 	file, err := os.Open(savePath)

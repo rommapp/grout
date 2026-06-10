@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"archive/zip"
 	"errors"
 	"fmt"
 	"grout/cache"
@@ -21,7 +22,11 @@ import (
 )
 
 // maxConcurrentRequests bounds the per-ROM save fetches in the discovery fallback.
-const maxConcurrentRequests = 8
+// maxConcurrentRequests bounds the per-ROM save fetches in the discovery fallback.
+// Kept low: grout typically talks to a RomM instance on the same LAN (often a Pi/NAS)
+// over Wi-Fi, where a burst of parallel requests gives little benefit and can trip
+// timeouts or rate limits.
+const maxConcurrentRequests = 4
 
 func ResolveSaveSync(client *romm.Client, config *internal.Config, deviceID string) (SyncResult, error) {
 	logger := gaba.GetLogger()
@@ -298,14 +303,13 @@ func mapOperationsToItems(
 				logger.Warn("Negotiate upload for unknown local save", "romID", op.RomID, "file", op.FileName)
 				continue
 			}
-			slot := "autosave"
-			if config != nil {
-				slot = config.GetSlotPreference(ls.RomID)
-			}
 			items = append(items, SyncItem{
 				LocalSave:  ls,
 				RemoteSave: buildRemoteSaveStub(op),
-				TargetSlot: slot,
+				// Upload to the slot we reported to the server (recorded slot / explicit
+				// pref / autosave), not just GetSlotPreference — otherwise a save synced
+				// under a recorded named slot would upload to "autosave" and duplicate.
+				TargetSlot: resolveReportedSlot(ls, config, recordedSlots),
 				Action:     ActionUpload,
 			})
 
@@ -347,14 +351,10 @@ func mapOperationsToItems(
 				logger.Warn("Negotiate conflict for unknown local save", "romID", op.RomID, "file", op.FileName)
 				continue
 			}
-			slot := "autosave"
-			if config != nil {
-				slot = config.GetSlotPreference(ls.RomID)
-			}
 			items = append(items, SyncItem{
 				LocalSave:  ls,
 				RemoteSave: stub,
-				TargetSlot: slot,
+				TargetSlot: resolveReportedSlot(ls, config, recordedSlots),
 				Action:     ActionConflict,
 			})
 
@@ -491,7 +491,9 @@ func ExecuteSaveSync(client *romm.Client, config *internal.Config, deviceID stri
 	if sessionID > 0 {
 		if err := client.CompleteSession(sessionID, romm.SyncCompletePayload{
 			OperationsCompleted: report.Uploaded + report.Downloaded,
-			OperationsFailed:    report.Errors,
+			// Count runtime conflicts (e.g. a 409 that turned an upload into a conflict)
+			// as failed so the server's session totals reconcile with operations_planned.
+			OperationsFailed: report.Errors + report.Conflicts,
 		}); err != nil {
 			// On-demand client has no retry queue; the server expires stale sessions.
 			gaba.GetLogger().Warn("Failed to complete sync session (leaving for server to expire)", "sessionID", sessionID, "error", err)
@@ -502,13 +504,26 @@ func ExecuteSaveSync(client *romm.Client, config *internal.Config, deviceID stri
 }
 
 func RegisterDevice(client *romm.Client, name string) (romm.Device, error) {
-	return client.RegisterDevice(romm.RegisterDeviceRequest{
+	dev, err := client.RegisterDevice(romm.RegisterDeviceRequest{
 		Name:          name,
 		Platform:      string(cfw.GetCFW()),
 		Client:        "grout",
 		ClientVersion: version.Get().Version,
 		SyncMode:      "api",
 	})
+	if err != nil {
+		return dev, err
+	}
+	// The server returns an existing matching device without updating it (allow_existing),
+	// so refresh client_version to keep the server's record current after an upgrade.
+	if dev.ID != "" {
+		if _, uerr := client.UpdateDevice(dev.ID, romm.UpdateDeviceRequest{
+			ClientVersion: version.Get().Version,
+		}); uerr != nil {
+			gaba.GetLogger().Warn("Failed to refresh device client_version", "deviceID", dev.ID, "error", uerr)
+		}
+	}
+	return dev, nil
 }
 
 func ScanSaves(config *internal.Config) []LocalSave {
@@ -747,13 +762,20 @@ func buildClientSaveStates(localSaves []LocalSave, config *internal.Config, reco
 
 		var updatedAt time.Time
 		var size int64
+		var hash string
 
 		if ls.IsDirectorySave {
 			dirs := ls.RelatedDirs
 			if len(dirs) == 0 {
 				dirs = []string{ls.FilePath}
 			}
-			updatedAt, size = dirNewestMtimeAndSize(dirs)
+			// One walk yields hash + newest mtime + size for the whole directory save.
+			stat, err := fileutil.ComputeDirsCompositeHashStat(dirs)
+			if err != nil {
+				logger.Warn("Failed to hash directory save; skipping from negotiate", "romID", ls.RomID, "path", ls.FilePath, "error", err)
+				continue
+			}
+			updatedAt, size, hash = stat.Newest, stat.Size, stat.Hash
 		} else {
 			info, err := os.Stat(ls.FilePath)
 			if err != nil {
@@ -762,27 +784,55 @@ func buildClientSaveStates(localSaves []LocalSave, config *internal.Config, reco
 			}
 			updatedAt = info.ModTime().Truncate(time.Second)
 			size = info.Size()
+			h, herr := fileutil.ComputeMD5(ls.FilePath)
+			if herr != nil {
+				logger.Warn("Failed to hash local save; skipping from negotiate", "romID", ls.RomID, "path", ls.FilePath, "error", herr)
+				continue
+			}
+			hash = h
 		}
 
-		state := romm.ClientSaveState{
+		states = append(states, romm.ClientSaveState{
 			RomID:         ls.RomID,
 			FileName:      ls.FileName,
 			Slot:          slot,
 			Emulator:      emulator,
 			UpdatedAt:     updatedAt,
 			FileSizeBytes: size,
-		}
-		hash, err := saveContentHash(ls)
-		if err != nil {
-			logger.Warn("Failed to hash local save; skipping from negotiate", "romID", ls.RomID, "path", ls.FilePath, "error", err)
-			continue
-		}
-		state.ContentHash = hash
-
-		states = append(states, state)
+			ContentHash:   hash,
+		})
 	}
 
 	return states
+}
+
+// writeFileAtomic writes data to a temp file in path's directory, then renames it into
+// place. On Linux/macOS the rename is atomic on the same filesystem, so an interrupted
+// write (power loss, I/O error) can't leave a truncated, corrupt save at path.
+func writeFileAtomic(path string, data []byte, perm os.FileMode) error {
+	tmp, err := os.CreateTemp(filepath.Dir(path), ".grout-save-*.tmp")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		os.Remove(tmpName)
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		os.Remove(tmpName)
+		return err
+	}
+	if err := os.Chmod(tmpName, perm); err != nil {
+		os.Remove(tmpName)
+		return err
+	}
+	if err := os.Rename(tmpName, path); err != nil {
+		os.Remove(tmpName)
+		return err
+	}
+	return nil
 }
 
 // saveContentHash returns the server-compatible content hash for a local save.
@@ -795,30 +845,6 @@ func saveContentHash(ls LocalSave) (string, error) {
 		return fileutil.ComputeDirsCompositeHash(dirs)
 	}
 	return fileutil.ComputeMD5(ls.FilePath)
-}
-
-// dirNewestMtimeAndSize returns the newest file mtime (sec-truncated) and total
-// byte size across the given directories.
-func dirNewestMtimeAndSize(dirs []string) (time.Time, int64) {
-	var newest time.Time
-	var total int64
-	for _, dir := range dirs {
-		filepath.Walk(dir, func(_ string, info os.FileInfo, err error) error {
-			if err != nil {
-				gaba.GetLogger().Warn("Walk error scanning directory save", "dir", dir, "error", err)
-				return nil
-			}
-			if info.IsDir() {
-				return nil
-			}
-			total += info.Size()
-			if mt := info.ModTime(); mt.After(newest) {
-				newest = mt
-			}
-			return nil
-		})
-	}
-	return newest.Truncate(time.Second), total
 }
 
 // SelectSaveForSlot picks the latest save in preferredSlot, falling back to the
@@ -1090,6 +1116,19 @@ func download(client *romm.Client, config *internal.Config, deviceID string, ite
 		}
 		tmpZip.Close()
 
+		// Validate the downloaded zip BEFORE deleting any local dirs — a corrupt or
+		// empty body (server bug, truncation) must not wipe the live save. The backup
+		// already exists, but we'd rather never destroy the original.
+		if zr, zerr := zip.OpenReader(tmpZipPath); zerr != nil || len(zr.File) == 0 {
+			if zr != nil {
+				zr.Close()
+			}
+			logger.Error("Downloaded directory-save zip is corrupt or empty, aborting", "path", savePath, "error", zerr)
+			return false
+		} else {
+			zr.Close()
+		}
+
 		// Remove all existing save directories before extracting.
 		// For multi-dir PSP saves (DATA00, DATA01, INSDIR…), RelatedDirs holds
 		// all of them; fall back to savePath for single-dir or remote-only cases.
@@ -1111,7 +1150,9 @@ func download(client *romm.Client, config *internal.Config, deviceID string, ite
 			return false
 		}
 
-		if err := os.WriteFile(savePath, data, 0644); err != nil {
+		// Write atomically (temp file in the same dir + rename) so a power loss or I/O
+		// error mid-write can't leave a truncated, corrupt save in place.
+		if err := writeFileAtomic(savePath, data, 0644); err != nil {
 			logger.Error("Failed to write save file", "path", savePath, "error", err)
 			return false
 		}

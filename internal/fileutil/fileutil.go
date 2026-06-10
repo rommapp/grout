@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/bodgit/sevenzip"
 	"go.uber.org/atomic"
@@ -335,7 +336,7 @@ func ComputeMD5(filePath string) (string, error) {
 	defer file.Close()
 
 	hash := md5.New()
-	buf := make([]byte, 8192)
+	buf := make([]byte, DefaultBufferSize)
 	if _, err := io.CopyBuffer(hash, file, buf); err != nil {
 		return "", fmt.Errorf("failed to compute hash: %w", err)
 	}
@@ -386,12 +387,23 @@ func ComputeCompositeZipHash(zipPath string) (string, error) {
 	return compositeFromPairs(pairs), nil
 }
 
-// ComputeDirsCompositeHash computes the composite hash for one or more save
-// directories WITHOUT writing a temporary zip, mirroring how addDirToZip names
-// entries (relative to each directory's parent) so the result equals the hash
-// the server computes for the uploaded zip. Dot-prefixed files/dirs are skipped.
-func ComputeDirsCompositeHash(dirPaths []string) (string, error) {
+// DirHashStat is the composite content hash plus aggregate metadata for one or more
+// save directories, gathered in a single walk.
+type DirHashStat struct {
+	Hash   string    // server-compatible composite hash
+	Newest time.Time // newest file mtime (second-truncated)
+	Size   int64     // total bytes across hashed files
+}
+
+// ComputeDirsCompositeHashStat walks the save directories ONCE, computing the
+// server-compatible composite hash AND the newest mtime / total size, mirroring how
+// addDirToZip names entries (relative to each directory's parent) so the hash equals
+// what the server computes for the uploaded zip. Dot-prefixed files/dirs are skipped
+// (consistently for hash, size, and mtime). Each file is closed immediately after
+// hashing so a large save can't exhaust file descriptors.
+func ComputeDirsCompositeHashStat(dirPaths []string) (DirHashStat, error) {
 	pairs := make(map[string]string)
+	var stat DirHashStat
 	for _, dirPath := range dirPaths {
 		parent := filepath.Dir(dirPath)
 		walkErr := filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
@@ -415,19 +427,33 @@ func ComputeDirsCompositeHash(dirPaths []string) (string, error) {
 			if openErr != nil {
 				return openErr
 			}
-			defer f.Close()
 			h := md5.New()
-			if _, copyErr := io.Copy(h, f); copyErr != nil {
+			_, copyErr := io.Copy(h, f)
+			f.Close()
+			if copyErr != nil {
 				return copyErr
 			}
 			pairs[rel] = fmt.Sprintf("%x", h.Sum(nil))
+			stat.Size += info.Size()
+			if mt := info.ModTime(); mt.After(stat.Newest) {
+				stat.Newest = mt
+			}
 			return nil
 		})
 		if walkErr != nil {
-			return "", fmt.Errorf("failed to walk %s: %w", dirPath, walkErr)
+			return DirHashStat{}, fmt.Errorf("failed to walk %s: %w", dirPath, walkErr)
 		}
 	}
-	return compositeFromPairs(pairs), nil
+	stat.Hash = compositeFromPairs(pairs)
+	stat.Newest = stat.Newest.Truncate(time.Second)
+	return stat, nil
+}
+
+// ComputeDirsCompositeHash returns just the composite hash for the given save
+// directories (see ComputeDirsCompositeHashStat).
+func ComputeDirsCompositeHash(dirPaths []string) (string, error) {
+	stat, err := ComputeDirsCompositeHashStat(dirPaths)
+	return stat.Hash, err
 }
 
 // ComputeSHA1 computes the SHA1 hash of a file and returns it as a lowercase hex string
