@@ -180,37 +180,72 @@ func TestMapOperationsToItems_DropsNoOpAndMapsActions(t *testing.T) {
 		{Action: "download", RomID: 3, FileName: "Metroid.srm", SaveID: ptrInt(30), ServerUpdatedAt: ptrTime(time.Now())},
 	}
 
-	items := mapOperationsToItems(ops, local, nil, nil, nil)
+	// rom 3 has no local save, so it must be present as an installed ROM for its
+	// download to be accepted (downloads are gated on local ROM presence).
+	resolved := map[int]cfw.LocalRomFile{3: {RomID: 3, RomName: "Metroid", FSSlug: "snes", FileName: "Metroid.gba"}}
+	items := mapOperationsToItems(ops, local, resolved, nil, nil)
 
-	var got []string
+	byAction := map[SyncAction]SyncItem{}
 	for _, it := range items {
-		got = append(got, it.Action.String())
+		byAction[it.Action] = it
 	}
-	// no_op dropped; order preserved
+	// no_op dropped; upload, conflict, download mapped
 	if len(items) != 3 {
-		t.Fatalf("expected 3 items, got %d (%v)", len(items), got)
+		t.Fatalf("expected 3 items, got %d", len(items))
 	}
-	if items[0].Action != ActionUpload || items[0].LocalSave.RomID != 1 {
-		t.Errorf("item0 = %+v", items[0])
+	if up, ok := byAction[ActionUpload]; !ok || up.LocalSave.RomID != 1 {
+		t.Errorf("upload item = %+v", up)
 	}
-	if items[1].Action != ActionConflict || items[1].RemoteSave == nil || items[1].RemoteSave.ID != 20 {
-		t.Errorf("item1 = %+v", items[1])
+	if cf, ok := byAction[ActionConflict]; !ok || cf.RemoteSave == nil || cf.RemoteSave.ID != 20 {
+		t.Errorf("conflict item = %+v", cf)
 	}
-	if items[2].Action != ActionDownload || items[2].LocalSave.RomID != 3 {
-		t.Errorf("item2 = %+v", items[2])
-	}
-	if items[2].RemoteSave == nil || items[2].RemoteSave.ID != 30 {
-		t.Errorf("item2 RemoteSave = %+v", items[2].RemoteSave)
+	dl, ok := byAction[ActionDownload]
+	if !ok || dl.LocalSave.RomID != 3 || dl.RemoteSave == nil || dl.RemoteSave.ID != 30 {
+		t.Errorf("download item = %+v", dl)
 	}
 }
 
 func TestMapOperationsToItems_DropsDownloadWithoutSaveIdentity(t *testing.T) {
+	// rom 5 is installed (so it passes the local-presence gate) but its download op
+	// carries no save identity, so it must still be dropped.
+	resolved := map[int]cfw.LocalRomFile{5: {RomID: 5, FSSlug: "gba", FileName: "x.gba"}}
 	ops := []romm.SyncOperationSchema{
 		{Action: "download", RomID: 5, FileName: "x.srm"}, // no SaveID, no ServerUpdatedAt
 	}
-	items := mapOperationsToItems(ops, nil, nil, nil, nil)
+	items := mapOperationsToItems(ops, nil, resolved, nil, nil)
 	if len(items) != 0 {
 		t.Errorf("expected malformed download op to be dropped, got %d items", len(items))
+	}
+}
+
+func TestMapOperationsToItems_DownloadGatedToInstalledAndDeduped(t *testing.T) {
+	// Only rom 303 is installed locally; rom 10 is not.
+	resolved := map[int]cfw.LocalRomFile{
+		303: {RomID: 303, RomName: "Pokemon", FSSlug: "gba", FileName: "Pokemon.gba"},
+	}
+	now := time.Now()
+	ops := []romm.SyncOperationSchema{
+		// rom 303: two slots -> exactly one download item, preferring "autosave"
+		{Action: "download", RomID: 303, SaveID: ptrInt(235), FileName: "P [a].srm", Slot: ptrStr("autosave"), ServerUpdatedAt: ptrTime(now)},
+		{Action: "download", RomID: 303, SaveID: ptrInt(228), FileName: "P [d].srm", Slot: ptrStr("default"), ServerUpdatedAt: ptrTime(now)},
+		// rom 10 not installed -> dropped entirely
+		{Action: "download", RomID: 10, SaveID: ptrInt(234), FileName: "AW [a].srm", Slot: ptrStr("autosave"), ServerUpdatedAt: ptrTime(now)},
+	}
+
+	items := mapOperationsToItems(ops, nil, resolved, nil, nil)
+
+	if len(items) != 1 {
+		t.Fatalf("expected 1 item (installed + deduped), got %d", len(items))
+	}
+	it := items[0]
+	if it.Action != ActionDownload || it.LocalSave.RomID != 303 {
+		t.Fatalf("unexpected item: %+v", it)
+	}
+	if it.RemoteSave == nil || it.RemoteSave.ID != 235 {
+		t.Errorf("expected autosave save 235, got %+v", it.RemoteSave)
+	}
+	if it.LocalSave.FSSlug != "gba" || it.LocalSave.RomFileName != "Pokemon.gba" {
+		t.Errorf("local save not resolved from installed ROM: %+v", it.LocalSave)
 	}
 }
 

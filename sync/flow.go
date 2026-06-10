@@ -266,7 +266,23 @@ func mapOperationsToItems(
 		byKey[localKey{ls.RomID, ls.FileName}] = ls
 	}
 
+	// A ROM is "installed" if it has a local save or a local ROM file. Downloads are
+	// gated on this: negotiate enumerates the whole RomM library and offers downloads
+	// for every never-synced save, but grout must only pull saves for games actually
+	// present on this device.
+	installed := make(map[int]bool, len(localSaves)+len(resolvedRoms))
+	for _, ls := range localSaves {
+		installed[ls.RomID] = true
+	}
+	for romID := range resolvedRoms {
+		installed[romID] = true
+	}
+
 	items := make([]SyncItem, 0, len(ops))
+	// Download ops are collected per ROM and resolved to a single item below, so a ROM
+	// with saves in multiple slots doesn't download several files to the same path.
+	downloadOps := make(map[int][]romm.SyncOperationSchema)
+
 	for _, op := range ops {
 		switch op.Action {
 		case "upload":
@@ -287,25 +303,15 @@ func mapOperationsToItems(
 			})
 
 		case "download":
-			stub := buildRemoteSaveStub(op)
-			if stub == nil {
+			if !installed[op.RomID] {
+				logger.Debug("Skipping download: ROM not installed locally", "romID", op.RomID, "file", op.FileName)
+				continue
+			}
+			if buildRemoteSaveStub(op) == nil {
 				logger.Error("Negotiate download op missing save identity (no save_id/server_updated_at)", "romID", op.RomID, "file", op.FileName)
 				continue
 			}
-			ls, ok := byKey[localKey{op.RomID, op.FileName}]
-			if !ok {
-				ls = resolveLocalSaveForDownload(op, resolvedRoms, cm)
-			}
-			slot := "autosave"
-			if config != nil {
-				slot = config.GetSlotPreference(op.RomID)
-			}
-			items = append(items, SyncItem{
-				LocalSave:  ls,
-				RemoteSave: stub,
-				TargetSlot: slot,
-				Action:     ActionDownload,
-			})
+			downloadOps[op.RomID] = append(downloadOps[op.RomID], op)
 
 		case "conflict":
 			stub := buildRemoteSaveStub(op)
@@ -335,7 +341,54 @@ func mapOperationsToItems(
 			logger.Warn("Unknown negotiate action", "action", op.Action, "romID", op.RomID)
 		}
 	}
+
+	// Resolve each installed ROM's download ops to a single item, preferring the slot
+	// the ROM is reported under (explicit pref / autosave), else the latest save.
+	for romID, dops := range downloadOps {
+		preferred := "autosave"
+		if config != nil {
+			preferred = config.GetSlotPreference(romID)
+		}
+		op := pickDownloadOp(dops, preferred)
+
+		ls, ok := byKey[localKey{op.RomID, op.FileName}]
+		if !ok {
+			ls = resolveLocalSaveForDownload(op, resolvedRoms, cm)
+		}
+		items = append(items, SyncItem{
+			LocalSave:  ls,
+			RemoteSave: buildRemoteSaveStub(op),
+			TargetSlot: preferred,
+			Action:     ActionDownload,
+		})
+	}
+
 	return items
+}
+
+// pickDownloadOp chooses one download op for a ROM that has saves in possibly
+// multiple slots: the op matching preferredSlot if present, otherwise the one with
+// the latest server_updated_at.
+func pickDownloadOp(ops []romm.SyncOperationSchema, preferredSlot string) romm.SyncOperationSchema {
+	for _, op := range ops {
+		slot := "autosave"
+		if op.Slot != nil && *op.Slot != "" {
+			slot = *op.Slot
+		}
+		if slot == preferredSlot {
+			return op
+		}
+	}
+	best := ops[0]
+	for _, op := range ops[1:] {
+		if op.ServerUpdatedAt == nil {
+			continue
+		}
+		if best.ServerUpdatedAt == nil || op.ServerUpdatedAt.After(*best.ServerUpdatedAt) {
+			best = op
+		}
+	}
+	return best
 }
 
 // buildRemoteSaveStub builds a *romm.Save from a negotiate operation for execution.
