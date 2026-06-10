@@ -389,6 +389,11 @@ func attemptLogin(host romm.Host) loginAttemptOutput {
 				host.TokenName = tokenResp.Name
 				host.TokenExpiresAt = tokenResp.ExpiresAt
 
+				if missing := romm.MissingSyncScopes(tokenResp.Scopes); len(missing) > 0 {
+					gabagool.GetLogger().Warn("Paired token is missing scopes needed for save sync",
+						"missing", missing, "granted", tokenResp.Scopes)
+				}
+
 				// Validate the token works
 				client := romm.NewClientFromHost(host, internal.LoginTimeout)
 				if err := client.ValidateToken(); err != nil {

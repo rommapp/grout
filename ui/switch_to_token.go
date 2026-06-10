@@ -79,6 +79,11 @@ func (s *SwitchToTokenScreen) Execute(config *internal.Config, host romm.Host) S
 			newHost.TokenExpiresAt = tokenResp.ExpiresAt
 			newHost.Password = ""
 
+			if missing := romm.MissingSyncScopes(tokenResp.Scopes); len(missing) > 0 {
+				logger.Warn("Paired token is missing scopes needed for save sync",
+					"missing", missing, "granted", tokenResp.Scopes)
+			}
+
 			// Validate the token works
 			client := romm.NewClientFromHost(newHost, internal.LoginTimeout)
 			if err := client.ValidateToken(); err != nil {

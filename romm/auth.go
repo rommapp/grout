@@ -23,6 +23,29 @@ type CurrentUser struct {
 	Username string `json:"username"`
 }
 
+// SyncRequiredScopes are the client-token scopes save sync needs end-to-end:
+// reading/writing assets (saves) and reading/writing devices (negotiate, session
+// complete, device registration, /downloaded). A token missing these will 403 on the
+// sync endpoints.
+var SyncRequiredScopes = []string{"assets.read", "assets.write", "devices.read", "devices.write"}
+
+// MissingSyncScopes returns the SyncRequiredScopes not present in have. Advisory:
+// RomM may model scopes more broadly, so treat a non-empty result as a likely (not
+// certain) cause of sync permission failures.
+func MissingSyncScopes(have []string) []string {
+	present := make(map[string]bool, len(have))
+	for _, s := range have {
+		present[s] = true
+	}
+	var missing []string
+	for _, s := range SyncRequiredScopes {
+		if !present[s] {
+			missing = append(missing, s)
+		}
+	}
+	return missing
+}
+
 func (c *Client) ValidateConnection() error {
 	req, err := http.NewRequest("GET", c.baseURL+endpointHeartbeat, nil)
 	if err != nil {

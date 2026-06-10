@@ -10,14 +10,20 @@ import (
 	"unicode"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
+	"golang.org/x/text/unicode/norm"
 )
 
-// normalizeForMatch strips punctuation, collapses whitespace, and lowercases
-// for fuzzy title matching (e.g., "BUST A MOVE DELUXE" matches "Bust-a-Move: Deluxe").
+// normalizeForMatch strips punctuation, collapses whitespace, lowercases, and folds
+// diacritics for fuzzy title matching (e.g. "BUST A MOVE DELUXE" matches
+// "Bust-a-Move: Deluxe", and "Pokemon" matches "Pokémon"). Accent folding works by
+// NFD-decomposing each rune and dropping combining marks, so "é" -> "e".
 func normalizeForMatch(s string) string {
 	var b strings.Builder
 	lastSpace := false
-	for _, r := range strings.ToLower(s) {
+	for _, r := range norm.NFD.String(strings.ToLower(s)) {
+		if unicode.Is(unicode.Mn, r) {
+			continue // combining mark left over from decomposing an accented letter
+		}
 		if unicode.IsLetter(r) || unicode.IsDigit(r) {
 			b.WriteRune(r)
 			lastSpace = false

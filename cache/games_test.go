@@ -28,6 +28,24 @@ func TestPickLenientMatch(t *testing.T) {
 	}
 }
 
+func TestNormalizeForMatch_FoldsAccents(t *testing.T) {
+	if got := normalizeForMatch("Pokémon - Recharged Yellow"); got != "pokemon recharged yellow" {
+		t.Errorf("accent folding: got %q", got)
+	}
+	if normalizeForMatch("Pokémon") != normalizeForMatch("Pokemon") {
+		t.Errorf("accented and unaccented should normalize equal")
+	}
+}
+
+func TestPickLenientMatch_FoldsAccentsAcrossName(t *testing.T) {
+	// Local file lacks the accent; the RomM name has it. Normalized-name tier matches.
+	fsNames := []string{"rom_303"}
+	names := []string{"Pokémon - Recharged Yellow"}
+	if got := pickLenientMatch("Pokemon - Recharged Yellow", fsNames, names); got != 0 {
+		t.Errorf("expected accent-folded match (idx 0), got %d", got)
+	}
+}
+
 func TestPickLenientMatch_CaseInsensitiveBeatsNormalizedName(t *testing.T) {
 	// candidate 0 matches only on normalized name; candidate 1 matches on
 	// case-insensitive fs name. The case-insensitive fs match must win.
