@@ -29,6 +29,36 @@ func normalizeForMatch(s string) string {
 	return strings.TrimSpace(b.String())
 }
 
+// pickLenientMatch finds the best lenient match index for input among the parallel
+// fsNames/names slices, in precedence order: case-insensitive fs_name_no_ext, then
+// normalized fs_name_no_ext, then normalized rom name (title). Returns -1 if none.
+// Mirrors Argosy's tiered re-link matching so local files whose names differ from
+// RomM's only by case/punctuation/spacing still resolve.
+func pickLenientMatch(input string, fsNames, names []string) int {
+	normInput := normalizeForMatch(input)
+	ci, normFs, normName := -1, -1, -1
+	for i := range fsNames {
+		if ci < 0 && strings.EqualFold(fsNames[i], input) {
+			ci = i
+		}
+		if normInput != "" {
+			if normFs < 0 && fsNames[i] != "" && normalizeForMatch(fsNames[i]) == normInput {
+				normFs = i
+			}
+			if normName < 0 && i < len(names) && names[i] != "" && normalizeForMatch(names[i]) == normInput {
+				normName = i
+			}
+		}
+	}
+	if ci >= 0 {
+		return ci
+	}
+	if normFs >= 0 {
+		return normFs
+	}
+	return normName
+}
+
 type Type string
 
 const (
@@ -1086,6 +1116,11 @@ func (cm *Manager) GetRomByFSLookup(fsSlug, fsNameNoExt string) (romm.Rom, error
 	`, fsSlug, fsNameNoExt).Scan(&dataJSON)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			// Lenient fallback: case-insensitive / normalized match within the platform.
+			if game, ok := cm.lenientFSLookup(fsSlug, fsNameNoExt); ok {
+				cm.stats.recordHit()
+				return game, nil
+			}
 			cm.stats.recordMiss()
 			return romm.Rom{}, ErrCacheMiss
 		}
@@ -1101,6 +1136,42 @@ func (cm *Manager) GetRomByFSLookup(fsSlug, fsNameNoExt string) (romm.Rom, error
 
 	cm.stats.recordHit()
 	return game, nil
+}
+
+// lenientFSLookup loads the platform's games and resolves fsNameNoExt by
+// case-insensitive / normalized matching (see pickLenientMatch). Caller must hold
+// cm.mu (read lock). Returns the matched ROM and true on success.
+func (cm *Manager) lenientFSLookup(fsSlug, fsNameNoExt string) (romm.Rom, bool) {
+	rows, err := cm.db.Query(`
+		SELECT name, fs_name_no_ext, data_json FROM games WHERE platform_fs_slug = ?
+	`, fsSlug)
+	if err != nil {
+		return romm.Rom{}, false
+	}
+	defer rows.Close()
+
+	var names, fsNames, jsons []string
+	for rows.Next() {
+		var n, fn, j string
+		if rows.Scan(&n, &fn, &j) == nil {
+			names = append(names, n)
+			fsNames = append(fsNames, fn)
+			jsons = append(jsons, j)
+		}
+	}
+
+	idx := pickLenientMatch(fsNameNoExt, fsNames, names)
+	if idx < 0 {
+		return romm.Rom{}, false
+	}
+
+	var game romm.Rom
+	if err := json.Unmarshal([]byte(jsons[idx]), &game); err != nil {
+		return romm.Rom{}, false
+	}
+	gaba.GetLogger().Debug("Lenient ROM match",
+		"input", fsNameNoExt, "matchedFsName", fsNames[idx], "matchedName", names[idx], "fsSlug", fsSlug)
+	return game, true
 }
 
 func (cm *Manager) GetRomByNameLookup(fsSlug, name string) (romm.Rom, error) {
