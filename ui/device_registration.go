@@ -6,6 +6,7 @@ import (
 	"grout/internal"
 	"grout/romm"
 	"grout/sync"
+	"grout/version"
 	"os"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -233,5 +234,8 @@ func (s *SaveSyncSettingsScreen) registerDevice(output SaveSyncSettingsOutput) (
 
 	output.Host.DeviceID = device.ID
 	output.Host.DeviceName = deviceName
+	// RegisterDevice already pushed the current client_version; record it so the startup
+	// refresh only fires on a later upgrade.
+	output.Host.DeviceClientVersion = version.Get().Version
 	return output, nil
 }

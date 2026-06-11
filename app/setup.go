@@ -18,6 +18,7 @@ import (
 	"grout/internal/fileutil"
 	"grout/resources"
 	"grout/romm"
+	"grout/sync"
 	"grout/ui"
 	"log"
 	"log/slog"
@@ -311,6 +312,14 @@ func connectAndLoadPlatforms(config *internal.Config, logger *slog.Logger) []rom
 					authErr = err
 					return nil, nil
 				}
+			}
+
+			// If grout was upgraded since this device last reported in, refresh the
+			// client_version the server has on record (diagnostic/display only).
+			if v, changed := sync.RefreshDeviceVersion(authClient, host.DeviceID, host.DeviceClientVersion); changed {
+				host.DeviceClientVersion = v
+				config.Hosts[0] = host
+				internal.SaveConfig(config)
 			}
 
 			// Load platforms

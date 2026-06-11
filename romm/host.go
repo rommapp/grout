@@ -20,6 +20,9 @@ type Host struct {
 
 	DeviceID   string `json:"device_id,omitempty"`
 	DeviceName string `json:"device_name,omitempty"`
+	// DeviceClientVersion is the grout version last reported to the server for this
+	// device; used to refresh the server's record after an app upgrade.
+	DeviceClientVersion string `json:"device_client_version,omitempty"`
 }
 
 func (h Host) HasTokenAuth() bool {

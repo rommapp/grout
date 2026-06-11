@@ -282,6 +282,48 @@ func TestMapOperationsToItems_AcceptsSameSlotDownloadWhenLocalSaveExists(t *test
 	}
 }
 
+func TestMapOperationsToItems_FirstTimeMultiSlotOffersChoice(t *testing.T) {
+	// rom 303 is installed but has no local save; the server offers two slots. The item
+	// should carry AvailableSlots + AllRemoteSaves so the UI can prompt for a choice.
+	resolved := map[int]cfw.LocalRomFile{
+		303: {RomID: 303, RomName: "Pokemon", FSSlug: "gba", FileName: "Pokemon.gba"},
+	}
+	now := time.Now()
+	ops := []romm.SyncOperationSchema{
+		{Action: "download", RomID: 303, SaveID: ptrInt(235), FileName: "P [a].srm", Slot: ptrStr("autosave"), ServerUpdatedAt: ptrTime(now)},
+		{Action: "download", RomID: 303, SaveID: ptrInt(228), FileName: "P [q].srm", Slot: ptrStr("quicksave"), ServerUpdatedAt: ptrTime(now)},
+	}
+
+	items := mapOperationsToItems(ops, nil, resolved, nil, nil, nil)
+
+	if len(items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(items))
+	}
+	it := items[0]
+	if len(it.AvailableSlots) != 2 || it.AvailableSlots[0] != "autosave" || it.AvailableSlots[1] != "quicksave" {
+		t.Errorf("AvailableSlots = %v, want [autosave quicksave]", it.AvailableSlots)
+	}
+	if len(it.AllRemoteSaves) != 2 {
+		t.Errorf("AllRemoteSaves = %d, want 2", len(it.AllRemoteSaves))
+	}
+}
+
+func TestMapOperationsToItems_LocalSaveDoesNotOfferMultiSlot(t *testing.T) {
+	// ROM already has a local save in "autosave"; the "quicksave" download is skipped by
+	// the managed-slot gate, so no picker is offered.
+	local := []LocalSave{{RomID: 303, FileName: "Pokemon.srm", FilePath: "/x/Pokemon.srm", FSSlug: "gba"}}
+	recorded := map[saveKey]string{{romID: 303, fileName: "Pokemon.srm"}: "autosave"}
+	now := time.Now()
+	ops := []romm.SyncOperationSchema{
+		{Action: "download", RomID: 303, SaveID: ptrInt(228), FileName: "P [q].srm", Slot: ptrStr("quicksave"), ServerUpdatedAt: ptrTime(now)},
+	}
+
+	items := mapOperationsToItems(ops, local, nil, nil, nil, recorded)
+	if len(items) != 0 {
+		t.Fatalf("expected other-slot download skipped (no picker), got %d items", len(items))
+	}
+}
+
 // --- buildClientSaveStates tests ---
 
 func TestBuildClientSaveStates_FileSlotEmulatorHash(t *testing.T) {

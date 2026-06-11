@@ -164,15 +164,73 @@ func buildDiscoveryItems(uncovered map[int]cfw.LocalRomFile, savesByRom map[int]
 			"romID", romID, "romName", rom.RomName, "saveID", best.ID,
 			"file", best.FileName, "fetched", len(saves))
 
-		items = append(items, SyncItem{
+		item := SyncItem{
 			LocalSave:  ls,
 			RemoteSave: best,
 			TargetSlot: preferredSlot,
 			Action:     ActionDownload,
-		})
+		}
+		// First-time multi-slot pull: offer the slot choice to the UI. Discovery only
+		// runs for ROMs with no local save, so every multi-slot case is first-time.
+		if slots := distinctSaveSlots(saves); len(slots) > 1 {
+			item.AvailableSlots = slots
+			item.AllRemoteSaves = saves
+		}
+
+		items = append(items, item)
 	}
 
 	return items
+}
+
+// distinctSaveSlots returns the sorted distinct slot names across saves (nil/empty slot
+// counts as "autosave").
+func distinctSaveSlots(saves []romm.Save) []string {
+	set := make(map[string]bool)
+	for _, s := range saves {
+		slot := "autosave"
+		if s.Slot != nil && *s.Slot != "" {
+			slot = *s.Slot
+		}
+		set[slot] = true
+	}
+	out := make([]string, 0, len(set))
+	for s := range set {
+		out = append(out, s)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// distinctOpSlots returns the sorted distinct slot names across download ops (nil/empty
+// slot counts as "autosave").
+func distinctOpSlots(ops []romm.SyncOperationSchema) []string {
+	set := make(map[string]bool)
+	for _, op := range ops {
+		slot := "autosave"
+		if op.Slot != nil && *op.Slot != "" {
+			slot = *op.Slot
+		}
+		set[slot] = true
+	}
+	out := make([]string, 0, len(set))
+	for s := range set {
+		out = append(out, s)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// opStubsToSaves builds romm.Save stubs from download ops for slot re-selection by the
+// multi-slot picker.
+func opStubsToSaves(ops []romm.SyncOperationSchema) []romm.Save {
+	saves := make([]romm.Save, 0, len(ops))
+	for _, op := range ops {
+		if stub := buildRemoteSaveStub(op); stub != nil {
+			saves = append(saves, *stub)
+		}
+	}
+	return saves
 }
 
 // discoverRemoteOnlySaves finds locally-present ROMs that have no local save and were
@@ -378,12 +436,25 @@ func mapOperationsToItems(
 		if !ok {
 			ls = resolveLocalSaveForDownload(op, resolvedRoms, cm)
 		}
-		items = append(items, SyncItem{
+		item := SyncItem{
 			LocalSave:  ls,
 			RemoteSave: buildRemoteSaveStub(op),
 			TargetSlot: preferred,
 			Action:     ActionDownload,
-		})
+		}
+
+		// First-time multi-slot pull: if this ROM has no local save yet and the server
+		// offers it in more than one slot, surface the choice to the UI instead of
+		// silently picking. (A ROM that already has a local save was filtered to its
+		// managed slot above, so it never reaches here multi-slot.)
+		if _, hasLocal := localByRom[romID]; !hasLocal {
+			if slots := distinctOpSlots(dops); len(slots) > 1 {
+				item.AvailableSlots = slots
+				item.AllRemoteSaves = opStubsToSaves(dops)
+			}
+		}
+
+		items = append(items, item)
 	}
 
 	return items
@@ -524,6 +595,25 @@ func RegisterDevice(client *romm.Client, name string) (romm.Device, error) {
 		}
 	}
 	return dev, nil
+}
+
+// RefreshDeviceVersion updates the server's record of this device's client_version when
+// the running grout version differs from lastReported (i.e. the app was upgraded since
+// the version was last sent). Returns the version now reported and whether an update was
+// sent. Best-effort: a failure is logged and leaves lastReported unchanged.
+func RefreshDeviceVersion(client *romm.Client, deviceID, lastReported string) (string, bool) {
+	current := version.Get().Version
+	if deviceID == "" || current == "" || current == lastReported {
+		return lastReported, false
+	}
+	if _, err := client.UpdateDevice(deviceID, romm.UpdateDeviceRequest{ClientVersion: current}); err != nil {
+		gaba.GetLogger().Warn("Failed to refresh device client_version on upgrade",
+			"deviceID", deviceID, "from", lastReported, "to", current, "error", err)
+		return lastReported, false
+	}
+	gaba.GetLogger().Debug("Refreshed device client_version after upgrade",
+		"deviceID", deviceID, "from", lastReported, "to", current)
+	return current, true
 }
 
 func ScanSaves(config *internal.Config) []LocalSave {
