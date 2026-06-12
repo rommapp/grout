@@ -1032,10 +1032,13 @@ const (
 	uploadConflict
 )
 
-func upload(client *romm.Client, deviceID string, item *SyncItem) uploadOutcome {
-	logger := gaba.GetLogger()
-	logger.Debug("Uploading save", "romID", item.LocalSave.RomID, "romName", item.LocalSave.RomName, "file", item.LocalSave.FilePath)
-
+// buildUploadQuery derives the /api/saves upload query for a sync item. Overwrite is set
+// ONLY when the user explicitly chose keep-local (ForceOverwrite); a normal upload op goes
+// out with overwrite=false so the server's optimistic-concurrency guard can return 409 if
+// the slot changed since negotiate (which grout then surfaces as a conflict). This mirrors
+// Argosy and the server's intent — forcing on every upload would clobber a concurrent
+// write from another device.
+func buildUploadQuery(deviceID string, item *SyncItem) romm.UploadSaveQuery {
 	slot := "autosave"
 	if item.TargetSlot != "" {
 		slot = item.TargetSlot
@@ -1056,12 +1059,20 @@ func upload(client *romm.Client, deviceID string, item *SyncItem) uploadOutcome 
 		DeviceID:  deviceID,
 		Emulator:  emulator,
 		Slot:      slot,
-		Overwrite: item.ForceOverwrite || item.RemoteSave != nil,
+		Overwrite: item.ForceOverwrite,
 	}
 	if slot == "autosave" {
 		query.Autocleanup = true
 		query.AutocleanupLimit = 10
 	}
+	return query
+}
+
+func upload(client *romm.Client, deviceID string, item *SyncItem) uploadOutcome {
+	logger := gaba.GetLogger()
+	logger.Debug("Uploading save", "romID", item.LocalSave.RomID, "romName", item.LocalSave.RomName, "file", item.LocalSave.FilePath)
+
+	query := buildUploadQuery(deviceID, item)
 
 	uploadPath := item.LocalSave.FilePath
 	if item.LocalSave.IsDirectorySave {
@@ -1100,7 +1111,7 @@ func upload(client *romm.Client, deviceID string, item *SyncItem) uploadOutcome 
 
 	// Record the synced state so the next scan reports this save under the same slot.
 	hash, _ := saveContentHash(item.LocalSave)
-	recordSaveState(deviceID, item.LocalSave.RomID, item.LocalSave.FileName, slot, uploadedSave.ID, hash)
+	recordSaveState(deviceID, item.LocalSave.RomID, item.LocalSave.FileName, query.Slot, uploadedSave.ID, hash)
 
 	logger.Debug("Upload successful", "romID", item.LocalSave.RomID)
 	return uploadOK

@@ -282,6 +282,43 @@ func TestMapOperationsToItems_AcceptsSameSlotDownloadWhenLocalSaveExists(t *test
 	}
 }
 
+func TestBuildUploadQuery_OverwriteOnlyWhenForced(t *testing.T) {
+	// A normal upload op (orchestrator said client is newer) carries a RemoteSave stub but
+	// must NOT force overwrite — overwrite=false lets the server's 409 guard catch races.
+	normal := &SyncItem{
+		LocalSave:  LocalSave{RomID: 303, EmulatorDir: "/saves/mGBA"},
+		RemoteSave: &romm.Save{ID: 235},
+		TargetSlot: "autosave",
+		Action:     ActionUpload,
+	}
+	if q := buildUploadQuery("dev-1", normal); q.Overwrite {
+		t.Errorf("normal upload must send overwrite=false, got true")
+	}
+
+	// A conflict resolved as keep-local sets ForceOverwrite → overwrite=true.
+	forced := &SyncItem{
+		LocalSave:      LocalSave{RomID: 303, EmulatorDir: "/saves/mGBA"},
+		RemoteSave:     &romm.Save{ID: 235},
+		TargetSlot:     "autosave",
+		ForceOverwrite: true,
+		Action:         ActionUpload,
+	}
+	if q := buildUploadQuery("dev-1", forced); !q.Overwrite {
+		t.Errorf("keep-local upload must send overwrite=true, got false")
+	}
+}
+
+func TestBuildUploadQuery_AutocleanupOnlyForAutosave(t *testing.T) {
+	autosave := &SyncItem{LocalSave: LocalSave{RomID: 1, EmulatorDir: "/s/mGBA"}, TargetSlot: "autosave"}
+	if q := buildUploadQuery("d", autosave); !q.Autocleanup || q.AutocleanupLimit != 10 {
+		t.Errorf("autosave slot should enable autocleanup limit 10, got %+v", q)
+	}
+	named := &SyncItem{LocalSave: LocalSave{RomID: 1, EmulatorDir: "/s/mGBA"}, TargetSlot: "quicksave"}
+	if q := buildUploadQuery("d", named); q.Autocleanup {
+		t.Errorf("named slot should not enable autocleanup, got %+v", q)
+	}
+}
+
 func TestMapOperationsToItems_UploadMatchesBySlotNotFilename(t *testing.T) {
 	// The server datetime-tags slot saves, so the upload op's file_name does not equal
 	// grout's plain local filename. The op must still pair to the local save by
