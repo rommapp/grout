@@ -95,28 +95,6 @@ func ResolveSaveSync(client *romm.Client, config *internal.Config, deviceID stri
 
 	logger.Debug("Total sync items resolved", "count", len(items))
 
-	// TEMP diagnostic: final per-game decision. Remove once save sync is validated.
-	for i := range items {
-		it := items[i]
-		remoteID := 0
-		remoteSlot := "<nil>"
-		if it.RemoteSave != nil {
-			remoteID = it.RemoteSave.ID
-			if it.RemoteSave.Slot != nil {
-				remoteSlot = *it.RemoteSave.Slot
-			}
-		}
-		logger.Debug("Sync decision",
-			"romID", it.LocalSave.RomID,
-			"romName", it.LocalSave.RomName,
-			"action", it.Action.String(),
-			"targetSlot", it.TargetSlot,
-			"remoteSaveID", remoteID,
-			"remoteSlot", remoteSlot,
-			"localFile", it.LocalSave.FileName,
-			"hasLocalPath", it.LocalSave.FilePath != "")
-	}
-
 	return SyncResult{Items: items, SessionID: resp.SessionID}, nil
 }
 
@@ -135,9 +113,6 @@ func buildDiscoveryItems(uncovered map[int]cfw.LocalRomFile, savesByRom map[int]
 	for romID, rom := range uncovered {
 		saves := savesByRom[romID]
 		if len(saves) == 0 {
-			// TEMP diagnostic: downloaded game with no local save AND no server save.
-			logger.Debug("Discovery: no server saves for ROM",
-				"romID", romID, "romName", rom.RomName)
 			continue
 		}
 
