@@ -282,6 +282,58 @@ func TestMapOperationsToItems_AcceptsSameSlotDownloadWhenLocalSaveExists(t *test
 	}
 }
 
+func TestMapOperationsToItems_UploadMatchesBySlotNotFilename(t *testing.T) {
+	// The server datetime-tags slot saves, so the upload op's file_name does not equal
+	// grout's plain local filename. The op must still pair to the local save by
+	// (rom_id, slot) — matching the orchestrator's and Argosy's pairing key.
+	local := []LocalSave{{RomID: 303, FileName: "Pokemon.srm", FilePath: "/x/Pokemon.srm", FSSlug: "gba"}}
+	ops := []romm.SyncOperationSchema{
+		{
+			Action: "upload", RomID: 303, SaveID: ptrInt(235),
+			FileName:        "Pokemon [2026-06-09_14-49-22].srm", // server-tagged, != local name
+			Slot:            ptrStr("autosave"),
+			ServerUpdatedAt: ptrTime(time.Now()),
+		},
+	}
+
+	items := mapOperationsToItems(ops, local, nil, nil, nil, nil)
+
+	if len(items) != 1 {
+		t.Fatalf("expected 1 upload item matched by slot, got %d", len(items))
+	}
+	if items[0].Action != ActionUpload {
+		t.Errorf("action = %v, want upload", items[0].Action)
+	}
+	if items[0].LocalSave.FileName != "Pokemon.srm" {
+		t.Errorf("matched wrong local save: %q", items[0].LocalSave.FileName)
+	}
+	if items[0].TargetSlot != "autosave" {
+		t.Errorf("target slot = %q, want autosave", items[0].TargetSlot)
+	}
+}
+
+func TestMapOperationsToItems_ConflictMatchesBySlot(t *testing.T) {
+	local := []LocalSave{{RomID: 7, FileName: "Mario.srm", FilePath: "/x/Mario.srm", FSSlug: "snes"}}
+	recorded := map[saveKey]string{{romID: 7, fileName: "Mario.srm"}: "quicksave"}
+	ops := []romm.SyncOperationSchema{
+		{
+			Action: "conflict", RomID: 7, SaveID: ptrInt(99),
+			FileName:        "Mario [2026-06-01_10-00-00].srm",
+			Slot:            ptrStr("quicksave"),
+			ServerUpdatedAt: ptrTime(time.Now()),
+		},
+	}
+
+	items := mapOperationsToItems(ops, local, nil, nil, nil, recorded)
+
+	if len(items) != 1 || items[0].Action != ActionConflict {
+		t.Fatalf("expected 1 conflict item, got %+v", items)
+	}
+	if items[0].TargetSlot != "quicksave" {
+		t.Errorf("target slot = %q, want quicksave", items[0].TargetSlot)
+	}
+}
+
 func TestMapOperationsToItems_FirstTimeMultiSlotOffersChoice(t *testing.T) {
 	// rom 303 is installed but has no local save; the server offers two slots. The item
 	// should carry AvailableSlots + AllRemoteSaves so the UI can prompt for a choice.

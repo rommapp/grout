@@ -300,12 +300,25 @@ func mapOperationsToItems(
 		romID    int
 		fileName string
 	}
+	type romSlotKey struct {
+		romID int
+		slot  string
+	}
 	byKey := make(map[localKey]LocalSave, len(localSaves))
+	// byRomSlot indexes local saves by (rom_id, reported slot) — the same key the RomM
+	// orchestrator and Argosy pair on. We must NOT match upload/conflict ops by filename:
+	// the server datetime-tags slot saves (e.g. "Name [2026-06-09_14-49-22].srm") while
+	// grout's local file keeps the plain name, so a filename match misses every time.
+	byRomSlot := make(map[romSlotKey]LocalSave, len(localSaves))
 	// localByRom holds one local save per ROM. grout manages a single save (one slot)
 	// per ROM, so a ROM that already has a local save only ever syncs that save's slot.
 	localByRom := make(map[int]LocalSave, len(localSaves))
 	for _, ls := range localSaves {
 		byKey[localKey{ls.RomID, ls.FileName}] = ls
+		rsk := romSlotKey{ls.RomID, resolveReportedSlot(ls, config, recordedSlots)}
+		if _, ok := byRomSlot[rsk]; !ok {
+			byRomSlot[rsk] = ls
+		}
 		if _, ok := localByRom[ls.RomID]; !ok {
 			localByRom[ls.RomID] = ls
 		}
@@ -331,18 +344,19 @@ func mapOperationsToItems(
 	for _, op := range ops {
 		switch op.Action {
 		case "upload":
-			ls, ok := byKey[localKey{op.RomID, op.FileName}]
+			// Match by (rom_id, slot) — the orchestrator's pairing key — not by filename,
+			// which diverges once the server datetime-tags the stored save.
+			slot := reportedOpSlot(op)
+			ls, ok := byRomSlot[romSlotKey{op.RomID, slot}]
 			if !ok {
-				logger.Warn("Negotiate upload for unknown local save", "romID", op.RomID, "file", op.FileName)
+				logger.Warn("Negotiate upload op has no local save in the reported slot",
+					"romID", op.RomID, "slot", slot, "file", op.FileName)
 				continue
 			}
 			items = append(items, SyncItem{
 				LocalSave:  ls,
 				RemoteSave: buildRemoteSaveStub(op),
-				// Upload to the slot we reported to the server (recorded slot / explicit
-				// pref / autosave), not just GetSlotPreference — otherwise a save synced
-				// under a recorded named slot would upload to "autosave" and duplicate.
-				TargetSlot: resolveReportedSlot(ls, config, recordedSlots),
+				TargetSlot: slot,
 				Action:     ActionUpload,
 			})
 
@@ -361,10 +375,7 @@ func mapOperationsToItems(
 			// it would clobber the local save and flip-flop on every sync. Skip it.
 			if ls, ok := localByRom[op.RomID]; ok {
 				managedSlot := resolveReportedSlot(ls, config, recordedSlots)
-				opSlot := "autosave"
-				if op.Slot != nil && *op.Slot != "" {
-					opSlot = *op.Slot
-				}
+				opSlot := reportedOpSlot(op)
 				if opSlot != managedSlot {
 					logger.Debug("Skipping download: ROM's local save is in a different slot",
 						"romID", op.RomID, "opSlot", opSlot, "managedSlot", managedSlot, "file", op.FileName)
@@ -379,15 +390,17 @@ func mapOperationsToItems(
 				logger.Error("Negotiate conflict op missing save identity (no save_id/server_updated_at)", "romID", op.RomID, "file", op.FileName)
 				continue
 			}
-			ls, ok := byKey[localKey{op.RomID, op.FileName}]
+			slot := reportedOpSlot(op)
+			ls, ok := byRomSlot[romSlotKey{op.RomID, slot}]
 			if !ok {
-				logger.Warn("Negotiate conflict for unknown local save", "romID", op.RomID, "file", op.FileName)
+				logger.Warn("Negotiate conflict op has no local save in the reported slot",
+					"romID", op.RomID, "slot", slot, "file", op.FileName)
 				continue
 			}
 			items = append(items, SyncItem{
 				LocalSave:  ls,
 				RemoteSave: stub,
-				TargetSlot: resolveReportedSlot(ls, config, recordedSlots),
+				TargetSlot: slot,
 				Action:     ActionConflict,
 			})
 
@@ -433,6 +446,15 @@ func mapOperationsToItems(
 	}
 
 	return items
+}
+
+// reportedOpSlot returns the slot a negotiate op is paired on, treating a nil/empty slot
+// as the canonical "autosave" default (the same slot grout reports its saves under).
+func reportedOpSlot(op romm.SyncOperationSchema) string {
+	if op.Slot != nil && *op.Slot != "" {
+		return *op.Slot
+	}
+	return "autosave"
 }
 
 // pickDownloadOp chooses one download op for a ROM that has saves in possibly
