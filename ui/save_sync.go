@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"fmt"
 	"grout/internal"
 	"grout/romm"
@@ -247,7 +248,16 @@ func (s *SaveSyncScreen) resolveMultiSlotDownloads(config *internal.Config, item
 		optionItems,
 	)
 	if err != nil {
-		return items // Cancelled — proceed with defaults
+		// Cancelled (or picker error) — skip the downloads the user never confirmed a
+		// slot for rather than silently pulling a default slot.
+		if !errors.Is(err, gaba.ErrCancelled) {
+			gaba.GetLogger().Warn("Slot selector failed; skipping unconfirmed downloads", "error", err)
+		}
+		drop := make(map[int]bool, len(choices))
+		for _, c := range choices {
+			drop[c.itemIndex] = true
+		}
+		return dropSyncItems(items, drop)
 	}
 
 	// Apply selections
@@ -270,6 +280,21 @@ func (s *SaveSyncScreen) resolveMultiSlotDownloads(config *internal.Config, item
 		gaba.GetLogger().Warn("Failed to save slot preferences", "error", err)
 	}
 	return items
+}
+
+// dropSyncItems returns items with the indexed entries removed. Used when the user
+// cancels slot selection so unconfirmed multi-slot downloads are skipped entirely.
+func dropSyncItems(items []sync.SyncItem, drop map[int]bool) []sync.SyncItem {
+	if len(drop) == 0 {
+		return items
+	}
+	kept := make([]sync.SyncItem, 0, len(items))
+	for i, it := range items {
+		if !drop[i] {
+			kept = append(kept, it)
+		}
+	}
+	return kept
 }
 
 func (s *SaveSyncScreen) showReport(report sync.SyncReport) {
