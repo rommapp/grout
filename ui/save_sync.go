@@ -186,8 +186,6 @@ func (s *SaveSyncScreen) executeNewSlotUpload(client *romm.Client, config *inter
 // resolveMultiSlotDownloads shows a slot picker for first-time downloads that have
 // multiple slots on the server. Returns the (potentially modified) items slice.
 func (s *SaveSyncScreen) resolveMultiSlotDownloads(config *internal.Config, items []sync.SyncItem) []sync.SyncItem {
-	defaultLabel := i18n.Localize(&goi18n.Message{ID: "common_default", Other: "Default"}, nil)
-
 	// Collect items that need slot selection
 	type slotChoice struct {
 		itemIndex int
@@ -214,11 +212,9 @@ func (s *SaveSyncScreen) resolveMultiSlotDownloads(config *internal.Config, item
 	for _, c := range choices {
 		options := make([]gaba.Option, 0, len(c.slots))
 		for _, slot := range c.slots {
-			displayName := slot
-			if slot == "autosave" {
-				displayName = defaultLabel
-			}
-			options = append(options, gaba.Option{DisplayName: displayName, Value: slot})
+			// Show the slot's real name (incl. "autosave") so it can't be confused with
+			// a server slot literally named "default"/"Default".
+			options = append(options, gaba.Option{DisplayName: slot, Value: slot})
 		}
 
 		currentPref := config.GetSlotPreference(items[c.itemIndex].LocalSave.RomID)
