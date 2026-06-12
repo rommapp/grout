@@ -70,6 +70,7 @@ func (s *SaveConflictScreen) Draw(input SaveConflictInput) (SaveConflictOutput, 
 }
 
 func (s *SaveConflictScreen) buildMenuItems(conflicts []sync.SyncItem) []gaba.ItemWithOptions {
+	skip := i18n.Localize(&goi18n.Message{ID: "save_conflict_skip", Other: "Skip"}, nil)
 	keepLocal := i18n.Localize(&goi18n.Message{ID: "save_conflict_keep_local", Other: "Keep Local"}, nil)
 	keepRemote := i18n.Localize(&goi18n.Message{ID: "save_conflict_keep_remote", Other: "Keep Remote"}, nil)
 
@@ -78,7 +79,10 @@ func (s *SaveConflictScreen) buildMenuItems(conflicts []sync.SyncItem) []gaba.It
 	for _, item := range conflicts {
 		items = append(items, gaba.ItemWithOptions{
 			Item: gaba.MenuItem{Text: item.LocalSave.RomName},
+			// Skip is the default: a conflict is only acted on if the user actively picks
+			// Keep Local or Keep Remote, so confirming through never silently overwrites.
 			Options: []gaba.Option{
+				{DisplayName: skip, Value: "skip"},
 				{DisplayName: keepLocal, Value: "local"},
 				{DisplayName: keepRemote, Value: "remote"},
 			},
@@ -102,6 +106,8 @@ func (s *SaveConflictScreen) applyResolutions(conflicts []sync.SyncItem, resultI
 				conflicts[i].ForceOverwrite = true
 			case "remote":
 				conflicts[i].Resolve(sync.ActionDownload)
+			case "skip":
+				// Leave it as ActionConflict — not executed this run, re-offered next sync.
 			}
 		}
 	}
