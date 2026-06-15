@@ -11,6 +11,7 @@ fi
 
 export CFW=BATOCERA
 export LD_LIBRARY_PATH="$CUR_DIR/Grout/lib:$LD_LIBRARY_PATH"
+chmod +x ./grout
 
 ./grout
 
