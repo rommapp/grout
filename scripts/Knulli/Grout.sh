@@ -11,6 +11,7 @@ fi
 
 export CFW=KNULLI
 export LD_LIBRARY_PATH=$CUR_DIR/lib:$LD_LIBRARY_PATH
+chmod +x ./grout
 
 ./grout
 
