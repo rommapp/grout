@@ -183,7 +183,7 @@ func TestMapOperationsToItems_DropsNoOpAndMapsActions(t *testing.T) {
 	// rom 3 has no local save, so it must be present as an installed ROM for its
 	// download to be accepted (downloads are gated on local ROM presence).
 	resolved := map[int]cfw.LocalRomFile{3: {RomID: 3, RomName: "Metroid", FSSlug: "snes", FileName: "Metroid.gba"}}
-	items := mapOperationsToItems(ops, local, resolved, nil, nil, nil)
+	items := mapOperationsToItems(ops, local, resolved, nil, nil, nil, nil)
 
 	byAction := map[SyncAction]SyncItem{}
 	for _, it := range items {
@@ -212,7 +212,7 @@ func TestMapOperationsToItems_DropsDownloadWithoutSaveIdentity(t *testing.T) {
 	ops := []romm.SyncOperationSchema{
 		{Action: "download", RomID: 5, FileName: "x.srm"}, // no SaveID, no ServerUpdatedAt
 	}
-	items := mapOperationsToItems(ops, nil, resolved, nil, nil, nil)
+	items := mapOperationsToItems(ops, nil, resolved, nil, nil, nil, nil)
 	if len(items) != 0 {
 		t.Errorf("expected malformed download op to be dropped, got %d items", len(items))
 	}
@@ -232,7 +232,7 @@ func TestMapOperationsToItems_DownloadGatedToInstalledAndDeduped(t *testing.T) {
 		{Action: "download", RomID: 10, SaveID: ptrInt(234), FileName: "AW [a].srm", Slot: ptrStr("autosave"), ServerUpdatedAt: ptrTime(now)},
 	}
 
-	items := mapOperationsToItems(ops, nil, resolved, nil, nil, nil)
+	items := mapOperationsToItems(ops, nil, resolved, nil, nil, nil, nil)
 
 	if len(items) != 1 {
 		t.Fatalf("expected 1 item (installed + deduped), got %d", len(items))
@@ -259,7 +259,7 @@ func TestMapOperationsToItems_SkipsOtherSlotDownloadWhenLocalSaveExists(t *testi
 		{Action: "download", RomID: 303, SaveID: ptrInt(228), FileName: "P [d].srm", Slot: ptrStr("default"), ServerUpdatedAt: ptrTime(time.Now())},
 	}
 
-	items := mapOperationsToItems(ops, local, nil, nil, nil, recorded)
+	items := mapOperationsToItems(ops, local, nil, nil, nil, recorded, nil)
 
 	if len(items) != 0 {
 		t.Fatalf("expected other-slot download to be skipped, got %d", len(items))
@@ -275,7 +275,7 @@ func TestMapOperationsToItems_AcceptsSameSlotDownloadWhenLocalSaveExists(t *test
 		{Action: "download", RomID: 303, SaveID: ptrInt(235), FileName: "P [a].srm", Slot: ptrStr("autosave"), ServerUpdatedAt: ptrTime(time.Now())},
 	}
 
-	items := mapOperationsToItems(ops, local, nil, nil, nil, recorded)
+	items := mapOperationsToItems(ops, local, nil, nil, nil, recorded, nil)
 
 	if len(items) != 1 || items[0].RemoteSave == nil || items[0].RemoteSave.ID != 235 {
 		t.Fatalf("expected same-slot download to be applied, got %+v", items)
@@ -333,7 +333,7 @@ func TestMapOperationsToItems_UploadMatchesBySlotNotFilename(t *testing.T) {
 		},
 	}
 
-	items := mapOperationsToItems(ops, local, nil, nil, nil, nil)
+	items := mapOperationsToItems(ops, local, nil, nil, nil, nil, nil)
 
 	if len(items) != 1 {
 		t.Fatalf("expected 1 upload item matched by slot, got %d", len(items))
@@ -361,7 +361,7 @@ func TestMapOperationsToItems_ConflictMatchesBySlot(t *testing.T) {
 		},
 	}
 
-	items := mapOperationsToItems(ops, local, nil, nil, nil, recorded)
+	items := mapOperationsToItems(ops, local, nil, nil, nil, recorded, nil)
 
 	if len(items) != 1 || items[0].Action != ActionConflict {
 		t.Fatalf("expected 1 conflict item, got %+v", items)
@@ -383,7 +383,7 @@ func TestMapOperationsToItems_FirstTimeMultiSlotOffersChoice(t *testing.T) {
 		{Action: "download", RomID: 303, SaveID: ptrInt(228), FileName: "P [q].srm", Slot: ptrStr("quicksave"), ServerUpdatedAt: ptrTime(now)},
 	}
 
-	items := mapOperationsToItems(ops, nil, resolved, nil, nil, nil)
+	items := mapOperationsToItems(ops, nil, resolved, nil, nil, nil, nil)
 
 	if len(items) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(items))
@@ -407,7 +407,7 @@ func TestMapOperationsToItems_LocalSaveDoesNotOfferMultiSlot(t *testing.T) {
 		{Action: "download", RomID: 303, SaveID: ptrInt(228), FileName: "P [q].srm", Slot: ptrStr("quicksave"), ServerUpdatedAt: ptrTime(now)},
 	}
 
-	items := mapOperationsToItems(ops, local, nil, nil, nil, recorded)
+	items := mapOperationsToItems(ops, local, nil, nil, nil, recorded, nil)
 	if len(items) != 0 {
 		t.Fatalf("expected other-slot download skipped (no picker), got %d items", len(items))
 	}

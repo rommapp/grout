@@ -36,6 +36,7 @@ func ResolveSaveSync(client *romm.Client, config *internal.Config, deviceID stri
 	logger.Debug("Scanned local saves", "count", len(localSaves))
 
 	recordedSlots := loadRecordedSlots(deviceID)
+	recordedHashes := loadRecordedHashes(deviceID)
 	states := buildClientSaveStates(localSaves, config, recordedSlots)
 
 	// Diagnostic: log exactly what we send the orchestrator (rom/slot/hash).
@@ -79,7 +80,7 @@ func ResolveSaveSync(client *romm.Client, config *internal.Config, deviceID stri
 	resolvedRoms := ResolveLocalRoms(scan)
 	cm := cache.GetCacheManager()
 
-	items := mapOperationsToItems(resp.Operations, localSaves, resolvedRoms, cm, config, recordedSlots)
+	items := mapOperationsToItems(resp.Operations, localSaves, resolvedRoms, cm, config, recordedSlots, recordedHashes)
 
 	// Discovery fallback: the orchestrator only volunteers downloads for non-null-slot
 	// saves the device hasn't already synced, and never surfaces null-slot ("archival" /
@@ -293,6 +294,7 @@ func mapOperationsToItems(
 	cm *cache.Manager,
 	config *internal.Config,
 	recordedSlots map[saveKey]string,
+	recordedHashes map[saveKey]string,
 ) []SyncItem {
 	logger := gaba.GetLogger()
 
@@ -352,6 +354,20 @@ func mapOperationsToItems(
 				logger.Warn("Negotiate upload op has no local save in the reported slot",
 					"romID", op.RomID, "slot", slot, "file", op.FileName)
 				continue
+			}
+			// Suppress a redundant promotion-upload: when the local save's content is
+			// byte-identical to what we previously downloaded from the server (recorded
+			// hash matches), the content is already on the server — just under a slot
+			// negotiate doesn't pair on (e.g. a null-slot "archival" save). Re-uploading
+			// it now would only duplicate it (the "uploads everything I just downloaded"
+			// churn). It uploads later once the user actually changes the save and the
+			// hash diverges.
+			if rec, ok := recordedHashes[saveKey{ls.RomID, ls.FileName}]; ok && rec != "" {
+				if localHash, err := saveContentHash(ls); err == nil && localHash == rec {
+					logger.Debug("Skipping upload: content unchanged since download (already on server)",
+						"romID", op.RomID, "slot", slot, "file", ls.FileName)
+					continue
+				}
 			}
 			items = append(items, SyncItem{
 				LocalSave:  ls,
@@ -798,6 +814,25 @@ func loadRecordedSlots(deviceID string) map[saveKey]string {
 	return out
 }
 
+// loadRecordedHashes reads the persisted save-sync state for a device into a
+// content-hash lookup keyed by (rom_id, file_name). Used to suppress re-uploading a
+// downloaded save whose content the user hasn't changed (it's already on the server).
+func loadRecordedHashes(deviceID string) map[saveKey]string {
+	cm := cache.GetCacheManager()
+	if cm == nil {
+		return nil
+	}
+	states := cm.GetSaveStates(deviceID)
+	if len(states) == 0 {
+		return nil
+	}
+	out := make(map[saveKey]string, len(states))
+	for _, s := range states {
+		out[saveKey{s.RomID, s.FileName}] = s.ContentHash
+	}
+	return out
+}
+
 // recordSaveState upserts the current synced state for a local save after a
 // successful upload or download, so subsequent syncs report the same slot/identity.
 func recordSaveState(deviceID string, romID int, fileName, slot string, saveID int, contentHash string) {
@@ -814,6 +849,22 @@ func recordSaveState(deviceID string, romID int, fileName, slot string, saveID i
 	}); err != nil {
 		gaba.GetLogger().Warn("Failed to record save state", "romID", romID, "file", fileName, "error", err)
 	}
+}
+
+// recordedDownloadFileName returns the on-disk basename the next ScanSaves will find
+// a freshly downloaded save under, so its save-state record (keyed on file_name) can
+// be looked up again. File saves are written under the plain basename of savePath; the
+// negotiate op's server filename is datetime-tagged and must NOT be used or the record
+// is never found, dropping the save back to the "autosave" fallback slot and triggering
+// a spurious re-upload. Directory (PSP) saves are scanned as gameID + ".zip".
+func recordedDownloadFileName(item SyncItem, savePath string) string {
+	if item.LocalSave.IsDirectorySave {
+		if item.LocalSave.GameID != "" {
+			return item.LocalSave.GameID + ".zip"
+		}
+		return item.LocalSave.FileName
+	}
+	return filepath.Base(savePath)
 }
 
 // resolveReportedSlot determines which slot a local save is reported under during
@@ -1269,16 +1320,14 @@ func download(client *romm.Client, config *internal.Config, deviceID string, ite
 
 	// Record synced state. A null-slot ("archival") save is recorded as "autosave"
 	// so the next sync promotes it to the autosave slot (matching Argosy); a named-slot
-	// save keeps its slot so it isn't re-uploaded elsewhere. fileName matches what was
-	// written to disk, so the next ScanSaves looks it up correctly.
+	// save keeps its slot so it isn't re-uploaded elsewhere. The record is keyed on the
+	// on-disk basename (NOT the server's datetime-tagged op.FileName) so the next
+	// ScanSaves looks it up correctly and keeps its slot identity.
 	recordSlot := "autosave"
 	if item.RemoteSave.Slot != nil && *item.RemoteSave.Slot != "" {
 		recordSlot = *item.RemoteSave.Slot
 	}
-	recordFileName := item.LocalSave.FileName
-	if recordFileName == "" {
-		recordFileName = filepath.Base(savePath)
-	}
+	recordFileName := recordedDownloadFileName(*item, savePath)
 	hash, _ := saveContentHash(LocalSave{
 		FilePath:        savePath,
 		IsDirectorySave: item.LocalSave.IsDirectorySave,
