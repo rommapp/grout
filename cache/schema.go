@@ -9,7 +9,7 @@ import (
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
 
-const schemaVersion = 11
+const schemaVersion = 12
 
 // nowUTC returns the current UTC time formatted as RFC3339 for consistent datetime storage
 func nowUTC() string {
@@ -89,7 +89,36 @@ func migrateIfNeeded(db *sql.DB) error {
 		}
 	}
 
+	// v12 keys local ROM/save matching on the on-disk file basename
+	// (expected_basename) instead of fs_name_no_ext, so nested-single-file ROMs
+	// resolve correctly (issue #242). Drop games + game-keyed tables so the next
+	// sync repopulates the new column.
+	if currentVersion < 12 {
+		if err := dropGamesForRepopulate(db); err != nil {
+			return fmt.Errorf("migration to v12 failed: %w", err)
+		}
+	}
+
 	return nil
+}
+
+// dropGamesForRepopulate drops the games table and its game-keyed junction and
+// collection-mapping tables so createTables can recreate them; the next sync refills.
+func dropGamesForRepopulate(db *sql.DB) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	tablesToDrop := []string{"games", "game_collections"}
+	tablesToDrop = append(tablesToDrop, junctionTables...)
+	for _, table := range tablesToDrop {
+		if _, err := tx.Exec("DROP TABLE IF EXISTS " + table); err != nil {
+			return fmt.Errorf("failed to drop table %s: %w", table, err)
+		}
+	}
+	return tx.Commit()
 }
 
 // migrateToV7 drops games and all related tables so they get
@@ -189,6 +218,7 @@ func createTables(db *sql.DB) error {
 			name TEXT NOT NULL,
 			fs_name TEXT DEFAULT '',
 			fs_name_no_ext TEXT DEFAULT '',
+			expected_basename TEXT DEFAULT '',
 			crc_hash TEXT DEFAULT '',
 			md5_hash TEXT DEFAULT '',
 			sha1_hash TEXT DEFAULT '',
@@ -222,6 +252,11 @@ func createTables(db *sql.DB) error {
 	}
 
 	_, err = tx.Exec(`CREATE INDEX IF NOT EXISTS idx_games_fs_lookup ON games(platform_fs_slug, fs_name_no_ext)`)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`CREATE INDEX IF NOT EXISTS idx_games_expected_basename ON games(platform_fs_slug, expected_basename)`)
 	if err != nil {
 		return err
 	}

@@ -36,8 +36,8 @@ func normalizeForMatch(s string) string {
 }
 
 // pickLenientMatch finds the best lenient match index for input among the parallel
-// fsNames/names slices, in precedence order: case-insensitive fs_name_no_ext, then
-// normalized fs_name_no_ext, then normalized rom name (title). Returns -1 if none.
+// fsNames/names slices, in precedence order: case-insensitive expected basename, then
+// normalized expected basename, then normalized rom name (title). Returns -1 if none.
 // Mirrors Argosy's tiered re-link matching so local files whose names differ from
 // RomM's only by case/punctuation/spacing still resolve.
 func pickLenientMatch(input string, fsNames, names []string) int {
@@ -262,12 +262,12 @@ func (cm *Manager) SavePlatformGames(platformID int, games []romm.Rom) error {
 
 	stmt, err := tx.Prepare(`
 		INSERT OR REPLACE INTO games (
-			id, platform_id, platform_fs_slug, name, fs_name, fs_name_no_ext,
+			id, platform_id, platform_fs_slug, name, fs_name, fs_name_no_ext, expected_basename,
 			crc_hash, md5_hash, sha1_hash,
 			player_count, first_release_date, average_rating, fs_size_bytes,
 			is_identified, is_unidentified, missing_from_fs, has_manual, has_multiple_files,
 			data_json, updated_at, cached_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`)
 	if err != nil {
 		return newCacheError("save", "games", GetPlatformCacheKey(platformID), err)
@@ -303,7 +303,7 @@ func (cm *Manager) SavePlatformGames(platformID int, games []romm.Rom) error {
 
 		_, err = stmt.Exec(
 			game.ID, game.PlatformID, game.PlatformFSSlug, game.Name,
-			game.FsName, game.FsNameNoExt, game.CrcHash, game.Md5Hash, game.Sha1Hash,
+			game.FsName, game.FsNameNoExt, game.CanonicalLocalBasename(), game.CrcHash, game.Md5Hash, game.Sha1Hash,
 			parseMaxPlayerCount(game), game.Metadatum.FirstReleaseDate, game.Metadatum.AverageRating,
 			game.FsSizeBytes, boolToInt(game.IsIdentified), boolToInt(game.IsUnidentified),
 			boolToInt(game.MissingFromFs), boolToInt(game.HasManual), boolToInt(game.HasMultipleFiles),
@@ -1108,7 +1108,12 @@ func (cm *Manager) GetDistinctTags(platformID int) ([]string, error) {
 	return cm.GetDistinctValues("tags", "game_tags", "tag_id", platformID)
 }
 
-func (cm *Manager) GetRomByFSLookup(fsSlug, fsNameNoExt string) (romm.Rom, error) {
+// GetRomByFSLookup resolves a local file (a downloaded ROM or an emulator save)
+// back to its RomM ROM. localBasename is the on-disk filename without extension;
+// it is matched against each ROM's expected_basename (CanonicalLocalBasename) — the
+// name the ROM actually occupies on disk — not fs_name_no_ext, which is the
+// containing-folder name for nested-single-file ROMs and would never match (#242).
+func (cm *Manager) GetRomByFSLookup(fsSlug, localBasename string) (romm.Rom, error) {
 	if cm == nil || !cm.initialized {
 		return romm.Rom{}, ErrNotInitialized
 	}
@@ -1118,12 +1123,12 @@ func (cm *Manager) GetRomByFSLookup(fsSlug, fsNameNoExt string) (romm.Rom, error
 
 	var dataJSON string
 	err := cm.db.QueryRow(`
-		SELECT data_json FROM games WHERE platform_fs_slug = ? AND fs_name_no_ext = ? LIMIT 1
-	`, fsSlug, fsNameNoExt).Scan(&dataJSON)
+		SELECT data_json FROM games WHERE platform_fs_slug = ? AND expected_basename = ? LIMIT 1
+	`, fsSlug, localBasename).Scan(&dataJSON)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			// Lenient fallback: case-insensitive / normalized match within the platform.
-			if game, ok := cm.lenientFSLookup(fsSlug, fsNameNoExt); ok {
+			if game, ok := cm.lenientFSLookup(fsSlug, localBasename); ok {
 				cm.stats.recordHit()
 				return game, nil
 			}
@@ -1144,15 +1149,15 @@ func (cm *Manager) GetRomByFSLookup(fsSlug, fsNameNoExt string) (romm.Rom, error
 	return game, nil
 }
 
-// lenientFSLookup loads the platform's games and resolves fsNameNoExt by
+// lenientFSLookup loads the platform's games and resolves localBasename by
 // case-insensitive / normalized matching (see pickLenientMatch). Caller must hold
 // cm.mu (read lock). Returns the matched ROM and true on success.
-func (cm *Manager) lenientFSLookup(fsSlug, fsNameNoExt string) (romm.Rom, bool) {
+func (cm *Manager) lenientFSLookup(fsSlug, localBasename string) (romm.Rom, bool) {
 	// Fetch only the lightweight match keys (not the full data_json blob) for the whole
 	// platform, then point-query just the matched row's JSON. Avoids loading hundreds of
 	// large JSON blobs that would be discarded.
 	rows, err := cm.db.Query(`
-		SELECT id, name, fs_name_no_ext FROM games WHERE platform_fs_slug = ?
+		SELECT id, name, expected_basename FROM games WHERE platform_fs_slug = ?
 	`, fsSlug)
 	if err != nil {
 		return romm.Rom{}, false
@@ -1171,7 +1176,7 @@ func (cm *Manager) lenientFSLookup(fsSlug, fsNameNoExt string) (romm.Rom, bool) 
 	}
 	rows.Close()
 
-	idx := pickLenientMatch(fsNameNoExt, fsNames, names)
+	idx := pickLenientMatch(localBasename, fsNames, names)
 	if idx < 0 {
 		return romm.Rom{}, false
 	}
@@ -1185,7 +1190,7 @@ func (cm *Manager) lenientFSLookup(fsSlug, fsNameNoExt string) (romm.Rom, bool) 
 		return romm.Rom{}, false
 	}
 	gaba.GetLogger().Debug("Lenient ROM match",
-		"input", fsNameNoExt, "matchedFsName", fsNames[idx], "matchedName", names[idx], "fsSlug", fsSlug)
+		"input", localBasename, "matchedBasename", fsNames[idx], "matchedName", names[idx], "fsSlug", fsSlug)
 	return game, true
 }
 

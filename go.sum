@@ -1,7 +1,7 @@
 github.com/BrandonKowalski/certifiable v1.3.0 h1:o4VbMMVqBQ8kYFqUFD7J3P6tJg9dVKWFVXx2GJdeAug=
 github.com/BrandonKowalski/certifiable v1.3.0/go.mod h1:fnYhDBTxp3ZeTYFkWDXSAo5m8ytUwGG/3dZHSzDH9UU=
-github.com/BrandonKowalski/gabagool/v2 v2.19.0 h1:NNPkHn+RAqpJKw1xJoOtzdcHk75aSWxl+ULfgSXpl1E=
-github.com/BrandonKowalski/gabagool/v2 v2.19.0/go.mod h1:Iq/YFTz7+w8O78IE21kOkHbg3a4ZD2mjcd0S/jVhI94=
+github.com/BrandonKowalski/gabagool/v2 v2.20.0 h1:MviQdJvcxu4URo3ZG6dJ5It3xKcP5wDt2kXW76upP28=
+github.com/BrandonKowalski/gabagool/v2 v2.20.0/go.mod h1:Iq/YFTz7+w8O78IE21kOkHbg3a4ZD2mjcd0S/jVhI94=
 github.com/BurntSushi/toml v1.6.0 h1:dRaEfpa2VI55EwlIW72hMRHdWouJeRF7TPYhI+AUQjk=
 github.com/BurntSushi/toml v1.6.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/andybalholm/brotli v1.2.1 h1:R+f5xP285VArJDRgowrfb9DqL18yVK0gKAW/F+eTWro=

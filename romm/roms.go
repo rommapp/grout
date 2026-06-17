@@ -217,6 +217,24 @@ func (r *Rom) GetGamePage(host Host) string {
 	return u
 }
 
+// CanonicalLocalBasename returns the extension-less filename this ROM occupies on
+// disk once downloaded — the single identity used to resolve local ROM files and
+// emulator save files back to this ROM. It mirrors the download path exactly:
+//   - multi-file ROMs are written/loaded through an m3u named after FsNameNoExt;
+//   - single-file ROMs (including RomM "nested single file" entries, where FsName
+//     is the containing folder rather than the file) are written using the
+//     individual file's name, so the folder-derived FsNameNoExt must NOT be used.
+//
+// Keying matching on this value (instead of fs_name_no_ext) fixes the case where a
+// downloaded ROM and its saves never matched their own cache row (issue #242).
+func (r *Rom) CanonicalLocalBasename() string {
+	if !r.HasMultipleFiles && len(r.Files) > 0 {
+		fileName := r.Files[0].FileName
+		return strings.TrimSuffix(fileName, filepath.Ext(fileName))
+	}
+	return r.FsNameNoExt
+}
+
 func (r *Rom) GetLocalPath(resolver PlatformDirResolver) string {
 	if r.PlatformFSSlug == "" {
 		return ""
