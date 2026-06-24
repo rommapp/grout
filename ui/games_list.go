@@ -259,6 +259,42 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 	options.SelectAllButton = gabaconst.VirtualButtonR1
 	options.SecondaryActionButton = gabaconst.VirtualButtonY
 
+	options.OnL1 = func(selectedIndex int) int {
+		if len(menuItems) == 0 {
+			return selectedIndex
+		}
+		currentLetter := getLetter(menuItems[selectedIndex])
+		firstIndexOfCurrent := selectedIndex
+		for firstIndexOfCurrent > 0 && getLetter(menuItems[firstIndexOfCurrent-1]) == currentLetter {
+			firstIndexOfCurrent--
+		}
+		if selectedIndex > firstIndexOfCurrent {
+			return firstIndexOfCurrent
+		}
+		if firstIndexOfCurrent == 0 {
+			return 0
+		}
+		prevLetter := getLetter(menuItems[firstIndexOfCurrent-1])
+		prevIndex := firstIndexOfCurrent - 1
+		for prevIndex > 0 && getLetter(menuItems[prevIndex-1]) == prevLetter {
+			prevIndex--
+		}
+		return prevIndex
+	}
+
+	options.OnR1 = func(selectedIndex int) int {
+		if len(menuItems) == 0 {
+			return selectedIndex
+		}
+		currentLetter := getLetter(menuItems[selectedIndex])
+		for i := selectedIndex + 1; i < len(menuItems); i++ {
+			if getLetter(menuItems[i]) != currentLetter {
+				return i
+			}
+		}
+		return selectedIndex
+	}
+
 	if hasBIOS && !internal.IsKidModeEnabled() {
 		options.TertiaryActionButton = gabaconst.VirtualButtonMenu
 	}
@@ -624,4 +660,15 @@ func filterList(itemList []romm.Rom, filter string) []romm.Rom {
 	})
 
 	return result
+}
+
+func getLetter(item gaba.MenuItem) rune {
+	if game, ok := item.Metadata.(romm.Rom); ok {
+		name := strings.TrimSpace(game.Name)
+		if len(name) == 0 {
+			return '?'
+		}
+		return []rune(strings.ToUpper(name))[0]
+	}
+	return '?'
 }
