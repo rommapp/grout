@@ -26,6 +26,7 @@ env:
 jobs:
   prepare:
     runs-on: ubuntu-22.04-arm
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -73,6 +74,7 @@ jobs:
   build-arm64:
     needs: prepare
     runs-on: ubuntu-22.04-arm
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -123,6 +125,7 @@ jobs:
   build-amd64:
     needs: prepare
     runs-on: ubuntu-22.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -159,6 +162,9 @@ jobs:
   build-x86:
     needs: prepare
     runs-on: ubuntu-22.04
+    # linux/386 runs natively on the x86_64 runner (IA32 compat), so no QEMU is
+    # needed — emulating it through qemu-i386 is slow and prone to hanging.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -169,9 +175,6 @@ jobs:
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -198,6 +201,7 @@ jobs:
   build-arm32:
     needs: prepare
     runs-on: ubuntu-22.04-arm
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -241,6 +245,7 @@ jobs:
   package-arm-universal:
     needs: [prepare, build-arm64, build-arm32]
     runs-on: ubuntu-22.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -277,6 +282,7 @@ jobs:
   release:
     needs: [prepare, build-arm64, build-amd64, build-x86, build-arm32, package-arm-universal]
     runs-on: ubuntu-22.04
+    timeout-minutes: 15
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -316,6 +322,7 @@ jobs:
   update-versions:
     needs: [prepare, release]
     runs-on: ubuntu-22.04
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:
