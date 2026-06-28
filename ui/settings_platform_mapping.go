@@ -43,6 +43,24 @@ func NewPlatformMappingScreen() *PlatformMappingScreen {
 	return &PlatformMappingScreen{}
 }
 
+// distinctPlatformValues returns the sorted, deduplicated, non-empty values produced
+// by get across platforms. An empty result means the corresponding metadata filter has
+// no options and should be hidden rather than shown as an "All"-only picker.
+func distinctPlatformValues(platforms []romm.Platform, get func(romm.Platform) string) []string {
+	set := make(map[string]bool)
+	for _, p := range platforms {
+		if v := get(p); v != "" {
+			set[v] = true
+		}
+	}
+	values := make([]string, 0, len(set))
+	for v := range set {
+		values = append(values, v)
+	}
+	slices.Sort(values)
+	return values
+}
+
 func (s *PlatformMappingScreen) Draw(input PlatformMappingInput) (PlatformMappingOutput, error) {
 	logger := gaba.GetLogger()
 	output := PlatformMappingOutput{Action: PlatformMappingActionBack, Mappings: make(map[string]internal.DirectoryMapping)}
@@ -223,17 +241,7 @@ func (s *PlatformMappingScreen) Draw(input PlatformMappingInput) (PlatformMappin
 				}
 
 				// Build dynamic list of categories present in rommPlatforms
-				categorySet := make(map[string]bool)
-				for _, p := range rommPlatforms {
-					if p.Category != "" {
-						categorySet[p.Category] = true
-					}
-				}
-				var uniqueCategories []string
-				for c := range categorySet {
-					uniqueCategories = append(uniqueCategories, c)
-				}
-				slices.Sort(uniqueCategories)
+				uniqueCategories := distinctPlatformValues(rommPlatforms, func(p romm.Platform) string { return p.Category })
 
 				categoryOptions := []gaba.Option{
 					{DisplayName: i18n.Localize(&goi18n.Message{ID: "filter_all", Other: "All"}, nil), Value: "all"},
@@ -250,17 +258,7 @@ func (s *PlatformMappingScreen) Draw(input PlatformMappingInput) (PlatformMappin
 				}
 
 				// Build dynamic list of families present in rommPlatforms
-				familySet := make(map[string]bool)
-				for _, p := range rommPlatforms {
-					if p.Family != "" {
-						familySet[p.Family] = true
-					}
-				}
-				var uniqueFamilies []string
-				for f := range familySet {
-					uniqueFamilies = append(uniqueFamilies, f)
-				}
-				slices.Sort(uniqueFamilies)
+				uniqueFamilies := distinctPlatformValues(rommPlatforms, func(p romm.Platform) string { return p.Family })
 
 				familyOptions := []gaba.Option{
 					{DisplayName: i18n.Localize(&goi18n.Message{ID: "filter_all", Other: "All"}, nil), Value: "all"},
@@ -298,27 +296,38 @@ func (s *PlatformMappingScreen) Draw(input PlatformMappingInput) (PlatformMappin
 						},
 						SelectedOption: boolToIndex(showGamesOnlySub),
 					},
-					{
+				}
+
+				// Only show a metadata filter when RomM actually populated values for it —
+				// otherwise it's a useless "All"-only picker (#247). Category/Family are
+				// frequently empty (they require IGDB platform metadata); Generation usually
+				// has values but is gated the same way for consistency.
+				if len(uniqueCategories) > 0 {
+					filterItems = append(filterItems, gaba.ItemWithOptions{
 						Item: gaba.MenuItem{
 							Text: i18n.Localize(&goi18n.Message{ID: "settings_category", Other: "Category"}, nil),
 						},
 						Options:        categoryOptions,
 						SelectedOption: categorySelectedIndex,
-					},
-					{
+					})
+				}
+				if len(uniqueFamilies) > 0 {
+					filterItems = append(filterItems, gaba.ItemWithOptions{
 						Item: gaba.MenuItem{
 							Text: i18n.Localize(&goi18n.Message{ID: "settings_family", Other: "Family"}, nil),
 						},
 						Options:        familyOptions,
 						SelectedOption: familySelectedIndex,
-					},
-					{
+					})
+				}
+				if len(uniqueGenerations) > 0 {
+					filterItems = append(filterItems, gaba.ItemWithOptions{
 						Item: gaba.MenuItem{
 							Text: i18n.Localize(&goi18n.Message{ID: "settings_generation", Other: "Generation"}, nil),
 						},
 						Options:        generationOptions,
 						SelectedOption: generationSelectedIndex,
-					},
+					})
 				}
 
 				filterResult, err := gaba.OptionsList(
