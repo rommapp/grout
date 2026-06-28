@@ -9,7 +9,9 @@
       A RomM Client for your retro doo-dad.
     </h3>
 
-[Allium][allium] · [ArkOS][arkos] · [Batocera][batocera] · [dArkOS][darkos] · [Knulli][knulli] · [Koriki][koriki] · [MinUI][minui] · [muOS][muos] · [NextUI][nextui] · [Onion][onion] · [ROCKNIX][rocknix] · [Spruce][spruce] · [SprigUI][sprigui] · [TwigUI][twigui] · [TrimUI][trimui]
+[Allium][allium] · [ArkOS][arkos] · [Batocera][batocera] · [dArkOS][darkos] · [Knulli][knulli] · [Koriki][koriki] · [MinUI][minui]
+
+[muOS][muos] · [NextUI][nextui] · [Onion][onion] · [ROCKNIX][rocknix] · [Spruce][spruce] · [SprigUI][sprigui] · [TwigUI][twigui] · [TrimUI][trimui]
 
 <br>
 
