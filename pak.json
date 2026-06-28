@@ -40,8 +40,7 @@
     "v4.8.0.1-beta.5": "CI work complete. We just need all hands on deck.",
     "v4.8.0.0": "Support for RomM v4.8.0",
     "v4.8.0.1": "Add GKD Pixel 2 support on Spruce. Thanks for the assist theycallmeboxy!",
-    "v4.8.1.0": "Add GKD Pixel 2 support on Spruce. Thanks for the assist theycallmeboxy!",
-    "v4.9.0": "Support for new RomM Server-Driven Save Sync Orchestration"
+    "v4.8.1.0": "Add GKD Pixel 2 support on Spruce. Thanks for the assist theycallmeboxy!"
   },
   "screenshots": [],
   "platforms": [
