@@ -283,11 +283,14 @@ func transitionSaveSync(ctx *transitionContext, result any) (router.Screen, any)
 		return popOrExit(ctx.stack)
 	}
 
-	// Extract conflict items for the conflict screen
-	var conflicts []sync.SyncItem
-	for _, item := range r.Items {
-		if item.Action == sync.ActionConflict {
-			conflicts = append(conflicts, item)
+	// Build the conflict display list from ConflictIndices (in order) so it stays
+	// aligned with the index map and shows exactly the conflicts the caller selected —
+	// e.g. on an execution-time 409 loop-back, only the newly surfaced conflicts, not
+	// ones the user already skipped.
+	conflicts := make([]sync.SyncItem, 0, len(r.ConflictIndices))
+	for ci := 0; ci < len(r.ConflictIndices); ci++ {
+		if idx, ok := r.ConflictIndices[ci]; ok && idx < len(r.Items) {
+			conflicts = append(conflicts, r.Items[idx])
 		}
 	}
 

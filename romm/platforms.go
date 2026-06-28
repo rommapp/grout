@@ -19,9 +19,9 @@ type Platform struct {
 	Firmware            []Firmware `json:"Firmware"`
 	CreatedAt           time.Time  `json:"created_at"`
 	UpdatedAt           time.Time  `json:"updated_at"`
-	Manufacturer        string     `json:"manufacturer"`
+	Family              string     `json:"family_name"`
 	Generation          int        `json:"generation"`
-	Type                string     `json:"type"`
+	Category            string     `json:"category"`
 	HasBIOS             bool       `json:"has_bios"`
 	SupportedExtensions []string   `json:"supported_extensions"`
 }

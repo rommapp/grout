@@ -485,3 +485,111 @@ func TestBuildClientSaveStates_SlotPrecedence(t *testing.T) {
 		t.Fatalf("default should be autosave: got %+v", states)
 	}
 }
+
+// When a save is downloaded for a ROM with no existing local save, it must be written
+// under the filename the emulator will look for: keepRomExt=true (minarch) retains the ROM
+// extension, false (RetroArch) strips it (issue #245). Falls back to the server filename
+// when the ROM filename is unknown.
+func TestDownloadSaveFileName(t *testing.T) {
+	if got := downloadSaveFileName("Donkey Kong Country (USA) (Rev 2).sfc", "Server [2026].srm", "sav", true); got != "Donkey Kong Country (USA) (Rev 2).sfc.sav" {
+		t.Errorf("keep: got %q, want %q", got, "Donkey Kong Country (USA) (Rev 2).sfc.sav")
+	}
+	if got := downloadSaveFileName("Pokemon - Emerald Version (USA, Europe).gba", "Server [2026].srm", "srm", false); got != "Pokemon - Emerald Version (USA, Europe).srm" {
+		t.Errorf("strip: got %q, want %q", got, "Pokemon - Emerald Version (USA, Europe).srm")
+	}
+	if got := downloadSaveFileName("", "Server [2026-01-01_00-00-00].srm", "srm", true); got != "Server [2026-01-01_00-00-00].srm" {
+		t.Errorf("fallback to server name: got %q", got)
+	}
+}
+
+// saveDirKeepsRomExt infers the device's save-naming style from existing save files in a
+// directory, so a fresh download is written under the convention the emulator already uses
+// (issue #245). NextUI supports both styles, so this is detected, not assumed.
+func TestSaveDirKeepsRomExt(t *testing.T) {
+	keep, known := saveDirKeepsRomExt([]string{"Donkey Kong Country (USA) (Rev 2).sfc.sav"})
+	if !known || !keep {
+		t.Errorf("retained-ext dir: keep=%v known=%v, want true/true", keep, known)
+	}
+
+	keep, known = saveDirKeepsRomExt([]string{"Pokemon - Emerald Version (USA, Europe).srm"})
+	if !known || keep {
+		t.Errorf("retroarch dir: keep=%v known=%v, want false/true", keep, known)
+	}
+
+	// A dotted version token must not be mistaken for a retained ROM extension.
+	keep, known = saveDirKeepsRomExt([]string{"Final Fantasy IV (J) (V1.1).srm"})
+	if !known || keep {
+		t.Errorf("dotted-title dir: keep=%v known=%v, want false/true", keep, known)
+	}
+
+	// Non-save files are ignored; a dir with nothing to infer from is unknown.
+	if _, known := saveDirKeepsRomExt([]string{"notes.txt", ".nomedia"}); known {
+		t.Errorf("no save files: known=%v, want false", known)
+	}
+}
+
+// saveLookupKeys turns a scanned save's no-extension name into the ROM expected-basename
+// candidates it could match. RetroArch CFWs name the save <rombase>.<ext>, so the name
+// IS the rom basename; minarch CFWs (NextUI/MinUI) name it <rombase>.<romext>.<ext>, so
+// stripping one more (ROM-looking) extension recovers the rom basename (issue #245).
+func TestSaveLookupKeys(t *testing.T) {
+	cases := []struct {
+		name      string
+		nameNoExt string
+		want      []string
+	}{
+		{
+			"RetroArch name is already the rom basename",
+			"Pokemon - Emerald Version (USA, Europe)",
+			[]string{"Pokemon - Emerald Version (USA, Europe)"},
+		},
+		{
+			"NextUI retained ROM extension yields a stripped candidate",
+			"Donkey Kong Country (USA) (Rev 2).sfc",
+			[]string{"Donkey Kong Country (USA) (Rev 2).sfc", "Donkey Kong Country (USA) (Rev 2)"},
+		},
+		{
+			"retained extension after an earlier dotted token",
+			"Machine, The (World) (Rev v1.2) (Unl).gbc",
+			[]string{"Machine, The (World) (Rev v1.2) (Unl).gbc", "Machine, The (World) (Rev v1.2) (Unl)"},
+		},
+		{
+			"a dotted version token is not mistaken for a ROM extension",
+			"Final Fantasy IV (J) (V1.1)",
+			[]string{"Final Fantasy IV (J) (V1.1)"},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := saveLookupKeys(tc.nameNoExt)
+			if len(got) != len(tc.want) {
+				t.Fatalf("saveLookupKeys(%q) = %v, want %v", tc.nameNoExt, got, tc.want)
+			}
+			for i := range tc.want {
+				if got[i] != tc.want[i] {
+					t.Fatalf("saveLookupKeys(%q) = %v, want %v", tc.nameNoExt, got, tc.want)
+				}
+			}
+		})
+	}
+}
+
+// An explicit "autosave" choice must override a recorded non-autosave slot, so a user
+// can switch a ROM back to autosave to sync against another client (issue #250).
+func TestBuildClientSaveStates_ExplicitAutosaveOverridesRecorded(t *testing.T) {
+	dir := t.TempDir()
+	p := filepath.Join(dir, "Pokemon.srm")
+	if err := os.WriteFile(p, []byte("savedata"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	local := []LocalSave{{RomID: 6, FileName: "Pokemon.srm", FilePath: p, EmulatorDir: "mgba"}}
+	recorded := map[saveKey]string{{romID: 6, fileName: "Pokemon.srm"}: "default"}
+
+	cfg := &internal.Config{}
+	cfg.SetSlotPreference(6, "autosave") // user explicitly picks autosave
+
+	states := buildClientSaveStates(local, cfg, recorded)
+	if len(states) != 1 || states[0].Slot != "autosave" {
+		t.Fatalf("explicit autosave must override recorded 'default': got %+v", states)
+	}
+}

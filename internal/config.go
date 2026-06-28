@@ -307,11 +307,16 @@ func (c *Config) SetSlotPreference(romID int, slot string) {
 		c.SlotPreferences = make(map[string]string)
 	}
 	key := fmt.Sprintf("%d", romID)
-	if slot == "autosave" {
+	if slot == "" {
+		// An empty slot means "no explicit choice" — clear any stored preference so the
+		// recorded/last-synced slot (or the autosave default) applies again.
 		delete(c.SlotPreferences, key)
-	} else {
-		c.SlotPreferences[key] = slot
+		return
 	}
+	// Persist every explicit choice, INCLUDING "autosave". This lets an explicit autosave
+	// selection override a sticky recorded slot via SlotPreferenceExplicit (issue #250);
+	// previously "autosave" was discarded, so a recorded "default" could never be undone.
+	c.SlotPreferences[key] = slot
 }
 
 func (c Config) GetApiTimeout() time.Duration    { return c.ApiTimeout.Duration() }

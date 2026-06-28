@@ -17,6 +17,7 @@ import (
 	"strings"
 	gosync "sync"
 	"time"
+	"unicode"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
@@ -629,6 +630,89 @@ func RefreshDeviceVersion(client *romm.Client, deviceID, lastReported string) (s
 	return current, true
 }
 
+// saveLookupKeys returns the ROM expected-basename candidates a scanned save file (its
+// name with the save extension already stripped) could correspond to. RetroArch-based
+// CFWs name a save <rombase>.<saveExt>, so nameNoExt already IS the ROM basename. The
+// minarch CFWs (NextUI, MinUI) name it <rombase>.<romExt>.<saveExt>, so after stripping
+// the save extension a ROM extension is still attached; stripping that recovers the ROM
+// basename (issue #245). The extra candidate is only added when the trailing extension
+// looks like a real ROM extension, so a dotted title token (e.g. "(V1.1)") is left alone.
+func saveLookupKeys(nameNoExt string) []string {
+	keys := []string{nameNoExt}
+	if ext := filepath.Ext(nameNoExt); isLikelyRomExt(ext) {
+		keys = append(keys, strings.TrimSuffix(nameNoExt, ext))
+	}
+	return keys
+}
+
+// isLikelyRomExt reports whether ext (including the leading dot) looks like a ROM file
+// extension: a short, purely alphanumeric suffix such as ".sfc", ".gbc", or ".7z". This
+// excludes punctuation-bearing fragments like ".1)" that filepath.Ext can yield from a
+// version token in a title, so they are never mistaken for an extension to strip.
+func isLikelyRomExt(ext string) bool {
+	if len(ext) < 2 || len(ext) > 5 || ext[0] != '.' {
+		return false
+	}
+	for _, r := range ext[1:] {
+		if !unicode.IsLetter(r) && !unicode.IsDigit(r) {
+			return false
+		}
+	}
+	return true
+}
+
+// downloadSaveFileName computes the on-disk filename a downloaded save should be written
+// under when the ROM has no existing local save. It pairs the save basename for the ROM
+// (keepRomExt retains the ROM extension, minarch-style; otherwise it is stripped,
+// RetroArch-style — issue #245) with the server save's extension, falling back to the
+// server's filename when the ROM filename is unknown.
+func downloadSaveFileName(romFileName, serverFileName, serverExt string, keepRomExt bool) string {
+	if romFileName == "" {
+		return serverFileName
+	}
+	return cfw.SaveBasename(keepRomExt, romFileName) + "." + serverExt
+}
+
+// saveDirKeepsRomExt infers whether the emulator that owns saveDir names saves after the
+// full ROM filename (keep) or the bare ROM basename (strip), by inspecting existing save
+// filenames: a save whose name (minus its save extension) still ends in a ROM-looking
+// extension was written minarch-style. Returns known=false when the directory holds no
+// save files to infer from, so the caller can fall back to the CFW default. NextUI exposes
+// both styles as a setting, so the convention must be detected per-device (issue #245).
+func saveDirKeepsRomExt(saveFileNames []string) (keep bool, known bool) {
+	for _, name := range saveFileNames {
+		if !ValidSaveExtensions[strings.ToLower(filepath.Ext(name))] {
+			continue
+		}
+		known = true
+		nameNoExt := strings.TrimSuffix(name, filepath.Ext(name))
+		if isLikelyRomExt(filepath.Ext(nameNoExt)) {
+			return true, true
+		}
+	}
+	return false, known
+}
+
+// detectSaveNameStyle reads saveDir and infers whether saves there keep the ROM extension,
+// falling back to the CFW default when the directory has no saves to learn from.
+func detectSaveNameStyle(saveDir string) bool {
+	keep := cfw.DefaultKeepsRomExt(cfw.GetCFW())
+	entries, err := os.ReadDir(saveDir)
+	if err != nil {
+		return keep
+	}
+	names := make([]string, 0, len(entries))
+	for _, e := range entries {
+		if !e.IsDir() {
+			names = append(names, e.Name())
+		}
+	}
+	if k, known := saveDirKeepsRomExt(names); known {
+		return k
+	}
+	return keep
+}
+
 func ScanSaves(config *internal.Config) []LocalSave {
 	logger := gaba.GetLogger()
 	currentCFW := cfw.GetCFW()
@@ -758,8 +842,15 @@ func ScanSaves(config *internal.Config) []LocalSave {
 					saveFileCount++
 					nameNoExt := strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name()))
 
-					rom, err := cm.GetRomByFSLookup(rommFSSlug, nameNoExt)
-					if err != nil {
+					var rom romm.Rom
+					var matched bool
+					for _, key := range saveLookupKeys(nameNoExt) {
+						if r, err := cm.GetRomByFSLookup(rommFSSlug, key); err == nil {
+							rom, matched = r, true
+							break
+						}
+					}
+					if !matched {
 						logger.Debug("No cache match for save file", "file", entry.Name(), "fsSlug", rommFSSlug, "nameNoExt", nameNoExt)
 						continue
 					}
@@ -1043,6 +1134,16 @@ func ExecuteActions(client *romm.Client, config *internal.Config, deviceID strin
 			case uploadOK:
 				item.Success = true
 				report.Uploaded++
+			case uploadSupersededByDownload:
+				// 409: server slot is ahead and local is unmodified — reconcile by
+				// downloading the server save (download() backs up the local first).
+				item.Action = ActionDownload
+				if download(client, config, deviceID, item) {
+					item.Success = true
+					report.Downloaded++
+				} else {
+					report.Errors++
+				}
 			case uploadConflict:
 				item.Action = ActionConflict
 				report.Conflicts++
@@ -1081,7 +1182,42 @@ const (
 	uploadErr uploadOutcome = iota
 	uploadOK
 	uploadConflict
+	// uploadSupersededByDownload: a 409 revealed the server slot is ahead and the
+	// local save is unmodified since its last sync, so the item was converted to a
+	// download to reconcile (option b — no user prompt needed).
+	uploadSupersededByDownload
 )
+
+// conflict409Resolution is how grout reconciles a 409 "slot has a newer save"
+// upload rejection after fetching the server's current save for the slot.
+type conflict409Resolution int
+
+const (
+	// resolve409Unresolved: no server save for the slot, so we can't reconcile;
+	// the upload stays a bare (non-resolvable) conflict.
+	resolve409Unresolved conflict409Resolution = iota
+	// resolve409AsDownload: local is unmodified since its last sync — the server is
+	// simply ahead, so auto-download the server save.
+	resolve409AsDownload
+	// resolve409AsConflict: local diverged from its last sync — a genuine conflict;
+	// surface it with the server save populated so it is resolvable.
+	resolve409AsConflict
+)
+
+// resolveUpload409 decides how to handle a 409 "slot has a newer save" upload
+// rejection. It selects the server's current save for slot and, when the local save
+// is provably unmodified since its last recorded sync (localHash == recordedHash),
+// chooses an auto-download; a diverged or unknown local state becomes a conflict.
+func resolveUpload409(serverSaves []romm.Save, slot, localHash, recordedHash string) (conflict409Resolution, *romm.Save) {
+	best := SelectSaveForSlot(serverSaves, slot)
+	if best == nil {
+		return resolve409Unresolved, nil
+	}
+	if recordedHash != "" && localHash == recordedHash {
+		return resolve409AsDownload, best
+	}
+	return resolve409AsConflict, best
+}
 
 // buildUploadQuery derives the /api/saves upload query for a sync item. Overwrite is set
 // ONLY when the user explicitly chose keep-local (ForceOverwrite); a normal upload op goes
@@ -1119,6 +1255,41 @@ func buildUploadQuery(deviceID string, item *SyncItem) romm.UploadSaveQuery {
 	return query
 }
 
+// resolveUploadConflict handles a 409 "slot has a newer save" rejection. It fetches
+// the server's current save for the slot and, via resolveUpload409, either converts the
+// item to an auto-download (local unmodified since last sync — option b) or surfaces a
+// resolvable conflict with the server save populated. A bare conflict remains only if
+// the server save can't be fetched.
+func resolveUploadConflict(client *romm.Client, deviceID string, item *SyncItem, slot string, cause error) uploadOutcome {
+	logger := gaba.GetLogger()
+
+	localHash, _ := saveContentHash(item.LocalSave)
+	recordedHash := loadRecordedHashes(deviceID)[saveKey{item.LocalSave.RomID, item.LocalSave.FileName}]
+
+	serverSaves, err := client.GetSaves(romm.SaveQuery{RomID: item.LocalSave.RomID, Slot: slot, DeviceID: deviceID})
+	if err != nil {
+		logger.Warn("Upload 409: failed to fetch server save for the slot; surfacing as conflict",
+			"romID", item.LocalSave.RomID, "slot", slot, "error", err)
+		return uploadConflict
+	}
+
+	resolution, serverSave := resolveUpload409(serverSaves, slot, localHash, recordedHash)
+	if serverSave != nil {
+		item.RemoteSave = serverSave
+	}
+
+	switch resolution {
+	case resolve409AsDownload:
+		logger.Warn("Upload 409: server slot is ahead and local is unmodified; downloading server save instead",
+			"romID", item.LocalSave.RomID, "slot", slot, "serverSaveID", serverSave.ID)
+		return uploadSupersededByDownload
+	default:
+		logger.Warn("Upload rejected with 409; surfacing as conflict",
+			"romID", item.LocalSave.RomID, "slot", slot, "resolvable", serverSave != nil, "error", cause)
+		return uploadConflict
+	}
+}
+
 func upload(client *romm.Client, deviceID string, item *SyncItem) uploadOutcome {
 	logger := gaba.GetLogger()
 	logger.Debug("Uploading save", "romID", item.LocalSave.RomID, "romName", item.LocalSave.RomName, "file", item.LocalSave.FilePath)
@@ -1143,8 +1314,7 @@ func upload(client *romm.Client, deviceID string, item *SyncItem) uploadOutcome 
 	uploadedSave, err := client.UploadSaveWithQuery(query, uploadPath)
 	if err != nil {
 		if errors.Is(err, romm.ErrConflict) {
-			logger.Warn("Upload rejected with 409; surfacing as conflict", "romID", item.LocalSave.RomID, "error", err)
-			return uploadConflict
+			return resolveUploadConflict(client, deviceID, item, query.Slot, err)
 		}
 		logger.Error("Failed to upload save", "romID", item.LocalSave.RomID, "error", err)
 		return uploadErr
@@ -1235,11 +1405,8 @@ func download(client *romm.Client, config *internal.Config, deviceID string, ite
 	if savePath == "" {
 		saveDir := ResolveSaveDirectory(item.LocalSave.FSSlug, config)
 		if saveDir != "" {
-			fileName := item.RemoteSave.FileName
-			if item.LocalSave.RomFileName != "" {
-				romNameNoExt := strings.TrimSuffix(item.LocalSave.RomFileName, filepath.Ext(item.LocalSave.RomFileName))
-				fileName = romNameNoExt + "." + item.RemoteSave.FileExtension
-			}
+			keepRomExt := detectSaveNameStyle(saveDir)
+			fileName := downloadSaveFileName(item.LocalSave.RomFileName, item.RemoteSave.FileName, item.RemoteSave.FileExtension, keepRomExt)
 			savePath = filepath.Join(saveDir, fileName)
 		}
 	}
