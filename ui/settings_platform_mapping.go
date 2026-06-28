@@ -59,36 +59,381 @@ func (s *PlatformMappingScreen) Draw(input PlatformMappingInput) (PlatformMappin
 		return output, err
 	}
 
-	mappingOptions := s.buildMappingOptions(rommPlatforms, romDirectories, input)
+	showGamesOnly := false
+	mappingStatus := "all"
+	categoryFilter := "all"
+	familyFilter := "all"
+	generationFilter := 0
+	selectedIndex := 0
+	visibleStartIndex := 0
 
-	footerItems := []gaba.FooterHelpItem{
-		FooterCycle(),
-		FooterSelect(),
-		FooterSave(),
+	// We copy the existing mappings so we can update/accumulate them as the user interacts.
+	currentMappings := make(map[string]internal.DirectoryMapping)
+	for k, v := range input.ExistingMappings {
+		currentMappings[k] = v
 	}
-	if !input.HideBackButton {
-		footerItems = slices.Insert(footerItems, 0, FooterCancel())
-	}
 
-	result, err := gaba.OptionsList(
-		i18n.Localize(&goi18n.Message{ID: "platform_mapping_title", Other: "Rom Directory Mapping"}, nil),
-		gaba.OptionListSettings{
-			FooterHelpItems:   footerItems,
-			DisableBackButton: input.HideBackButton,
-			StatusBar:         StatusBar(),
-			ListPickerButton:  constants.VirtualButtonA,
-		},
-		mappingOptions,
-	)
-
-	if err != nil {
-		if errors.Is(err, gaba.ErrCancelled) {
-			return PlatformMappingOutput{Action: PlatformMappingActionBack}, nil
+	// If this is the first visit (no existing mappings), we can build options once to run the auto-detection,
+	// and capture the auto-detected selections into currentMappings.
+	if len(input.ExistingMappings) == 0 {
+		initialOptions := s.buildMappingOptions(rommPlatforms, romDirectories, input)
+		for _, item := range initialOptions {
+			rommSlug := item.Item.Metadata.(string)
+			relativePath := item.Options[item.SelectedOption].Value.(string)
+			if relativePath != "" {
+				currentMappings[rommSlug] = internal.DirectoryMapping{
+					RomMSlug:     rommSlug,
+					RelativePath: relativePath,
+				}
+			}
 		}
-		return output, err
 	}
 
-	output.Mappings = s.buildMappingsFromResult(result.Items)
+	for {
+		var filteredPlatforms []romm.Platform
+		for _, p := range rommPlatforms {
+			if showGamesOnly && p.ROMCount == 0 {
+				continue
+			}
+			if generationFilter != 0 && p.Generation != generationFilter {
+				continue
+			}
+			if categoryFilter != "all" && p.Category != categoryFilter {
+				continue
+			}
+			if familyFilter != "all" && p.Family != familyFilter {
+				continue
+			}
+			if mappingStatus == "mapped" {
+				if mapping, ok := currentMappings[p.FSSlug]; !ok || mapping.RelativePath == "" {
+					continue
+				}
+			} else if mappingStatus == "unmapped" {
+				if mapping, ok := currentMappings[p.FSSlug]; ok && mapping.RelativePath != "" {
+					continue
+				}
+			}
+			filteredPlatforms = append(filteredPlatforms, p)
+		}
+
+		// Update input with currentMappings to preserve state
+		input.ExistingMappings = currentMappings
+
+		mappingOptions := s.buildMappingOptions(filteredPlatforms, romDirectories, input)
+
+		if len(mappingOptions) == 0 {
+			mappingOptions = []gaba.ItemWithOptions{
+				{
+					Item: gaba.MenuItem{
+						Text:     i18n.Localize(&goi18n.Message{ID: "platform_mapping_no_results", Other: "No matching platforms found. Press Y to filter."}, nil),
+						Metadata: "dummy_no_results",
+					},
+					Options: []gaba.Option{
+						{DisplayName: "", Value: ""},
+					},
+					SelectedOption: 0,
+				},
+			}
+		}
+
+		footerItems := []gaba.FooterHelpItem{
+			FooterCycle(),
+			FooterSelect(),
+		}
+		if !input.HideBackButton {
+			footerItems = slices.Insert(footerItems, 0, FooterCancel())
+		}
+		footerItems = append(footerItems, gaba.FooterHelpItem{
+			ButtonName: "Y",
+			HelpText:   i18n.Localize(&goi18n.Message{ID: "button_filters", Other: "Filters"}, nil),
+		})
+		footerItems = append(footerItems, FooterSave())
+
+		result, err := gaba.OptionsList(
+			i18n.Localize(&goi18n.Message{ID: "platform_mapping_title", Other: "Rom Directory Mapping"}, nil),
+			gaba.OptionListSettings{
+				InitialSelectedIndex:  selectedIndex,
+				VisibleStartIndex:     visibleStartIndex,
+				FooterHelpItems:       footerItems,
+				DisableBackButton:     input.HideBackButton,
+				StatusBar:             StatusBar(),
+				ListPickerButton:      constants.VirtualButtonA,
+				SecondaryActionButton: constants.VirtualButtonY,
+			},
+			mappingOptions,
+		)
+
+		if err != nil {
+			if errors.Is(err, gaba.ErrCancelled) {
+				return PlatformMappingOutput{Action: PlatformMappingActionBack}, nil
+			}
+			return output, err
+		}
+
+		// Update current mappings from the current screen state so we don't lose changes.
+		for _, item := range result.Items {
+			rommSlug := item.Item.Metadata.(string)
+			relativePath := item.Options[item.SelectedOption].Value.(string)
+			currentMappings[rommSlug] = internal.DirectoryMapping{
+				RomMSlug:     rommSlug,
+				RelativePath: relativePath,
+			}
+		}
+
+		if result.Action == gaba.ListActionSecondaryTriggered {
+			// Find the slug of the item we were on so we can refocus on it
+			var lastSelectedSlug string
+			if result.Selected >= 0 && result.Selected < len(mappingOptions) {
+				lastSelectedSlug = mappingOptions[result.Selected].Item.Metadata.(string)
+			}
+
+			showGamesOnlySub := showGamesOnly
+			mappingStatusSub := mappingStatus
+			categoryFilterSub := categoryFilter
+			familyFilterSub := familyFilter
+			generationFilterSub := generationFilter
+
+			for {
+				// Build dynamic list of generations present in rommPlatforms
+				generationsSet := make(map[int]bool)
+				for _, p := range rommPlatforms {
+					if p.Generation > 0 {
+						generationsSet[p.Generation] = true
+					}
+				}
+				var uniqueGenerations []int
+				for gen := range generationsSet {
+					uniqueGenerations = append(uniqueGenerations, gen)
+				}
+				slices.Sort(uniqueGenerations)
+
+				generationOptions := []gaba.Option{
+					{DisplayName: i18n.Localize(&goi18n.Message{ID: "filter_all", Other: "All"}, nil), Value: 0},
+				}
+				generationSelectedIndex := 0
+				for idx, gen := range uniqueGenerations {
+					displayName := fmt.Sprintf("Generation %d", gen)
+					generationOptions = append(generationOptions, gaba.Option{
+						DisplayName: displayName,
+						Value:       gen,
+					})
+					if gen == generationFilterSub {
+						generationSelectedIndex = idx + 1
+					}
+				}
+
+				// Build dynamic list of categories present in rommPlatforms
+				categorySet := make(map[string]bool)
+				for _, p := range rommPlatforms {
+					if p.Category != "" {
+						categorySet[p.Category] = true
+					}
+				}
+				var uniqueCategories []string
+				for c := range categorySet {
+					uniqueCategories = append(uniqueCategories, c)
+				}
+				slices.Sort(uniqueCategories)
+
+				categoryOptions := []gaba.Option{
+					{DisplayName: i18n.Localize(&goi18n.Message{ID: "filter_all", Other: "All"}, nil), Value: "all"},
+				}
+				categorySelectedIndex := 0
+				for idx, c := range uniqueCategories {
+					categoryOptions = append(categoryOptions, gaba.Option{
+						DisplayName: c,
+						Value:       c,
+					})
+					if c == categoryFilterSub {
+						categorySelectedIndex = idx + 1
+					}
+				}
+
+				// Build dynamic list of families present in rommPlatforms
+				familySet := make(map[string]bool)
+				for _, p := range rommPlatforms {
+					if p.Family != "" {
+						familySet[p.Family] = true
+					}
+				}
+				var uniqueFamilies []string
+				for f := range familySet {
+					uniqueFamilies = append(uniqueFamilies, f)
+				}
+				slices.Sort(uniqueFamilies)
+
+				familyOptions := []gaba.Option{
+					{DisplayName: i18n.Localize(&goi18n.Message{ID: "filter_all", Other: "All"}, nil), Value: "all"},
+				}
+				familySelectedIndex := 0
+				for idx, f := range uniqueFamilies {
+					familyOptions = append(familyOptions, gaba.Option{
+						DisplayName: f,
+						Value:       f,
+					})
+					if f == familyFilterSub {
+						familySelectedIndex = idx + 1
+					}
+				}
+
+				filterItems := []gaba.ItemWithOptions{
+					{
+						Item: gaba.MenuItem{
+							Text: i18n.Localize(&goi18n.Message{ID: "settings_mapping_status", Other: "Mapping Status"}, nil),
+						},
+						Options: []gaba.Option{
+							{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_mapping_status_all", Other: "All"}, nil), Value: "all"},
+							{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_mapping_status_mapped", Other: "Mapped"}, nil), Value: "mapped"},
+							{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_mapping_status_unmapped", Other: "Unmapped"}, nil), Value: "unmapped"},
+						},
+						SelectedOption: mappingStatusToIndex(mappingStatusSub),
+					},
+					{
+						Item: gaba.MenuItem{
+							Text: i18n.Localize(&goi18n.Message{ID: "settings_only_show_platforms_with_games", Other: "Only Platforms with Games"}, nil),
+						},
+						Options: []gaba.Option{
+							{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_false", Other: "False"}, nil), Value: false},
+							{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_true", Other: "True"}, nil), Value: true},
+						},
+						SelectedOption: boolToIndex(showGamesOnlySub),
+					},
+					{
+						Item: gaba.MenuItem{
+							Text: i18n.Localize(&goi18n.Message{ID: "settings_category", Other: "Category"}, nil),
+						},
+						Options:        categoryOptions,
+						SelectedOption: categorySelectedIndex,
+					},
+					{
+						Item: gaba.MenuItem{
+							Text: i18n.Localize(&goi18n.Message{ID: "settings_family", Other: "Family"}, nil),
+						},
+						Options:        familyOptions,
+						SelectedOption: familySelectedIndex,
+					},
+					{
+						Item: gaba.MenuItem{
+							Text: i18n.Localize(&goi18n.Message{ID: "settings_generation", Other: "Generation"}, nil),
+						},
+						Options:        generationOptions,
+						SelectedOption: generationSelectedIndex,
+					},
+				}
+
+				filterResult, err := gaba.OptionsList(
+					i18n.Localize(&goi18n.Message{ID: "game_filters_title", Other: "Filters"}, nil),
+					gaba.OptionListSettings{
+						FooterHelpItems: []gaba.FooterHelpItem{
+							FooterCancel(),
+							FooterCycle(),
+							{ButtonName: "X", HelpText: i18n.Localize(&goi18n.Message{ID: "button_reset", Other: "Reset"}, nil)},
+							FooterSave(),
+						},
+						DisableBackButton: false,
+						StatusBar:         StatusBar(),
+						ListPickerButton:  constants.VirtualButtonA,
+						ActionButton:      constants.VirtualButtonX,
+						UseSmallTitle:     true,
+					},
+					filterItems,
+				)
+
+				if err != nil {
+					// Cancel (B button) -> exit sub-menu loop without saving
+					break
+				}
+
+				// If X button (Reset) was pressed, reset submenu variables and reload
+				if filterResult.Action == gaba.ListActionTriggered {
+					showGamesOnlySub = false
+					mappingStatusSub = "all"
+					categoryFilterSub = "all"
+					familyFilterSub = "all"
+					generationFilterSub = 0
+					continue
+				}
+
+				// Update values from submenu and exit
+				for _, item := range filterResult.Items {
+					switch item.Item.Text {
+					case i18n.Localize(&goi18n.Message{ID: "settings_only_show_platforms_with_games", Other: "Only Platforms with Games"}, nil):
+						if val, ok := item.Options[item.SelectedOption].Value.(bool); ok {
+							showGamesOnly = val
+						}
+					case i18n.Localize(&goi18n.Message{ID: "settings_mapping_status", Other: "Mapping Status"}, nil):
+						if val, ok := item.Options[item.SelectedOption].Value.(string); ok {
+							mappingStatus = val
+						}
+					case i18n.Localize(&goi18n.Message{ID: "settings_category", Other: "Category"}, nil):
+						if val, ok := item.Options[item.SelectedOption].Value.(string); ok {
+							categoryFilter = val
+						}
+					case i18n.Localize(&goi18n.Message{ID: "settings_family", Other: "Family"}, nil):
+						if val, ok := item.Options[item.SelectedOption].Value.(string); ok {
+							familyFilter = val
+						}
+					case i18n.Localize(&goi18n.Message{ID: "settings_generation", Other: "Generation"}, nil):
+						if val, ok := item.Options[item.SelectedOption].Value.(int); ok {
+							generationFilter = val
+						}
+					}
+				}
+				break
+			}
+
+			// Re-filter platforms and build options to find the new index of lastSelectedSlug
+			var nextFilteredPlatforms []romm.Platform
+			for _, p := range rommPlatforms {
+				if showGamesOnly && p.ROMCount == 0 {
+					continue
+				}
+				if generationFilter != 0 && p.Generation != generationFilter {
+					continue
+				}
+				if categoryFilter != "all" && p.Category != categoryFilter {
+					continue
+				}
+				if familyFilter != "all" && p.Family != familyFilter {
+					continue
+				}
+				if mappingStatus == "mapped" {
+					if mapping, ok := currentMappings[p.FSSlug]; !ok || mapping.RelativePath == "" {
+						continue
+					}
+				} else if mappingStatus == "unmapped" {
+					if mapping, ok := currentMappings[p.FSSlug]; ok && mapping.RelativePath != "" {
+						continue
+					}
+				}
+				nextFilteredPlatforms = append(nextFilteredPlatforms, p)
+			}
+			nextOptions := s.buildMappingOptions(nextFilteredPlatforms, romDirectories, input)
+
+			selectedIndex = 0
+			if lastSelectedSlug != "" {
+				for idx, opt := range nextOptions {
+					if opt.Item.Metadata.(string) == lastSelectedSlug {
+						selectedIndex = idx
+						break
+					}
+				}
+			}
+			// Reset visible start index or estimate it
+			visibleStartIndex = max(0, selectedIndex-(result.Selected-result.VisibleStartIndex))
+			continue
+		}
+
+		// Compile final mappings from currentMappings
+		finalMappings := make(map[string]internal.DirectoryMapping)
+		for slug, mapping := range currentMappings {
+			if mapping.RelativePath != "" && slug != "dummy_no_results" {
+				finalMappings[slug] = mapping
+			}
+		}
+		output.Mappings = finalMappings
+		break
+	}
 
 	if err := s.createDirectories(output.Mappings, input.RomDirectory, romDirectories); err != nil {
 		logger.Error("Error creating directories", "error", err)
@@ -355,4 +700,17 @@ func (s *PlatformMappingScreen) createDirectories(
 	}
 
 	return nil
+}
+
+func mappingStatusToIndex(status string) int {
+	switch status {
+	case "all":
+		return 0
+	case "mapped":
+		return 1
+	case "unmapped":
+		return 2
+	default:
+		return 0
+	}
 }
