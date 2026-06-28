@@ -1134,6 +1134,16 @@ func ExecuteActions(client *romm.Client, config *internal.Config, deviceID strin
 			case uploadOK:
 				item.Success = true
 				report.Uploaded++
+			case uploadSupersededByDownload:
+				// 409: server slot is ahead and local is unmodified — reconcile by
+				// downloading the server save (download() backs up the local first).
+				item.Action = ActionDownload
+				if download(client, config, deviceID, item) {
+					item.Success = true
+					report.Downloaded++
+				} else {
+					report.Errors++
+				}
 			case uploadConflict:
 				item.Action = ActionConflict
 				report.Conflicts++
@@ -1172,7 +1182,42 @@ const (
 	uploadErr uploadOutcome = iota
 	uploadOK
 	uploadConflict
+	// uploadSupersededByDownload: a 409 revealed the server slot is ahead and the
+	// local save is unmodified since its last sync, so the item was converted to a
+	// download to reconcile (option b — no user prompt needed).
+	uploadSupersededByDownload
 )
+
+// conflict409Resolution is how grout reconciles a 409 "slot has a newer save"
+// upload rejection after fetching the server's current save for the slot.
+type conflict409Resolution int
+
+const (
+	// resolve409Unresolved: no server save for the slot, so we can't reconcile;
+	// the upload stays a bare (non-resolvable) conflict.
+	resolve409Unresolved conflict409Resolution = iota
+	// resolve409AsDownload: local is unmodified since its last sync — the server is
+	// simply ahead, so auto-download the server save.
+	resolve409AsDownload
+	// resolve409AsConflict: local diverged from its last sync — a genuine conflict;
+	// surface it with the server save populated so it is resolvable.
+	resolve409AsConflict
+)
+
+// resolveUpload409 decides how to handle a 409 "slot has a newer save" upload
+// rejection. It selects the server's current save for slot and, when the local save
+// is provably unmodified since its last recorded sync (localHash == recordedHash),
+// chooses an auto-download; a diverged or unknown local state becomes a conflict.
+func resolveUpload409(serverSaves []romm.Save, slot, localHash, recordedHash string) (conflict409Resolution, *romm.Save) {
+	best := SelectSaveForSlot(serverSaves, slot)
+	if best == nil {
+		return resolve409Unresolved, nil
+	}
+	if recordedHash != "" && localHash == recordedHash {
+		return resolve409AsDownload, best
+	}
+	return resolve409AsConflict, best
+}
 
 // buildUploadQuery derives the /api/saves upload query for a sync item. Overwrite is set
 // ONLY when the user explicitly chose keep-local (ForceOverwrite); a normal upload op goes
@@ -1210,6 +1255,41 @@ func buildUploadQuery(deviceID string, item *SyncItem) romm.UploadSaveQuery {
 	return query
 }
 
+// resolveUploadConflict handles a 409 "slot has a newer save" rejection. It fetches
+// the server's current save for the slot and, via resolveUpload409, either converts the
+// item to an auto-download (local unmodified since last sync — option b) or surfaces a
+// resolvable conflict with the server save populated. A bare conflict remains only if
+// the server save can't be fetched.
+func resolveUploadConflict(client *romm.Client, deviceID string, item *SyncItem, slot string, cause error) uploadOutcome {
+	logger := gaba.GetLogger()
+
+	localHash, _ := saveContentHash(item.LocalSave)
+	recordedHash := loadRecordedHashes(deviceID)[saveKey{item.LocalSave.RomID, item.LocalSave.FileName}]
+
+	serverSaves, err := client.GetSaves(romm.SaveQuery{RomID: item.LocalSave.RomID, Slot: slot, DeviceID: deviceID})
+	if err != nil {
+		logger.Warn("Upload 409: failed to fetch server save for the slot; surfacing as conflict",
+			"romID", item.LocalSave.RomID, "slot", slot, "error", err)
+		return uploadConflict
+	}
+
+	resolution, serverSave := resolveUpload409(serverSaves, slot, localHash, recordedHash)
+	if serverSave != nil {
+		item.RemoteSave = serverSave
+	}
+
+	switch resolution {
+	case resolve409AsDownload:
+		logger.Warn("Upload 409: server slot is ahead and local is unmodified; downloading server save instead",
+			"romID", item.LocalSave.RomID, "slot", slot, "serverSaveID", serverSave.ID)
+		return uploadSupersededByDownload
+	default:
+		logger.Warn("Upload rejected with 409; surfacing as conflict",
+			"romID", item.LocalSave.RomID, "slot", slot, "resolvable", serverSave != nil, "error", cause)
+		return uploadConflict
+	}
+}
+
 func upload(client *romm.Client, deviceID string, item *SyncItem) uploadOutcome {
 	logger := gaba.GetLogger()
 	logger.Debug("Uploading save", "romID", item.LocalSave.RomID, "romName", item.LocalSave.RomName, "file", item.LocalSave.FilePath)
@@ -1234,8 +1314,7 @@ func upload(client *romm.Client, deviceID string, item *SyncItem) uploadOutcome 
 	uploadedSave, err := client.UploadSaveWithQuery(query, uploadPath)
 	if err != nil {
 		if errors.Is(err, romm.ErrConflict) {
-			logger.Warn("Upload rejected with 409; surfacing as conflict", "romID", item.LocalSave.RomID, "error", err)
-			return uploadConflict
+			return resolveUploadConflict(client, deviceID, item, query.Slot, err)
 		}
 		logger.Error("Failed to upload save", "romID", item.LocalSave.RomID, "error", err)
 		return uploadErr

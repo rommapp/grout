@@ -111,8 +111,34 @@ func (s *SaveSyncScreen) Execute(input SaveSyncInput) SaveSyncOutput {
 	return s.executeSyncPhase(client, config, host.DeviceID, items, result.SessionID)
 }
 
+// newlySurfacedConflicts returns the conflict indices (conflict-slice-index →
+// items-index) for items that became resolvable conflicts during execution: an upload
+// the server rejected with 409 was turned into a conflict with the server save attached.
+// It deliberately excludes conflicts the user already handled (wasUpload[i] == false,
+// e.g. a skipped negotiate conflict) and conflicts with no server save (not resolvable),
+// so re-running execution on the resolved items terminates instead of looping forever.
+func newlySurfacedConflicts(items []sync.SyncItem, wasUpload []bool) map[int]int {
+	out := map[int]int{}
+	ci := 0
+	for i := range items {
+		if i < len(wasUpload) && wasUpload[i] &&
+			items[i].Action == sync.ActionConflict && items[i].RemoteSave != nil {
+			out[ci] = i
+			ci++
+		}
+	}
+	return out
+}
+
 func (s *SaveSyncScreen) executeSyncPhase(client *romm.Client, config *internal.Config, deviceID string, items []sync.SyncItem, sessionID int) SaveSyncOutput {
 	var report sync.SyncReport
+
+	// Snapshot which items are uploads so we can detect 409s that turn an upload into
+	// a resolvable conflict during execution and loop back to the conflict screen.
+	wasUpload := make([]bool, len(items))
+	for i := range items {
+		wasUpload[i] = items[i].Action == sync.ActionUpload
+	}
 
 	hasActionable := false
 	for _, item := range items {
@@ -142,6 +168,17 @@ func (s *SaveSyncScreen) executeSyncPhase(client *romm.Client, config *internal.
 		)
 	} else {
 		report = sync.ExecuteSaveSync(client, config, deviceID, items, sessionID, nil)
+	}
+
+	// A 409 during execution can turn an upload into a resolvable conflict; loop back
+	// to the conflict screen for those instead of finishing silently.
+	if conflictIndices := newlySurfacedConflicts(report.Items, wasUpload); len(conflictIndices) > 0 {
+		return SaveSyncOutput{
+			NeedsConflictResolution: true,
+			Items:                   report.Items,
+			ConflictIndices:         conflictIndices,
+			SessionID:               sessionID,
+		}
 	}
 
 	s.showReport(report)
