@@ -14,7 +14,37 @@ import (
 	"grout/cfw/spruce"
 	"grout/cfw/trimui"
 	"path/filepath"
+	"strings"
 )
+
+// SaveBasename returns the on-disk basename (the part before the save-file extension) an
+// emulator uses for a ROM's save files, given whether the device keeps the ROM extension.
+//
+// keepRomExt=false is the RetroArch convention: the save is named after the ROM basename
+// WITHOUT its extension (e.g. ROM "Game (USA).gba" -> save "Game (USA).srm"). keepRomExt=true
+// is the minarch convention (NextUI/MinUI default): the save keeps the FULL ROM filename,
+// extension included (e.g. ROM "Game (USA).sfc" -> save "Game (USA).sfc.sav"). Reading or
+// writing a save under the wrong convention silently breaks sync (issue #245). NextUI
+// exposes both as a setting, so the style is detected per-device rather than assumed by CFW.
+func SaveBasename(keepRomExt bool, romFileName string) string {
+	if keepRomExt {
+		return romFileName
+	}
+	return strings.TrimSuffix(romFileName, filepath.Ext(romFileName))
+}
+
+// DefaultKeepsRomExt reports the CFW's default save-naming style, used only as a fallback
+// when the actual on-device convention can't be detected from existing saves. The minarch
+// CFWs (NextUI, MinUI) default to keeping the ROM extension; all others default to the
+// RetroArch convention of stripping it (issue #245).
+func DefaultKeepsRomExt(c CFW) bool {
+	switch c {
+	case NextUI, MinUI:
+		return true
+	default:
+		return false
+	}
+}
 
 // EmulatorFolderMap returns the emulator/save directory mapping for the given CFW.
 func EmulatorFolderMap(c CFW) map[string][]string {
