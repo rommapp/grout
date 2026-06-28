@@ -9,17 +9,19 @@ func TestSlotPreference_DefaultsToAutosave(t *testing.T) {
 	}
 }
 
-func TestSetSlotPreference_AutosaveClears(t *testing.T) {
+// Picking "autosave" must persist as an EXPLICIT preference (not be discarded), so it
+// can override a sticky recorded slot. Otherwise a user can never switch a ROM back to
+// autosave once another slot has been recorded (issue #250).
+func TestSetSlotPreference_AutosavePersistsAsExplicit(t *testing.T) {
 	c := Config{}
 	c.SetSlotPreference(1, "quicksave")
-	if got := c.GetSlotPreference(1); got != "quicksave" {
-		t.Fatalf("got %q after set", got)
-	}
-	c.SetSlotPreference(1, "autosave") // setting back to default clears the entry
-	if _, ok := c.SlotPreferences["1"]; ok {
-		t.Errorf("expected autosave to clear the stored preference")
+	c.SetSlotPreference(1, "autosave") // user explicitly chooses autosave
+
+	slot, ok := c.SlotPreferenceExplicit(1)
+	if !ok || slot != "autosave" {
+		t.Errorf("explicit autosave should persist: got (%q, %v), want (\"autosave\", true)", slot, ok)
 	}
 	if got := c.GetSlotPreference(1); got != "autosave" {
-		t.Errorf("after clear, default = %q, want autosave", got)
+		t.Errorf("GetSlotPreference = %q, want autosave", got)
 	}
 }
