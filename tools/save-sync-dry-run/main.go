@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"grout/cache"
 	"grout/internal"
@@ -12,6 +13,20 @@ import (
 )
 
 func main() {
+	scenario := flag.String("scenario", "", "run an offline fix-verification scenario instead of a live dry-run "+
+		"(slot-switch, nextui-keep, nextui-retroarch, all; requires -tags dryrun)")
+	flag.Parse()
+
+	// Offline scenario mode: exercise the fixed resolution logic with synthetic inputs, no
+	// live server / device / cache required.
+	if *scenario != "" {
+		if err := runScenario(*scenario); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
+
 	config, err := internal.LoadConfig()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to load config: %v\n", err)
