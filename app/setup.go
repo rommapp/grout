@@ -119,11 +119,16 @@ func initFramework(currentCFW cfw.CFW) {
 	if currentCFW == cfw.Spruce && spruce.DetectDevice() == spruce.DeviceA30 {
 		gabaOptions.DisplayOrientation = gaba.OrientationRotate270
 	}
-	if currentCFW == cfw.MinUI && minui.DetectDevice() == minui.DeviceZero28 {
-		gabaOptions.DisplayOrientation = gaba.OrientationRotate90
+
+	var minuiDevice minui.Device
+	if currentCFW == cfw.MinUI {
+		minuiDevice = minui.DetectDevice()
+		if minuiDevice == minui.DeviceZero28 || minuiDevice == minui.DeviceTrimui {
+			gabaOptions.DisplayOrientation = gaba.OrientationRotate90
+		}
 	}
 
-	if (currentCFW == cfw.MinUI && minui.DetectDevice() == minui.DeviceMiyooFlip) ||
+	if (currentCFW == cfw.MinUI && minuiDevice == minui.DeviceMiyooFlip) ||
 		(currentCFW == cfw.NextUI && nextui.DetectDevice() == nextui.DeviceMiyooFlip) {
 		gabaOptions.DisabledInputSources = gaba.DisabledInputSources{
 			Keyboard: true,

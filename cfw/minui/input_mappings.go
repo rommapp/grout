@@ -13,6 +13,10 @@ import (
 
 const DeviceType = "MINUI_DEVICE"
 
+// devicetreeCompatiblePath is the path to the device-tree compatible string. It is a
+// package-level variable so tests can override it with a temp file.
+var devicetreeCompatiblePath = "/sys/firmware/devicetree/base/compatible"
+
 //go:embed input_mappings/*.json
 var embeddedInputMappings embed.FS
 
@@ -55,7 +59,7 @@ func DetectDevice() Device {
 
 	minuiDeviceType := detectDeviceByEnv()
 	// Anbernic devices use the Allwinner H616 SoC
-	compatible, err := os.ReadFile("/sys/firmware/devicetree/base/compatible")
+	compatible, err := os.ReadFile(devicetreeCompatiblePath)
 	if err == nil && strings.Contains(string(compatible), "allwinner,h616") {
 		return DeviceAnbernic
 	}
@@ -64,7 +68,7 @@ func DetectDevice() Device {
 	}
 
 	switch minuiDeviceType {
-	case DeviceMiyooFlip:
+	case DeviceMiyooFlip, DeviceTrimui:
 		return minuiDeviceType
 	}
 
@@ -82,6 +86,8 @@ func GetInputMappingBytes() ([]byte, error) {
 		filename = "input_mappings/anbernic.json"
 	case DeviceZero28:
 		filename = "input_mappings/zero28.json"
+	case DeviceTrimui:
+		filename = "input_mappings/trimui.json"
 	default:
 		return nil, nil
 	}
