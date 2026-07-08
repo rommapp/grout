@@ -36,10 +36,19 @@ func TestDetectDeviceByEnv(t *testing.T) {
 
 // withFakeDevicetree sets devicetreeCompatiblePath to a temp file containing the given
 // content (or a non-existent path if content is empty) and restores it on cleanup.
+// The model file is set to a non-existent path by default (so non-Trimui devices are
+// not affected). Use withFakeDevicetreeModel to also set the model file.
 func withFakeDevicetree(t *testing.T, content string) {
 	t.Helper()
-	original := devicetreeCompatiblePath
-	t.Cleanup(func() { devicetreeCompatiblePath = original })
+	originalCompat := devicetreeCompatiblePath
+	originalModel := devicetreeModelPath
+	t.Cleanup(func() {
+		devicetreeCompatiblePath = originalCompat
+		devicetreeModelPath = originalModel
+	})
+
+	// Default: model file does not exist (no Brick detection)
+	devicetreeModelPath = filepath.Join(t.TempDir(), "nonexistent_model")
 
 	if content == "" {
 		devicetreeCompatiblePath = filepath.Join(t.TempDir(), "nonexistent")
@@ -52,6 +61,18 @@ func withFakeDevicetree(t *testing.T, content string) {
 		t.Fatalf("failed to write fake devicetree file: %v", err)
 	}
 	devicetreeCompatiblePath = fakePath
+}
+
+// withFakeDevicetreeModel sets devicetreeModelPath to a temp file containing the given
+// model string. Must be called after withFakeDevicetree.
+func withFakeDevicetreeModel(t *testing.T, model string) {
+	t.Helper()
+	dir := t.TempDir()
+	fakePath := filepath.Join(dir, "model")
+	if err := os.WriteFile(fakePath, []byte(model), 0644); err != nil {
+		t.Fatalf("failed to write fake devicetree model file: %v", err)
+	}
+	devicetreeModelPath = fakePath
 }
 
 // DetectDevice returns DeviceMiyoo immediately when runtime.GOARCH == "arm" (32-bit),
@@ -106,9 +127,34 @@ func TestDetectDevice_Zero28ViaDevicetree(t *testing.T) {
 func TestDetectDevice_TrimuiSmartPro(t *testing.T) {
 	t.Setenv(DeviceType, "tg5040")
 	withFakeDevicetree(t, "allwinner,a133\x00trimui,tg5040")
+	withFakeDevicetreeModel(t, "TrimUI Smart Pro")
 
 	if got := DetectDevice(); got != DeviceTrimui {
 		t.Errorf("DetectDevice() = %q, want %q (tg5040 should detect Trimui even with a133 SoC)", got, DeviceTrimui)
+	}
+}
+
+// The TrimUI Brick also reports tg5040 in MinUI but has a portrait panel (480x800).
+// It must be detected as DeviceTrimuiBrick so that screen rotation is NOT applied.
+func TestDetectDevice_TrimuiBrick(t *testing.T) {
+	t.Setenv(DeviceType, "tg5040")
+	withFakeDevicetree(t, "allwinner,a133\x00trimui,tg5040")
+	withFakeDevicetreeModel(t, "TrimUI Brick")
+
+	if got := DetectDevice(); got != DeviceTrimuiBrick {
+		t.Errorf("DetectDevice() = %q, want %q (tg5040 with Brick model should detect TrimuiBrick)", got, DeviceTrimuiBrick)
+	}
+}
+
+// When the model file doesn't exist or can't be read, a tg5040 device defaults to
+// DeviceTrimui (Smart Pro) rather than failing.
+func TestDetectDevice_TrimuiNoModelFile(t *testing.T) {
+	t.Setenv(DeviceType, "tg5040")
+	withFakeDevicetree(t, "allwinner,a133\x00trimui,tg5040")
+	// devicetreeModelPath is already set to non-existent by withFakeDevicetree
+
+	if got := DetectDevice(); got != DeviceTrimui {
+		t.Errorf("DetectDevice() = %q, want %q (tg5040 without model file should default to Trimui)", got, DeviceTrimui)
 	}
 }
 
@@ -134,12 +180,20 @@ func TestGetInputMappingBytes_LoadsEmbeddedMapping(t *testing.T) {
 		name       string
 		env        string
 		devicetree string
+		model      string   // device-tree model string; empty means no model file
 		wantKeys   []string // top-level keys that must be present; nil means expect nil data
 	}{
 		{
 			name:       "trimui",
 			env:        "tg5040",
 			devicetree: "",
+			wantKeys:   []string{"controller_button_map", "joystick_button_map"},
+		},
+		{
+			name:       "trimui_brick loads same mapping as smart pro",
+			env:        "tg5040",
+			devicetree: "allwinner,a133\x00trimui,tg5040",
+			model:      "TrimUI Brick",
 			wantKeys:   []string{"controller_button_map", "joystick_button_map"},
 		},
 		{
@@ -172,6 +226,9 @@ func TestGetInputMappingBytes_LoadsEmbeddedMapping(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Setenv(DeviceType, tc.env)
 			withFakeDevicetree(t, tc.devicetree)
+			if tc.model != "" {
+				withFakeDevicetreeModel(t, tc.model)
+			}
 			chdirTemp(t)
 
 			data, err := GetInputMappingBytes()

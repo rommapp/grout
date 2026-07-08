@@ -17,18 +17,24 @@ const DeviceType = "MINUI_DEVICE"
 // package-level variable so tests can override it with a temp file.
 var devicetreeCompatiblePath = "/sys/firmware/devicetree/base/compatible"
 
+// devicetreeModelPath is the path to the device-tree model string. Used to distinguish
+// the TrimUI Brick (portrait panel) from the TrimUI Smart Pro (landscape panel), both
+// of which report MINUI_DEVICE=tg5040.
+var devicetreeModelPath = "/sys/firmware/devicetree/base/model"
+
 //go:embed input_mappings/*.json
 var embeddedInputMappings embed.FS
 
 type Device string
 
 const (
-	DeviceMiyoo     Device = "miyoo"
-	DeviceMiyooFlip Device = "miyooflip"
-	DeviceAnbernic  Device = "anbernic"
-	DeviceZero28    Device = "zero28"
-	DeviceTrimui    Device = "trimui"
-	DeviceGeneric   Device = "generic"
+	DeviceMiyoo       Device = "miyoo"
+	DeviceMiyooFlip   Device = "miyooflip"
+	DeviceAnbernic    Device = "anbernic"
+	DeviceZero28      Device = "zero28"
+	DeviceTrimui      Device = "trimui"
+	DeviceTrimuiBrick Device = "trimui-brick"
+	DeviceGeneric     Device = "generic"
 )
 
 func detectDeviceByEnv() Device {
@@ -68,8 +74,17 @@ func DetectDevice() Device {
 	}
 
 	switch minuiDeviceType {
-	case DeviceMiyooFlip, DeviceTrimui:
+	case DeviceMiyooFlip:
 		return minuiDeviceType
+	case DeviceTrimui:
+		// Both the TrimUI Smart Pro and TrimUI Brick report tg5040. The Smart Pro has a
+		// landscape panel (1280x720) while the Brick has a portrait panel (480x800). We
+		// distinguish them via the device-tree model string.
+		model, modelErr := os.ReadFile(devicetreeModelPath)
+		if modelErr == nil && strings.Contains(strings.ToLower(string(model)), "brick") {
+			return DeviceTrimuiBrick
+		}
+		return DeviceTrimui
 	}
 
 	return DeviceGeneric
@@ -86,7 +101,7 @@ func GetInputMappingBytes() ([]byte, error) {
 		filename = "input_mappings/anbernic.json"
 	case DeviceZero28:
 		filename = "input_mappings/zero28.json"
-	case DeviceTrimui:
+	case DeviceTrimui, DeviceTrimuiBrick:
 		filename = "input_mappings/trimui.json"
 	default:
 		return nil, nil

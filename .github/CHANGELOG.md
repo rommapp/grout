@@ -1,6 +1,6 @@
 # Unreleased
 ## Bug Fixes
-- Fixed TrimUI Smart Pro input mapping and screen rotation on MinUI (#252). `DetectDevice()` now returns `DeviceTrimui` for `tg5040` instead of falling through to `DeviceGeneric`, and `OrientationRotate90` is applied for the portrait-mounted panel - @jellydn
+- Fixed TrimUI Smart Pro input mapping and screen rotation on MinUI (#252). `DetectDevice()` now returns `DeviceTrimui` for `tg5040` instead of falling through to `DeviceGeneric`, and `OrientationRotate90` is applied for the landscape panel. The TrimUI Brick (portrait panel) is distinguished via device-tree model and excluded from rotation - @jellydn
 
 ---
 
