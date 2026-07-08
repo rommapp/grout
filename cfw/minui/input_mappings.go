@@ -18,7 +18,7 @@ const DeviceType = "MINUI_DEVICE"
 var devicetreeCompatiblePath = "/sys/firmware/devicetree/base/compatible"
 
 // devicetreeModelPath is the path to the device-tree model string. Used to distinguish
-// the TrimUI Brick (portrait panel) from the TrimUI Smart Pro (landscape panel), both
+// the TrimUI Brick (1024×768 IPS) from the TrimUI Smart Pro (1280×720), both
 // of which report MINUI_DEVICE=tg5040.
 var devicetreeModelPath = "/sys/firmware/devicetree/base/model"
 
@@ -78,7 +78,7 @@ func DetectDevice() Device {
 		return minuiDeviceType
 	case DeviceTrimui:
 		// Both the TrimUI Smart Pro and TrimUI Brick report tg5040. The Smart Pro has a
-		// landscape panel (1280x720) while the Brick has a portrait panel (480x800). We
+		// 1280×720 display while the Brick has a 1024×768 IPS display. We
 		// distinguish them via the device-tree model string.
 		model, modelErr := os.ReadFile(devicetreeModelPath)
 		if modelErr == nil && strings.Contains(strings.ToLower(string(model)), "brick") {
