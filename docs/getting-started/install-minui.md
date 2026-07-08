@@ -43,7 +43,7 @@ _Please help verify compatibility on other devices by reporting your results!_
     `trimui.json` input mapping.
 
     Screen rotation is not required for any of these devices — the kernel/framebuffer
-    already handles display orientation. The TrimUI Brick (portrait panel) and Smart Pro
+    already handles display orientation. The TrimUI Brick (1024×768 IPS) and Smart Pro
     (landscape panel) are distinguished via the device-tree model string.
 
 ## Update

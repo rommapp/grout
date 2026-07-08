@@ -1,6 +1,6 @@
 # Unreleased
 ## Bug Fixes
-- Fixed TrimUI Smart Pro input mapping on MinUI (#252). `DetectDevice()` now returns `DeviceTrimui` for `tg5040` instead of falling through to `DeviceGeneric`. No screen rotation is applied — the kernel framebuffer on TrimUI devices is already correctly oriented. The TrimUI Brick is distinguished via device-tree model - @jellydn
+- Fixed TrimUI Smart Pro input mapping on MinUI (#252). `DetectDevice()` now returns `DeviceTrimui` for `tg5040` instead of falling through to `DeviceGeneric`. No screen rotation is applied — the kernel framebuffer on TrimUI devices is already correctly oriented. The TrimUI Brick (1024×768 IPS) is distinguished from the Smart Pro via device-tree model - @jellydn
 
 ---
 
