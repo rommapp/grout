@@ -1,3 +1,9 @@
+# Unreleased
+## Bug Fixes
+- Fixed TrimUI Smart Pro input mapping and screen rotation on MinUI (#252). `DetectDevice()` now returns `DeviceTrimui` for `tg5040` instead of falling through to `DeviceGeneric`, and `OrientationRotate90` is applied for the portrait-mounted panel - @jellydn
+
+---
+
 # v4.8.0.0
 ## New Platform Support
 - **Spruce Universal Distribution**: Single zip with both ARM32 and ARM64 binaries, supporting A30, Miyoo Mini Flip, Miyoo Flip, TrimUI Brick, and TrimUI Smart Pro. Per-device input mappings and A30 screen rotation. - @pawndev
