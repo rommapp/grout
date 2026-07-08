@@ -123,7 +123,7 @@ func initFramework(currentCFW cfw.CFW) {
 	var minuiDevice minui.Device
 	if currentCFW == cfw.MinUI {
 		minuiDevice = minui.DetectDevice()
-		if minuiDevice == minui.DeviceZero28 || minuiDevice == minui.DeviceTrimui {
+		if minuiDevice == minui.DeviceZero28 {
 			gabaOptions.DisplayOrientation = gaba.OrientationRotate90
 		}
 	}

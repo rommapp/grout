@@ -42,10 +42,9 @@ _Please help verify compatibility on other devices by reporting your results!_
     variable (set to `tg5040` by MinUI). Button mappings are loaded from the embedded
     `trimui.json` input mapping.
 
-    Screen rotation (90° clockwise) is applied for the TrimUI Smart Pro and Smart Pro S,
-    which have landscape panels. The TrimUI Brick has a portrait panel and does not
-    require rotation. The Brick is distinguished from the Smart Pro via the device-tree
-    model string (`/sys/firmware/devicetree/base/model`).
+    Screen rotation is not required for any of these devices — the kernel/framebuffer
+    already handles display orientation. The TrimUI Brick (portrait panel) and Smart Pro
+    (landscape panel) are distinguished via the device-tree model string.
 
 ## Update
 
