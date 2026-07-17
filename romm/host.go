@@ -1,9 +1,12 @@
 package romm
 
 import (
+	"crypto/rand"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"strings"
+	"time"
 )
 
 type Host struct {
@@ -18,7 +21,11 @@ type Host struct {
 	TokenExpiresAt     string `json:"token_expires_at,omitempty"`
 	InsecureSkipVerify bool   `json:"insecure_skip_verify,omitempty"`
 
-	DeviceID   string `json:"device_id,omitempty"`
+	// ClientDeviceID is the client-generated stable identifier sent as
+	// client_device_identifier when initiating device-auth pairing.
+	// DeviceID (below) remains the server-issued device UUID.
+	ClientDeviceID string `json:"client_device_identifier,omitempty"`
+	DeviceID       string `json:"device_id,omitempty"`
 	DeviceName string `json:"device_name,omitempty"`
 	// DeviceClientVersion is the grout version last reported to the server for this
 	// device; used to refresh the server's record after an app upgrade.
@@ -56,4 +63,16 @@ func (h Host) AuthHeader() string {
 	}
 	auth := h.Username + ":" + h.Password
 	return "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
+}
+
+// NewClientDeviceID returns a random stable identifier for this install, sent
+// as client_device_identifier when initiating device-auth pairing.
+func NewClientDeviceID() string {
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		// crypto/rand failing is effectively fatal elsewhere; fall back to a
+		// timestamp so pairing still works.
+		return fmt.Sprintf("grout-%d", time.Now().UnixNano())
+	}
+	return hex.EncodeToString(b)
 }
