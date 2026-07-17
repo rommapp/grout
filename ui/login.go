@@ -161,6 +161,7 @@ func (s *LoginScreen) drawServerInfo(host romm.Host) (romm.Host, bool, error) {
 			return 0
 		}(settings[2].Value().(string)),
 		InsecureSkipVerify: settings[3].Options[settings[3].SelectedOption].Value.(bool),
+		ClientDeviceID:     host.ClientDeviceID,
 		DeviceID:           host.DeviceID,
 		DeviceName:         host.DeviceName,
 	}
@@ -169,20 +170,37 @@ func (s *LoginScreen) drawServerInfo(host romm.Host) (romm.Host, bool, error) {
 }
 
 const (
-	authModeCredentials = "credentials"
-	authModePairingCode = "pairing_code"
+	authModeDevicePairing = "device_pairing"
+	authModePairingCode   = "pairing_code"
 )
 
-// drawAuth collects authentication details (credentials or pairing code).
-func (s *LoginScreen) drawAuth(host romm.Host) (romm.Host, bool, error) {
-	authModeVisible := &atomic.Bool{}
-	authModeVisible.Store(true)
+// authSelection is what the auth screen hands back to the login flow.
+type authSelection struct {
+	Host       romm.Host
+	Mode       string
+	DeviceName string
+	Cancelled  bool
+}
 
-	credentialsVisible := &atomic.Bool{}
-	credentialsVisible.Store(false)
+// drawAuth collects the auth method and its inputs. On RomM 5.0+ the user
+// picks Device Pairing (default) or Pairing Code; older servers only support
+// the pairing code, so the picker is hidden.
+func (s *LoginScreen) drawAuth(host romm.Host, supportsDeviceAuth bool) (authSelection, error) {
+	pickerVisible := &atomic.Bool{}
+	pickerVisible.Store(supportsDeviceAuth)
+
+	deviceVisible := &atomic.Bool{}
+	deviceVisible.Store(supportsDeviceAuth)
 
 	pairingVisible := &atomic.Bool{}
-	pairingVisible.Store(true)
+	pairingVisible.Store(!supportsDeviceAuth)
+
+	defaultDeviceName := host.DeviceName
+	if defaultDeviceName == "" {
+		if hostname, err := os.Hostname(); err == nil {
+			defaultDeviceName = hostname
+		}
+	}
 
 	items := []gabagool.ItemWithOptions{
 		{
@@ -191,10 +209,10 @@ func (s *LoginScreen) drawAuth(host romm.Host) (romm.Host, bool, error) {
 			},
 			Options: []gabagool.Option{
 				{
-					DisplayName: i18n.Localize(&goi18n.Message{ID: "login_auth_credentials", Other: "Credentials"}, nil),
-					Value:       authModeCredentials,
+					DisplayName: i18n.Localize(&goi18n.Message{ID: "login_auth_device_pairing", Other: "Device Pairing"}, nil),
+					Value:       authModeDevicePairing,
 					OnUpdate: func(v interface{}) {
-						credentialsVisible.Store(true)
+						deviceVisible.Store(true)
 						pairingVisible.Store(false)
 					},
 				},
@@ -202,41 +220,27 @@ func (s *LoginScreen) drawAuth(host romm.Host) (romm.Host, bool, error) {
 					DisplayName: i18n.Localize(&goi18n.Message{ID: "login_auth_pairing_code", Other: "Pairing Code"}, nil),
 					Value:       authModePairingCode,
 					OnUpdate: func(v interface{}) {
-						credentialsVisible.Store(false)
+						deviceVisible.Store(false)
 						pairingVisible.Store(true)
 					},
 				},
 			},
-			SelectedOption: 1,
+			SelectedOption: 0,
+			VisibleWhen:    pickerVisible,
 		},
 		{
 			Item: gabagool.MenuItem{
-				Text: i18n.Localize(&goi18n.Message{ID: "login_username", Other: "Username"}, nil),
+				Text: i18n.Localize(&goi18n.Message{ID: "login_device_name", Other: "Device Name"}, nil),
 			},
 			Options: []gabagool.Option{
 				{
 					Type:           gabagool.OptionTypeKeyboard,
-					DisplayName:    host.Username,
-					KeyboardPrompt: host.Username,
-					Value:          host.Username,
+					DisplayName:    defaultDeviceName,
+					KeyboardPrompt: defaultDeviceName,
+					Value:          defaultDeviceName,
 				},
 			},
-			VisibleWhen: credentialsVisible,
-		},
-		{
-			Item: gabagool.MenuItem{
-				Text: i18n.Localize(&goi18n.Message{ID: "login_password", Other: "Password"}, nil),
-			},
-			Options: []gabagool.Option{
-				{
-					Type:           gabagool.OptionTypeKeyboard,
-					Masked:         true,
-					DisplayName:    host.Password,
-					KeyboardPrompt: host.Password,
-					Value:          host.Password,
-				},
-			},
-			VisibleWhen: credentialsVisible,
+			VisibleWhen: deviceVisible,
 		},
 		{
 			Item: gabagool.MenuItem{
@@ -268,25 +272,33 @@ func (s *LoginScreen) drawAuth(host romm.Host) (romm.Host, bool, error) {
 	)
 
 	if err != nil {
-		return host, true, nil
+		return authSelection{Host: host, Cancelled: true}, nil
 	}
 
 	settings := res.Items
-	authMode := settings[0].Options[settings[0].SelectedOption].Value.(string)
 
-	newHost := host
-	if authMode == authModeCredentials {
-		newHost.Username = settings[1].Options[0].Value.(string)
-		newHost.Password = settings[2].Options[0].Value.(string)
-		newHost.Token = ""
-	} else {
-		newHost.Username = ""
-		newHost.Password = ""
-		// Token will be exchanged during login attempt
-		newHost.Token = settings[3].Options[0].Value.(string)
+	sel := authSelection{Host: host, Mode: authModePairingCode}
+	if supportsDeviceAuth {
+		sel.Mode = settings[0].Options[settings[0].SelectedOption].Value.(string)
 	}
 
-	return newHost, false, nil
+	newHost := host
+	newHost.Username = ""
+
+	if sel.Mode == authModeDevicePairing {
+		sel.DeviceName = settings[1].Options[0].Value.(string)
+		if sel.DeviceName == "" {
+			sel.DeviceName = defaultDeviceName
+		}
+		newHost.Token = ""
+	} else {
+		// The pairing code is stashed in Token and exchanged for a real token
+		// during the login attempt (same convention as before).
+		newHost.Token = settings[2].Options[0].Value.(string)
+	}
+
+	sel.Host = newHost
+	return sel, nil
 }
 
 func LoginFlow(existingHost romm.Host) (*internal.Config, error) {
@@ -309,9 +321,9 @@ func LoginFlow(existingHost romm.Host) (*internal.Config, error) {
 
 		// Validate connection before asking for auth
 		connResult := validateConnection(host)
-		if !connResult.Success {
+		if !connResult.Result.Success {
 			gabagool.ConfirmationMessage(
-				i18n.Localize(connResult.ErrorMsg, nil),
+				i18n.Localize(connResult.Result.ErrorMsg, nil),
 				ContinueFooter(),
 				gabagool.MessageOptions{},
 			)
@@ -321,17 +333,17 @@ func LoginFlow(existingHost romm.Host) (*internal.Config, error) {
 
 		// Step 2: Auth (loop until success or back)
 		for {
-			authHost, authCancelled, authErr := screen.drawAuth(host)
+			sel, authErr := screen.drawAuth(host, connResult.SupportsDeviceAuth)
 			if authErr != nil {
 				break
 			}
-			if authCancelled {
+			if sel.Cancelled {
 				// Go back to server info
 				existingHost = host
 				break
 			}
 
-			loginOutput := attemptLogin(authHost)
+			loginOutput := attemptLogin(sel)
 
 			if loginOutput.Result.Success {
 				config := &internal.Config{
@@ -341,32 +353,48 @@ func LoginFlow(existingHost romm.Host) (*internal.Config, error) {
 				return config, nil
 			}
 
-			gabagool.ConfirmationMessage(
-				i18n.Localize(loginOutput.Result.ErrorMsg, nil),
-				ContinueFooter(),
-				gabagool.MessageOptions{},
-			)
+			// A cancelled device pairing has no message — loop back silently.
+			if loginOutput.Result.ErrorMsg != nil {
+				gabagool.ConfirmationMessage(
+					i18n.Localize(loginOutput.Result.ErrorMsg, nil),
+					ContinueFooter(),
+					gabagool.MessageOptions{},
+				)
+			}
 			host = loginOutput.Host
 		}
 	}
 }
 
-func validateConnection(host romm.Host) loginAttemptResult {
+// connectionValidation reports server reachability plus whether the server is
+// new enough (RomM 5.0+) to offer device-auth pairing.
+type connectionValidation struct {
+	Result             loginAttemptResult
+	SupportsDeviceAuth bool
+}
+
+func validateConnection(host romm.Host) connectionValidation {
 	validationClient := romm.NewClient(host.URL(), romm.WithInsecureSkipVerify(host.InsecureSkipVerify), romm.WithTimeout(internal.ValidationTimeout))
 
 	result, _ := gabagool.ProcessMessage(
 		i18n.Localize(&goi18n.Message{ID: "login_validating_connection", Other: "Validating connection..."}, nil),
 		gabagool.ProcessMessageOptions{},
-		func() (interface{}, error) {
-			err := validationClient.ValidateConnection()
-			if err != nil {
-				return classifyLoginError(err), nil
+		func() (connectionValidation, error) {
+			if err := validationClient.ValidateConnection(); err != nil {
+				return connectionValidation{Result: classifyLoginError(err)}, nil
 			}
-			return loginAttemptResult{Success: true}, nil
+			supports := false
+			if hb, err := validationClient.GetHeartbeat(); err == nil {
+				supports = hb.SupportsDeviceAuth()
+			}
+			return connectionValidation{
+				Result:             loginAttemptResult{Success: true},
+				SupportsDeviceAuth: supports,
+			}, nil
 		},
 	)
 
-	return result.(loginAttemptResult)
+	return result
 }
 
 type loginAttemptOutput struct {
@@ -374,42 +402,95 @@ type loginAttemptOutput struct {
 	Host   romm.Host
 }
 
-func attemptLogin(host romm.Host) loginAttemptOutput {
+func attemptLogin(sel authSelection) loginAttemptOutput {
+	if sel.Mode == authModeDevicePairing {
+		return attemptDevicePairing(sel)
+	}
+	return attemptPairingCode(sel.Host)
+}
+
+// attemptDevicePairing runs the RomM 5.0+ device-auth pairing screen. A
+// cancelled pairing returns no ErrorMsg so the flow loops back silently.
+func attemptDevicePairing(sel authSelection) loginAttemptOutput {
+	screen := NewDevicePairingScreen()
+	result := screen.Execute(DevicePairingInput{Host: sel.Host, DeviceName: sel.DeviceName})
+
+	switch result.Outcome {
+	case DevicePairingSuccess:
+		return loginAttemptOutput{Result: loginAttemptResult{Success: true}, Host: result.Host}
+	case DevicePairingCancelled:
+		return loginAttemptOutput{Result: loginAttemptResult{ErrorType: "cancelled"}, Host: result.Host}
+	case DevicePairingDenied:
+		return loginAttemptOutput{
+			Result: loginAttemptResult{
+				ErrorType: "denied",
+				ErrorMsg:  &goi18n.Message{ID: "login_error_pairing_denied", Other: "Pairing was denied on the server."},
+			},
+			Host: result.Host,
+		}
+	case DevicePairingExpired:
+		return loginAttemptOutput{
+			Result: loginAttemptResult{
+				ErrorType: "expired",
+				ErrorMsg:  &goi18n.Message{ID: "login_error_pairing_expired", Other: "The pairing request expired.\nPlease try again."},
+			},
+			Host: result.Host,
+		}
+	default:
+		if result.Err != nil {
+			return loginAttemptOutput{Result: classifyLoginError(result.Err), Host: result.Host}
+		}
+		return loginAttemptOutput{
+			Result: loginAttemptResult{
+				ErrorType: "unknown",
+				ErrorMsg:  &goi18n.Message{ID: "login_error_unexpected", Other: "Something unexpected happened!\nCheck the logs for more info."},
+			},
+			Host: result.Host,
+		}
+	}
+}
+
+// attemptPairingCode exchanges a typed pairing code for a token (pre-5.0 flow,
+// still supported on 5.0+).
+func attemptPairingCode(host romm.Host) loginAttemptOutput {
+	if host.Token == "" {
+		return loginAttemptOutput{
+			Result: loginAttemptResult{
+				ErrorType: "pairing",
+				ErrorMsg:  &goi18n.Message{ID: "login_error_invalid_code", Other: "Invalid or expired pairing code.\nPlease try again."},
+			},
+			Host: host,
+		}
+	}
+
 	result, _ := gabagool.ProcessMessage(
 		i18n.Localize(&goi18n.Message{ID: "login_validating", Other: "Logging in..."}, nil),
 		gabagool.ProcessMessageOptions{},
-		func() (interface{}, error) {
-			if host.HasTokenAuth() {
-				// Token field contains a pairing code — exchange it for a real token
-				tokenResp, err := romm.ExchangeToken(host.URL(), host.Token, host.InsecureSkipVerify)
-				if err != nil {
-					return loginAttemptOutput{Result: classifyLoginError(err), Host: host}, nil
-				}
-				host.Token = tokenResp.RawToken
-				host.TokenName = tokenResp.Name
-				host.TokenExpiresAt = tokenResp.ExpiresAt
+		func() (loginAttemptOutput, error) {
+			// Token field contains a pairing code — exchange it for a real token
+			tokenResp, err := romm.ExchangeToken(host.URL(), host.Token, host.InsecureSkipVerify)
+			if err != nil {
+				return loginAttemptOutput{Result: classifyLoginError(err), Host: host}, nil
+			}
+			host.Token = tokenResp.RawToken
+			host.TokenName = tokenResp.Name
+			host.TokenExpiresAt = tokenResp.ExpiresAt
 
-				if missing := romm.MissingSyncScopes(tokenResp.Scopes); len(missing) > 0 {
-					gabagool.GetLogger().Warn("Paired token is missing scopes needed for save sync",
-						"missing", missing, "granted", tokenResp.Scopes)
-				}
+			if missing := romm.MissingSyncScopes(tokenResp.Scopes); len(missing) > 0 {
+				gabagool.GetLogger().Warn("Paired token is missing scopes needed for save sync",
+					"missing", missing, "granted", tokenResp.Scopes)
+			}
 
-				// Validate the token works
-				client := romm.NewClientFromHost(host, internal.LoginTimeout)
-				if err := client.ValidateToken(); err != nil {
-					return loginAttemptOutput{Result: classifyLoginError(err), Host: host}, nil
-				}
+			// Validate the token works
+			client := romm.NewClientFromHost(host, internal.LoginTimeout)
+			if err := client.ValidateToken(); err != nil {
+				return loginAttemptOutput{Result: classifyLoginError(err), Host: host}, nil
+			}
 
-				// Fetch username for display purposes if not already known
-				if host.Username == "" {
-					if user, err := client.GetCurrentUser(); err == nil {
-						host.Username = user.Username
-					}
-				}
-			} else {
-				client := romm.NewClientFromHost(host, internal.LoginTimeout)
-				if err := client.Login(host.Username, host.Password); err != nil {
-					return loginAttemptOutput{Result: classifyLoginError(err), Host: host}, nil
+			// Fetch username for display purposes if not already known
+			if host.Username == "" {
+				if user, err := client.GetCurrentUser(); err == nil {
+					host.Username = user.Username
 				}
 			}
 
@@ -417,7 +498,7 @@ func attemptLogin(host romm.Host) loginAttemptOutput {
 		},
 	)
 
-	return result.(loginAttemptOutput)
+	return result
 }
 
 func classifyLoginError(err error) loginAttemptResult {
