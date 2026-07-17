@@ -37,4 +37,7 @@ const (
 
 	endpointTokenExchange = "/api/client-tokens/exchange"
 	endpointCurrentUser   = "/api/users/me"
+
+	endpointDeviceAuthInit  = "/api/auth/device/init"
+	endpointDeviceAuthToken = "/api/auth/device/token"
 )
