@@ -110,11 +110,19 @@ func (s *DevicePairingScreen) Execute(input DevicePairingInput) DevicePairingOut
 		return s.poll(client, initResp, cancelled, pollTickDefault), nil
 	})
 
-	if msgErr != nil && errors.Is(msgErr, gaba.ErrCancelled) {
-		// Stop the background polling goroutine promptly; the server-side
-		// pairing request expires on its own.
-		cancelled.Store(true)
-		return DevicePairingOutput{Outcome: DevicePairingCancelled, Host: host}
+	// Stop the background poller no matter how ProcessMessage exited; harmless
+	// if the poll loop already returned.
+	cancelled.Store(true)
+
+	if msgErr != nil {
+		// A cancel that raced pairing completion still has the token — honor
+		// the success instead of discarding an issued credential.
+		if errors.Is(msgErr, gaba.ErrCancelled) && result.Outcome != DevicePairingSuccess {
+			return DevicePairingOutput{Outcome: DevicePairingCancelled, Host: host}
+		}
+		if !errors.Is(msgErr, gaba.ErrCancelled) {
+			return DevicePairingOutput{Outcome: DevicePairingFailed, Host: host, Err: msgErr}
+		}
 	}
 
 	if result.Outcome != DevicePairingSuccess {
