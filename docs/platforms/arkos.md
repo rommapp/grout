@@ -91,3 +91,4 @@ This table shows the mappings of RomM Fs Slug to ArkOS's platform folders.
 | WonderSwan Color              | wonderswan-color           | wonderswancolor             |
 | ZX Spectrum                   | zxs                        | zxspectrum                  |
 | ZX81                          | zx81                       | zx81                        |
+--8<-- "docs/_includes/cfw-links.md"

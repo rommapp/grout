@@ -21,16 +21,16 @@ _Please help verify compatibility on other devices by reporting your results!_
    Knulli.
 3. Unzip the downloaded archive.
 4. Copy the Grout folder to your Tools directory (`/userdata/roms/tools`)
-5. On the main Knulli menu, press `start`, navigate to `Game Settings`, and select `Update Gameslist`.
+5. On the main Knulli menu, press `start`, navigate to `Game Settings`, and select `Update Gamelist`.
 6. Launch Grout from the `Tools` menu and enjoy!
 
 ## Important Configuration
 
-!!! important
-    Grout requires a setting to be toggled in Knulli to enable art downloading.
-
-    On the main Knulli menu, press `start`, 'System Settings', `Frontend Developer Options` (at the very bottom), and turn
-    `Search For Local Art` on.
+> [!IMPORTANT]
+> Grout requires a setting to be toggled in Knulli to enable art downloading.
+>
+> On the main Knulli menu, press `start`, 'System Settings', `Frontend Developer Options` (at the very bottom), and turn
+> `Search For Local Art` on.
 
 ## Update
 

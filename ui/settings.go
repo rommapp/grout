@@ -68,12 +68,12 @@ func (s *SettingsScreen) Draw(input SettingsInput) (SettingsOutput, error) {
 	config := input.Config
 	output := SettingsOutput{Action: SettingsActionBack, Config: config}
 
-	items := s.buildMenuItems(config, input.Host)
+	items := s.buildMenuItems(input.Host)
 
 	result, err := gaba.OptionsList(
 		i18n.Localize(&goi18n.Message{ID: "settings_title", Other: "Settings"}, nil),
 		gaba.OptionListSettings{
-			FooterHelpItems:      OptionsListFooter(),
+			FooterHelpItems:      []gaba.FooterHelpItem{FooterBack(), FooterSelect()},
 			InitialSelectedIndex: input.LastSelectedIndex,
 			VisibleStartIndex:    input.LastVisibleStartIndex,
 			StatusBar:            StatusBar(),
@@ -155,7 +155,7 @@ func (s *SettingsScreen) Draw(input SettingsInput) (SettingsOutput, error) {
 	return output, nil
 }
 
-func (s *SettingsScreen) buildMenuItems(config *internal.Config, host romm.Host) []gaba.ItemWithOptions {
+func (s *SettingsScreen) buildMenuItems(host romm.Host) []gaba.ItemWithOptions {
 	order := make([]SettingType, 0, len(settingsOrder)+1)
 	if !host.HasTokenAuth() {
 		order = append(order, SettingSwitchToToken)

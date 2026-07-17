@@ -37,6 +37,7 @@ theme:
 
 plugins:
   - search
+  - gh-admonitions
   - glightbox:
       skip_classes:
         - skip-lightbox
@@ -85,7 +86,7 @@ nav:
       - CFW Specific Info:
           - Allium: platforms/allium.md
           - ArkOS / dArkOS: platforms/arkos.md
-          - Batocera: platforms/BATOCERA.md
+          - Batocera: platforms/batocera.md
           - Knulli: platforms/knulli.md
           - Koriki: platforms/koriki.md
           - MinUI: platforms/minui.md

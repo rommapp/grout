@@ -29,7 +29,7 @@ This table shows the mappings of RomM Fs Slug to NextUI's platform folders.
 | Galaksija                     | galaksija                  | *(none)*                                        |
 | Game & Watch                  | g-and-w                    | *(none)*                                        |
 | Game Boy                      | gb                         | Game Boy (GB)                                   |
-| Game Boy Advance              | gba                        | Game Boy Advance (MGBA), Game Boy Advance (GBA) |
+| Game Boy Advance              | gba                        | Game Boy Advance (GBA), Game Boy Advance (MGBA) |
 | Game Boy Color                | gbc                        | Game Boy Color (GBC)                            |
 | Intellivision                 | intellivision              | *(none)*                                        |
 | J2ME                          | j2me                       | *(none)*                                        |

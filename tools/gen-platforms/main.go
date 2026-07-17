@@ -19,8 +19,10 @@ import (
 
 var cfwMapping = map[string]string{
 	"ALLIUM":   "allium",
+	"ARKOS":    "arkos",
 	"BATOCERA": "batocera",
 	"KNULLI":   "knulli",
+	"KORIKI":   "koriki",
 	"MUOS":     "muos",
 	"NEXTUI":   "nextui",
 	"MINUI":    "minui",
@@ -37,7 +39,7 @@ func main() {
 		arg := strings.ToUpper(os.Args[1])
 		if _, ok := cfwMapping[arg]; !ok {
 			fmt.Fprintf(os.Stderr, "Unknown CFW: %s\n", os.Args[1])
-			fmt.Fprintf(os.Stderr, "Valid options: allium, batocera, knulli, muos, nextui, onion, rocknix, spruce, trimui\n")
+			fmt.Fprintf(os.Stderr, "Valid options: allium, arkos, batocera, knulli, koriki, minui, muos, nextui, onion, rocknix, spruce, trimui\n")
 			os.Exit(1)
 		}
 		targets = []string{arg}
@@ -56,7 +58,7 @@ func main() {
 }
 
 func generatePlatforms(cfwName string) error {
-	mdPath := filepath.Join("docs", "platforms", cfwName+".md")
+	mdPath := filepath.Join("docs", "platforms", strings.ToLower(cfwName)+".md")
 	jsonPath := filepath.Join("cfw", cfwMapping[cfwName], "data", "platforms.json")
 
 	file, err := os.Open(mdPath)

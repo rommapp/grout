@@ -2,8 +2,8 @@
 
 This guide walks you through using Grout to download games from your RomM instance.
 
-!!! important
-    Grout aggressively adopts new RomM features. The required RomM version matches the first three components of Grout's version number. The fourth component is for Grout-specific patches.
+> [!IMPORTANT]
+> Grout aggressively adopts new RomM features. The required RomM version matches the first three components of Grout's version number. The fourth component is for Grout-specific patches.
 
 
 ## Button Reference
@@ -18,10 +18,28 @@ Grout attempts to be consistent with its controls. Here's a quick reference:
 | `Y`          | Tertiary action (Filters, Save Sync, Game Options) |
 | `Start`      | Confirm / Save settings                            |
 | `Select`     | Toggle list mode (multi-select, reorder)           |
-| `L1` / `R1`  | Shoulder buttons (used in button combos)           |
+| `L1` / `R1`  | Jump letter groups in game lists; deselect/select all in multi-select; used in button combos |
 | `Menu`       | Context action (BIOS, also used in button combos)  |
+| `L2`         | Acts as `Menu` on Miyoo devices                    |
 | `Up/Down`    | Navigate lists                                     |
 | `Left/Right` | Cycle options / Jump pages in list                 |
+
+### On-Screen Keyboard
+
+Wherever Grout needs text input (search, hostname, pairing code, device name, slot names, custom folder names), an
+on-screen keyboard appears:
+
+| Button      | Description                                          |
+|-------------|------------------------------------------------------|
+| `D-Pad`     | Move between keys                                    |
+| `A`         | Press the highlighted key                            |
+| `B`         | Backspace                                            |
+| `X`         | Space (toggles symbols on the URL keyboard)          |
+| `Select`    | Toggle shift                                         |
+| `L1` / `R1` | Move the text cursor left/right                      |
+| `Start`     | Save and close                                       |
+| `Y`         | Exit without saving                                  |
+| `Menu`      | Toggle the keyboard help overlay                     |
 
 
 ## Status Bar Icons
@@ -38,17 +56,10 @@ These icons appear during the [background cache sync](#background-cache-sync) pr
 | ![Database Check](../resources/img/user_guide/statusbar_icons/Database%20Check.png){ width="50" } | Cache sync completed successfully |
 | ![Database Alert](../resources/img/user_guide/statusbar_icons/Database%20Alert.png){ width="50" } | Cache sync encountered an error   |
 
-### Save Sync Icons
+### Update Icon
 
-These icons appear during [Save Sync](save-sync.md) operations:
-
-| Icon                                                                                              | Description                                        |
-|---------------------------------------------------------------------------------------------------|----------------------------------------------------|
-| ![Cloud Sync](../resources/img/user_guide/statusbar_icons/Cloud%20Sync.png){ width="50" }         | Save sync in progress                              |
-| ![Cloud Upload](../resources/img/user_guide/statusbar_icons/Cloud%20Upload.png){ width="50" }     | Uploading saves to RomM                            |
-| ![Cloud Download](../resources/img/user_guide/statusbar_icons/Cloud%20Download.png){ width="50" } | Downloading saves from RomM                        |
-| ![Cloud Check](../resources/img/user_guide/statusbar_icons/Cloud%20Check.png){ width="50" }       | Save sync completed successfully                   |
-| ![Cloud Alert](../resources/img/user_guide/statusbar_icons/Cloud%20Alert.png){ width="50" }       | Save sync encountered an error, check the log file |
+A download icon appears in the status bar when a Grout update is available on your release channel. Install it from
+**Settings > Check for Updates**.
 
 
 ## First Launch and Login
@@ -90,9 +101,6 @@ First, enter your server connection details:
 
 After connecting to your server, choose an authentication method.
 
-!!! warning
-    The next Grout release will phase out password-based authentication. You will be required to use an API Token.
-
 #### Pairing Code
 
 ![Grout preview, pairing code authentication](../resources/img/user_guide/auth_pairing.png "Grout preview, pairing code authentication")
@@ -100,15 +108,15 @@ After connecting to your server, choose an authentication method.
 API tokens are the recommended way to authenticate with your RomM server. They are more secure than passwords, can be
 revoked individually, and work with all authentication setups including OIDC.
 
-1. Select **Pair with Token** as the authentication method
-2. Grout will display a pairing code on screen
-3. In your RomM web interface, go to **Settings > API Tokens** and enter the pairing code
-4. Once paired, Grout will automatically receive an API token
+1. In your RomM web interface, open **Client API Tokens** and generate a pairing code
+2. In Grout, select **Pairing Code** as the authentication method (it's the default)
+3. Enter the code using the on-screen keyboard
+4. Press `Start` to log in - Grout exchanges the code for an API token automatically
 
 The token is saved to your device and used for all future connections.
 
-!!! tip
-    You can view token details (name, expiry) on the [Grout Info](settings.md#main-settings) screen.
+> [!TIP]
+> You can view token details (name, expiry) on the [Grout Info](settings.md#main-settings) screen.
 
 **Required token permissions:**
 
@@ -164,6 +172,8 @@ pre-selected. If not, it'll suggest creating one with the correct name for your 
 - `Left/Right` to cycle through options for the selected platform
 - `A` to open a list picker showing all available options at once
 - `Up/Down` to move between platforms
+- `Y` to open filters (Mapping Status, Generation, Category, Family) to narrow the platform list — inside, `X` resets
+  all filters and `Start` applies them
 - `Start` to save your mappings
 
 When you select **Custom...**, an on-screen keyboard appears where you can type your desired folder name. If you return
@@ -176,24 +186,21 @@ You can change these mappings later from [Settings](settings.md#directory-mappin
 Grout uses platform mappings to determine where to save downloaded games on your device. Each Custom Firmware (CFW) uses
 different folder naming conventions. Use these references to see the exact folder names used by your CFW:
 
+- [Allium](../platforms/allium.md) - Uppercase short codes (e.g., `GB`, `GBA`, `PS`)
+- [ArkOS / dArkOS](../platforms/arkos.md) - ES-DE style folder names (e.g., `gb`, `snes`, `psx`)
+- [Batocera](../platforms/batocera.md) - ES-DE style folder names (e.g., `gb`, `megadrive`, `psx`)
 - [KNULLI](../platforms/knulli.md) - ES-DE style folder names (e.g., `gb`, `snes`, `psx`)
+- [Koriki](../platforms/koriki.md) - Uppercase short codes (e.g., `GB`, `GBA`, `PS`)
+- [MinUI](../platforms/minui.md) - Descriptive names with tags (e.g., `Game Boy (GB)`)
 - [muOS](../platforms/muos.md) - Mixed short codes and descriptive names (e.g., `gb`, `Nintendo Game Boy`)
 - [NextUI](../platforms/nextui.md) - Descriptive names with tags (e.g., `Game Boy (GB)`)
+- [Onion](../platforms/onion.md) - Uppercase short codes (e.g., `GB`, `GBA`, `PS`)
 - [ROCKNIX](../platforms/rocknix.md) - ES-DE style folder names (e.g., `gb`, `snes`, `psx`)
 - [Spruce](../platforms/spruce.md) - Uppercase short codes (e.g., `GB`, `SFC`, `PS`)
-- [Batocera](../platforms/BATOCERA.md) - ES-DE style folder names (e.g., `gb`, `megadrive`, `psx`)
+- [TrimUI](../platforms/trimui.md) - Uppercase short codes (e.g., `GB`, `GBA`, `PS`)
 
 
 ## Background Cache Sync
-
-!!! warning
-    Grout currently does not gracefully handle deletions.
-
-    Deleted games, platforms and collections will continue to be shown until
-    the [local cache is rebuilt](settings.md#rebuild-cache).
-
-    We are waiting for updated API endpoints that will allow Grout to remove deleted items from the cache without a
-    rebuild. You can track the progress of this in [this issue](https://github.com/rommapp/grout/issues/83).
 
 Grout maintains a local cache of your RomM library data (platforms, games, and collections) to provide a fast,
 responsive browsing experience. This cache syncs automatically in the background each time you launch Grout.
@@ -203,6 +210,7 @@ responsive browsing experience. This cache syncs automatically in the background
 - On startup, Grout begins syncing in the background while you can immediately start browsing
 - A sync icon appears in the status bar during the sync process
 - Grout uses incremental updates, only fetching data that has changed since your last session
+- Games, platforms, and collections deleted on the server are removed from the cache automatically
 - When complete, the sync icon updates to indicate success
 
 **First launch:**
@@ -211,9 +219,9 @@ On your very first launch (after platform mapping), Grout builds the initial cac
 
 This may take a moment depending on the size of your library.
 
-!!! tip
-    If you need to completely rebuild the cache from scratch, use **Rebuild Cache** in
-    [Advanced Settings](settings.md#rebuild-cache).
+> [!TIP]
+> If you need to completely rebuild the cache from scratch, use **Rebuild Cache** in
+> [Advanced Settings](settings.md#rebuild-cache).
 
 
 ## Browsing Games
@@ -230,7 +238,7 @@ platforms - NES, SNES, PlayStation, whatever you've got.
 - `Up/Down` to scroll through platforms
 - `A` to select a platform or collection
 - `X` to open Settings
-- `Y` to open the Save Sync menu (when Save Sync is enabled in Manual mode, or when issues occur in Automatic mode)
+- `Y` to open the Sync Menu (shown when a device is registered for Save Sync; hidden in Kid Mode)
 - `Select` to enter reordering mode
 - `B` to quit Grout
 
@@ -265,12 +273,12 @@ shown as prefixes (e.g., `[nes] Tetris`, `[snes] Tetris Battle Gaiden`)
 
 ![Grout preview, collection content - unified](../resources/img/user_guide/collections_unified.png "Grout preview, collection content - unified")
 
-!!! warning
-    If you skipped a platform in the mapping screen, you won't see games for that platform in your collections.
+> [!WARNING]
+> If you skipped a platform in the mapping screen, you won't see games for that platform in your collections.
 
-!!! tip
-    Regular collections, smart collections, and virtual collections can be toggled on/off
-    in [Settings](settings.md#collections-settings).
+> [!TIP]
+> Regular collections, smart collections, and virtual collections can be toggled on/off
+> in [Settings](settings.md#collections-settings).
 
 
 ### Game List
@@ -287,12 +295,13 @@ If you entered a search query, you'll see `[Search: "your search term"] | Platfo
 
 - `Up/Down` to scroll through games
 - `Left/Right` to skip entire pages
+- `L1` / `R1` to jump to the previous/next letter group
 - `A` to select a single game
 - `Select` to enter multi-select mode, then use `A` to select/deselect games
 - `X` to open the search keyboard
 - `Y` to open filters
-- `Menu` to access BIOS downloads (when available)
-- `B` to go back
+- `Menu` (or `L2` on Miyoo devices) to access BIOS downloads (when available)
+- `B` to go back (clears the active search or filters first, most recent first)
 
 **Multi-Select Mode:**
 
@@ -302,10 +311,16 @@ once.
 
 Check all the ones you want, then press `Start` to confirm your selections.
 
+While in multi-select mode:
+
+- `R1` to select all games
+- `L1` to deselect all games
+- `Select` again to exit multi-select mode
+
 ![Grout preview, games multi select](../resources/img/user_guide/multi_select.png "Grout preview, games multi select")
 
-!!! tip
-    Box art must be enabled in [Settings](settings.md#box-art) for it to appear.
+> [!TIP]
+> Box art must be enabled in [Settings](settings.md#box-art) for it to appear.
 
 
 ### Filters
@@ -323,7 +338,11 @@ Press `Y` from any game list to open the filters screen. You can filter games by
 - Age Rating
 - Tag
 
-Only filter categories that have values for the current platform are shown. When a filter is active, the title bar displays `[Filtered]`. Press `B` to clear all filters and return to the full list.
+Only filter categories that have values for the current platform are shown. On the filters screen, use `Left/Right` to
+cycle a filter's values (or press `A` to open a list picker), then press `Start` to apply or `B` to cancel.
+
+When a filter is active, the title bar displays `[Filtered]`. Pressing `B` in the game list clears the active search
+and filters — most recently applied first — before going back.
 
 ### Search
 
@@ -349,12 +368,12 @@ You'll see:
 - **Summary** - A description of the game
 - **Metadata** - Release date, genres, developers/publishers, game modes, regions, languages, and file size
 - **Multi-file indicator** - If the game has multiple files (like multi-disc PlayStation games)
-- **QR code** - Scan this to view the game's page on your RomM web interface
 
 From here:
 
 - `A` to download the game (or `X` if a file version dropdown is present)
 - `Y` to open Game Options
+- `Up/Down` to scroll, `Left/Right` to jump between sections
 - `B` to go back without downloading
 
 ### File Version Selection
@@ -370,16 +389,14 @@ different revisions (Rev A, Rev B). When a game has multiple versions available:
 
 ### Game Options
 
-- **Save Directory** - Choose which emulator's save folder this game should use. This overrides the platform-wide
-  setting configured in Save Sync Mappings. When changed, Grout automatically moves existing save files to the new
-  location. This is useful when you use different emulators for specific games within the same platform.
 - **Save Slot** - Choose which save slot to sync to for this game. Appears when Save Sync is enabled (device
   registered). You can select an existing slot or create a new one with **New Slot...**. Changing the slot triggers
   a sync automatically. See [Save Slots](save-sync.md#save-slots) for details.
+- **Show QR Code** - Display a QR code that links to this game's page on your RomM web interface.
 
-!!! important
-    **Kid Mode Impact:** When Kid Mode is enabled, the Game Options screen is hidden.
-    See [Settings Reference](settings.md#kid-mode) to learn how to temporarily or permanently disable Kid Mode.
+> [!IMPORTANT]
+> **Kid Mode Impact:** When Kid Mode is enabled, the Game Options screen is hidden.
+> See [Settings Reference](settings.md#kid-mode) to learn how to temporarily or permanently disable Kid Mode.
 
 
 ## Downloading Games
@@ -389,7 +406,7 @@ After you've selected games (either from the game list or game details screen), 
 ![Grout preview, game download](../resources/img/user_guide/download.png "Grout preview, game download")
 
 You'll see a progress bar and a list of games being downloaded. Grout downloads your ROMs directly from RomM to the
-appropriate directory on your device. Press `Y` to cancel the download.
+appropriate directory on your device. Press `Y` to cancel the download, or `X` to toggle the download speed display.
 
 **What Happens During Download:**
 
@@ -415,13 +432,16 @@ ready to play.
 Many emulators require BIOS files to function properly. Grout can download these files directly from your RomM server to
 the correct location on your device.
 
-!!! important
-    **Kid Mode Impact:** When Kid Mode is enabled, the BIOS download screen is hidden.
-    See [Settings Reference](settings.md#kid-mode) to learn how to temporarily or permanently disable Kid Mode.
+> [!IMPORTANT]
+> **Kid Mode Impact:** When Kid Mode is enabled, the BIOS download screen is hidden.
+> See [Settings Reference](settings.md#kid-mode) to learn how to temporarily or permanently disable Kid Mode.
 
 ![Grout preview, BIOS download](../resources/img/user_guide/bios_download.png "Grout preview, BIOS download")
 
 ### Accessing BIOS Downloads
 
-From the game list, press `Menu` on a platform that has BIOS files available in your RomM library. You'll see
-a "BIOS" option in the footer when BIOS files are available for that platform.
+From the game list, press `Menu` (or `L2` on Miyoo devices) on a platform that has BIOS files available in your RomM
+library. You'll see a "BIOS" option in the footer when BIOS files are available for that platform.
+
+On the BIOS screen, missing files are pre-selected. Press `A` to toggle individual files, `Start` to download the
+selected files, or `B` to go back.

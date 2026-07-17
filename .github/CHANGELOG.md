@@ -1,3 +1,40 @@
+# v4.9.1.0
+## Save Sync
+- **Upload Rejection Recovery**: Upload 409 rejections from the server are now reconciled into downloads or conflicts instead of dead-ending the sync (#250)
+## UI
+- **Platform Mapping Filters**: Filters with no available options are now hidden (#247)
+
+# v4.9.0.0
+## Server-Driven Save Sync Orchestration
+Requires RomM 4.9. Sync decisions are now made by the RomM server's sync orchestrator instead of on-device:
+
+- **Negotiate Flow**: Grout hashes local saves and sends them to the server, which returns a plan of uploads, downloads, conflicts, and no-ops
+- **Safer Conflicts**: Conflict resolution now defaults to **Skip** - nothing is overwritten without an explicit choice
+- **Redundant Upload Suppression**: Saves that are byte-identical to what was just downloaded are no longer re-uploaded
+- **Discovery Fallback**: Remote-only saves are restored automatically after an SD reflash or fresh install
+- **Stable Slot Identity**: Per-save sync state is persisted, and the default slot is now "autosave"
+- **Scope Warnings**: Grout warns when your API token is missing save-sync scopes
+
+## Improvements
+- **Shoulder Button Navigation**: L1/R1 jump between letter groups in game lists - @jtbrough
+- **Platform Mapping Filters**: Filter the mapping list by mapping status, generation, category, and family
+- **Lenient ROM Matching**: Case-insensitive and accent-folding fallback when matching local files to the library
+- **NextUI Save Matching**: Saves are matched under both NextUI naming conventions (#245)
+
+## Bug Fixes
+- Fixed PSP save sync on Knulli by externalizing save directories
+- Fixed m3u path references in gamelist.xml when unzipping multi-disc games
+- Fixed SprigUI platform fallback on Spruce
+- Disabled keyboard and joystick events on NextUI Miyoo devices
+- Made the Grout binary executable before each launch on EmulationStation CFWs
+
+# v4.8.1.0
+Compatibility release for RomM 4.8.1.
+
+# v4.8.0.1
+## New Device Support
+- **GKD Pixel 2** on Spruce. Thanks for the assist @theycallmeboxy!
+
 # v4.8.0.0
 ## New Platform Support
 - **Spruce Universal Distribution**: Single zip with both ARM32 and ARM64 binaries, supporting A30, Miyoo Mini Flip, Miyoo Flip, TrimUI Brick, and TrimUI Smart Pro. Per-device input mappings and A30 screen rotation. - @pawndev

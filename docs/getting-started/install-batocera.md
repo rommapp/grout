@@ -15,8 +15,10 @@ _Please help verify compatibility on other devices by reporting your results!_
 ## Installation Steps
 
 1. Ensure your device is running Batocera.
-2. Download the [latest Grout release](https://github.com/rommapp/grout/releases/latest/download/Grout-Batocera.zip) for
-   Batocera.
+2. Download the latest Grout release for your device's architecture:
+    - [Grout-Batocera-arm64.zip](https://github.com/rommapp/grout/releases/latest/download/Grout-Batocera-arm64.zip) — ARM64 devices (most retro handhelds)
+    - [Grout-Batocera-amd64.zip](https://github.com/rommapp/grout/releases/latest/download/Grout-Batocera-amd64.zip) — 64-bit x86 PCs
+    - [Grout-Batocera-x86.zip](https://github.com/rommapp/grout/releases/latest/download/Grout-Batocera-x86.zip) — 32-bit x86 devices
 3. Unzip the downloaded archive.
 4. Copy the `Grout` folder to your Ports directory (`/userdata/roms/ports/`)
 5. Copy the `Grout.sh` file to the same Ports directory (`/userdata/roms/ports/Grout.sh`)

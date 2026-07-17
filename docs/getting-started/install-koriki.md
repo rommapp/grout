@@ -19,7 +19,7 @@ _Please help verify compatibility on other devices by reporting your results!_
 
 ## Installation Steps
 
-1. Download the latest Grout release for Koriki from the [releases page](https://github.com/rommapp/grout/releases/latest).
+1. Download the latest [Grout release for Koriki](https://github.com/rommapp/grout/releases/latest/download/Grout-Koriki.zip).
 2. Unzip the downloaded archive.
 3. Place the `App/Grout` directory into `/mnt/SDCARD/App/` on your SD card.
 4. Place the `.simplemenu/apps/Grout.sh` file and the `.simplemenu/apps/Imgs/Grout.png` icon into their respective directories on your SD card.

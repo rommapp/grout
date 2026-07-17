@@ -274,6 +274,12 @@ func (cm *Manager) SavePlatformGames(platformID int, games []romm.Rom) error {
 	}
 	defer stmt.Close()
 
+	basenameStmt, err := tx.Prepare(`INSERT OR IGNORE INTO game_basenames (game_id, platform_fs_slug, basename) VALUES (?, ?, ?)`)
+	if err != nil {
+		return newCacheError("save", "games", GetPlatformCacheKey(platformID), err)
+	}
+	defer basenameStmt.Close()
+
 	for _, table := range junctionTables {
 		if _, err := tx.Exec("DELETE FROM "+table+" WHERE game_id IN (SELECT id FROM games WHERE platform_id = ?)", platformID); err != nil {
 			return newCacheError("save", "games", GetPlatformCacheKey(platformID), err)
@@ -311,6 +317,17 @@ func (cm *Manager) SavePlatformGames(platformID int, games []romm.Rom) error {
 		)
 		if err != nil {
 			return newCacheError("save", "games", cacheKey, err)
+		}
+
+		// Re-index this game's on-disk basenames (issue #242). Per-game replace keeps
+		// incremental upserts correct — only this game's rows change.
+		if _, err := tx.Exec("DELETE FROM game_basenames WHERE game_id = ?", game.ID); err != nil {
+			return newCacheError("save", "games", cacheKey, err)
+		}
+		for _, base := range game.LocalBasenames() {
+			if _, err := basenameStmt.Exec(game.ID, game.PlatformFSSlug, base); err != nil {
+				return newCacheError("save", "games", cacheKey, err)
+			}
 		}
 
 		junctions := []struct {
@@ -1108,11 +1125,10 @@ func (cm *Manager) GetDistinctTags(platformID int) ([]string, error) {
 	return cm.GetDistinctValues("tags", "game_tags", "tag_id", platformID)
 }
 
-// GetRomByFSLookup resolves a local file (a downloaded ROM or an emulator save)
-// back to its RomM ROM. localBasename is the on-disk filename without extension;
-// it is matched against each ROM's expected_basename (CanonicalLocalBasename) — the
-// name the ROM actually occupies on disk — not fs_name_no_ext, which is the
-// containing-folder name for nested-single-file ROMs and would never match (#242).
+// GetRomByFSLookup resolves a local file (a downloaded ROM or an emulator save) back to its
+// RomM ROM. localBasename is the on-disk filename without extension; it is matched against
+// game_basenames — every basename a game can occupy on disk, one row per file — so a save or
+// ROM for ANY of a multi-file game's alternative versions resolves, not just Files[0] (#242).
 func (cm *Manager) GetRomByFSLookup(fsSlug, localBasename string) (romm.Rom, error) {
 	if cm == nil || !cm.initialized {
 		return romm.Rom{}, ErrNotInitialized
@@ -1123,7 +1139,9 @@ func (cm *Manager) GetRomByFSLookup(fsSlug, localBasename string) (romm.Rom, err
 
 	var dataJSON string
 	err := cm.db.QueryRow(`
-		SELECT data_json FROM games WHERE platform_fs_slug = ? AND expected_basename = ? LIMIT 1
+		SELECT g.data_json FROM game_basenames b
+		JOIN games g ON g.id = b.game_id
+		WHERE b.platform_fs_slug = ? AND b.basename = ? LIMIT 1
 	`, fsSlug, localBasename).Scan(&dataJSON)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -1149,15 +1167,16 @@ func (cm *Manager) GetRomByFSLookup(fsSlug, localBasename string) (romm.Rom, err
 	return game, nil
 }
 
-// lenientFSLookup loads the platform's games and resolves localBasename by
-// case-insensitive / normalized matching (see pickLenientMatch). Caller must hold
-// cm.mu (read lock). Returns the matched ROM and true on success.
+// lenientFSLookup resolves localBasename by case-insensitive / normalized matching against
+// every game basename on the platform (see pickLenientMatch). Caller must hold cm.mu (read
+// lock). Returns the matched ROM and true on success.
 func (cm *Manager) lenientFSLookup(fsSlug, localBasename string) (romm.Rom, bool) {
-	// Fetch only the lightweight match keys (not the full data_json blob) for the whole
-	// platform, then point-query just the matched row's JSON. Avoids loading hundreds of
-	// large JSON blobs that would be discarded.
+	// One lightweight row per (game, basename) — not the data_json blob; the matched game's
+	// JSON is point-queried afterward. Avoids loading hundreds of large blobs to discard.
 	rows, err := cm.db.Query(`
-		SELECT id, name, expected_basename FROM games WHERE platform_fs_slug = ?
+		SELECT b.game_id, b.basename, g.name FROM game_basenames b
+		JOIN games g ON g.id = b.game_id
+		WHERE b.platform_fs_slug = ?
 	`, fsSlug)
 	if err != nil {
 		return romm.Rom{}, false
@@ -1167,11 +1186,11 @@ func (cm *Manager) lenientFSLookup(fsSlug, localBasename string) (romm.Rom, bool
 	var names, fsNames []string
 	for rows.Next() {
 		var id int
-		var n, fn string
-		if rows.Scan(&id, &n, &fn) == nil {
+		var bn, n string
+		if rows.Scan(&id, &bn, &n) == nil {
 			ids = append(ids, id)
+			fsNames = append(fsNames, bn)
 			names = append(names, n)
-			fsNames = append(fsNames, fn)
 		}
 	}
 	rows.Close()

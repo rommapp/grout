@@ -660,26 +660,6 @@ func (s *PlatformMappingScreen) isValidDirectoryForPlatform(dirName string, c cf
 	return false
 }
 
-func (s *PlatformMappingScreen) buildMappingsFromResult(items []gaba.ItemWithOptions) map[string]internal.DirectoryMapping {
-	mappings := make(map[string]internal.DirectoryMapping)
-
-	for _, item := range items {
-		rommSlug := item.Item.Metadata.(string)
-		relativePath := item.Options[item.SelectedOption].Value.(string)
-
-		if relativePath == "" {
-			continue
-		}
-
-		mappings[rommSlug] = internal.DirectoryMapping{
-			RomMSlug:     rommSlug,
-			RelativePath: relativePath,
-		}
-	}
-
-	return mappings
-}
-
 func (s *PlatformMappingScreen) createDirectories(
 	mappings map[string]internal.DirectoryMapping,
 	romDirectory string,

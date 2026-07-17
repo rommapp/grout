@@ -235,6 +235,33 @@ func (r *Rom) CanonicalLocalBasename() string {
 	return r.FsNameNoExt
 }
 
+// LocalBasenames returns every extension-less basename this ROM can occupy on disk, so a
+// downloaded ROM or emulator save file can be resolved back to it regardless of which file
+// the user installed. Multi-disc ROMs are loaded through an m3u named after FsNameNoExt, so
+// that single basename identifies them. Other ROMs may bundle several alternative files
+// (regions/revisions) and the user downloads one of them (ui/download.go selectedFileID), so
+// EACH file's basename is a valid on-disk identity — keying matching on only Files[0] left
+// saves for any other version unmatched (issue #242). Falls back to FsNameNoExt when there
+// is no file metadata. The result is de-duplicated, preserving first-seen order.
+func (r *Rom) LocalBasenames() []string {
+	if r.HasMultipleFiles {
+		return []string{r.FsNameNoExt}
+	}
+	seen := make(map[string]bool, len(r.Files))
+	out := make([]string, 0, len(r.Files))
+	for _, f := range r.Files {
+		base := strings.TrimSuffix(f.FileName, filepath.Ext(f.FileName))
+		if base != "" && !seen[base] {
+			seen[base] = true
+			out = append(out, base)
+		}
+	}
+	if len(out) == 0 {
+		return []string{r.FsNameNoExt}
+	}
+	return out
+}
+
 func (r *Rom) GetLocalPath(resolver PlatformDirResolver) string {
 	if r.PlatformFSSlug == "" {
 		return ""

@@ -24,16 +24,16 @@ _Please help verify compatibility on other devices by reporting your results!_
    ROCKNIX.
 3. Unzip the downloaded archive.
 4. Copy the Grout folder and `Grout.sh` to your Ports directory (single sdcard setup: `/games-internal/roms/ports`, two sdcard setup: `/games-external/roms/ports`)
-5. On the main ROCKNIX menu, press `start`, navigate to `Game Settings`, and select `Update Gameslist`.
+5. On the main ROCKNIX menu, press `start`, navigate to `Game Settings`, and select `Update Gamelist`.
 6. Launch Grout from the `Ports` menu and enjoy!
 
 ## Important Configuration
 
-!!! important
-    Grout requires a setting to be toggled in ROCKNIX to enable art downloading.
-
-    On the main ROCKNIX menu, press `start`, `System Settings`, `Frontend Developer Options` (at the very bottom), and turn
-    `Search For Local Art` on.
+> [!IMPORTANT]
+> Grout requires a setting to be toggled in ROCKNIX to enable art downloading.
+>
+> On the main ROCKNIX menu, press `start`, `System Settings`, `Frontend Developer Options` (at the very bottom), and turn
+> `Search For Local Art` on.
 
 ## Update
 
@@ -44,7 +44,7 @@ select `Check for Updates`. If a new version is available, follow the on-screen 
 
 ### Manual update
 
-To update Grout, simply download the latest release and replace the existing Grout folder in your Tools directory (single sdcard setup: `/games-internal/roms/ports`, two sdcard setup: `/games-external/roms/ports`). If you
+To update Grout, simply download the latest release and replace the existing Grout folder in your Ports directory (single sdcard setup: `/games-internal/roms/ports`, two sdcard setup: `/games-external/roms/ports`). If you
 have made any custom configurations, ensure to back them up before replacing the folder. Be sure to keep the `config.json`
 file if you do not want to authenticate again, and configure platforms folder mappings again.
 
