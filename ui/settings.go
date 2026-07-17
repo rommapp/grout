@@ -50,7 +50,6 @@ const (
 	SettingInfo                SettingType = "info"
 	SettingCheckUpdates        SettingType = "check_updates"
 	SettingSaveSync            SettingType = "save_sync"
-	SettingSwitchToToken       SettingType = "switch_to_token"
 )
 
 var settingsOrder = []SettingType{
@@ -122,11 +121,6 @@ func (s *SettingsScreen) Draw(input SettingsInput) (SettingsOutput, error) {
 			return output, nil
 		}
 
-		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_switch_to_token", Other: "Switch to API Token"}, nil) {
-			output.Action = SettingsActionSwitchToToken
-			return output, nil
-		}
-
 		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_tools", Other: "Tools"}, nil) {
 			output.Action = SettingsActionTools
 			return output, nil
@@ -156,14 +150,8 @@ func (s *SettingsScreen) Draw(input SettingsInput) (SettingsOutput, error) {
 }
 
 func (s *SettingsScreen) buildMenuItems(config *internal.Config, host romm.Host) []gaba.ItemWithOptions {
-	order := make([]SettingType, 0, len(settingsOrder)+1)
-	if !host.HasTokenAuth() {
-		order = append(order, SettingSwitchToToken)
-	}
-	order = append(order, settingsOrder...)
-
-	items := make([]gaba.ItemWithOptions, 0, len(order))
-	for _, settingType := range order {
+	items := make([]gaba.ItemWithOptions, 0, len(settingsOrder))
+	for _, settingType := range settingsOrder {
 		items = append(items, s.buildMenuItem(settingType))
 	}
 	return items
@@ -186,12 +174,6 @@ func (s *SettingsScreen) buildMenuItem(settingType SettingType) gaba.ItemWithOpt
 	case SettingDirectoryMappings:
 		return gaba.ItemWithOptions{
 			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_edit_mappings", Other: "Directory Mappings"}, nil)},
-			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
-		}
-
-	case SettingSwitchToToken:
-		return gaba.ItemWithOptions{
-			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_switch_to_token", Other: "Switch to API Token"}, nil)},
 			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
 		}
 
