@@ -2,7 +2,6 @@ package romm
 
 import (
 	"crypto/rand"
-	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"strings"
@@ -15,7 +14,6 @@ type Host struct {
 	Port        int    `json:"port,omitempty"`
 
 	Username           string `json:"username,omitempty"`
-	Password           string `json:"password,omitempty"`
 	Token              string `json:"token,omitempty"`
 	TokenName          string `json:"token_name,omitempty"`
 	TokenExpiresAt     string `json:"token_expires_at,omitempty"`
@@ -26,7 +24,7 @@ type Host struct {
 	// DeviceID (below) remains the server-issued device UUID.
 	ClientDeviceID string `json:"client_device_identifier,omitempty"`
 	DeviceID       string `json:"device_id,omitempty"`
-	DeviceName string `json:"device_name,omitempty"`
+	DeviceName     string `json:"device_name,omitempty"`
 	// DeviceClientVersion is the grout version last reported to the server for this
 	// device; used to refresh the server's record after an app upgrade.
 	DeviceClientVersion string `json:"device_client_version,omitempty"`
@@ -42,7 +40,6 @@ func (h Host) ToLoggable() map[string]any {
 		"root_uri":             h.RootURI,
 		"port":                 h.Port,
 		"username":             h.Username,
-		"password":             strings.Repeat("*", len(h.Password)),
 		"token":                strings.Repeat("*", len(h.Token)),
 		"insecure_skip_verify": h.InsecureSkipVerify,
 	}
@@ -58,11 +55,10 @@ func (h Host) URL() string {
 }
 
 func (h Host) AuthHeader() string {
-	if h.Token != "" {
-		return "Bearer " + h.Token
+	if h.Token == "" {
+		return ""
 	}
-	auth := h.Username + ":" + h.Password
-	return "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
+	return "Bearer " + h.Token
 }
 
 // NewClientDeviceID returns a random stable identifier for this install, sent

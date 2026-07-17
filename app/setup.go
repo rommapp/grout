@@ -293,24 +293,22 @@ func connectAndLoadPlatforms(config *internal.Config, logger *slog.Logger) []rom
 				return nil, nil
 			}
 
-			// Validate credentials/token
+			// Validate token; configs from before the RomM 5.0 cutover have no
+			// token and must re-pair.
 			authClient := romm.NewClientFromHost(host, internal.LoginTimeout)
-			if host.HasTokenAuth() {
-				if err := authClient.ValidateToken(); err != nil {
-					authErr = err
-					return nil, nil
-				}
-				if host.Username == "" {
-					if user, err := authClient.GetCurrentUser(); err == nil {
-						host.Username = user.Username
-						config.Hosts[0] = host
-						internal.SaveConfig(config)
-					}
-				}
-			} else {
-				if err := authClient.Login(host.Username, host.Password); err != nil {
-					authErr = err
-					return nil, nil
+			if !host.HasTokenAuth() {
+				authErr = errors.New("stored basic-auth credentials require re-pairing")
+				return nil, nil
+			}
+			if err := authClient.ValidateToken(); err != nil {
+				authErr = err
+				return nil, nil
+			}
+			if host.Username == "" {
+				if user, err := authClient.GetCurrentUser(); err == nil {
+					host.Username = user.Username
+					config.Hosts[0] = host
+					internal.SaveConfig(config)
 				}
 			}
 
@@ -374,7 +372,7 @@ func handleAuthFailure(config *internal.Config, logger *slog.Logger) *internal.C
 	if config.Hosts[0].HasTokenAuth() {
 		msg = i18n.Localize(&goi18n.Message{ID: "startup_error_token_invalid", Other: "Your API token is invalid or expired.\nPlease set up a new one."}, nil)
 	} else {
-		msg = i18n.Localize(&goi18n.Message{ID: "startup_error_credentials_invalid", Other: "Your credentials are invalid.\nPlease log in again."}, nil)
+		msg = i18n.Localize(&goi18n.Message{ID: "startup_error_repair_needed", Other: "Your RomM login needs to be re-paired.\nPlease log in again."}, nil)
 	}
 
 	gaba.ConfirmationMessage(msg, []gaba.FooterHelpItem{
