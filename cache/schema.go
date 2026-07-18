@@ -12,7 +12,7 @@ import (
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
 
-const schemaVersion = 13
+const schemaVersion = 14
 
 // nowUTC returns the current UTC time formatted as RFC3339 for consistent datetime storage
 func nowUTC() string {
@@ -137,7 +137,72 @@ func migrateIfNeeded(db *sql.DB) error {
 		}
 	}
 
+	// v14 repairs caches whose metadata junction tables were wiped by the pre-fix incremental
+	// refresh (SavePlatformGames deleted every junction row for the platform but only
+	// repopulated the games in the incremental set, so the Filters screen lost all values).
+	// Rebuild the junctions from the already-cached data_json: no network, no re-download.
+	// A v11-or-older DB had games dropped by the v12 step above, so there's nothing to
+	// backfill and the next sync repopulates everything.
+	if currentVersion < 14 {
+		if err := backfillMetadataJunctions(db); err != nil {
+			return fmt.Errorf("migration to v14 failed: %w", err)
+		}
+	}
+
 	return nil
+}
+
+// backfillMetadataJunctions (re)builds every metadata junction table (game_genres,
+// game_companies, …) from each game's cached data_json. It runs no network calls, so an
+// existing cache regains its Filters values on upgrade without re-downloading the library.
+// Idempotent: clears then repopulates from the same fields SavePlatformGames uses.
+func backfillMetadataJunctions(db *sql.DB) error {
+	rows, err := db.Query(`SELECT id, data_json FROM games`)
+	if err != nil {
+		return err
+	}
+	type gameRow struct {
+		id       int
+		dataJSON string
+	}
+	var games []gameRow
+	for rows.Next() {
+		var g gameRow
+		if err := rows.Scan(&g.id, &g.dataJSON); err != nil {
+			rows.Close()
+			return err
+		}
+		games = append(games, g)
+	}
+	rows.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	for _, table := range junctionTables {
+		if _, err := tx.Exec("DELETE FROM " + table); err != nil {
+			return err
+		}
+	}
+
+	idCache := make(map[string]int64)
+	for _, g := range games {
+		var rom romm.Rom
+		if err := json.Unmarshal([]byte(g.dataJSON), &rom); err != nil {
+			// Skip unparseable rows; a later library refresh repopulates them.
+			continue
+		}
+		for _, spec := range junctionSpecsFor(rom) {
+			if err := batchInsertJunction(tx, spec.junctionTable, spec.fkCol, spec.lookupTable, g.id, spec.values, idCache); err != nil {
+				return err
+			}
+		}
+	}
+
+	return tx.Commit()
 }
 
 // backfillGameBasenames (re)builds the game_basenames index from each game's cached

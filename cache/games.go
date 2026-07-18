@@ -246,6 +246,28 @@ func batchInsertJunction(tx *sql.Tx, junctionTable, fkCol, lookupTable string, g
 	return nil
 }
 
+// junctionSpec pairs a metadata junction/lookup table with one game's values for it.
+type junctionSpec struct {
+	junctionTable, fkCol, lookupTable string
+	values                            []string
+}
+
+// junctionSpecsFor returns the metadata junction rows implied by a game's cached fields.
+// Single source of truth shared by SavePlatformGames and the junction backfill migration,
+// so the two can never drift apart.
+func junctionSpecsFor(game romm.Rom) []junctionSpec {
+	return []junctionSpec{
+		{"game_genres", "genre_id", "genres", game.Metadatum.Genres},
+		{"game_franchises", "franchise_id", "franchises", anySliceToStrings(game.Metadatum.Franchises)},
+		{"game_companies", "company_id", "companies", game.Metadatum.Companies},
+		{"game_game_modes", "game_mode_id", "game_modes", game.Metadatum.GameModes},
+		{"game_age_ratings", "age_rating_id", "age_ratings", game.Metadatum.AgeRatings},
+		{"game_regions", "region_id", "regions", game.Regions},
+		{"game_languages", "language_id", "languages", game.Languages},
+		{"game_tags", "tag_id", "tags", anySliceToStrings(game.Tags)},
+	}
+}
+
 func (cm *Manager) SavePlatformGames(platformID int, games []romm.Rom) error {
 	if cm == nil || !cm.initialized {
 		return ErrNotInitialized
@@ -280,12 +302,6 @@ func (cm *Manager) SavePlatformGames(platformID int, games []romm.Rom) error {
 	}
 	defer basenameStmt.Close()
 
-	for _, table := range junctionTables {
-		if _, err := tx.Exec("DELETE FROM "+table+" WHERE game_id IN (SELECT id FROM games WHERE platform_id = ?)", platformID); err != nil {
-			return newCacheError("save", "games", GetPlatformCacheKey(platformID), err)
-		}
-	}
-
 	now := nowUTC()
 	cacheKey := GetPlatformCacheKey(platformID)
 	idCache := make(map[string]int64)
@@ -319,10 +335,18 @@ func (cm *Manager) SavePlatformGames(platformID int, games []romm.Rom) error {
 			return newCacheError("save", "games", cacheKey, err)
 		}
 
-		// Re-index this game's on-disk basenames (issue #242). Per-game replace keeps
-		// incremental upserts correct — only this game's rows change.
+		// Re-index this game's on-disk basenames (issue #242) and metadata junctions.
+		// Both use a per-game replace so an incremental refresh — which hands us only the
+		// games changed upstream — rebuilds just those games' rows and leaves every other
+		// game's rows intact. A per-platform wipe here would delete the filter metadata for
+		// games not in the incremental set, emptying the Filters screen.
 		if _, err := tx.Exec("DELETE FROM game_basenames WHERE game_id = ?", game.ID); err != nil {
 			return newCacheError("save", "games", cacheKey, err)
+		}
+		for _, table := range junctionTables {
+			if _, err := tx.Exec("DELETE FROM "+table+" WHERE game_id = ?", game.ID); err != nil {
+				return newCacheError("save", "games", cacheKey, err)
+			}
 		}
 		for _, base := range game.LocalBasenames() {
 			if _, err := basenameStmt.Exec(game.ID, game.PlatformFSSlug, base); err != nil {
@@ -330,21 +354,7 @@ func (cm *Manager) SavePlatformGames(platformID int, games []romm.Rom) error {
 			}
 		}
 
-		junctions := []struct {
-			junctionTable, fkCol, lookupTable string
-			values                            []string
-		}{
-			{"game_genres", "genre_id", "genres", game.Metadatum.Genres},
-			{"game_franchises", "franchise_id", "franchises", anySliceToStrings(game.Metadatum.Franchises)},
-			{"game_companies", "company_id", "companies", game.Metadatum.Companies},
-			{"game_game_modes", "game_mode_id", "game_modes", game.Metadatum.GameModes},
-			{"game_age_ratings", "age_rating_id", "age_ratings", game.Metadatum.AgeRatings},
-			{"game_regions", "region_id", "regions", game.Regions},
-			{"game_languages", "language_id", "languages", game.Languages},
-			{"game_tags", "tag_id", "tags", anySliceToStrings(game.Tags)},
-		}
-
-		for _, jt := range junctions {
+		for _, jt := range junctionSpecsFor(game) {
 			if megaBatches[jt.junctionTable] == nil {
 				megaBatches[jt.junctionTable] = &megaBatch{fkCol: jt.fkCol}
 			}
