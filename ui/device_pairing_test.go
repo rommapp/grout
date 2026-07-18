@@ -11,6 +11,58 @@ import (
 	"grout/romm"
 )
 
+// warmUpServer answers GET /api/platforms with 403 for the first failFirst
+// calls, then 200 with an empty platform list, counting every call.
+func warmUpServer(failFirst int, calls *int32) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n := int(atomic.AddInt32(calls, 1))
+		if n <= failFirst {
+			w.WriteHeader(http.StatusForbidden)
+			fmt.Fprint(w, `{"detail":"Forbidden"}`)
+			return
+		}
+		fmt.Fprint(w, `[]`)
+	}))
+}
+
+func TestWarmUpToken_RetriesThenStopsOnSuccess(t *testing.T) {
+	var calls int32
+	srv := warmUpServer(2, &calls) // 403, 403, then 200
+	defer srv.Close()
+
+	warmUpTokenWith(romm.NewClient(srv.URL), &atomic.Bool{}, 6, time.Millisecond)
+
+	if got := atomic.LoadInt32(&calls); got != 3 {
+		t.Errorf("calls = %d, want 3 (two 403s then success, no further retries)", got)
+	}
+}
+
+func TestWarmUpToken_ExhaustsAttempts(t *testing.T) {
+	var calls int32
+	srv := warmUpServer(100, &calls) // always 403
+	defer srv.Close()
+
+	warmUpTokenWith(romm.NewClient(srv.URL), &atomic.Bool{}, 4, time.Millisecond)
+
+	if got := atomic.LoadInt32(&calls); got != 4 {
+		t.Errorf("calls = %d, want 4 (bounded by attempts)", got)
+	}
+}
+
+func TestWarmUpToken_StopsWhenCancelled(t *testing.T) {
+	var calls int32
+	srv := warmUpServer(100, &calls) // always 403
+	defer srv.Close()
+
+	cancelled := &atomic.Bool{}
+	cancelled.Store(true)
+	warmUpTokenWith(romm.NewClient(srv.URL), cancelled, 6, time.Millisecond)
+
+	if got := atomic.LoadInt32(&calls); got != 0 {
+		t.Errorf("calls = %d, want 0 (cancelled before first request)", got)
+	}
+}
+
 // pairingTestServer answers /api/auth/device/token with each response in
 // sequence, repeating the last one once exhausted.
 func pairingTestServer(t *testing.T, responses ...func(w http.ResponseWriter)) *httptest.Server {

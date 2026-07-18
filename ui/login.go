@@ -209,7 +209,7 @@ func (s *LoginScreen) drawAuth(host romm.Host, supportsDeviceAuth bool) (authSel
 			},
 			Options: []gabagool.Option{
 				{
-					DisplayName: i18n.Localize(&goi18n.Message{ID: "login_auth_device_pairing", Other: "Device Pairing"}, nil),
+					DisplayName: i18n.Localize(&goi18n.Message{ID: "login_auth_device_pairing", Other: "Pair with Another Device"}, nil),
 					Value:       authModeDevicePairing,
 					OnUpdate: func(v interface{}) {
 						deviceVisible.Store(true)

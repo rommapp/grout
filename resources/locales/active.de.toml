@@ -230,14 +230,6 @@ other = "Filtern"
 hash = "sha1-31e9697d43a1a66f2e45db652019fb9a6216df22"
 other = "Markieren"
 
-[emulator_saves_count]
-hash = "sha1-588062d748a22784bedf745d64cc7bb440aca1ec"
-other = " ({{.Count}} Spielstände)"
-
-[emulator_selection_title]
-hash = "sha1-aab54f8a5ad80b3bc4ea366c6795ff53b769f785"
-other = "{{.Platform}}-Emulator auswählen"
-
 [error_loading_platforms]
 hash = "sha1-0312ebb4e268eed54feef24bdda148a22bfd8ed9"
 other = "Fehler beim Laden der Plattformen!\nBitte prüfen Sie die Logs für weitere Informationen."

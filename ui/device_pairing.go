@@ -2,7 +2,6 @@ package ui
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"sync/atomic"
 	"time"
@@ -80,8 +79,14 @@ func (s *DevicePairingScreen) Execute(input DevicePairingInput) DevicePairingOut
 		return DevicePairingOutput{Outcome: DevicePairingFailed, Host: host, Err: err}
 	}
 
+	// The QR encodes the full verification URL (including the user code), so
+	// scanning is all that's needed to approve. ProcessMessage stacks this
+	// instruction beneath the QR.
+	message := i18n.Localize(&goi18n.Message{ID: "device_pairing_instructions", Other: "Scan the QR Code to Pair"}, nil)
+
 	verificationURL := host.URL() + initResp.VerificationPathComplete
-	qrPath, err := imageutil.CreateTempQRCode(verificationURL, 300)
+	const qrDrawSize = 320
+	qrPath, err := imageutil.CreateTempQRCode(verificationURL, qrDrawSize)
 	if err != nil {
 		logger.Warn("Unable to generate pairing QR code", "error", err)
 		qrPath = ""
@@ -89,25 +94,28 @@ func (s *DevicePairingScreen) Execute(input DevicePairingInput) DevicePairingOut
 		defer os.Remove(qrPath)
 	}
 
-	message := fmt.Sprintf("%s\n%s%s\n\n%s %s",
-		i18n.Localize(&goi18n.Message{ID: "device_pairing_instructions", Other: "Scan the QR code or visit:"}, nil),
-		host.URL(), initResp.VerificationPath,
-		i18n.Localize(&goi18n.Message{ID: "device_pairing_code", Other: "Code:"}, nil),
-		initResp.UserCode,
-	)
-
 	cancelled := &atomic.Bool{}
 
 	result, msgErr := gaba.ProcessMessage(message, gaba.ProcessMessageOptions{
 		Image:        qrPath,
-		ImageWidth:   300,
-		ImageHeight:  300,
+		ImageWidth:   qrDrawSize,
+		ImageHeight:  qrDrawSize,
 		CancelButton: constants.VirtualButtonB,
 		FooterHelpItems: []gaba.FooterHelpItem{
 			{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_cancel", Other: "Cancel"}, nil)},
 		},
 	}, func() (pollResult, error) {
-		return s.poll(client, initResp, cancelled, pollTickDefault), nil
+		res := s.poll(client, initResp, cancelled, pollTickDefault)
+		if res.Outcome == DevicePairingSuccess && res.Token != nil {
+			// The token was minted microseconds ago; RomM can briefly reject
+			// resource reads with it before its scopes take effect. Wait that
+			// window out here — while the pairing screen is still up — so the
+			// first platform load after login doesn't hit the race.
+			warm := host
+			warm.Token = res.Token.AccessToken
+			warmUpToken(warm, cancelled)
+		}
+		return res, nil
 	})
 
 	// Stop the background poller no matter how ProcessMessage exited; harmless
@@ -150,6 +158,42 @@ func (s *DevicePairingScreen) Execute(input DevicePairingInput) DevicePairingOut
 	}
 
 	return DevicePairingOutput{Outcome: DevicePairingSuccess, Host: host}
+}
+
+// warmUpTokenAttempts and warmUpTokenBackoff bound how long pairing waits for a
+// freshly issued token to become effective for resource reads.
+const (
+	warmUpTokenAttempts = 6
+	warmUpTokenBackoff  = 700 * time.Millisecond
+)
+
+// warmUpToken retries a platforms read (the same call first-launch setup makes)
+// until the just-issued token works, the user cancels, or the attempts are
+// exhausted. RomM can transiently 403 a token in the moment right after
+// approval; retrying here keeps that race from cascading into a failed — and
+// silently fatal — platform load on first launch. A token that never succeeds
+// is left to the normal downstream error handling, so a genuine permission
+// problem still surfaces rather than being masked.
+func warmUpToken(host romm.Host, cancelled *atomic.Bool) {
+	client := romm.NewClientFromHost(host, internal.LoginTimeout)
+	warmUpTokenWith(client, cancelled, warmUpTokenAttempts, warmUpTokenBackoff)
+}
+
+// warmUpTokenWith is the retry core, with attempts and backoff injected so it
+// can be tested without real delays.
+func warmUpTokenWith(client *romm.Client, cancelled *atomic.Bool, attempts int, backoff time.Duration) {
+	for attempt := 0; attempt < attempts; attempt++ {
+		if cancelled.Load() {
+			return
+		}
+		if err := client.ValidateToken(); err == nil {
+			return
+		}
+		if attempt < attempts-1 {
+			time.Sleep(backoff)
+		}
+	}
+	gaba.GetLogger().Warn("Device token not effective for platform reads after pairing; continuing")
 }
 
 // poll drives the device-auth polling loop. It returns when pairing reaches a
