@@ -14,8 +14,12 @@ import (
 	_ "golang.org/x/image/webp" // Register WebP decoder
 )
 
+// qrQuietZone is the QR spec's minimum light-margin, in modules, around the
+// symbol. Without it scanners struggle to lock onto the code.
+const qrQuietZone = 4
+
 func CreateTempQRCode(content string, size int) (string, error) {
-	qr, err := goqr.EncodeText(content, goqr.Low)
+	qr, err := goqr.EncodeText(content, goqr.Medium)
 	if err != nil {
 		return "", err
 	}
@@ -26,7 +30,7 @@ func CreateTempQRCode(content string, size int) (string, error) {
 	}
 	tempFile.Close()
 
-	config := goqr.NewQrCodeImgConfig(size/10, 0)
+	config := goqr.NewQrCodeImgConfig(size/10, qrQuietZone)
 	if err := qr.PNG(config, tempFile.Name()); err != nil {
 		return "", err
 	}

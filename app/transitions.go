@@ -72,14 +72,6 @@ func buildTransitionFunc(state *AppState, quitOnBack bool, initialShowCollection
 			return popOrExit(stack)
 		case ScreenArtworkSync:
 			return popOrExit(stack)
-		case ScreenSwitchToToken:
-			// Pop the stacked settings entry so we don't go back to stale state
-			stack.Pop()
-			return ScreenSettings, ui.SettingsInput{
-				Config: ctx.state.Config,
-				CFW:    ctx.state.CFW,
-				Host:   ctx.state.Host,
-			}
 		case ScreenUpdateCheck:
 			return transitionUpdateCheck(ctx, result)
 		case ScreenGameFilters:
@@ -632,10 +624,6 @@ func transitionSettings(ctx *transitionContext, result any) (router.Screen, any)
 	case ui.SettingsActionCollections:
 		ctx.stack.Push(ScreenSettings, pushInput, r)
 		return ScreenCollectionsSettings, ui.CollectionsSettingsInput{Config: ctx.state.Config}
-
-	case ui.SettingsActionSwitchToToken:
-		ctx.stack.Push(ScreenSettings, pushInput, r)
-		return ScreenSwitchToToken, nil
 
 	case ui.SettingsActionTools:
 		ctx.stack.Push(ScreenSettings, pushInput, r)

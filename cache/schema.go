@@ -2,18 +2,45 @@ package cache
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
 
+	"grout/romm"
+
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
 
-const schemaVersion = 12
+const schemaVersion = 14
 
 // nowUTC returns the current UTC time formatted as RFC3339 for consistent datetime storage
 func nowUTC() string {
 	return time.Now().UTC().Format(time.RFC3339)
+}
+
+// execer is the subset of *sql.DB / *sql.Tx used by the small schema helpers, so they can
+// run inside createTables' transaction or directly against the DB during a migration.
+type execer interface {
+	Exec(query string, args ...any) (sql.Result, error)
+}
+
+// createGameBasenamesTable creates the table that indexes every on-disk basename a game can
+// occupy (one row per file), keyed for fast (platform_fs_slug, basename) -> game_id lookup.
+// Used both by createTables and by the v13 migration backfill (issue #242).
+func createGameBasenamesTable(db execer) error {
+	if _, err := db.Exec(`
+		CREATE TABLE IF NOT EXISTS game_basenames (
+			game_id INTEGER NOT NULL,
+			platform_fs_slug TEXT NOT NULL,
+			basename TEXT NOT NULL,
+			PRIMARY KEY (game_id, basename)
+		)
+	`); err != nil {
+		return err
+	}
+	_, err := db.Exec(`CREATE INDEX IF NOT EXISTS idx_game_basenames_lookup ON game_basenames(platform_fs_slug, basename)`)
+	return err
 }
 
 // lookupTables lists all metadata lookup tables for use in migrations and cleanup
@@ -99,7 +126,146 @@ func migrateIfNeeded(db *sql.DB) error {
 		}
 	}
 
+	// v13 adds game_basenames so a local ROM/save resolves by ANY of a multi-file game's
+	// versions, not just Files[0] (issue #242). Backfill from the already-cached data_json:
+	// no library re-download, no full re-cache (unlike a games drop). For a v11-or-older DB
+	// the v12 step above already dropped games, so there's nothing to backfill and the next
+	// sync repopulates both tables.
+	if currentVersion < 13 {
+		if err := backfillGameBasenames(db); err != nil {
+			return fmt.Errorf("migration to v13 failed: %w", err)
+		}
+	}
+
+	// v14 repairs caches whose metadata junction tables were wiped by the pre-fix incremental
+	// refresh (SavePlatformGames deleted every junction row for the platform but only
+	// repopulated the games in the incremental set, so the Filters screen lost all values).
+	// Rebuild the junctions from the already-cached data_json: no network, no re-download.
+	// A v11-or-older DB had games dropped by the v12 step above, so there's nothing to
+	// backfill and the next sync repopulates everything.
+	if currentVersion < 14 {
+		if err := backfillMetadataJunctions(db); err != nil {
+			return fmt.Errorf("migration to v14 failed: %w", err)
+		}
+	}
+
 	return nil
+}
+
+// backfillMetadataJunctions (re)builds every metadata junction table (game_genres,
+// game_companies, …) from each game's cached data_json. It runs no network calls, so an
+// existing cache regains its Filters values on upgrade without re-downloading the library.
+// Idempotent: clears then repopulates from the same fields SavePlatformGames uses.
+func backfillMetadataJunctions(db *sql.DB) error {
+	rows, err := db.Query(`SELECT id, data_json FROM games`)
+	if err != nil {
+		return err
+	}
+	type gameRow struct {
+		id       int
+		dataJSON string
+	}
+	var games []gameRow
+	for rows.Next() {
+		var g gameRow
+		if err := rows.Scan(&g.id, &g.dataJSON); err != nil {
+			rows.Close()
+			return err
+		}
+		games = append(games, g)
+	}
+	rows.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	for _, table := range junctionTables {
+		if _, err := tx.Exec("DELETE FROM " + table); err != nil {
+			return err
+		}
+	}
+
+	idCache := make(map[string]int64)
+	for _, g := range games {
+		var rom romm.Rom
+		if err := json.Unmarshal([]byte(g.dataJSON), &rom); err != nil {
+			// Skip unparseable rows; a later library refresh repopulates them.
+			continue
+		}
+		for _, spec := range junctionSpecsFor(rom) {
+			if err := batchInsertJunction(tx, spec.junctionTable, spec.fkCol, spec.lookupTable, g.id, spec.values, idCache); err != nil {
+				return err
+			}
+		}
+	}
+
+	return tx.Commit()
+}
+
+// backfillGameBasenames (re)builds the game_basenames index from each game's cached
+// data_json. It runs no network calls, so existing caches gain multi-file matching on
+// upgrade without re-downloading the library. Idempotent: clears then repopulates.
+func backfillGameBasenames(db *sql.DB) error {
+	if err := createGameBasenamesTable(db); err != nil {
+		return err
+	}
+
+	rows, err := db.Query(`SELECT id, platform_fs_slug, data_json FROM games`)
+	if err != nil {
+		return err
+	}
+	type gameRow struct {
+		id       int
+		fsSlug   string
+		dataJSON string
+	}
+	var games []gameRow
+	for rows.Next() {
+		var g gameRow
+		if err := rows.Scan(&g.id, &g.fsSlug, &g.dataJSON); err != nil {
+			rows.Close()
+			return err
+		}
+		games = append(games, g)
+	}
+	rows.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec(`DELETE FROM game_basenames`); err != nil {
+		return err
+	}
+	stmt, err := tx.Prepare(`INSERT OR IGNORE INTO game_basenames (game_id, platform_fs_slug, basename) VALUES (?, ?, ?)`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for _, g := range games {
+		var rom romm.Rom
+		if err := json.Unmarshal([]byte(g.dataJSON), &rom); err != nil {
+			// Skip unparseable rows; a later library refresh repopulates them.
+			continue
+		}
+		fsSlug := g.fsSlug
+		if fsSlug == "" {
+			fsSlug = rom.PlatformFSSlug
+		}
+		for _, base := range rom.LocalBasenames() {
+			if _, err := stmt.Exec(g.id, fsSlug, base); err != nil {
+				return err
+			}
+		}
+	}
+
+	return tx.Commit()
 }
 
 // dropGamesForRepopulate drops the games table and its game-keyed junction and
@@ -294,6 +460,12 @@ func createTables(db *sql.DB) error {
 
 	_, err = tx.Exec(`CREATE INDEX IF NOT EXISTS idx_games_platform_rating ON games(platform_id, average_rating)`)
 	if err != nil {
+		return err
+	}
+
+	// game_basenames indexes EVERY on-disk basename a game can occupy (one row per file),
+	// so a local ROM/save resolves by any of a multi-file game's versions (issue #242).
+	if err := createGameBasenamesTable(tx); err != nil {
 		return err
 	}
 

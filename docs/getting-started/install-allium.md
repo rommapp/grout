@@ -19,7 +19,7 @@ _Please help verify compatibility on other devices by reporting your results!_
 
 ## Installation Steps
 
-1. Download the latest Grout release for Allium from the [releases page](https://github.com/rommapp/grout/releases/latest).
+1. Download the latest [Grout release for Allium](https://github.com/rommapp/grout/releases/latest/download/Grout-Allium.zip).
 2. Unzip the downloaded archive.
 3. Place the `Grout.pak` directory into `/mnt/SDCARD/Apps/` on your SD card.
 4. Launch Grout from the Apps menu and enjoy!

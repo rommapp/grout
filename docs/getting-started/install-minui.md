@@ -28,13 +28,14 @@ _Please help verify compatibility on other devices by reporting your results!_
 
 ## Installation Steps
 
-1. Download the latest Grout release for MinUI from the [releases page](https://github.com/rommapp/grout/releases/latest).
+1. Download the latest [Grout release for MinUI](https://github.com/rommapp/grout/releases/latest/download/Grout-MinUI.zip).
 2. Unzip the downloaded archive.
-3. Place the `Grout` directory into `SD_ROOT/Tools/` on your SD card.
+3. Place the `Grout.pak` directory into `SD_ROOT/Tools/<platform>/` on your SD card, where `<platform>` is your
+   device's MinUI platform folder (e.g. `tg5040` on a TrimUI Smart Pro or Brick).
 4. Launch Grout from the Tools menu and enjoy!
 
-!!! note
-    The MinUI distribution includes both ARM32 and ARM64 binaries. The correct one is selected automatically based on your device.
+> [!NOTE]
+> The MinUI distribution includes both ARM32 and ARM64 binaries. The correct one is selected automatically based on your device.
 
 !!! note "TrimUI Smart Pro & Brick"
     Input mappings are now supported for the TrimUI Smart Pro, Smart Pro S, and TrimUI
@@ -55,7 +56,7 @@ select `Check for Updates`. If a new version is available, follow the on-screen 
 
 ### Manual update
 
-To update Grout, simply download the latest release and replace the existing `Grout` folder in `SD_ROOT/Tools/`. If you
+To update Grout, simply download the latest release and replace the existing `Grout.pak` folder in `SD_ROOT/Tools/<platform>/`. If you
 have made any custom configurations, ensure to back them up before replacing the folder. Be sure to keep the `config.json`
 file if you do not want to authenticate again, and configure platforms folder mappings again.
 

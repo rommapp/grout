@@ -68,7 +68,6 @@ type SettingsAction int
 
 const (
 	SettingsActionSaved SettingsAction = iota
-	SettingsActionSwitchToToken
 	SettingsActionGeneral
 	SettingsActionCollections
 	SettingsActionAdvanced

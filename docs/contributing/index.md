@@ -64,7 +64,7 @@ Help keep CFW platform directory mappings current:
 - Follow existing code conventions and patterns
 - Test your changes locally before submitting
 - Update documentation if your changes affect user-facing behavior
-- Ensure the build passes (`task build-arm64` or `go build ./...`)
+- Ensure the build passes (`task build:arm64` or `go build ./...`)
 - Provide a clear description of what your PR does and why
 
 ## Code Style
@@ -79,7 +79,7 @@ We use standard Go formatting and conventions:
 
 Please [create an issue](https://github.com/rommapp/grout/issues/new/choose) with:
 
-- Your CFW and version (muOS, Knulli, Spruce, NextUI)
+- Your CFW and version (e.g. muOS, Knulli, NextUI, ROCKNIX, Batocera, MinUI)
 - Grout version
 - Steps to reproduce the issue
 - Expected vs actual behavior

@@ -22,7 +22,7 @@ Grout has been tested on the following devices running Spruce:
 
 ## Prerequisites
 
-- Miyoo device with Spruce (v4/nightlies) installed on an SD card
+- Device with Spruce (v4/nightlies) installed on an SD card
 - Device connected to a Wi-Fi network
 
 ## Installation Steps

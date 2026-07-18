@@ -2,7 +2,6 @@ package romm
 
 const (
 	endpointHeartbeat = "/api/heartbeat"
-	endpointLogin     = "/api/login"
 	endpointConfig    = "/api/config"
 
 	endpointPlatforms           = "/api/platforms"
@@ -37,4 +36,7 @@ const (
 
 	endpointTokenExchange = "/api/client-tokens/exchange"
 	endpointCurrentUser   = "/api/users/me"
+
+	endpointDeviceAuthInit  = "/api/auth/device/init"
+	endpointDeviceAuthToken = "/api/auth/device/token"
 )

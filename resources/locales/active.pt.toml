@@ -178,10 +178,6 @@ other = "Unificada"
 hash = "sha1-2c9683fd54b9f378b745c96e1a5779519d592bdc"
 other = "Syncing collections..."
 
-[common_default]
-hash = "sha1-808d7dca8a74d84af27a2d6602c3d786de45fe1e"
-other = "Padrão"
-
 [common_false]
 hash = "sha1-97cdbdc7feff827efb082a6b6dd2727237cd49fd"
 other = "Falso"
@@ -233,14 +229,6 @@ other = "Filtrar"
 [downloaded_games_mark]
 hash = "sha1-31e9697d43a1a66f2e45db652019fb9a6216df22"
 other = "Marcar"
-
-[emulator_saves_count]
-hash = "sha1-588062d748a22784bedf745d64cc7bb440aca1ec"
-other = " ({{.Count}} saves)"
-
-[emulator_selection_title]
-hash = "sha1-aab54f8a5ad80b3bc4ea366c6795ff53b769f785"
-other = "Selecionar Emulador de {{.Platform}}"
 
 [error_loading_platforms]
 hash = "sha1-0312ebb4e268eed54feef24bdda148a22bfd8ed9"
@@ -470,14 +458,6 @@ other = "Solto cedo demais!"
 hash = "sha1-b167509bc65ae322b3838b115fbbc0b914337a30"
 other = "Mapeamento de entrada do Grout"
 
-[input_mapping_reset]
-hash = "sha1-e6c1aa60c76e7878543a9bb32e6f49e48366aaa9"
-other = "Mapeamento redefinido.\nGrout precisa reiniciar."
-
-[input_mapping_saved]
-hash = "sha1-d9a25e2dd90b3d04a5faab8a8ff4ac7303fea893"
-other = "Mapeamento salvo.\nGrout precisa reiniciar."
-
 [log_level_debug]
 hash = "sha1-bd604d99e75e45d38bc7ac8fc714cde0097d901f"
 other = "Debug"
@@ -489,10 +469,6 @@ other = "Erro"
 [log_level_info]
 hash = "sha1-4b631f69842530d659306c8f06dbad594a6b1807"
 other = "Info"
-
-[login_auth_credentials]
-hash = "sha1-dd097a229701c1db23e0a192b0e48637872c75b8"
-other = "Credentials"
 
 [login_auth_method]
 hash = "sha1-3d42f8771acd1ec200fba7b0d6f148a4cc0bd2d9"
@@ -546,10 +522,6 @@ other = "Hostname"
 hash = "sha1-ef7045e5ea20e809ebcfdc1b690c4a37865364ed"
 other = "Pairing Code"
 
-[login_password]
-hash = "sha1-8be3c943b1609fffbfc51aad666d0a04adf83c9d"
-other = "Senha"
-
 [login_port]
 hash = "sha1-84fc9f53e5a2f676d4e0e9195f43f31a18156495"
 other = "Porta (opcional)"
@@ -581,10 +553,6 @@ other = "Ignorar verificação"
 [login_ssl_verify]
 hash = "sha1-dda6ac27b9d3b234a68e8b2c412e90ab5a03a4e1"
 other = "Verificar"
-
-[login_username]
-hash = "sha1-84c29015de33e5d22422382a372caba5c58f8c01"
-other = "Nome de usuário"
 
 [login_validating]
 hash = "sha1-2b01abd3fe5d07b59d90202573da2fb788d000e3"
@@ -846,6 +814,10 @@ other = "Geral"
 hash = "sha1-539fd998d1d49832e77eec5bf350485f054da400"
 other = "Info do Grout"
 
+[settings_input_mapping]
+hash = "sha1-e6440268de38ea4ad967835f250b6784af4abc80"
+other = "Mapeamento de entrada"
+
 [settings_kid_mode]
 hash = "sha1-64340b431e79134fd3e4d328f76e4af2d51530c1"
 other = "Modo Criança"
@@ -894,10 +866,6 @@ other = "Nível de Log"
 hash = "sha1-1c4cc869d6c5c6fe0a49516c220a1f67ae5acc12"
 other = "Reconstruir Cache"
 
-[settings_input_mapping]
-hash = "sha1-e6440268de38ea4ad967835f250b6784af4abc80"
-other = "Mapeamento de entrada"
-
 [settings_release_channel]
 hash = "sha1-ddb05bbae80d35657c69e0ff93b186f6c7c92ce2"
 other = "Canal de lançamento"
@@ -930,10 +898,6 @@ other = "Coleções Virtuais"
 hash = "sha1-40d2f959423b3e935b5f9256ded10a0ec259a13c"
 other = "Swap Face Buttons"
 
-[settings_switch_to_token]
-hash = "sha1-660fbc3eee5039b328c03dbbaf07e686d3225e29"
-other = "Switch to API Token"
-
 [settings_sync_artwork]
 hash = "sha1-20005772b1c3fee4aaff30697df5b4d236412f3a"
 other = "Pré-carregar Artwork"
@@ -945,10 +909,6 @@ other = "Download Missing Art"
 [settings_title]
 hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
 other = "Configurações"
-
-[settings_token_switch_success]
-hash = "sha1-d3e086a01be446f94684e717514a11b4edfc5360"
-other = "Successfully switched to API Token!"
 
 [settings_tools]
 hash = "sha1-4fa8cc860c52b268dc6a3adcde7305e9415db5bb"
@@ -965,14 +925,6 @@ other = "Tentar Novamente"
 [startup_error_connection_refused]
 hash = "sha1-4ecbf8e5c1fc35f8fc7cf834141626caa1bc9313"
 other = "Não foi possível conectar ao RomM!\nVerifique se o servidor está em execução."
-
-[startup_error_credentials]
-hash = "sha1-d317b91a53c71f415dfc456ce167540ede7cf245"
-other = "Credenciais inválidas!\nVerifique seu nome de usuário e senha."
-
-[startup_error_credentials_invalid]
-hash = "sha1-847f08a807a2ce97da71d381980e139e8f494062"
-other = "Your credentials are invalid.\nPlease log in again."
 
 [startup_error_forbidden]
 hash = "sha1-ef2ddf692a2c1fcddb8a521e58378ae5e1b4758a"

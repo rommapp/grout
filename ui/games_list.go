@@ -250,6 +250,12 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 		}
 	}
 
+	// Only offer Filters when there's actually something to filter on: any loaded game
+	// carries filterable metadata, or this is a unified collection (which offers a Platform
+	// picker regardless). Otherwise the Filters screen would open empty and instantly close,
+	// so we hide both the Y hint and the Y action rather than show a dead button.
+	showFilters := hasFilterableMetadata(games) || (isCollectionSet(input.Collection) && input.Platform.ID == 0)
+
 	options := gaba.DefaultListOptions(title, menuItems)
 	options.UseSmallTitle = true
 	options.ShowImages = input.Config.ShowBoxArt
@@ -257,7 +263,9 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 	options.MultiSelectButton = gabaconst.VirtualButtonSelect
 	options.DeselectAllButton = gabaconst.VirtualButtonL1
 	options.SelectAllButton = gabaconst.VirtualButtonR1
-	options.SecondaryActionButton = gabaconst.VirtualButtonY
+	if showFilters {
+		options.SecondaryActionButton = gabaconst.VirtualButtonY
+	}
 
 	options.OnL1 = func(selectedIndex int) int {
 		if len(menuItems) == 0 {
@@ -311,7 +319,9 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 		footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: menuButtonName, HelpText: i18n.Localize(&goi18n.Message{ID: "button_bios", Other: "BIOS"}, nil)})
 	}
 
-	footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: "Y", HelpText: i18n.Localize(&goi18n.Message{ID: "button_filters", Other: "Filters"}, nil), Group: gaba.FooterGroupRight})
+	if showFilters {
+		footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: "Y", HelpText: i18n.Localize(&goi18n.Message{ID: "button_filters", Other: "Filters"}, nil), Group: gaba.FooterGroupRight})
+	}
 
 	footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: "X", HelpText: i18n.Localize(&goi18n.Message{ID: "button_search", Other: "Search"}, nil), Group: gaba.FooterGroupRight})
 
@@ -660,6 +670,23 @@ func filterList(itemList []romm.Rom, filter string) []romm.Rom {
 	})
 
 	return result
+}
+
+// hasFilterableMetadata reports whether any game carries metadata that maps to a filter
+// category (genre, franchise, company, game mode, age rating, region, language, tag). It
+// mirrors the fields GameFiltersScreen.buildMenuItems draws from, so the Filters button is
+// shown exactly when that screen would have at least one category to offer.
+func hasFilterableMetadata(games []romm.Rom) bool {
+	for i := range games {
+		g := &games[i]
+		if len(g.Metadatum.Genres) > 0 || len(g.Metadatum.Franchises) > 0 ||
+			len(g.Metadatum.Companies) > 0 || len(g.Metadatum.GameModes) > 0 ||
+			len(g.Metadatum.AgeRatings) > 0 || len(g.Regions) > 0 ||
+			len(g.Languages) > 0 || len(g.Tags) > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func getLetter(item gaba.MenuItem) rune {

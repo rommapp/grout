@@ -1,6 +1,6 @@
 # Installation Guide for NextUI
 
-This guide will help you install Grout on TrimUI devices running [NextUI][nextui].
+This guide will help you install Grout on devices running [NextUI][nextui].
 
 ## Tested Devices
 
@@ -13,16 +13,12 @@ Grout has been tested on the following devices running NextUI:
 
 ## Prerequisites
 
-- TrimUI device with NextUI installed on an SD card
+- Device with NextUI installed on an SD card
 - Device connected to a Wi-Fi network
 
 ## Installation Steps
 
 ### Method 1: Pak Store (Recommended)
-
-!!! note
-    Grout is temporarily unavailable in the Pak Store. The new version numbering scheme (v4.6.0.0) requires
-    non-standard semver support which is coming in the next Pak Store release. Please use manual installation for now.
 
 1. Launch the NextUI Pak Store from the `Tools` menu.
 2. Navigate to the `ROM Management` category.
@@ -33,7 +29,8 @@ Grout has been tested on the following devices running NextUI:
 
 1. Download the [latest Grout release](https://github.com/rommapp/grout/releases/latest/download/Grout.pak.zip) for NextUI.
 2. Unzip the downloaded archive.
-3. Place the `Grout.pak` directory into `SD_ROOT/Tools/tg5040`.
+3. Place the `Grout.pak` directory into `SD_ROOT/Tools/<platform>`, where `<platform>` is your device's NextUI
+   platform folder (e.g. `tg5040` on a TrimUI Brick or Smart Pro, `my355` on a Miyoo Flip).
 4. Launch Grout from the `Tools` menu and enjoy!
 
 ## Update
@@ -47,7 +44,7 @@ Grout has been tested on the following devices running NextUI:
 
 ### Manual update
 
-To update Grout, simply download the latest release and replace the existing Grout folder in your `SD_ROOT/Tools/tg5040` directory. If you
+To update Grout, simply download the latest release and replace the existing `Grout.pak` folder in your `SD_ROOT/Tools/<platform>` directory. If you
 have made any custom configurations, ensure to back them up before replacing the folder. Be sure to keep the `config.json`
 file if you do not want to authenticate again, and configure platforms folder mappings again.
 

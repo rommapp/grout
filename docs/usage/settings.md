@@ -2,8 +2,8 @@
 
 Press `X` from the main menu to access Settings.
 
-!!! important
-    **Kid Mode Impact:** When Kid Mode is enabled, the Settings screen is hidden. To access settings temporarily, press `L1` + `R1` + `Menu` during the Grout splash screen. See [Kid Mode](#kid-mode) for details.
+> [!IMPORTANT]
+> **Kid Mode Impact:** When Kid Mode is enabled, the Settings screen is hidden. To access settings temporarily, press `L1` + `R1` + `Menu` during the Grout splash screen. See [Kid Mode](#kid-mode) for details.
 
 ---
 
@@ -14,7 +14,7 @@ Press `X` from the main menu to access Settings.
 **General** - Opens a sub-menu for general display and download options.
 See [General Settings](#general-settings) below.
 
-**Collections** - Opens a sub-menu for configuring collection display options.
+**Collections Settings** - Opens a sub-menu for configuring collection display options.
 See [Collections Settings](#collections-settings) below.
 
 **Directory Mappings** - Change which device directories are mapped to which RomM platforms.
@@ -27,7 +27,8 @@ See [Directory Mappings](#directory-mappings) below.
 **Advanced** - Opens a sub-menu for advanced configuration options. See [Advanced Settings](#advanced-settings) below.
 
 **Grout Info** - View version information, build details, server connection info (including API token name and expiry
-when using token authentication), and the GitHub repository QR code.
+when using token authentication), and the GitHub repository QR code. Press `X` on this screen to log out — the
+confirmation screen also uses `X` to confirm (`B` cancels), so you can't log out by accident.
 
 **Check for Updates** - Check for and install Grout updates.
 
@@ -66,6 +67,29 @@ Download Art is set to True.
 - **Box3D** - 3D box art renders
 - **MixImage** - Composite mix images combining multiple artwork types
 
+### Download Screenshot Preview (muOS)
+
+When enabled, Grout also downloads a screenshot preview image for each game. Only visible on muOS when Download Art
+is enabled.
+
+### Download Splash Art (muOS)
+
+Downloads splash art shown when launching a game. Choose **None**, **Marquee**, or **Title**. Only visible on muOS
+when Download Art is enabled.
+
+### EmulationStation Art Options
+
+On EmulationStation-based CFWs (Batocera, Knulli, ROCKNIX, ArkOS), enabling Download Art reveals additional per-asset
+options:
+
+- **Download Game Thumbnail** - None / Box2D / Box3D
+- **Download Marquee Image** - None / Marquee / Logo
+- **Download Game Video** - True / False
+- **Download Game Bezel** - True / False
+- **Download Game Manual** - True / False
+- **Download Game Box back** - True / False
+- **Download Game Fan Art** - True / False
+
 ### Archived Downloads
 
 Controls what happens when downloading archived ROM files (zip and 7z):
@@ -77,6 +101,11 @@ Controls what happens when downloading archived ROM files (zip and 7z):
 
 Grout is localized! Choose from English, Deutsch, Espanol, Francais, Italiano, Portugues, Russian, or
 Japanese. If you notice an issue with a translation or want to help by translating, please let us know!
+
+### Swap Face Buttons
+
+Swaps the confirm and cancel buttons (`A`/`B`). Useful on devices where the physical button layout doesn't match
+Grout's default mapping.
 
 ---
 
@@ -126,12 +155,18 @@ For detailed documentation on platform mapping, see the [User Guide](guide.md#pl
 
 Each CFW uses different folder naming conventions:
 
+- [Allium](../platforms/allium.md) - Uppercase short codes (e.g., `GB`, `GBA`, `PS`)
+- [ArkOS / dArkOS](../platforms/arkos.md) - ES-DE style folder names (e.g., `gb`, `snes`, `psx`)
+- [Batocera](../platforms/batocera.md) - ES-DE style folder names (e.g., `gb`, `megadrive`, `psx`)
 - [KNULLI](../platforms/knulli.md) - ES-DE style folder names (e.g., `gb`, `snes`, `psx`)
+- [Koriki](../platforms/koriki.md) - Uppercase short codes (e.g., `GB`, `GBA`, `PS`)
+- [MinUI](../platforms/minui.md) - Descriptive names with tags (e.g., `Game Boy (GB)`)
 - [muOS](../platforms/muos.md) - Mixed short codes and descriptive names (e.g., `gb`, `Nintendo Game Boy`)
 - [NextUI](../platforms/nextui.md) - Descriptive names with tags (e.g., `Game Boy (GB)`)
+- [Onion](../platforms/onion.md) - Uppercase short codes (e.g., `GB`, `GBA`, `PS`)
 - [ROCKNIX](../platforms/rocknix.md) - ES-DE style folder names (e.g., `gb`, `snes`, `psx`)
 - [Spruce](../platforms/spruce.md) - Uppercase short codes (e.g., `GB`, `SFC`, `PS`)
-- [Batocera](../platforms/BATOCERA.md) - ES-DE style folder names (e.g., `gb`, `megadrive`, `psx`)
+- [TrimUI](../platforms/trimui.md) - Uppercase short codes (e.g., `GB`, `GBA`, `PS`)
 
 ---
 
@@ -142,12 +177,14 @@ This sub-menu configures save synchronization. For complete save sync documentat
 ### Device Name
 
 Register or rename this device with your RomM server. Each device needs a unique name so RomM can track which saves
-belong to which device. Selecting this opens a keyboard to enter or change the device name.
+belong to which device. Selecting this opens a keyboard to enter or change the device name. Until a device is
+registered, this sub-menu shows a single **Register Device** entry instead.
 
-### Save Sync Mappings
+### Save Mapping
 
-Configure which emulator save directory is used for each platform. This tells Grout where to find and place save files
-on your device. You can override per-game mappings from the [Game Options](guide.md#game-options) screen.
+Configure which emulator save directory is used for each platform (the screen is titled "Save Sync Mappings"). This
+tells Grout where to find and place save files on your device. Only platforms with more than one emulator save
+directory are listed.
 
 ### Save Backups
 
@@ -196,6 +233,9 @@ This sub-menu contains advanced configuration and system settings.
 Pre-cache artwork for all games across all mapped platforms. Grout scans your platforms, identifies
 games without cached artwork, and downloads cover art from RomM. Useful for pre-caching after adding new games.
 
+Use `Left/Right` to choose **Missing Only** or **All**, then press `A` to continue. On the platform picker, `A`
+toggles platforms and `Start` begins the download.
+
 Note that this artwork is only displayed within Grout's interface - it does not affect the artwork shown in your CFW's game list.
 
 ### Rebuild Cache
@@ -203,10 +243,13 @@ Note that this artwork is only displayed within Grout's interface - it does not 
 Completely rebuilds the local cache from scratch. This deletes the SQLite database and re-downloads all platform
 and game data from RomM. Use this if you're experiencing cache issues or want a clean slate.
 
-!!! note
-    Under normal operation, you shouldn't need to use this. Grout automatically syncs the cache in the background
-    each time you launch the app, using incremental updates to only fetch data that has changed since the last sync.
-    A sync icon appears in the status bar during this process.
+Use `Left/Right` to choose what to rebuild — **Metadata**, **Artwork**, or **All** — then press `A` to continue or
+`B` to cancel.
+
+> [!NOTE]
+> Under normal operation, you shouldn't need to use this. Grout automatically syncs the cache in the background
+> each time you launch the app, using incremental updates to only fetch data that has changed since the last sync.
+> A sync icon appears in the status bar during this process.
 
 ### Download Timeout
 
@@ -238,6 +281,16 @@ Controls the verbosity of Grout's log output:
 - **Debug** - Maximum detail, useful for troubleshooting issues
 - **Info** - Standard logging with sync completion summaries and key events
 - **Error** - Only log errors
+
+### Input Mapping
+
+Launches an interactive capture flow: press and hold each button when prompted to build a custom control mapping for
+your device. The mapping is saved to `input_mapping.json`, and Grout restarts to apply it.
+
+### Reset Input Mapping
+
+Deletes the custom input mapping and restores default controls. Only shown when a custom mapping exists. Grout exits
+after resetting so the change takes effect on the next launch.
 
 ---
 

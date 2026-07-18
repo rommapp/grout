@@ -74,38 +74,6 @@ func (c *Client) ValidateConnection() error {
 	}
 }
 
-func (c *Client) Login(username, password string) error {
-	req, err := http.NewRequest("POST", c.baseURL+endpointLogin, nil)
-	if err != nil {
-		return ClassifyError(fmt.Errorf("failed to create login request: %w", err))
-	}
-
-	req.SetBasicAuth(username, password)
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return ClassifyError(fmt.Errorf("failed to login: %w", err))
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		logResponseDebug("Login: failed", resp)
-	}
-
-	switch {
-	case resp.StatusCode >= 200 && resp.StatusCode < 300:
-		return nil
-	case resp.StatusCode == 401:
-		return &AuthError{StatusCode: 401, Message: "Invalid username or password", Err: ErrUnauthorized}
-	case resp.StatusCode == 403:
-		return &AuthError{StatusCode: 403, Message: "Access forbidden", Err: ErrForbidden}
-	case resp.StatusCode >= 500:
-		return &AuthError{StatusCode: resp.StatusCode, Message: "Server error", Err: ErrServerError}
-	default:
-		return fmt.Errorf("login failed with status: %d", resp.StatusCode)
-	}
-}
-
 func ExchangeToken(baseURL string, code string, insecureSkipVerify bool) (*TokenExchangeResponse, error) {
 	client := NewClient(baseURL, WithInsecureSkipVerify(insecureSkipVerify))
 	var result TokenExchangeResponse
