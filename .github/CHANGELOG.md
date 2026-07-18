@@ -1,3 +1,7 @@
+# Unreleased
+## Bug Fixes
+- Fixed TrimUI Smart Pro input mapping on MinUI (#252). `DetectDevice()` now returns `DeviceTrimui` for `tg5040` instead of falling through to `DeviceGeneric`. No screen rotation is applied — the kernel framebuffer on TrimUI devices is already correctly oriented. The TrimUI Brick (1024×768 IPS) is distinguished from the Smart Pro via device-tree model - @jellydn
+
 # v4.9.1.0
 ## Save Sync
 - **Upload Rejection Recovery**: Upload 409 rejections from the server are now reconciled into downloads or conflicts instead of dead-ending the sync (#250)

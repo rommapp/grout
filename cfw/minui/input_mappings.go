@@ -13,18 +13,28 @@ import (
 
 const DeviceType = "MINUI_DEVICE"
 
+// devicetreeCompatiblePath is the path to the device-tree compatible string. It is a
+// package-level variable so tests can override it with a temp file.
+var devicetreeCompatiblePath = "/sys/firmware/devicetree/base/compatible"
+
+// devicetreeModelPath is the path to the device-tree model string. Used to distinguish
+// the TrimUI Brick (1024×768 IPS) from the TrimUI Smart Pro (1280×720), both
+// of which report MINUI_DEVICE=tg5040.
+var devicetreeModelPath = "/sys/firmware/devicetree/base/model"
+
 //go:embed input_mappings/*.json
 var embeddedInputMappings embed.FS
 
 type Device string
 
 const (
-	DeviceMiyoo     Device = "miyoo"
-	DeviceMiyooFlip Device = "miyooflip"
-	DeviceAnbernic  Device = "anbernic"
-	DeviceZero28    Device = "zero28"
-	DeviceTrimui    Device = "trimui"
-	DeviceGeneric   Device = "generic"
+	DeviceMiyoo       Device = "miyoo"
+	DeviceMiyooFlip   Device = "miyooflip"
+	DeviceAnbernic    Device = "anbernic"
+	DeviceZero28      Device = "zero28"
+	DeviceTrimui      Device = "trimui"
+	DeviceTrimuiBrick Device = "trimui-brick"
+	DeviceGeneric     Device = "generic"
 )
 
 func detectDeviceByEnv() Device {
@@ -55,7 +65,7 @@ func DetectDevice() Device {
 
 	minuiDeviceType := detectDeviceByEnv()
 	// Anbernic devices use the Allwinner H616 SoC
-	compatible, err := os.ReadFile("/sys/firmware/devicetree/base/compatible")
+	compatible, err := os.ReadFile(devicetreeCompatiblePath)
 	if err == nil && strings.Contains(string(compatible), "allwinner,h616") {
 		return DeviceAnbernic
 	}
@@ -66,6 +76,15 @@ func DetectDevice() Device {
 	switch minuiDeviceType {
 	case DeviceMiyooFlip:
 		return minuiDeviceType
+	case DeviceTrimui:
+		// Both the TrimUI Smart Pro and TrimUI Brick report tg5040. The Smart Pro has a
+		// 1280×720 display while the Brick has a 1024×768 IPS display. We
+		// distinguish them via the device-tree model string.
+		model, modelErr := os.ReadFile(devicetreeModelPath)
+		if modelErr == nil && strings.Contains(strings.ToLower(string(model)), "brick") {
+			return DeviceTrimuiBrick
+		}
+		return DeviceTrimui
 	}
 
 	return DeviceGeneric
@@ -82,6 +101,8 @@ func GetInputMappingBytes() ([]byte, error) {
 		filename = "input_mappings/anbernic.json"
 	case DeviceZero28:
 		filename = "input_mappings/zero28.json"
+	case DeviceTrimui, DeviceTrimuiBrick:
+		filename = "input_mappings/trimui.json"
 	default:
 		return nil, nil
 	}

@@ -37,6 +37,16 @@ _Please help verify compatibility on other devices by reporting your results!_
 > [!NOTE]
 > The MinUI distribution includes both ARM32 and ARM64 binaries. The correct one is selected automatically based on your device.
 
+!!! note "TrimUI Smart Pro & Brick"
+    Input mappings are now supported for the TrimUI Smart Pro, Smart Pro S, and TrimUI
+    Brick on MinUI. The device is auto-detected via the `MINUI_DEVICE` environment
+    variable (set to `tg5040` by MinUI). Button mappings are loaded from the embedded
+    `trimui.json` input mapping.
+
+    Screen rotation is not required for any of these devices — the kernel/framebuffer
+    already handles display orientation. The TrimUI Brick (1024×768 IPS) and Smart Pro
+    (landscape panel) are distinguished via the device-tree model string.
+
 ## Update
 
 ### In-App update (Recommended)
