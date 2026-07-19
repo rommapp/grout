@@ -3,64 +3,9 @@
 This guide walks you through using Grout to download games from your RomM instance.
 
 > [!IMPORTANT]
-> Grout aggressively adopts new RomM features. The required RomM version matches the first three components of Grout's version number. The fourth component is for Grout-specific patches.
+> Grout aggressively adopts new RomM features. The required RomM version matches the first three components of Grout's version number.
 
-
-## Button Reference
-
-Grout attempts to be consistent with its controls. Here's a quick reference:
-
-| Button       | Description                                        |
-|--------------|----------------------------------------------------|
-| `A`          | Confirm / Select                                   |
-| `B`          | Back / Cancel                                      |
-| `X`          | Secondary action (Search, Settings)                |
-| `Y`          | Tertiary action (Filters, Save Sync, Game Options) |
-| `Start`      | Confirm / Save settings                            |
-| `Select`     | Toggle list mode (multi-select, reorder)           |
-| `L1` / `R1`  | Jump letter groups in game lists; deselect/select all in multi-select; used in button combos |
-| `Menu`       | Context action (BIOS, also used in button combos)  |
-| `L2`         | Acts as `Menu` on Miyoo devices                    |
-| `Up/Down`    | Navigate lists                                     |
-| `Left/Right` | Cycle options / Jump pages in list                 |
-
-### On-Screen Keyboard
-
-Wherever Grout needs text input (search, hostname, pairing code, device name, slot names, custom folder names), an
-on-screen keyboard appears:
-
-| Button      | Description                                          |
-|-------------|------------------------------------------------------|
-| `D-Pad`     | Move between keys                                    |
-| `A`         | Press the highlighted key                            |
-| `B`         | Backspace                                            |
-| `X`         | Space (toggles symbols on the URL keyboard)          |
-| `Select`    | Toggle shift                                         |
-| `L1` / `R1` | Move the text cursor left/right                      |
-| `Start`     | Save and close                                       |
-| `Y`         | Exit without saving                                  |
-| `Menu`      | Toggle the keyboard help overlay                     |
-
-
-## Status Bar Icons
-
-The status bar displays icons to indicate background activity. Here's what each icon means:
-
-### Cache Sync Icons
-
-These icons appear during the [background cache sync](#background-cache-sync) process:
-
-| Icon                                                                                              | Description                       |
-|---------------------------------------------------------------------------------------------------|-----------------------------------|
-| ![Database Sync](../resources/img/user_guide/statusbar_icons/Database%20Sync.png){ width="50" }   | Cache sync in progress            |
-| ![Database Check](../resources/img/user_guide/statusbar_icons/Database%20Check.png){ width="50" } | Cache sync completed successfully |
-| ![Database Alert](../resources/img/user_guide/statusbar_icons/Database%20Alert.png){ width="50" } | Cache sync encountered an error   |
-
-### Update Icon
-
-A download icon appears in the status bar when a Grout update is available on your release channel. Install it from
-**Settings > Check for Updates**.
-
+For a quick lookup of button controls and status-bar icons, see the [Reference](reference.md) page.
 
 ## First Launch and Login
 
@@ -99,54 +44,66 @@ First, enter your server connection details:
 
 ### Authentication
 
-After connecting to your server, choose an authentication method.
+After connecting to your server, Grout authenticates using an API token. Tokens can be revoked individually and work
+with all RomM authentication setups, including OIDC. How you obtain the token depends on your RomM version:
 
-#### Pairing Code
-
-![Grout preview, pairing code authentication](../resources/img/user_guide/auth_pairing.png "Grout preview, pairing code authentication")
-
-API tokens are the recommended way to authenticate with your RomM server. They are more secure than passwords, can be
-revoked individually, and work with all authentication setups including OIDC.
-
-1. In your RomM web interface, open **Client API Tokens** and generate a pairing code
-2. In Grout, select **Pairing Code** as the authentication method (it's the default)
-3. Enter the code using the on-screen keyboard
-4. Press `Start` to log in - Grout exchanges the code for an API token automatically
+- **RomM 5.0 or newer** - Grout shows an **Auth Method** picker with two choices: **Pair with Another Device** (the
+  default) and **Pairing Code**.
+- **Older RomM servers** - Only the **Pairing Code** flow is available, so no picker is shown.
 
 The token is saved to your device and used for all future connections.
 
 > [!TIP]
 > You can view token details (name, expiry) on the [Grout Info](settings.md#main-settings) screen.
 
+#### Device Pairing
+
+<!-- TODO: screenshot needed for the device pairing (QR code) screen. -->
+
+On RomM 5.0+, **Pair with Another Device** is the default and recommended method. You approve the handheld from your
+RomM web interface, so there's no long code to type on the device.
+
+1. Select **Pair with Another Device** as the auth method (it's the default on RomM 5.0+).
+2. Set a **Device Name**. Grout suggests your device's hostname. This name also identifies the device for
+   [Save Sync](save-sync.md).
+3. Press `Start` to begin pairing. Grout displays a QR code.
+4. Scan the QR code with your phone (or another device) to open the pairing approval page in your RomM web interface,
+   then approve the device.
+5. Once you approve, Grout automatically receives its API token and continues to the next step. Press `B` to cancel.
+
+Device Pairing requests all the scopes Grout needs automatically, so there's nothing else to configure.
+
+#### Pairing Code
+
+![Grout preview, pairing code authentication](../resources/img/user_guide/auth_pairing.png "Grout preview, pairing code authentication")
+
+Use the Pairing Code flow on older RomM servers, or select it from the **Auth Method** picker on RomM 5.0+. You
+generate a code in the RomM web interface and type it into Grout, which exchanges it for an API token.
+
+1. In your RomM web interface, open **Client API Tokens** and generate a pairing code.
+2. In Grout, select **Pairing Code** as the auth method (on older servers this is the only option).
+3. Enter the code using the on-screen keyboard.
+4. Press `Start` to log in - Grout exchanges the code for an API token automatically.
+
 **Required token permissions:**
 
 When creating a token for Grout, ensure it has the following scopes:
 
-| Scope               | Purpose                       |
-|---------------------|-------------------------------|
-| `me.read`           | Read your user profile        |
-| `me.write`          | Update user preferences       |
-| `roms.read`         | Browse and search ROMs        |
-| `roms.user.read`    | Read your saves and states    |
-| `roms.user.write`   | Upload and sync saves         |
-| `platforms.read`    | List platforms                |
-| `collections.read`  | Browse collections            |
-| `collections.write` | Manage collection preferences |
-| `assets.read`       | Download artwork and covers   |
-| `assets.write`      | Upload screenshots            |
-| `devices.read`      | Read device registrations     |
-| `devices.write`     | Register and update devices   |
-| `firmware.read`     | Download BIOS files           |
+| Scope              | Purpose                     |
+|--------------------|-----------------------------|
+| `me.read`          | Read your user profile      |
+| `platforms.read`   | List platforms              |
+| `roms.read`        | Browse and search ROMs      |
+| `collections.read` | Browse collections          |
+| `firmware.read`    | Download BIOS files         |
+| `assets.read`      | Download saves and artwork  |
+| `assets.write`     | Upload saves and screenshots|
+| `devices.read`     | Read device registrations   |
+| `devices.write`    | Register and update devices |
 
-#### Username and Password
-
-![Grout preview, credentials authentication](../resources/img/user_guide/auth_creds.png "Grout preview, credentials authentication")
-
-1. **Username** - Your RomM username.
-2. **Password** - Your RomM password.
-
-Press `Start` to login. If your credentials are correct and Grout can reach your server, you'll move
-to the next step. If something goes wrong, you'll get a message telling you what happened, and you can try again.
+> [!TIP]
+> Save Sync specifically needs `assets.read`, `assets.write`, `devices.read`, and `devices.write`. Grout warns you
+> (without blocking) if your token is missing any of these.
 
 ## Platform Directory Mapping
 
@@ -186,18 +143,7 @@ You can change these mappings later from [Settings](settings.md#directory-mappin
 Grout uses platform mappings to determine where to save downloaded games on your device. Each Custom Firmware (CFW) uses
 different folder naming conventions. Use these references to see the exact folder names used by your CFW:
 
-- [Allium](../platforms/allium.md) - Uppercase short codes (e.g., `GB`, `GBA`, `PS`)
-- [ArkOS / dArkOS](../platforms/arkos.md) - ES-DE style folder names (e.g., `gb`, `snes`, `psx`)
-- [Batocera](../platforms/batocera.md) - ES-DE style folder names (e.g., `gb`, `megadrive`, `psx`)
-- [KNULLI](../platforms/knulli.md) - ES-DE style folder names (e.g., `gb`, `snes`, `psx`)
-- [Koriki](../platforms/koriki.md) - Uppercase short codes (e.g., `GB`, `GBA`, `PS`)
-- [MinUI](../platforms/minui.md) - Descriptive names with tags (e.g., `Game Boy (GB)`)
-- [muOS](../platforms/muos.md) - Mixed short codes and descriptive names (e.g., `gb`, `Nintendo Game Boy`)
-- [NextUI](../platforms/nextui.md) - Descriptive names with tags (e.g., `Game Boy (GB)`)
-- [Onion](../platforms/onion.md) - Uppercase short codes (e.g., `GB`, `GBA`, `PS`)
-- [ROCKNIX](../platforms/rocknix.md) - ES-DE style folder names (e.g., `gb`, `snes`, `psx`)
-- [Spruce](../platforms/spruce.md) - Uppercase short codes (e.g., `GB`, `SFC`, `PS`)
-- [TrimUI](../platforms/trimui.md) - Uppercase short codes (e.g., `GB`, `GBA`, `PS`)
+--8<-- "docs/_includes/mappings-reference.md"
 
 
 ## Background Cache Sync

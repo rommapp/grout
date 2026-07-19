@@ -42,6 +42,11 @@ Grout has been tested on the following devices running NextUI:
 3. Select Grout and update.
 4. Launch Grout from the `Tools` menu and enjoy the latest version!
 
+### In-App update
+
+Grout has a built-in update mechanism. To update Grout, launch the application and navigate to the `Settings` menu. From there,
+select `Check for Updates`. If a new version is available, follow the on-screen prompts to download and install the update.
+
 ### Manual update
 
 To update Grout, simply download the latest release and replace the existing `Grout.pak` folder in your `SD_ROOT/Tools/<platform>` directory. If you

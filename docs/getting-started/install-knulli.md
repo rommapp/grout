@@ -4,7 +4,7 @@ This guide will help you install Grout on devices running [Knulli][knulli].
 
 ## Tested Devices
 
-Grout has been tested on the following devices running Knulli Gladiator II:
+Grout has been tested on the following devices running Knulli:
 
 | Manufacturer |  Device   |
 |--------------|-----------|

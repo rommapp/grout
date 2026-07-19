@@ -173,7 +173,7 @@ Can't find what you're looking for? [Open an issue](https://github.com/rommapp/g
 > [!NOTE]
 > **Will updating Grout erase my settings?**
 >
-> No. The in-app updater and manual updates both preserve your `config.json` file, which contains your credentials
+> No. The in-app updater and manual updates both preserve your `config.json` file, which contains your API token
 > and platform mappings.
 
 > [!NOTE]

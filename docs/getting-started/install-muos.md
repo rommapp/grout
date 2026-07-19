@@ -4,7 +4,7 @@ This guide will help you install Grout on devices running [muOS][muos].
 
 ## Tested Devices
 
-Grout has been tested on the following devices running muOS 2508.4 Loose Goose:
+Grout has been tested on the following devices running muOS:
 
 | Manufacturer | Device      |
 |--------------|-------------|

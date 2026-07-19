@@ -1,5 +1,7 @@
 # Spruce Platform Mappings
 
+This page covers [Spruce][spruce], [SprigUI][sprigui], and [TwigUI][twigui], which share the same Grout build.
+
 This table shows the mappings of RomM Fs Slug to Spruce's platform folders.
 
 | Platform Name                 | RomM Fs Slug               | Folder(s)           |
@@ -83,3 +85,5 @@ This table shows the mappings of RomM Fs Slug to Spruce's platform folders.
 | WonderSwan Color              | wonderswan-color           | WSC                 |
 | ZX Spectrum                   | zxs                        | ZXS                 |
 | ZX81                          | zx81                       | *(none)*            |
+
+--8<-- "docs/_includes/cfw-links.md"

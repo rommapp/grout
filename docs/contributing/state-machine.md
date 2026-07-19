@@ -16,6 +16,52 @@ flowchart LR
     PS[Platform Selection] -->|"Select Platform"| GL[Game List] -->|"Select Game"| GD[Game Details]
 ```
 
+---
+
+## Login Flow
+
+The login flow runs at startup (in `app/setup.go` via `ui.LoginFlow`) before the main
+app router. It is also re-entered on startup when a stored login can no longer
+authenticate — including legacy installs from before the RomM 5.0 device-auth cutover,
+which are routed back here to re-pair. Username/password (basic auth) is no longer
+supported.
+
+```mermaid
+flowchart TD
+    SRV[Server Connection]
+    VAL{Validate + Version Check}
+    AUTH[Authentication]
+    DP[Device Pairing]
+    PC[Pairing Code]
+    APP((Main App))
+    EXIT((Exit))
+
+    SRV -->|"Continue"| VAL
+    SRV -->|"Quit"| EXIT
+    VAL -->|"Unreachable"| SRV
+    VAL -->|"Reachable"| AUTH
+
+    AUTH -->|"Back"| SRV
+    AUTH -->|"Device Pairing (5.0+, default)"| DP
+    AUTH -->|"Pairing Code"| PC
+
+    DP -->|"Approved"| APP
+    DP -->|"Denied / Expired / Cancelled"| AUTH
+    PC -->|"Valid code"| APP
+    PC -->|"Invalid / expired"| AUTH
+```
+
+- **Server Connection** collects the protocol, hostname, port, and SSL verification
+  settings, then validates connectivity and reads the server heartbeat.
+- **Authentication** presents an Auth Method picker on RomM 5.0+ — **Device Pairing**
+  (default) or **Pairing Code**. On servers older than 5.0 the picker is hidden and only
+  Pairing Code is offered.
+- **Device Pairing** shows a QR code / verification URL (`ui/device_pairing.go`), which is
+  approved in the RomM web UI; Grout polls for the issued token.
+- **Pairing Code** exchanges a code typed from the RomM web UI for a token.
+
+---
+
 ## Platform Selection
 
 ```mermaid
@@ -125,7 +171,6 @@ flowchart TD
     PM[Platform Mapping]
     INFO[Info]
     UPD[Update Check]
-    STT[Switch to Token]
     LOGOUT[Logout Confirm]
 
     PS -->|"Settings"| SET
@@ -138,7 +183,6 @@ flowchart TD
     SET --> PM
     SET --> INFO
     SET --> UPD
-    SET --> STT
 
     GSET --> SET
     CSET --> SET
@@ -147,7 +191,6 @@ flowchart TD
     ASET --> SET
     PM --> SET
     UPD --> SET
-    STT --> SET
 
     SSSET -->|"Save Mapping"| SMAP --> SSSET
 
@@ -215,7 +258,6 @@ flowchart TD
 | Server Address                | Change the RomM server URL                                                                                                                                           |
 | Input Mapping                 | Remap physical buttons                                                                                                                                               |
 | Info                          | App info (version, CFW, RomM version) and logout option                                                                                                              |
-| Switch to Token               | Replace credential auth with an API token                                                                                                                            |
 | Update Check                  | Check for and install updates                                                                                                                                        |
 | Logout Confirmation           | Confirm logout action                                                                                                                                                |
 | Sync Menu                     | Hub for save sync actions (sync now, synced games, history)                                                                                                          |

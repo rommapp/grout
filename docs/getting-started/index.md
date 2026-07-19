@@ -7,7 +7,7 @@ Get up and running with Grout in five steps.
 Make sure you have:
 
 - A RomM server running and accessible
-- A compatible device running [Allium][allium], [ArkOS][arkos]/[dArkOS][darkos], [Batocera][batocera], [Knulli][knulli], [Koriki][koriki], [MinUI][minui], [muOS][muos], [NextUI][nextui], [Onion][onion], [ROCKNIX][rocknix], [Spruce v4][spruce], or [TrimUI][trimui]
+- A compatible device running [Allium][allium], [ArkOS][arkos]/[dArkOS][darkos], [Batocera][batocera], [Knulli][knulli], [Koriki][koriki], [MinUI][minui], [muOS][muos], [NextUI][nextui], [Onion][onion], [ROCKNIX][rocknix], [Spruce v4][spruce]/[SprigUI][sprigui]/[TwigUI][twigui], or [TrimUI][trimui]
 - Your device connected to Wi-Fi
 
 ---
@@ -28,7 +28,7 @@ Choose your platform:
 - [NextUI Installation](install-nextui.md)
 - [Onion Installation](install-onion.md)
 - [ROCKNIX Installation](install-rocknix.md)
-- [Spruce Installation](install-spruce.md)
+- [Spruce / SprigUI / TwigUI Installation](install-spruce.md)
 - [TrimUI Installation](install-trimui.md)
 
 ### Step 2: Launch and Select Language
@@ -39,7 +39,7 @@ When you first launch Grout, select your preferred language using `Left/Right`, 
 
 Enter your connection details and authenticate. 
 
-See the [User Guide](../usage/guide.md#server-connection) for detailed instructions.
+See the [User Guide](../usage/guide.md#authentication) for detailed instructions.
 
 ### Step 4: Map Your Platforms
 

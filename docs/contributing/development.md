@@ -93,23 +93,23 @@ Both stages run automatically when you invoke an architecture build such as `tas
 
 After building, you can package for individual platforms:
 
-| Task                          | Platform         | Output Location                         |
-|-------------------------------|------------------|-----------------------------------------|
-| `task package:all`            | All platforms    | Everything below                        |
-| `task package:next`           | NextUI (TrimUI)  | `dist/Grout.pak/`                       |
-| `task package:muos`           | muOS             | `dist/muOS/Grout/`, `dist/Grout.muxapp` |
-| `task package:knulli`         | Knulli           | `dist/Knulli/Grout/`                    |
-| `task package:spruce`         | Spruce           | `dist/Spruce/Grout/`                    |
-| `task package:rocknix`        | ROCKNIX          | `dist/ROCKNIX/`                         |
-| `task package:arkos`          | ArkOS / dArkOS   | `dist/ArkOS/`                           |
-| `task package:trimui`         | TrimUI           | `dist/Trimui/Grout/`                    |
-| `task package:allium`         | Allium           | `dist/Allium/Grout.pak/`                |
-| `task package:onion`          | Onion            | `dist/Onion/Grout/`                     |
-| `task package:koriki`         | Koriki           | `dist/Koriki/`                          |
-| `task package:minui`          | MinUI            | `dist/MinUI/Grout.pak/`                 |
-| `task package:batocera`       | Batocera (ARM64) | `dist/Batocera-arm64/`                  |
-| `task package:batocera-x86`   | Batocera (x86)   | `dist/Batocera-x86/`                    |
-| `task package:batocera-amd64` | Batocera (AMD64) | `dist/Batocera-amd64/`                  |
+| Task                          | Platform                  | Output Location                         |
+|-------------------------------|---------------------------|-----------------------------------------|
+| `task package:all`            | All platforms             | Everything below                        |
+| `task package:next`           | NextUI (TrimUI)           | `dist/Grout.pak/`                       |
+| `task package:muos`           | muOS                      | `dist/muOS/Grout/`, `dist/Grout.muxapp` |
+| `task package:knulli`         | Knulli                    | `dist/Knulli/Grout/`                    |
+| `task package:spruce`         | Spruce / SprigUI / TwigUI | `dist/Spruce/Grout/`                    |
+| `task package:rocknix`        | ROCKNIX                   | `dist/ROCKNIX/`                         |
+| `task package:arkos`          | ArkOS / dArkOS            | `dist/ArkOS/`                           |
+| `task package:trimui`         | TrimUI                    | `dist/Trimui/Grout/`                    |
+| `task package:allium`         | Allium                    | `dist/Allium/Grout.pak/`                |
+| `task package:onion`          | Onion                     | `dist/Onion/Grout/`                     |
+| `task package:koriki`         | Koriki                    | `dist/Koriki/`                          |
+| `task package:minui`          | MinUI                     | `dist/MinUI/Grout.pak/`                 |
+| `task package:batocera`       | Batocera (ARM64)          | `dist/Batocera-arm64/`                  |
+| `task package:batocera-x86`   | Batocera (x86)            | `dist/Batocera-x86/`                    |
+| `task package:batocera-amd64` | Batocera (AMD64)          | `dist/Batocera-amd64/`                  |
 
 Each packaging task copies the binary, launch scripts from `scripts/<platform>/`, shared libraries, and documentation
 into the appropriate directory structure for that CFW.
@@ -141,7 +141,7 @@ task build:arm64 LOCAL=true   # Build using local gabagool via go.work
 task all LOCAL=true           # Build and package all platforms with local gabagool
 ```
 
-This requires a `go.work` file in the parent directory that references both projects.
+This relies on the committed `go.work` file in the repository root, which references both projects — Grout (`.`) and a sibling `../gabagool` checkout — so make sure gabagool is cloned alongside Grout.
 
 ### Output Structure
 

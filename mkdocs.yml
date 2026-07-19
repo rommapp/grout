@@ -81,6 +81,7 @@ nav:
       - TrimUI: getting-started/install-trimui.md
   - Usage:
       - User Guide: usage/guide.md
+      - Reference: usage/reference.md
       - Settings Reference: usage/settings.md
       - Save Sync: usage/save-sync.md
       - CFW Specific Info:

@@ -9,8 +9,6 @@ Press `X` from the main menu to access Settings.
 
 ## Main Settings
 
-**Switch to API Token** - Shown only when using password authentication. Initiates the [pairing code flow](guide.md#pairing-code) to switch your connection to token-based authentication.
-
 **General** - Opens a sub-menu for general display and download options.
 See [General Settings](#general-settings) below.
 
@@ -26,8 +24,8 @@ See [Directory Mappings](#directory-mappings) below.
 
 **Advanced** - Opens a sub-menu for advanced configuration options. See [Advanced Settings](#advanced-settings) below.
 
-**Grout Info** - View version information, build details, server connection info (including API token name and expiry
-when using token authentication), and the GitHub repository QR code. Press `X` on this screen to log out — the
+**Grout Info** - View version information, build details, server connection info (including your API token name and
+expiry), and the GitHub repository QR code. Press `X` on this screen to log out — the
 confirmation screen also uses `X` to confirm (`B` cancels), so you can't log out by accident.
 
 **Check for Updates** - Check for and install Grout updates.
@@ -155,18 +153,7 @@ For detailed documentation on platform mapping, see the [User Guide](guide.md#pl
 
 Each CFW uses different folder naming conventions:
 
-- [Allium](../platforms/allium.md) - Uppercase short codes (e.g., `GB`, `GBA`, `PS`)
-- [ArkOS / dArkOS](../platforms/arkos.md) - ES-DE style folder names (e.g., `gb`, `snes`, `psx`)
-- [Batocera](../platforms/batocera.md) - ES-DE style folder names (e.g., `gb`, `megadrive`, `psx`)
-- [KNULLI](../platforms/knulli.md) - ES-DE style folder names (e.g., `gb`, `snes`, `psx`)
-- [Koriki](../platforms/koriki.md) - Uppercase short codes (e.g., `GB`, `GBA`, `PS`)
-- [MinUI](../platforms/minui.md) - Descriptive names with tags (e.g., `Game Boy (GB)`)
-- [muOS](../platforms/muos.md) - Mixed short codes and descriptive names (e.g., `gb`, `Nintendo Game Boy`)
-- [NextUI](../platforms/nextui.md) - Descriptive names with tags (e.g., `Game Boy (GB)`)
-- [Onion](../platforms/onion.md) - Uppercase short codes (e.g., `GB`, `GBA`, `PS`)
-- [ROCKNIX](../platforms/rocknix.md) - ES-DE style folder names (e.g., `gb`, `snes`, `psx`)
-- [Spruce](../platforms/spruce.md) - Uppercase short codes (e.g., `GB`, `SFC`, `PS`)
-- [TrimUI](../platforms/trimui.md) - Uppercase short codes (e.g., `GB`, `GBA`, `PS`)
+--8<-- "docs/_includes/mappings-reference.md"
 
 ---
 

@@ -6,11 +6,14 @@ Save Sync keeps your game saves synchronized between your RomM server and your h
 
 ## Getting Started
 
-Save Sync requires a registered device. The first time you open **Save Sync** from Settings, you'll be prompted to
-enter a device name. This registers your handheld with your RomM server so it can track which saves belong to which
-device.
+Save Sync needs a device registered with your RomM server so it can track which saves belong to which device.
 
-Once registered, the **Sync** button (`Y`) appears on the main menu, giving you quick access to the Sync Menu.
+If you signed in with **Device Pairing** (RomM 5.0+), your device is registered automatically as part of pairing —
+there's no separate step, and the **Sync** button (`Y`) is available on the main menu right away.
+
+If your device isn't registered yet — for example, you signed in with a **Pairing Code** — open **Save Sync** from
+Settings and choose **Register Device**, then enter a device name. The **Sync** button (`Y`) then appears on the main
+menu, giving you quick access to the Sync Menu.
 
 ---
 

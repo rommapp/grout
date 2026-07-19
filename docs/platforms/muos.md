@@ -73,6 +73,6 @@ This table shows the mappings of RomM Fs Slug to muOS's platform folders.
 | Vectrex                       | vectrex                    | vectrex, GCE - Vectrex                                     |
 | Virtual Boy                   | virtualboy                 | vb, Nintendo Virtual Boy                                   |
 | WonderSwan                    | wonderswan                 | ws, Bandai WonderSwan-Color                                |
-| WonderSwan Color              | wonderswan-color           | wsc, Book Reader                                           |
+| WonderSwan Color              | wonderswan-color           | wsc,                                                       |
 | ZX Spectrum                   | zxs                        | spectrum, Sinclair ZX Spectrum                             |
 | ZX81                          | zx81                       | zx81, Sinclair ZX 81                                       |
