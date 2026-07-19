@@ -58,7 +58,7 @@ The token is saved to your device and used for all future connections.
 
 #### Device Pairing
 
-<!-- TODO: screenshot needed for the device pairing (QR code) screen. -->
+![Grout preview, another device pairing](../resources/img/user_guide/auth_another_device.png "Grout preview, another device pairing")
 
 On RomM 5.0+, **Pair with Another Device** is the default and recommended method. You approve the handheld from your
 RomM web interface, so there's no long code to type on the device.
@@ -75,7 +75,7 @@ Device Pairing requests all the scopes Grout needs automatically, so there's not
 
 #### Pairing Code
 
-![Grout preview, pairing code authentication](../resources/img/user_guide/auth_pairing.png "Grout preview, pairing code authentication")
+![Grout preview, pairing code authentication](../resources/img/user_guide/auth_pairing_code.png "Grout preview, pairing code authentication")
 
 Use the Pairing Code flow on older RomM servers, or select it from the **Auth Method** picker on RomM 5.0+. You
 generate a code in the RomM web interface and type it into Grout, which exchanges it for an API token.
