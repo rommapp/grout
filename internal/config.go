@@ -75,6 +75,7 @@ type Config struct {
 	DownloadArtScreenshotPreview bool                        `json:"download_art_screenshot_preview,omitempty"`
 	DownloadSplashArt            artutil.ArtKind             `json:"download_splash_art,omitempty"`
 	AdditionalDownloads          AdditionalDownloads         `json:"additional_downloads,omitempty"`
+	IncludeRegionInName          bool                        `json:"include_region_in_name,omitempty"`
 
 	SwapFaceButtons       bool              `json:"swap_face_buttons,omitempty"`
 	PlatformOrder         []string          `json:"platform_order,omitempty"`
@@ -109,6 +110,7 @@ func (c Config) ToLoggable() any {
 		"smart_collections":       c.ShowSmartCollections,
 		"virtual_collections":     c.ShowVirtualCollections,
 		"downloaded_games_action": c.DownloadedGames,
+		"include_region_in_name":  c.IncludeRegionInName,
 		"log_level":               c.LogLevel,
 	}
 }
