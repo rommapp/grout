@@ -41,7 +41,7 @@ func AddGroutEntry(path string, groutEntryPath string) {
 		return
 	}
 
-	gl.AdddOrUpdateEntry(GroutEntryGameListName, map[string]string{
+	gl.AddOrUpdateEntry(GroutEntryGameListName, map[string]string{
 		NameElement:      GroutEntryGameListName,
 		DescElement:      "Download games wirelessly from your RomM instance",
 		ImageElement:     "./Grout/logo.png",

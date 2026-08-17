@@ -127,7 +127,7 @@ func (gl *GameList) AddRomGame(entry RomGameEntry) {
 		gameMetadata[CheevosHashElement] = entry.Game.RetroAchievementsHash
 	}
 
-	gl.AdddOrUpdateEntry(entry.Game.Name, gameMetadata)
+	gl.AddOrUpdateEntry(entry.Game.Name, gameMetadata)
 }
 
 func AddRomGamesToGamelist(entry []RomGameEntry, gamelistFilename FileName) error {
