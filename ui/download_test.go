@@ -89,3 +89,67 @@ func TestBuildDownloads_SingleFile_HappyPath(t *testing.T) {
 		t.Error("expected non-empty download URL")
 	}
 }
+
+func TestBuildDownloads_GamelistEntryName(t *testing.T) {
+	s := NewDownloadScreen()
+	config := internal.Config{IncludeRegionInName: false}
+	host := romm.Host{RootURI: "http://example.invalid"}
+	platform := romm.Platform{ID: 1, FSSlug: "nds", Name: "Nintendo DS"}
+
+	games := []romm.Rom{
+		{
+			ID:               42,
+			Name:             "Test Game (USA)",
+			FsName:           "test.nds",
+			FsNameNoExt:      "test",
+			HasMultipleFiles: false,
+			Files: []romm.RomFile{
+				{ID: 100, FileName: "test.nds"},
+			},
+			Regions: []string{"USA"},
+		},
+	}
+
+	_, _, gamelistEntries := s.buildDownloads(config, host, platform, games, 0)
+
+	if len(gamelistEntries) != 1 {
+		t.Fatalf("expected 1 gamelist entry, got %d", len(gamelistEntries))
+	}
+
+	expectedName := "Test Game"
+	if gamelistEntries[0].Game.Name != expectedName {
+		t.Errorf("expected gamelist entry name to be '%s', got '%s'", expectedName, gamelistEntries[0].Game.Name)
+	}
+}
+
+func TestBuildDownloads_GamelistEntryName_WithRegion(t *testing.T) {
+	s := NewDownloadScreen()
+	config := internal.Config{IncludeRegionInName: true}
+	host := romm.Host{RootURI: "http://example.invalid"}
+	platform := romm.Platform{ID: 1, FSSlug: "nds", Name: "Nintendo DS"}
+
+	games := []romm.Rom{
+		{
+			ID:               42,
+			Name:             "Test Game (USA)",
+			FsName:           "test.nds",
+			FsNameNoExt:      "test",
+			HasMultipleFiles: false,
+			Files: []romm.RomFile{
+				{ID: 100, FileName: "test.nds"},
+			},
+			Regions: []string{"USA"},
+		},
+	}
+
+	_, _, gamelistEntries := s.buildDownloads(config, host, platform, games, 0)
+
+	if len(gamelistEntries) != 1 {
+		t.Fatalf("expected 1 gamelist entry, got %d", len(gamelistEntries))
+	}
+
+	expectedName := "Test Game (USA)"
+	if gamelistEntries[0].Game.Name != expectedName {
+		t.Errorf("expected gamelist entry name to be '%s', got '%s'", expectedName, gamelistEntries[0].Game.Name)
+	}
+}

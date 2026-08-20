@@ -120,7 +120,7 @@ func (gl *GameList) AddGameEntry(info map[string]string) {
 	}
 }
 
-func (gl *GameList) AdddOrUpdateEntry(name string, info map[string]string) {
+func (gl *GameList) AddOrUpdateEntry(name string, info map[string]string) {
 	game := gl.GetGameElementByName(name)
 	if game == nil {
 		gl.AddGameEntry(info)
