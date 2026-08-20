@@ -57,6 +57,7 @@ tasks:
       - task: package:spruce
       - task: package:rocknix
       - task: package:trimui
+      - task: package:anbernic
     silent: true
 
   all-arm32:
