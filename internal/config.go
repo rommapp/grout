@@ -75,7 +75,7 @@ type Config struct {
 	DownloadArtScreenshotPreview bool                        `json:"download_art_screenshot_preview,omitempty"`
 	DownloadSplashArt            artutil.ArtKind             `json:"download_splash_art,omitempty"`
 	AdditionalDownloads          AdditionalDownloads         `json:"additional_downloads,omitempty"`
-	IncludeRegionInName          bool                        `json:"include_region_in_name,omitempty"`
+	IncludeRegionInName          bool                        `json:"include_region_in_name,omitempty" default:"true"`
 
 	SwapFaceButtons       bool              `json:"swap_face_buttons,omitempty"`
 	PlatformOrder         []string          `json:"platform_order,omitempty"`
