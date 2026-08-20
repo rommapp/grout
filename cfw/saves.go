@@ -2,6 +2,7 @@ package cfw
 
 import (
 	"grout/cfw/allium"
+	"grout/cfw/anbernic"
 	"grout/cfw/arkos"
 	"grout/cfw/batocera"
 	"grout/cfw/knulli"
@@ -73,6 +74,8 @@ func EmulatorFolderMap(c CFW) map[string][]string {
 		return batocera.Platforms
 	case MinUI:
 		return minui.SaveDirectories
+	case Anbernic:
+		return anbernic.Platforms // the stock firmware mirrors the ROM's folder under saves_RA
 	default:
 		return nil
 	}

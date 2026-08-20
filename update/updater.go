@@ -53,6 +53,8 @@ func GetDistributionAssetName(c cfw.CFW) string {
 		return "Grout-Koriki.zip"
 	case cfw.MinUI:
 		return "Grout-MinUI.zip"
+	case cfw.Anbernic:
+		return "Grout-Anbernic.zip"
 	case cfw.Batocera:
 		switch runtime.GOARCH {
 		case "arm64":
@@ -88,6 +90,8 @@ func getInstallRoot(c cfw.CFW) (string, error) {
 		levels = 1 // zip has no wrapper dir
 	case cfw.Spruce, cfw.Allium, cfw.Onion, cfw.Trimui, cfw.Koriki:
 		levels = 3 // binary is nested: e.g. Grout.pak/grout/grout
+	case cfw.Anbernic:
+		levels = 4 // binary is nested: Roms/APPS/grout/grout
 	}
 
 	root := execPath
@@ -255,6 +259,8 @@ func getLaunchScriptPath(c cfw.CFW) string {
 		return "Grout/launch.sh"
 	case cfw.MinUI:
 		return "Grout.pak/launch.sh"
+	case cfw.Anbernic:
+		return "Roms/APPS/Grout.sh"
 	case cfw.Batocera:
 		return "Grout.sh"
 	default:

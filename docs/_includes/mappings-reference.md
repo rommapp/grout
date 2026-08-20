@@ -1,4 +1,5 @@
 - [Allium](../platforms/allium.md) - Uppercase short codes (e.g., `GB`, `GBA`, `PS`)
+- [Anbernic Stock OS](../platforms/anbernic.md) - Uppercase short codes (e.g., `GB`, `GBA`, `PS`)
 - [ArkOS / dArkOS](../platforms/arkos.md) - ES-DE style folder names (e.g., `gb`, `snes`, `psx`)
 - [Batocera](../platforms/batocera.md) - ES-DE style folder names (e.g., `gb`, `megadrive`, `psx`)
 - [KNULLI](../platforms/knulli.md) - ES-DE style folder names (e.g., `gb`, `snes`, `psx`)
