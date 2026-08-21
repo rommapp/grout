@@ -132,6 +132,7 @@ func buildDiscoveryItems(uncovered map[int]cfw.LocalRomFile, savesByRom map[int]
 			RomName:     rom.RomName,
 			FSSlug:      rom.FSSlug,
 			RomFileName: rom.FileName,
+			EmulatorDir: resolveDiscoveredSaveDirectory(rom, config),
 		}
 		if IsDirectorySavePlatform(ls.FSSlug) {
 			ls.IsDirectorySave = true
@@ -299,15 +300,10 @@ func mapOperationsToItems(
 ) []SyncItem {
 	logger := gaba.GetLogger()
 
-	type localKey struct {
-		romID    int
-		fileName string
-	}
 	type romSlotKey struct {
 		romID int
 		slot  string
 	}
-	byKey := make(map[localKey]LocalSave, len(localSaves))
 	// byRomSlot indexes local saves by (rom_id, reported slot) — the same key the RomM
 	// orchestrator and Argosy pair on. We must NOT match upload/conflict ops by filename:
 	// the server datetime-tags slot saves (e.g. "Name [2026-06-09_14-49-22].srm") while
@@ -317,7 +313,6 @@ func mapOperationsToItems(
 	// per ROM, so a ROM that already has a local save only ever syncs that save's slot.
 	localByRom := make(map[int]LocalSave, len(localSaves))
 	for _, ls := range localSaves {
-		byKey[localKey{ls.RomID, ls.FileName}] = ls
 		rsk := romSlotKey{ls.RomID, resolveReportedSlot(ls, config, recordedSlots)}
 		if _, ok := byRomSlot[rsk]; !ok {
 			byRomSlot[rsk] = ls
@@ -437,7 +432,11 @@ func mapOperationsToItems(
 		}
 		op := pickDownloadOp(dops, preferred)
 
-		ls, ok := byKey[localKey{op.RomID, op.FileName}]
+		// The server datetime-tags stored save filenames, so a download operation's
+		// filename normally differs from the emulator's plain local filename. The slot
+		// was already checked above; keep the existing local save so its exact path and
+		// emulator directory remain authoritative.
+		ls, ok := localByRom[op.RomID]
 		if !ok {
 			ls = resolveLocalSaveForDownload(op, resolvedRoms, cm)
 		}
@@ -1403,7 +1402,10 @@ func download(client *romm.Client, config *internal.Config, deviceID string, ite
 
 	savePath := item.LocalSave.FilePath
 	if savePath == "" {
-		saveDir := ResolveSaveDirectory(item.LocalSave.FSSlug, config)
+		saveDir := item.LocalSave.EmulatorDir
+		if saveDir == "" {
+			saveDir = ResolveSaveDirectory(item.LocalSave.FSSlug, config)
+		}
 		if saveDir != "" {
 			keepRomExt := detectSaveNameStyle(saveDir)
 			fileName := downloadSaveFileName(item.LocalSave.RomFileName, item.RemoteSave.FileName, item.RemoteSave.FileExtension, keepRomExt)
@@ -1591,4 +1593,17 @@ func ResolveSaveDirectory(fsSlug string, config *internal.Config) string {
 	}
 
 	return cfw.GetSaveDirectory(effectiveFSSlug)
+}
+
+func resolveDiscoveredSaveDirectory(rom cfw.LocalRomFile, config *internal.Config) string {
+	if rom.FilePath == "" {
+		return ""
+	}
+
+	effectiveFSSlug := rom.FSSlug
+	if config != nil {
+		effectiveFSSlug = config.ResolveFSSlug(rom.FSSlug)
+	}
+
+	return cfw.GetSaveDirectoryForRomPath(effectiveFSSlug, rom.FilePath)
 }

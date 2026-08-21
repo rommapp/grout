@@ -13,6 +13,7 @@ import (
 	"grout/cfw/rocknix"
 	"grout/cfw/spruce"
 	"grout/cfw/trimui"
+	"grout/internal/stringutil"
 	"path/filepath"
 	"strings"
 )
@@ -98,6 +99,36 @@ func GetSaveDirectory(fsSlug string) string {
 	emulatorDirs := EmulatorFoldersForFSSlug(fsSlug)
 	if len(emulatorDirs) == 0 {
 		return ""
+	}
+
+	return filepath.Join(baseSavePath, emulatorDirs[0])
+}
+
+// GetSaveDirectoryForRomPath resolves the save directory associated with the ROM's
+// actual emulator folder. Tag-based CFWs can expose multiple launchers for one platform
+// (for example NextUI's Game Boy Advance (GBA) and Game Boy Advance (MGBA)); choosing the
+// platform's first save directory would write a valid save where the selected launcher
+// never looks for it.
+//
+// If the ROM folder cannot be correlated with a configured save directory, this falls
+// back to the platform default used by GetSaveDirectory.
+func GetSaveDirectoryForRomPath(fsSlug, romPath string) string {
+	baseSavePath := BaseSavePath()
+	if baseSavePath == "" {
+		return ""
+	}
+
+	emulatorDirs := EmulatorFoldersForFSSlug(fsSlug)
+	if len(emulatorDirs) == 0 {
+		return ""
+	}
+
+	romDir := filepath.Base(filepath.Dir(romPath))
+	romTag := stringutil.ParseTag(romDir)
+	for _, emulatorDir := range emulatorDirs {
+		if strings.EqualFold(emulatorDir, romDir) || (romTag != "" && strings.EqualFold(emulatorDir, romTag)) {
+			return filepath.Join(baseSavePath, emulatorDir)
+		}
 	}
 
 	return filepath.Join(baseSavePath, emulatorDirs[0])

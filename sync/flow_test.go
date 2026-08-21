@@ -41,6 +41,36 @@ func TestBuildDiscoveryItems_NeverSyncedPulled(t *testing.T) {
 	}
 }
 
+func TestBuildDiscoveryItems_NextUIPreservesRomEmulatorDirectory(t *testing.T) {
+	t.Setenv("CFW", "NEXTUI")
+	basePath := t.TempDir()
+	t.Setenv("BASE_PATH", basePath)
+
+	romPath := filepath.Join(basePath, "Roms", "Game Boy Advance (MGBA)", "Final Fantasy Tactics Advance (USA).zip")
+	uncovered := map[int]cfw.LocalRomFile{
+		3112: {
+			RomID:    3112,
+			RomName:  "Final Fantasy Tactics Advance",
+			FSSlug:   "GBA",
+			FileName: "Final Fantasy Tactics Advance (USA).zip",
+			FilePath: romPath,
+		},
+	}
+	savesByRom := map[int][]romm.Save{
+		3112: {{ID: 11, RomID: 3112, FileName: "Final Fantasy Tactics Advance (USA) [2026].srm", FileExtension: "srm", UpdatedAt: time.Now()}},
+	}
+	config := &internal.Config{PlatformsBinding: map[string]string{"GBA": "gba"}}
+
+	items := buildDiscoveryItems(uncovered, savesByRom, config)
+	if len(items) != 1 {
+		t.Fatalf("expected 1 discovery item, got %d", len(items))
+	}
+	wantDir := filepath.Join(basePath, "Saves", "MGBA")
+	if got := items[0].LocalSave.EmulatorDir; got != wantDir {
+		t.Fatalf("EmulatorDir = %q, want %q", got, wantDir)
+	}
+}
+
 func TestBuildDiscoveryItems_AlreadySyncedStillPulled(t *testing.T) {
 	// Discovery only runs when there is no local file, so a save this device synced
 	// before (then lost locally, e.g. after a reflash) MUST still be pulled.
@@ -346,6 +376,37 @@ func TestMapOperationsToItems_UploadMatchesBySlotNotFilename(t *testing.T) {
 	}
 	if items[0].TargetSlot != "autosave" {
 		t.Errorf("target slot = %q, want autosave", items[0].TargetSlot)
+	}
+}
+
+func TestMapOperationsToItems_DownloadKeepsExistingLocalPath(t *testing.T) {
+	localPath := "/mnt/SDCARD/Saves/MGBA/Final Fantasy Tactics Advance (USA).zip.sav"
+	local := []LocalSave{{
+		RomID:       3112,
+		RomName:     "Final Fantasy Tactics Advance",
+		FSSlug:      "GBA",
+		FileName:    "Final Fantasy Tactics Advance (USA).zip.sav",
+		FilePath:    localPath,
+		EmulatorDir: "/mnt/SDCARD/Saves/MGBA",
+	}}
+	ops := []romm.SyncOperationSchema{{
+		Action:          "download",
+		RomID:           3112,
+		SaveID:          ptrInt(13),
+		FileName:        "Final Fantasy Tactics Advance (USA).zip [2026-08-21_06-52-14].sav",
+		Slot:            ptrStr("autosave"),
+		ServerUpdatedAt: ptrTime(time.Now()),
+	}}
+
+	items := mapOperationsToItems(ops, local, nil, nil, nil, nil, nil)
+	if len(items) != 1 {
+		t.Fatalf("expected 1 download item, got %d", len(items))
+	}
+	if got := items[0].LocalSave.FilePath; got != localPath {
+		t.Fatalf("download path = %q, want existing local path %q", got, localPath)
+	}
+	if got := items[0].LocalSave.EmulatorDir; got != "/mnt/SDCARD/Saves/MGBA" {
+		t.Fatalf("emulator dir = %q, want existing MGBA directory", got)
 	}
 }
 

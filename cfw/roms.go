@@ -88,7 +88,8 @@ func scanRomsByPlatform(baseRomDir string, platformMap map[string][]string, conf
 
 				if !matched {
 					if config != nil {
-						if relPath, ok := config.GetDirectoryMapping(fsSlug); ok {
+						rommFSSlug := config.ResolveRommFSSlug(fsSlug)
+						if relPath, ok := config.GetDirectoryMapping(rommFSSlug); ok {
 							if stringutil.ParseTag(relPath) == tag {
 								matched = true
 							}
@@ -97,11 +98,15 @@ func scanRomsByPlatform(baseRomDir string, platformMap map[string][]string, conf
 				}
 
 				if matched {
+					rommFSSlug := fsSlug
+					if config != nil {
+						rommFSSlug = config.ResolveRommFSSlug(fsSlug)
+					}
 					romDir := filepath.Join(baseRomDir, dirName)
-					roms := scanRomDirectory(fsSlug, romDir)
+					roms := scanRomDirectory(rommFSSlug, romDir)
 					if len(roms) > 0 {
-						result[fsSlug] = append(result[fsSlug], roms...)
-						logger.Debug("Found ROMs for platform", "fsSlug", fsSlug, "dir", dirName, "count", len(roms))
+						result[rommFSSlug] = append(result[rommFSSlug], roms...)
+						logger.Debug("Found ROMs for platform", "fsSlug", rommFSSlug, "dir", dirName, "count", len(roms))
 					}
 				}
 			}
