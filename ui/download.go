@@ -11,6 +11,7 @@ import (
 	"grout/internal/fileutil"
 	"grout/internal/gamelist"
 	"grout/internal/imageutil"
+	"grout/internal/stringutil"
 	"grout/romm"
 	_ "image/gif"
 	_ "image/jpeg"
@@ -366,6 +367,15 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 				Name:   g.PlatformDisplayName,
 			}
 		}
+
+		gameName := g.Name
+		regions := g.Regions
+		if !config.IncludeRegionInName {
+			regions = make([]string, 0)
+		}
+
+		gameName = stringutil.PrepareRomName(gameName, regions)
+		g.Name = gameName
 
 		romDirectory := config.GetPlatformRomDirectory(gamePlatform)
 		gamelistRomEntry.RomDirectory = romDirectory
