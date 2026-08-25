@@ -22,23 +22,48 @@ var (
 // partition, which the launcher mounts read-write at boot (/etc/init.d/launcher.sh).
 const biosDirectory = "/mnt/vendor/deep/retro/system"
 
-// cardPaths are the mount points the stock firmware uses for the two card slots: TF1 holds the
-// OS and is always mounted at /mnt/mmc, TF2 is mounted at /mnt/sdcard when a second card is
-// inserted (/mnt/vendor/ctrl/mmc_new.sh).
-var cardPaths = []string{"/mnt/mmc", "/mnt/sdcard"}
+// defaultCardPath is TF1, which holds the OS and is always mounted (/mnt/vendor/ctrl/loadapp.sh).
+// TF2, when a second card is inserted, is mounted at /mnt/sdcard (/mnt/vendor/ctrl/mmc_new.sh).
+const defaultCardPath = "/mnt/mmc"
 
-// GetBasePath returns the root of the card Grout manages. The launch script exports BASE_PATH
-// derived from its own location, so a copy installed on TF2 manages TF2's ROMs.
+// installDepth is how many directory levels separate the grout binary from the card root:
+// <card>/Roms/APPS/grout/grout. update.getInstallRoot uses the same depth.
+const installDepth = 4
+
+// GetBasePath returns the root of the card this copy of Grout is installed on. Grout.sh exports
+// BASE_PATH derived from its own location; when it is unset (a binary started by hand) the same
+// answer is derived from the executable's own path, so a copy on TF2 still manages TF2 rather
+// than whichever card happens to hold ROMs.
 func GetBasePath() string {
 	if basePath := os.Getenv("BASE_PATH"); basePath != "" {
 		return basePath
 	}
-	for _, path := range cardPaths {
-		if info, err := os.Stat(filepath.Join(path, "Roms")); err == nil && info.IsDir() {
-			return path
-		}
+	if root := cardRootFromExecutable(); root != "" {
+		return root
 	}
-	return cardPaths[0]
+	return defaultCardPath
+}
+
+// cardRootFromExecutable walks up from the running binary to the card root, returning "" when
+// the result does not look like a card (a binary run from anywhere else).
+func cardRootFromExecutable() string {
+	execPath, err := os.Executable()
+	if err != nil {
+		return ""
+	}
+	if resolved, err := filepath.EvalSymlinks(execPath); err == nil {
+		execPath = resolved
+	}
+
+	root := execPath
+	for i := 0; i < installDepth; i++ {
+		root = filepath.Dir(root)
+	}
+
+	if info, err := os.Stat(filepath.Join(root, "Roms")); err != nil || !info.IsDir() {
+		return ""
+	}
+	return root
 }
 
 func GetRomDirectory() string {
