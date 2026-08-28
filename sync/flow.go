@@ -29,90 +29,16 @@ import (
 // timeouts or rate limits.
 const maxConcurrentRequests = 4
 
-type baselineSyncMeasurement struct {
-	scanSaves             time.Duration
-	loadRecordedState     time.Duration
-	buildClientSaveStates time.Duration
-	negotiate             time.Duration
-	scanRoms              time.Duration
-	resolveLocalRoms      time.Duration
-	mapOperations         time.Duration
-	discovery             time.Duration
-	total                 time.Duration
-	localSaves            int
-	installedRoms         int
-	resolvedRoms          int
-	uncoveredRoms         int
-	remoteRequests        int
-	platformsQueried      int
-	fallbackRequests      int
-	bulkRecordsSeen       int
-	bulkBytesRead         int64
-	fallbackReason        string
-	remoteSaveRecords     int
-	resultingItems        int
-}
-
-type discoveryFetchStats struct {
-	remoteRequests   int
-	fallbackRequests int
-	bulkRecordsSeen  int
-	bulkBytesRead    int64
-	filteredRecords  int
-	fallbackReason   string
-}
-
-func (m *baselineSyncMeasurement) recordDiscovery(uncovered int, stats discoveryFetchStats) {
-	m.uncoveredRoms = uncovered
-	m.remoteRequests = stats.remoteRequests
-	m.platformsQueried = 0
-	m.fallbackRequests = stats.fallbackRequests
-	m.bulkRecordsSeen = stats.bulkRecordsSeen
-	m.bulkBytesRead = stats.bulkBytesRead
-	m.fallbackReason = stats.fallbackReason
-	if m.fallbackReason == "" {
-		m.fallbackReason = "none"
-	}
-	m.remoteSaveRecords = stats.filteredRecords
-}
-
-func (m baselineSyncMeasurement) String() string {
-	return fmt.Sprintf(
-		"scan_saves_ms=%d load_recorded_state_ms=%d build_client_save_states_ms=%d "+
-			"negotiate_ms=%d scan_roms_ms=%d resolve_local_roms_ms=%d map_operations_ms=%d "+
-			"discover_remote_only_saves_ms=%d total_ms=%d local_saves=%d installed_roms=%d "+
-			"resolved_roms=%d uncovered_roms=%d remote_discovery_requests=%d platforms_queried=%d "+
-			"fallback_per_rom_requests=%d bulk_records_seen=%d bulk_bytes_read=%d filtered_records=%d "+
-			"fallback_reason=%s remote_save_records=%d resulting_sync_items=%d",
-		m.scanSaves.Milliseconds(), m.loadRecordedState.Milliseconds(),
-		m.buildClientSaveStates.Milliseconds(), m.negotiate.Milliseconds(),
-		m.scanRoms.Milliseconds(), m.resolveLocalRoms.Milliseconds(),
-		m.mapOperations.Milliseconds(), m.discovery.Milliseconds(), m.total.Milliseconds(),
-		m.localSaves, m.installedRoms, m.resolvedRoms, m.uncoveredRoms, m.remoteRequests,
-		m.platformsQueried, m.fallbackRequests, m.bulkRecordsSeen, m.bulkBytesRead,
-		m.remoteSaveRecords, m.fallbackReason, m.remoteSaveRecords, m.resultingItems,
-	)
-}
-
 func ResolveSaveSync(client *romm.Client, config *internal.Config, deviceID string) (SyncResult, error) {
 	logger := gaba.GetLogger()
 	logger.Debug("Starting save sync resolve (negotiate)", "deviceID", deviceID)
-	measurement := baselineSyncMeasurement{}
-	totalStarted := time.Now()
 
-	phaseStarted := time.Now()
 	localSaves := ScanSaves(config)
-	measurement.scanSaves = time.Since(phaseStarted)
-	measurement.localSaves = len(localSaves)
 	logger.Debug("Scanned local saves", "count", len(localSaves))
 
-	phaseStarted = time.Now()
 	recordedSlots := loadRecordedSlots(deviceID)
 	recordedHashes := loadRecordedHashes(deviceID)
-	measurement.loadRecordedState = time.Since(phaseStarted)
-	phaseStarted = time.Now()
 	states := buildClientSaveStates(localSaves, config, recordedSlots)
-	measurement.buildClientSaveStates = time.Since(phaseStarted)
 
 	// Diagnostic: log exactly what we send the orchestrator (rom/slot/hash).
 	for _, s := range states {
@@ -121,12 +47,10 @@ func ResolveSaveSync(client *romm.Client, config *internal.Config, deviceID stri
 			"emulator", s.Emulator, "hasHash", s.ContentHash != "", "size", s.FileSizeBytes)
 	}
 
-	phaseStarted = time.Now()
 	resp, err := client.Negotiate(romm.SyncNegotiatePayload{
 		DeviceID: deviceID,
 		Saves:    states,
 	})
-	measurement.negotiate = time.Since(phaseStarted)
 	if err != nil {
 		return SyncResult{}, fmt.Errorf("negotiate failed: %w", err)
 	}
@@ -153,19 +77,11 @@ func ResolveSaveSync(client *romm.Client, config *internal.Config, deviceID stri
 			"file", op.FileName, "slot", slot, "reason", op.Reason)
 	}
 
-	phaseStarted = time.Now()
 	scan := cfw.ScanRoms(config)
-	measurement.scanRoms = time.Since(phaseStarted)
-	measurement.installedRoms = len(scan)
-	phaseStarted = time.Now()
 	resolvedRoms := ResolveLocalRoms(scan)
-	measurement.resolveLocalRoms = time.Since(phaseStarted)
-	measurement.resolvedRoms = len(resolvedRoms)
 	cm := cache.GetCacheManager()
 
-	phaseStarted = time.Now()
 	items := mapOperationsToItems(resp.Operations, localSaves, resolvedRoms, cm, config, recordedSlots, recordedHashes)
-	measurement.mapOperations = time.Since(phaseStarted)
 
 	// Discovery fallback: the orchestrator only volunteers downloads for non-null-slot
 	// saves the device hasn't already synced, and never surfaces null-slot ("archival" /
@@ -173,17 +89,12 @@ func ResolveSaveSync(client *romm.Client, config *internal.Config, deviceID stri
 	// negotiate op, query the server directly and pull the best server save. Discovery
 	// only runs when there is no local file, so it safely restores saves after an SD
 	// reflash / fresh install (persistent device_id, lost local files).
-	phaseStarted = time.Now()
-	discovered := discoverRemoteOnlySaves(client, config, deviceID, localSaves, items, resolvedRoms, &measurement)
-	measurement.discovery = time.Since(phaseStarted)
+	discovered := discoverRemoteOnlySaves(client, config, deviceID, localSaves, items, resolvedRoms)
 	if len(discovered) > 0 {
 		logger.Debug("Discovery fallback found remote-only saves", "count", len(discovered))
 		items = append(items, discovered...)
 	}
 
-	measurement.resultingItems = len(items)
-	measurement.total = time.Since(totalStarted)
-	logger.Debug("Save sync baseline measurement", "metrics", measurement.String())
 	logger.Debug("Total sync items resolved", "count", len(items))
 
 	return SyncResult{Items: items, SessionID: resp.SessionID}, nil
@@ -303,7 +214,7 @@ func opStubsToSaves(ops []romm.SyncOperationSchema) []romm.Save {
 // discoverRemoteOnlySaves finds locally-present ROMs that have no local save and were
 // not covered by a negotiate operation, fetches their server saves, and builds download
 // items for any save this device has never synced.
-func discoverRemoteOnlySaves(client *romm.Client, config *internal.Config, deviceID string, localSaves []LocalSave, items []SyncItem, resolvedRoms map[int]cfw.LocalRomFile, measurement *baselineSyncMeasurement) []SyncItem {
+func discoverRemoteOnlySaves(client *romm.Client, config *internal.Config, deviceID string, localSaves []LocalSave, items []SyncItem, resolvedRoms map[int]cfw.LocalRomFile) []SyncItem {
 	logger := gaba.GetLogger()
 
 	covered := make(map[int]bool, len(localSaves)+len(items))
@@ -320,56 +231,44 @@ func discoverRemoteOnlySaves(client *romm.Client, config *internal.Config, devic
 			uncovered[romID] = rom
 		}
 	}
-	measurement.recordDiscovery(len(uncovered), discoveryFetchStats{})
 	if len(uncovered) == 0 {
 		return nil
 	}
 
 	logger.Debug("Discovery: checking remote saves for ROMs without local saves", "count", len(uncovered))
 
-	savesByRom, stats := fetchSavesForRoms(client, deviceID, uncovered)
-	measurement.recordDiscovery(len(uncovered), stats)
+	savesByRom := fetchSavesForRoms(client, deviceID, uncovered)
 	return buildDiscoveryItems(uncovered, savesByRom, config)
 }
 
 // fetchSavesForRoms first asks for all saves scoped to the authenticated device, then
 // filters them to uncovered ROMs. If that request fails, or no device ID is available,
 // it uses the compatibility path with bounded per-ROM concurrency.
-func fetchSavesForRoms(client *romm.Client, deviceID string, uncovered map[int]cfw.LocalRomFile) (map[int][]romm.Save, discoveryFetchStats) {
+func fetchSavesForRoms(client *romm.Client, deviceID string, uncovered map[int]cfw.LocalRomFile) map[int][]romm.Save {
 	logger := gaba.GetLogger()
-	stats := discoveryFetchStats{}
 
 	if deviceID != "" {
-		stats.remoteRequests = 1
 		romIDs := make([]int, 0, len(uncovered))
 		for romID := range uncovered {
 			romIDs = append(romIDs, romID)
 		}
-		bulkSaves, streamStats, err := client.GetSavesForROMIDs(romm.SaveQuery{DeviceID: deviceID}, romIDs)
-		stats.bulkRecordsSeen = streamStats.RecordsSeen
-		stats.bulkBytesRead = streamStats.BytesRead
+		bulkSaves, err := client.GetSavesForROMIDs(romm.SaveQuery{DeviceID: deviceID}, romIDs)
 		if err == nil {
 			out := make(map[int][]romm.Save)
 			for _, save := range bulkSaves {
 				out[save.RomID] = append(out[save.RomID], save)
 			}
-			stats.filteredRecords = streamStats.FilteredRecords
-			return out, stats
+			logger.Debug("Discovery: fetched saves in bulk", "requests", 1, "records", len(bulkSaves))
+			return out
 		}
-		stats.fallbackReason = romm.SaveListFallbackReason(err)
-		logger.Warn("Discovery: device-scoped bulk save fetch failed; using per-ROM fallback", "error", err)
+		logger.Warn("Discovery: device-scoped bulk save fetch failed; using per-ROM fallback",
+			"requests", 1+len(uncovered),
+			"error", err)
 	} else {
-		stats.fallbackReason = "empty_device"
-		logger.Warn("Discovery: device ID empty; using per-ROM fallback")
+		logger.Warn("Discovery: device ID empty; using per-ROM fallback", "requests", len(uncovered))
 	}
 
-	fallback := fetchSavesForRomsFallback(client, deviceID, uncovered)
-	stats.remoteRequests += len(uncovered)
-	stats.fallbackRequests = len(uncovered)
-	for _, saves := range fallback {
-		stats.filteredRecords += len(saves)
-	}
-	return fallback, stats
+	return fetchSavesForRomsFallback(client, deviceID, uncovered)
 }
 
 // fetchSavesForRomsFallback queries each ROM with bounded concurrency. ROMs whose
@@ -399,7 +298,7 @@ func fetchSavesForRomsFallback(client *romm.Client, deviceID string, uncovered m
 		go func() {
 			defer wg.Done()
 			for id := range jobs {
-				saves, _, err := client.GetSavesForROMIDs(romm.SaveQuery{RomID: id, DeviceID: deviceID}, []int{id})
+				saves, err := client.GetSavesForROMIDs(romm.SaveQuery{RomID: id, DeviceID: deviceID}, []int{id})
 				results <- result{romID: id, saves: saves, err: err}
 			}
 		}()

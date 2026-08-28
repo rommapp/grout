@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,72 +14,8 @@ import (
 )
 
 const (
-	DefaultClientTimeout             = 30 * time.Second
-	defaultSaveListMaxDecodedBytes   = int64(16 * 1024 * 1024)
-	defaultSaveListMaxRecords        = 10000
-	defaultSaveListMaxErrorBodyBytes = int64(64 * 1024)
-
-	saveListFailureTransport    = "transport"
-	saveListFailureHTTPStatus   = "http_status"
-	saveListFailureInvalidQuery = "invalid_query"
-	saveListFailureDecode       = "decode"
-	saveListFailureByteLimit    = "byte_limit"
-	saveListFailureRecordLimit  = "record_limit"
-	saveListFailureTrailingData = "trailing_data"
+	DefaultClientTimeout = 30 * time.Second
 )
-
-type saveListLimits struct {
-	maxDecodedBytes   int64
-	maxRecords        int
-	maxErrorBodyBytes int64
-}
-
-var defaultSaveListLimits = saveListLimits{
-	maxDecodedBytes:   defaultSaveListMaxDecodedBytes,
-	maxRecords:        defaultSaveListMaxRecords,
-	maxErrorBodyBytes: defaultSaveListMaxErrorBodyBytes,
-}
-
-type SaveListStreamStats struct {
-	RecordsSeen     int
-	BytesRead       int64
-	FilteredRecords int
-}
-
-type saveListRequestError struct {
-	reason       string
-	statusCode   int
-	retainedBody []byte
-	err          error
-}
-
-func (e *saveListRequestError) Error() string {
-	if e.statusCode != 0 {
-		return fmt.Sprintf("save list request failed: status %d, body: %q", e.statusCode, e.retainedBody)
-	}
-	return fmt.Sprintf("save list request failed (%s): %v", e.reason, e.err)
-}
-
-func (e *saveListRequestError) Unwrap() error { return e.err }
-
-func SaveListFallbackReason(err error) string {
-	var requestErr *saveListRequestError
-	if errors.As(err, &requestErr) {
-		return requestErr.reason
-	}
-	return "unknown"
-}
-
-type countingReader struct {
-	r io.Reader
-	n int64
-}
-
-func (r *countingReader) Read(p []byte) (int, error) {
-	n, err := r.r.Read(p)
-	r.n += int64(n)
-	return n, err
-}
 
 type Client struct {
 	baseURL    string
@@ -192,126 +127,6 @@ func (c *Client) doRequest(method string, path string, queryParams queryParam, b
 	}
 
 	return nil
-}
-
-// GetSavesForROMIDs performs the bounded save-list request used by remote-only
-// discovery. Positive ROM IDs are copied into a private set before I/O. Matching
-// records are returned only after a complete top-level array and clean EOF.
-func (c *Client) GetSavesForROMIDs(query SaveQuery, romIDs []int) ([]Save, SaveListStreamStats, error) {
-	return c.streamSavesForROMIDs(query, romIDs, defaultSaveListLimits)
-}
-
-func (c *Client) streamSavesForROMIDs(query SaveQuery, romIDs []int, limits saveListLimits) ([]Save, SaveListStreamStats, error) {
-	wanted := make(map[int]struct{}, len(romIDs))
-	for _, romID := range romIDs {
-		if romID > 0 {
-			wanted[romID] = struct{}{}
-		}
-	}
-	if !query.Valid() {
-		return nil, SaveListStreamStats{}, &saveListRequestError{
-			reason: saveListFailureInvalidQuery,
-			err:    fmt.Errorf("save list query is invalid"),
-		}
-	}
-	if len(wanted) == 0 {
-		return make([]Save, 0), SaveListStreamStats{}, nil
-	}
-
-	u := c.baseURL + endpointSaves
-	req, err := http.NewRequest(http.MethodGet, u, nil)
-	if err != nil {
-		return nil, SaveListStreamStats{}, &saveListRequestError{reason: saveListFailureTransport, err: err}
-	}
-	values, encodeErr := qs.NewEncoder().Values(query)
-	if encodeErr != nil {
-		return nil, SaveListStreamStats{}, &saveListRequestError{reason: saveListFailureDecode, err: encodeErr}
-	}
-	req.URL.RawQuery = values.Encode()
-	if c.authHeader != "" {
-		req.Header.Set("Authorization", c.authHeader)
-	}
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, SaveListStreamStats{}, &saveListRequestError{reason: saveListFailureTransport, err: err}
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
-		body, readErr := io.ReadAll(io.LimitReader(resp.Body, limits.maxErrorBodyBytes))
-		return nil, SaveListStreamStats{BytesRead: int64(len(body))}, &saveListRequestError{
-			reason:       saveListFailureHTTPStatus,
-			statusCode:   resp.StatusCode,
-			retainedBody: body,
-			err:          readErr,
-		}
-	}
-	if resp.StatusCode == http.StatusNoContent {
-		return make([]Save, 0), SaveListStreamStats{}, nil
-	}
-
-	return decodeSaveList(resp.Body, wanted, limits)
-}
-
-func decodeSaveList(body io.Reader, wanted map[int]struct{}, limits saveListLimits) ([]Save, SaveListStreamStats, error) {
-	reader := &countingReader{r: io.LimitReader(body, limits.maxDecodedBytes+1)}
-	decoder := json.NewDecoder(reader)
-	stats := SaveListStreamStats{}
-	fail := func(reason string, err error) ([]Save, SaveListStreamStats, error) {
-		stats.BytesRead = reader.n
-		if reader.n > limits.maxDecodedBytes {
-			reason = saveListFailureByteLimit
-		}
-		return nil, stats, &saveListRequestError{reason: reason, err: err}
-	}
-
-	token, err := decoder.Token()
-	if err != nil {
-		return fail(saveListFailureDecode, err)
-	}
-	opening, ok := token.(json.Delim)
-	if !ok || opening != '[' {
-		return fail(saveListFailureDecode, fmt.Errorf("save list must be a top-level array"))
-	}
-
-	retained := make([]Save, 0)
-	for decoder.More() {
-		var save Save
-		if err := decoder.Decode(&save); err != nil {
-			return fail(saveListFailureDecode, err)
-		}
-		stats.RecordsSeen++
-		if stats.RecordsSeen > limits.maxRecords {
-			return fail(saveListFailureRecordLimit, fmt.Errorf("save list record limit exceeded"))
-		}
-		if _, ok := wanted[save.RomID]; ok && save.RomID > 0 {
-			retained = append(retained, save)
-			stats.FilteredRecords++
-		}
-	}
-
-	closing, err := decoder.Token()
-	if err != nil {
-		return fail(saveListFailureDecode, err)
-	}
-	if delim, ok := closing.(json.Delim); !ok || delim != ']' {
-		return fail(saveListFailureDecode, fmt.Errorf("save list closing array token missing"))
-	}
-
-	var trailing json.RawMessage
-	err = decoder.Decode(&trailing)
-	if err != io.EOF {
-		if err == nil {
-			err = fmt.Errorf("trailing JSON value")
-		}
-		return fail(saveListFailureTrailingData, err)
-	}
-	stats.BytesRead = reader.n
-	if reader.n > limits.maxDecodedBytes {
-		return fail(saveListFailureByteLimit, fmt.Errorf("save list decoded byte limit exceeded"))
-	}
-	return retained, stats, nil
 }
 
 func (c *Client) doRequestRaw(method, path string, body interface{}) ([]byte, error) {

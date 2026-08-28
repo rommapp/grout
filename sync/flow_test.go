@@ -129,9 +129,9 @@ func TestFetchSavesForRomsBulkFiltersAndPreservesDuplicatesAndOrder(t *testing.T
 	defer server.Close()
 
 	uncovered := map[int]cfw.LocalRomFile{2: {RomID: 2}, 3: {RomID: 3}}
-	got, stats := fetchSavesForRoms(romm.NewClient(server.URL), "device-1", uncovered)
-	if requests.Load() != 1 || stats.remoteRequests != 1 || stats.fallbackRequests != 0 || stats.filteredRecords != 4 {
-		t.Fatalf("requests=%d stats=%+v", requests.Load(), stats)
+	got := fetchSavesForRoms(romm.NewClient(server.URL), "device-1", uncovered)
+	if requests.Load() != 1 {
+		t.Fatalf("requests=%d, want 1", requests.Load())
 	}
 	wantIDs := []int{10, 12, 10}
 	if len(got[2]) != len(wantIDs) {
@@ -158,9 +158,9 @@ func TestFetchSavesForRomsBulk6000RomsUsesOneRequest(t *testing.T) {
 	for romID := 1; romID <= 6000; romID++ {
 		uncovered[romID] = cfw.LocalRomFile{RomID: romID}
 	}
-	got, stats := fetchSavesForRoms(romm.NewClient(server.URL), "device-large", uncovered)
-	if requests.Load() != 1 || stats.remoteRequests != 1 || stats.filteredRecords != 1 || len(got) != 1 {
-		t.Fatalf("requests=%d stats=%+v groups=%d", requests.Load(), stats, len(got))
+	got := fetchSavesForRoms(romm.NewClient(server.URL), "device-large", uncovered)
+	if requests.Load() != 1 || len(got) != 1 {
+		t.Fatalf("requests=%d groups=%d", requests.Load(), len(got))
 	}
 }
 
@@ -171,9 +171,9 @@ func TestFetchSavesForRomsSuccessfulEmptyBulkNeverFallsBack(t *testing.T) {
 		_ = json.NewEncoder(w).Encode([]romm.Save{})
 	}))
 	defer server.Close()
-	got, stats := fetchSavesForRoms(romm.NewClient(server.URL), "device-empty", map[int]cfw.LocalRomFile{1: {RomID: 1}, 2: {RomID: 2}})
-	if requests.Load() != 1 || len(got) != 0 || stats.remoteRequests != 1 || stats.fallbackRequests != 0 {
-		t.Fatalf("requests=%d stats=%+v saves=%+v", requests.Load(), stats, got)
+	got := fetchSavesForRoms(romm.NewClient(server.URL), "device-empty", map[int]cfw.LocalRomFile{1: {RomID: 1}, 2: {RomID: 2}})
+	if requests.Load() != 1 || len(got) != 0 {
+		t.Fatalf("requests=%d saves=%+v", requests.Load(), got)
 	}
 }
 
@@ -191,9 +191,9 @@ func TestFetchSavesForRomsEmptyDeviceUsesPerRomFallbackOnly(t *testing.T) {
 	}))
 	defer server.Close()
 	uncovered := map[int]cfw.LocalRomFile{1: {RomID: 1}, 2: {RomID: 2}, 3: {RomID: 3}}
-	got, stats := fetchSavesForRoms(romm.NewClient(server.URL), "", uncovered)
-	if requests.Load() != 3 || len(got) != 3 || stats.remoteRequests != 3 || stats.fallbackRequests != 3 {
-		t.Fatalf("requests=%d stats=%+v saves=%d", requests.Load(), stats, len(got))
+	got := fetchSavesForRoms(romm.NewClient(server.URL), "", uncovered)
+	if requests.Load() != 3 || len(got) != 3 {
+		t.Fatalf("requests=%d saves=%d", requests.Load(), len(got))
 	}
 }
 
@@ -246,18 +246,9 @@ func TestFetchSavesForRomsBulkErrorsFallBackAndStayBounded(t *testing.T) {
 			for romID := 1; romID <= 12; romID++ {
 				uncovered[romID] = cfw.LocalRomFile{RomID: romID}
 			}
-			got, stats := fetchSavesForRoms(romm.NewClient(server.URL), "device-fallback", uncovered)
-			if requests.Load() != 13 || stats.remoteRequests != 13 || stats.fallbackRequests != 12 || stats.filteredRecords != 12 {
-				t.Fatalf("requests=%d stats=%+v", requests.Load(), stats)
-			}
-			wantReason := "decode"
-			if failure == "http" {
-				wantReason = "http_status"
-			} else if failure == "network" {
-				wantReason = "transport"
-			}
-			if stats.fallbackReason != wantReason {
-				t.Fatalf("fallback reason=%q want=%q", stats.fallbackReason, wantReason)
+			got := fetchSavesForRoms(romm.NewClient(server.URL), "device-fallback", uncovered)
+			if requests.Load() != 13 {
+				t.Fatalf("requests=%d, want 13", requests.Load())
 			}
 			if peak.Load() > maxConcurrentRequests {
 				t.Fatalf("peak fallback concurrency=%d, max=%d", peak.Load(), maxConcurrentRequests)
@@ -294,9 +285,9 @@ func TestFetchSavesForRomsFallbackWorkerPoolBoundsHighCardinality(t *testing.T) 
 			for romID := 1; romID <= uncoveredCount; romID++ {
 				uncovered[romID] = cfw.LocalRomFile{RomID: romID}
 			}
-			got, stats := fetchSavesForRoms(romm.NewClient(server.URL), "", uncovered)
-			if int(requests.Load()) != uncoveredCount || len(got) != uncoveredCount || stats.remoteRequests != uncoveredCount || stats.fallbackRequests != uncoveredCount {
-				t.Fatalf("requests=%d groups=%d stats=%+v", requests.Load(), len(got), stats)
+			got := fetchSavesForRoms(romm.NewClient(server.URL), "", uncovered)
+			if int(requests.Load()) != uncoveredCount || len(got) != uncoveredCount {
+				t.Fatalf("requests=%d groups=%d", requests.Load(), len(got))
 			}
 			if peak.Load() > maxConcurrentRequests {
 				t.Fatalf("peak requests=%d max=%d", peak.Load(), maxConcurrentRequests)
@@ -344,9 +335,9 @@ func TestFetchSavesForRomsFallbackOmitsOnlyFailedRoms(t *testing.T) {
 			for romID := 1; romID <= 8; romID++ {
 				uncovered[romID] = cfw.LocalRomFile{RomID: romID}
 			}
-			got, stats := fetchSavesForRoms(romm.NewClient(server.URL), "device-failures", uncovered)
-			if requests.Load() != 9 || len(got) != 8-len(failed) || stats.remoteRequests != 9 || stats.fallbackRequests != 8 || stats.filteredRecords != 8-len(failed) || stats.fallbackReason != "http_status" {
-				t.Fatalf("requests=%d groups=%d stats=%+v", requests.Load(), len(got), stats)
+			got := fetchSavesForRoms(romm.NewClient(server.URL), "device-failures", uncovered)
+			if requests.Load() != 9 || len(got) != 8-len(failed) {
+				t.Fatalf("requests=%d groups=%d", requests.Load(), len(got))
 			}
 			for romID := range failed {
 				if _, ok := got[romID]; ok {
@@ -371,7 +362,7 @@ func TestFetchSavesForRomsFallbackRejectsMismatchedROM(t *testing.T) {
 	defer server.Close()
 
 	uncovered := map[int]cfw.LocalRomFile{7: {RomID: 7}}
-	got, _ := fetchSavesForRoms(romm.NewClient(server.URL), "device-1", uncovered)
+	got := fetchSavesForRoms(romm.NewClient(server.URL), "device-1", uncovered)
 	if len(got) != 0 {
 		t.Fatalf("mismatched save leaked into ROM 7 results: %+v", got)
 	}
@@ -392,7 +383,7 @@ func TestFetchSavesForRomsFallbackRejectsOversizedResponse(t *testing.T) {
 	defer server.Close()
 
 	uncovered := map[int]cfw.LocalRomFile{7: {RomID: 7}}
-	got, _ := fetchSavesForRoms(romm.NewClient(server.URL), "device-1", uncovered)
+	got := fetchSavesForRoms(romm.NewClient(server.URL), "device-1", uncovered)
 	if len(got) != 0 {
 		t.Fatalf("oversized fallback response produced download candidates: %d", len(got[7]))
 	}
@@ -405,9 +396,9 @@ func TestFetchSavesForRomsServerIgnoresDeviceStillFiltersUncovered(t *testing.T)
 		})
 	}))
 	defer server.Close()
-	got, stats := fetchSavesForRoms(romm.NewClient(server.URL), "device-ignored", map[int]cfw.LocalRomFile{7: {RomID: 7}})
-	if stats.bulkRecordsSeen != 4 || stats.filteredRecords != 3 || len(got) != 1 {
-		t.Fatalf("stats=%+v got=%+v", stats, got)
+	got := fetchSavesForRoms(romm.NewClient(server.URL), "device-ignored", map[int]cfw.LocalRomFile{7: {RomID: 7}})
+	if len(got) != 1 {
+		t.Fatalf("got=%+v", got)
 	}
 	for i, want := range []int{1, 3, 1} {
 		if got[7][i].ID != want {
@@ -416,48 +407,41 @@ func TestFetchSavesForRomsServerIgnoresDeviceStillFiltersUncovered(t *testing.T)
 	}
 }
 
-func TestDiscoverRemoteOnlySavesBulkPreservesCoveredExclusion(t *testing.T) {
+func TestDiscoverRemoteOnlySavesCreatesIntentWithoutWriting(t *testing.T) {
+	dir := t.TempDir()
+	savePath := filepath.Join(dir, "two.srm")
+	if err := os.WriteFile(savePath, []byte("untouched"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	var requests atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requests.Add(1)
-		_ = json.NewEncoder(w).Encode([]romm.Save{{ID: 10, RomID: 1}, {ID: 20, RomID: 2}})
+		_ = json.NewEncoder(w).Encode([]romm.Save{{ID: 10, RomID: 1}, {ID: 20, RomID: 2, FileName: "two.srm"}})
 	}))
 	defer server.Close()
 	resolved := map[int]cfw.LocalRomFile{
 		1: {RomID: 1, FSSlug: "gba", FileName: "one.gba"},
 		2: {RomID: 2, FSSlug: "gba", FileName: "two.gba"},
 	}
-	measurement := &baselineSyncMeasurement{}
-	items := discoverRemoteOnlySaves(romm.NewClient(server.URL), nil, "device-covered", []LocalSave{{RomID: 1}}, nil, resolved, measurement)
-	if requests.Load() != 1 || len(items) != 1 || items[0].LocalSave.RomID != 2 {
+	items := discoverRemoteOnlySaves(romm.NewClient(server.URL), nil, "device-covered", []LocalSave{{RomID: 1}}, nil, resolved)
+	if requests.Load() != 1 || len(items) != 1 || items[0].LocalSave.RomID != 2 || items[0].Action != ActionDownload {
 		t.Fatalf("requests=%d items=%+v", requests.Load(), items)
 	}
-	if measurement.uncoveredRoms != 1 || measurement.remoteRequests != 1 || measurement.remoteSaveRecords != 1 {
-		t.Fatalf("measurement=%+v", measurement)
+	got, err := os.ReadFile(savePath)
+	if err != nil || string(got) != "untouched" {
+		t.Fatalf("discovery modified save: data=%q err=%v", got, err)
 	}
 }
 
-func TestDiscoverRemoteOnlySavesZeroUncoveredRecordsZeroInstrumentation(t *testing.T) {
+func TestDiscoverRemoteOnlySavesZeroUncoveredMakesNoRequest(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Fatalf("zero-uncovered discovery made unexpected request: %s", r.URL.String())
 	}))
 	defer server.Close()
 	resolved := map[int]cfw.LocalRomFile{1: {RomID: 1}}
-	measurement := &baselineSyncMeasurement{}
-	items := discoverRemoteOnlySaves(romm.NewClient(server.URL), nil, "device-zero", []LocalSave{{RomID: 1}}, nil, resolved, measurement)
+	items := discoverRemoteOnlySaves(romm.NewClient(server.URL), nil, "device-zero", []LocalSave{{RomID: 1}}, nil, resolved)
 	if items != nil {
 		t.Fatalf("items=%+v, want nil", items)
-	}
-	if measurement.uncoveredRoms != 0 || measurement.remoteRequests != 0 || measurement.fallbackRequests != 0 || measurement.remoteSaveRecords != 0 || measurement.platformsQueried != 0 {
-		t.Fatalf("measurement=%+v", measurement)
-	}
-}
-
-func TestBaselineSyncMeasurementRecordsActualDiscoveryCounts(t *testing.T) {
-	measurement := baselineSyncMeasurement{}
-	measurement.recordDiscovery(7, discoveryFetchStats{remoteRequests: 8, fallbackRequests: 7, filteredRecords: 5, bulkRecordsSeen: 11, bulkBytesRead: 1234, fallbackReason: "decode"})
-	if measurement.uncoveredRoms != 7 || measurement.remoteRequests != 8 || measurement.fallbackRequests != 7 || measurement.remoteSaveRecords != 5 || measurement.bulkRecordsSeen != 11 || measurement.bulkBytesRead != 1234 || measurement.fallbackReason != "decode" {
-		t.Fatalf("measurement=%+v", measurement)
 	}
 }
 
@@ -1005,35 +989,5 @@ func TestBuildClientSaveStates_ExplicitAutosaveOverridesRecorded(t *testing.T) {
 	states := buildClientSaveStates(local, cfg, recorded)
 	if len(states) != 1 || states[0].Slot != "autosave" {
 		t.Fatalf("explicit autosave must override recorded 'default': got %+v", states)
-	}
-}
-
-func TestBaselineSyncMeasurementString_CatchesDroppedPhaseOrAggregatedDiscoveryFields(t *testing.T) {
-	measurement := baselineSyncMeasurement{
-		scanSaves:             11 * time.Millisecond,
-		loadRecordedState:     12 * time.Millisecond,
-		buildClientSaveStates: 13 * time.Millisecond,
-		negotiate:             14 * time.Millisecond,
-		scanRoms:              15 * time.Millisecond,
-		resolveLocalRoms:      16 * time.Millisecond,
-		mapOperations:         17 * time.Millisecond,
-		discovery:             18 * time.Millisecond,
-		total:                 116 * time.Millisecond,
-		localSaves:            19,
-		installedRoms:         20,
-		resolvedRoms:          21,
-		resultingItems:        22,
-	}
-	measurement.recordDiscovery(3, discoveryFetchStats{remoteRequests: 1, filteredRecords: 3, bulkRecordsSeen: 4, bulkBytesRead: 512})
-
-	got := measurement.String()
-	want := "scan_saves_ms=11 load_recorded_state_ms=12 build_client_save_states_ms=13 " +
-		"negotiate_ms=14 scan_roms_ms=15 resolve_local_roms_ms=16 map_operations_ms=17 " +
-		"discover_remote_only_saves_ms=18 total_ms=116 local_saves=19 installed_roms=20 " +
-		"resolved_roms=21 uncovered_roms=3 remote_discovery_requests=1 platforms_queried=0 " +
-		"fallback_per_rom_requests=0 bulk_records_seen=4 bulk_bytes_read=512 filtered_records=3 " +
-		"fallback_reason=none remote_save_records=3 resulting_sync_items=22"
-	if got != want {
-		t.Fatalf("baseline measurement = %q, want %q", got, want)
 	}
 }
