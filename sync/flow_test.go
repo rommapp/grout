@@ -1,11 +1,16 @@
 package sync
 
 import (
+	"encoding/json"
+	"fmt"
 	"grout/cfw"
 	"grout/internal"
 	"grout/romm"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -105,6 +110,316 @@ func TestBuildDiscoveryItems_NullSlotIncluded(t *testing.T) {
 	}
 	if items[0].RemoteSave == nil || items[0].RemoteSave.ID != 223 {
 		t.Errorf("expected RemoteSave 223, got %+v", items[0].RemoteSave)
+	}
+}
+
+func TestFetchSavesForRomsBulkFiltersAndPreservesDuplicatesAndOrder(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		query := r.URL.Query()
+		if query.Get("device_id") != "device-1" || query.Has("rom_id") || query.Has("platform_id") {
+			t.Errorf("bulk query = %q", r.URL.RawQuery)
+		}
+		_ = json.NewEncoder(w).Encode([]romm.Save{
+			{ID: 10, RomID: 2}, {ID: 11, RomID: 999}, {ID: 12, RomID: 2},
+			{ID: 13, RomID: 0}, {ID: 14, RomID: 3}, {ID: 10, RomID: 2},
+		})
+	}))
+	defer server.Close()
+
+	uncovered := map[int]cfw.LocalRomFile{2: {RomID: 2}, 3: {RomID: 3}}
+	got, stats := fetchSavesForRoms(romm.NewClient(server.URL), "device-1", uncovered)
+	if requests.Load() != 1 || stats.remoteRequests != 1 || stats.fallbackRequests != 0 || stats.filteredRecords != 4 {
+		t.Fatalf("requests=%d stats=%+v", requests.Load(), stats)
+	}
+	wantIDs := []int{10, 12, 10}
+	if len(got[2]) != len(wantIDs) {
+		t.Fatalf("ROM 2 saves = %+v", got[2])
+	}
+	for i, want := range wantIDs {
+		if got[2][i].ID != want {
+			t.Fatalf("ROM 2 order[%d] = %d, want %d", i, got[2][i].ID, want)
+		}
+	}
+	if len(got[3]) != 1 || got[3][0].ID != 14 {
+		t.Fatalf("ROM 3 saves = %+v", got[3])
+	}
+}
+
+func TestFetchSavesForRomsBulk6000RomsUsesOneRequest(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		_ = json.NewEncoder(w).Encode([]romm.Save{{ID: 60, RomID: 6000}})
+	}))
+	defer server.Close()
+	uncovered := make(map[int]cfw.LocalRomFile, 6000)
+	for romID := 1; romID <= 6000; romID++ {
+		uncovered[romID] = cfw.LocalRomFile{RomID: romID}
+	}
+	got, stats := fetchSavesForRoms(romm.NewClient(server.URL), "device-large", uncovered)
+	if requests.Load() != 1 || stats.remoteRequests != 1 || stats.filteredRecords != 1 || len(got) != 1 {
+		t.Fatalf("requests=%d stats=%+v groups=%d", requests.Load(), stats, len(got))
+	}
+}
+
+func TestFetchSavesForRomsSuccessfulEmptyBulkNeverFallsBack(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		_ = json.NewEncoder(w).Encode([]romm.Save{})
+	}))
+	defer server.Close()
+	got, stats := fetchSavesForRoms(romm.NewClient(server.URL), "device-empty", map[int]cfw.LocalRomFile{1: {RomID: 1}, 2: {RomID: 2}})
+	if requests.Load() != 1 || len(got) != 0 || stats.remoteRequests != 1 || stats.fallbackRequests != 0 {
+		t.Fatalf("requests=%d stats=%+v saves=%+v", requests.Load(), stats, got)
+	}
+}
+
+func TestFetchSavesForRomsEmptyDeviceUsesPerRomFallbackOnly(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		query := r.URL.Query()
+		if query.Get("rom_id") == "" || query.Has("device_id") {
+			t.Errorf("empty-device fallback query = %q", r.URL.RawQuery)
+		}
+		var romID int
+		_, _ = fmt.Sscan(query.Get("rom_id"), &romID)
+		_ = json.NewEncoder(w).Encode([]romm.Save{{ID: romID, RomID: romID}})
+	}))
+	defer server.Close()
+	uncovered := map[int]cfw.LocalRomFile{1: {RomID: 1}, 2: {RomID: 2}, 3: {RomID: 3}}
+	got, stats := fetchSavesForRoms(romm.NewClient(server.URL), "", uncovered)
+	if requests.Load() != 3 || len(got) != 3 || stats.remoteRequests != 3 || stats.fallbackRequests != 3 {
+		t.Fatalf("requests=%d stats=%+v saves=%d", requests.Load(), stats, len(got))
+	}
+}
+
+func TestFetchSavesForRomsBulkErrorsFallBackAndStayBounded(t *testing.T) {
+	for _, failure := range []string{"http", "decode", "network"} {
+		t.Run(failure, func(t *testing.T) {
+			var requests, active, peak atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requestNumber := requests.Add(1)
+				query := r.URL.Query()
+				if query.Get("device_id") != "device-fallback" {
+					t.Errorf("request %d device_id = %q", requestNumber, query.Get("device_id"))
+				}
+				if query.Get("rom_id") == "" {
+					switch failure {
+					case "http":
+						w.WriteHeader(http.StatusBadGateway)
+						_, _ = w.Write([]byte(`[{"id":999,"rom_id":1}]`))
+					case "decode":
+						_, _ = w.Write([]byte(`[{"id":999,"rom_id":1}`))
+					case "network":
+						hijacker, ok := w.(http.Hijacker)
+						if !ok {
+							t.Fatal("test server cannot hijack connection")
+						}
+						conn, _, err := hijacker.Hijack()
+						if err != nil {
+							t.Fatal(err)
+						}
+						_ = conn.Close()
+					}
+					return
+				}
+				current := active.Add(1)
+				defer active.Add(-1)
+				for {
+					old := peak.Load()
+					if current <= old || peak.CompareAndSwap(old, current) {
+						break
+					}
+				}
+				time.Sleep(5 * time.Millisecond)
+				var romID int
+				_, _ = fmt.Sscan(query.Get("rom_id"), &romID)
+				_ = json.NewEncoder(w).Encode([]romm.Save{{ID: romID, RomID: romID}})
+			}))
+			defer server.Close()
+
+			uncovered := make(map[int]cfw.LocalRomFile, 12)
+			for romID := 1; romID <= 12; romID++ {
+				uncovered[romID] = cfw.LocalRomFile{RomID: romID}
+			}
+			got, stats := fetchSavesForRoms(romm.NewClient(server.URL), "device-fallback", uncovered)
+			if requests.Load() != 13 || stats.remoteRequests != 13 || stats.fallbackRequests != 12 || stats.filteredRecords != 12 {
+				t.Fatalf("requests=%d stats=%+v", requests.Load(), stats)
+			}
+			wantReason := "decode"
+			if failure == "http" {
+				wantReason = "http_status"
+			} else if failure == "network" {
+				wantReason = "transport"
+			}
+			if stats.fallbackReason != wantReason {
+				t.Fatalf("fallback reason=%q want=%q", stats.fallbackReason, wantReason)
+			}
+			if peak.Load() > maxConcurrentRequests {
+				t.Fatalf("peak fallback concurrency=%d, max=%d", peak.Load(), maxConcurrentRequests)
+			}
+			if len(got) != 12 || got[1][0].ID == 999 {
+				t.Fatalf("partial bulk response leaked or fallback incomplete: %+v", got)
+			}
+		})
+	}
+}
+
+func TestFetchSavesForRomsFallbackWorkerPoolBoundsHighCardinality(t *testing.T) {
+	for _, uncoveredCount := range []int{0, 3, 1888, 6000} {
+		t.Run(fmt.Sprintf("U=%d", uncoveredCount), func(t *testing.T) {
+			var requests, active, peak atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requests.Add(1)
+				current := active.Add(1)
+				defer active.Add(-1)
+				for {
+					old := peak.Load()
+					if current <= old || peak.CompareAndSwap(old, current) {
+						break
+					}
+				}
+				time.Sleep(50 * time.Microsecond)
+				var romID int
+				_, _ = fmt.Sscan(r.URL.Query().Get("rom_id"), &romID)
+				_ = json.NewEncoder(w).Encode([]romm.Save{{ID: romID, RomID: romID}})
+			}))
+			defer server.Close()
+
+			uncovered := make(map[int]cfw.LocalRomFile, uncoveredCount)
+			for romID := 1; romID <= uncoveredCount; romID++ {
+				uncovered[romID] = cfw.LocalRomFile{RomID: romID}
+			}
+			got, stats := fetchSavesForRoms(romm.NewClient(server.URL), "", uncovered)
+			if int(requests.Load()) != uncoveredCount || len(got) != uncoveredCount || stats.remoteRequests != uncoveredCount || stats.fallbackRequests != uncoveredCount {
+				t.Fatalf("requests=%d groups=%d stats=%+v", requests.Load(), len(got), stats)
+			}
+			if peak.Load() > maxConcurrentRequests {
+				t.Fatalf("peak requests=%d max=%d", peak.Load(), maxConcurrentRequests)
+			}
+			if uncoveredCount == 0 && peak.Load() != 0 {
+				t.Fatalf("U=0 peak=%d", peak.Load())
+			}
+		})
+	}
+}
+
+func TestFetchSavesForRomsFallbackOmitsOnlyFailedRoms(t *testing.T) {
+	for name, failed := range map[string]map[int]bool{
+		"one":      {2: true},
+		"multiple": {2: true, 4: true, 6: true},
+	} {
+		t.Run(name, func(t *testing.T) {
+			var requests, active, peak atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requests.Add(1)
+				romIDText := r.URL.Query().Get("rom_id")
+				if romIDText == "" {
+					http.Error(w, "bulk unavailable", http.StatusBadGateway)
+					return
+				}
+				current := active.Add(1)
+				defer active.Add(-1)
+				for {
+					old := peak.Load()
+					if current <= old || peak.CompareAndSwap(old, current) {
+						break
+					}
+				}
+				var romID int
+				_, _ = fmt.Sscan(romIDText, &romID)
+				if failed[romID] {
+					http.Error(w, "per-rom unavailable", http.StatusServiceUnavailable)
+					return
+				}
+				_ = json.NewEncoder(w).Encode([]romm.Save{{ID: romID, RomID: romID}})
+			}))
+			defer server.Close()
+
+			uncovered := make(map[int]cfw.LocalRomFile, 8)
+			for romID := 1; romID <= 8; romID++ {
+				uncovered[romID] = cfw.LocalRomFile{RomID: romID}
+			}
+			got, stats := fetchSavesForRoms(romm.NewClient(server.URL), "device-failures", uncovered)
+			if requests.Load() != 9 || len(got) != 8-len(failed) || stats.remoteRequests != 9 || stats.fallbackRequests != 8 || stats.filteredRecords != 8-len(failed) || stats.fallbackReason != "http_status" {
+				t.Fatalf("requests=%d groups=%d stats=%+v", requests.Load(), len(got), stats)
+			}
+			for romID := range failed {
+				if _, ok := got[romID]; ok {
+					t.Fatalf("failed ROM %d leaked into results", romID)
+				}
+			}
+			if peak.Load() > maxConcurrentRequests {
+				t.Fatalf("peak=%d max=%d", peak.Load(), maxConcurrentRequests)
+			}
+		})
+	}
+}
+
+func TestFetchSavesForRomsServerIgnoresDeviceStillFiltersUncovered(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode([]romm.Save{
+			{ID: 1, RomID: 7}, {ID: 2, RomID: 999}, {ID: 3, RomID: 7}, {ID: 1, RomID: 7},
+		})
+	}))
+	defer server.Close()
+	got, stats := fetchSavesForRoms(romm.NewClient(server.URL), "device-ignored", map[int]cfw.LocalRomFile{7: {RomID: 7}})
+	if stats.bulkRecordsSeen != 4 || stats.filteredRecords != 3 || len(got) != 1 {
+		t.Fatalf("stats=%+v got=%+v", stats, got)
+	}
+	for i, want := range []int{1, 3, 1} {
+		if got[7][i].ID != want {
+			t.Fatalf("order[%d]=%d want=%d", i, got[7][i].ID, want)
+		}
+	}
+}
+
+func TestDiscoverRemoteOnlySavesBulkPreservesCoveredExclusion(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		_ = json.NewEncoder(w).Encode([]romm.Save{{ID: 10, RomID: 1}, {ID: 20, RomID: 2}})
+	}))
+	defer server.Close()
+	resolved := map[int]cfw.LocalRomFile{
+		1: {RomID: 1, FSSlug: "gba", FileName: "one.gba"},
+		2: {RomID: 2, FSSlug: "gba", FileName: "two.gba"},
+	}
+	measurement := &baselineSyncMeasurement{}
+	items := discoverRemoteOnlySaves(romm.NewClient(server.URL), nil, "device-covered", []LocalSave{{RomID: 1}}, nil, resolved, measurement)
+	if requests.Load() != 1 || len(items) != 1 || items[0].LocalSave.RomID != 2 {
+		t.Fatalf("requests=%d items=%+v", requests.Load(), items)
+	}
+	if measurement.uncoveredRoms != 1 || measurement.remoteRequests != 1 || measurement.remoteSaveRecords != 1 {
+		t.Fatalf("measurement=%+v", measurement)
+	}
+}
+
+func TestDiscoverRemoteOnlySavesZeroUncoveredRecordsZeroInstrumentation(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("zero-uncovered discovery made unexpected request: %s", r.URL.String())
+	}))
+	defer server.Close()
+	resolved := map[int]cfw.LocalRomFile{1: {RomID: 1}}
+	measurement := &baselineSyncMeasurement{}
+	items := discoverRemoteOnlySaves(romm.NewClient(server.URL), nil, "device-zero", []LocalSave{{RomID: 1}}, nil, resolved, measurement)
+	if items != nil {
+		t.Fatalf("items=%+v, want nil", items)
+	}
+	if measurement.uncoveredRoms != 0 || measurement.remoteRequests != 0 || measurement.fallbackRequests != 0 || measurement.remoteSaveRecords != 0 || measurement.platformsQueried != 0 {
+		t.Fatalf("measurement=%+v", measurement)
+	}
+}
+
+func TestBaselineSyncMeasurementRecordsActualDiscoveryCounts(t *testing.T) {
+	measurement := baselineSyncMeasurement{}
+	measurement.recordDiscovery(7, discoveryFetchStats{remoteRequests: 8, fallbackRequests: 7, filteredRecords: 5, bulkRecordsSeen: 11, bulkBytesRead: 1234, fallbackReason: "decode"})
+	if measurement.uncoveredRoms != 7 || measurement.remoteRequests != 8 || measurement.fallbackRequests != 7 || measurement.remoteSaveRecords != 5 || measurement.bulkRecordsSeen != 11 || measurement.bulkBytesRead != 1234 || measurement.fallbackReason != "decode" {
+		t.Fatalf("measurement=%+v", measurement)
 	}
 }
 
@@ -652,5 +967,35 @@ func TestBuildClientSaveStates_ExplicitAutosaveOverridesRecorded(t *testing.T) {
 	states := buildClientSaveStates(local, cfg, recorded)
 	if len(states) != 1 || states[0].Slot != "autosave" {
 		t.Fatalf("explicit autosave must override recorded 'default': got %+v", states)
+	}
+}
+
+func TestBaselineSyncMeasurementString_CatchesDroppedPhaseOrAggregatedDiscoveryFields(t *testing.T) {
+	measurement := baselineSyncMeasurement{
+		scanSaves:             11 * time.Millisecond,
+		loadRecordedState:     12 * time.Millisecond,
+		buildClientSaveStates: 13 * time.Millisecond,
+		negotiate:             14 * time.Millisecond,
+		scanRoms:              15 * time.Millisecond,
+		resolveLocalRoms:      16 * time.Millisecond,
+		mapOperations:         17 * time.Millisecond,
+		discovery:             18 * time.Millisecond,
+		total:                 116 * time.Millisecond,
+		localSaves:            19,
+		installedRoms:         20,
+		resolvedRoms:          21,
+		resultingItems:        22,
+	}
+	measurement.recordDiscovery(3, discoveryFetchStats{remoteRequests: 1, filteredRecords: 3, bulkRecordsSeen: 4, bulkBytesRead: 512})
+
+	got := measurement.String()
+	want := "scan_saves_ms=11 load_recorded_state_ms=12 build_client_save_states_ms=13 " +
+		"negotiate_ms=14 scan_roms_ms=15 resolve_local_roms_ms=16 map_operations_ms=17 " +
+		"discover_remote_only_saves_ms=18 total_ms=116 local_saves=19 installed_roms=20 " +
+		"resolved_roms=21 uncovered_roms=3 remote_discovery_requests=1 platforms_queried=0 " +
+		"fallback_per_rom_requests=0 bulk_records_seen=4 bulk_bytes_read=512 filtered_records=3 " +
+		"fallback_reason=none remote_save_records=3 resulting_sync_items=22"
+	if got != want {
+		t.Fatalf("baseline measurement = %q, want %q", got, want)
 	}
 }

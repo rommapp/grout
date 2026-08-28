@@ -77,7 +77,7 @@ type SaveQuery struct {
 }
 
 func (sq SaveQuery) Valid() bool {
-	return sq.RomID != 0 || sq.PlatformID != 0
+	return sq.RomID != 0 || sq.PlatformID != 0 || sq.DeviceID != ""
 }
 
 type UploadSaveQuery struct {
