@@ -360,6 +360,44 @@ func TestFetchSavesForRomsFallbackOmitsOnlyFailedRoms(t *testing.T) {
 	}
 }
 
+func TestFetchSavesForRomsFallbackRejectsMismatchedROM(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("rom_id") == "" {
+			http.Error(w, "bulk unavailable", http.StatusBadGateway)
+			return
+		}
+		_ = json.NewEncoder(w).Encode([]romm.Save{{ID: 99, RomID: 999}})
+	}))
+	defer server.Close()
+
+	uncovered := map[int]cfw.LocalRomFile{7: {RomID: 7}}
+	got, _ := fetchSavesForRoms(romm.NewClient(server.URL), "device-1", uncovered)
+	if len(got) != 0 {
+		t.Fatalf("mismatched save leaked into ROM 7 results: %+v", got)
+	}
+}
+
+func TestFetchSavesForRomsFallbackRejectsOversizedResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("rom_id") == "" {
+			http.Error(w, "bulk unavailable", http.StatusBadGateway)
+			return
+		}
+		saves := make([]romm.Save, 10001)
+		for i := range saves {
+			saves[i] = romm.Save{ID: i + 1, RomID: 7}
+		}
+		_ = json.NewEncoder(w).Encode(saves)
+	}))
+	defer server.Close()
+
+	uncovered := map[int]cfw.LocalRomFile{7: {RomID: 7}}
+	got, _ := fetchSavesForRoms(romm.NewClient(server.URL), "device-1", uncovered)
+	if len(got) != 0 {
+		t.Fatalf("oversized fallback response produced download candidates: %d", len(got[7]))
+	}
+}
+
 func TestFetchSavesForRomsServerIgnoresDeviceStillFiltersUncovered(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode([]romm.Save{

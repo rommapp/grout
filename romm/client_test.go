@@ -291,6 +291,14 @@ func TestStreamSavesNoContentIsAuthoritativeEmpty(t *testing.T) {
 	}
 }
 
+func TestStreamSavesPartialContentIsRejected(t *testing.T) {
+	client, _ := streamTestClient(t, http.StatusPartialContent, `[{"id":1,"rom_id":7}]`)
+	saves, _, err := client.streamSavesForROMIDs(SaveQuery{DeviceID: "device-1"}, []int{7}, saveListLimits{1024, 10, 64})
+	if err == nil || len(saves) != 0 || SaveListFallbackReason(err) != "http_status" {
+		t.Fatalf("reason=%q saves=%+v err=%v", SaveListFallbackReason(err), saves, err)
+	}
+}
+
 func BenchmarkDecodeSaveList100000_NonProductionRecordLimit100000(b *testing.B) {
 	var body bytes.Buffer
 	body.WriteByte('[')

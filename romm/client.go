@@ -238,7 +238,7 @@ func (c *Client) streamSavesForROMIDs(query SaveQuery, romIDs []int, limits save
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		body, readErr := io.ReadAll(io.LimitReader(resp.Body, limits.maxErrorBodyBytes))
 		return nil, SaveListStreamStats{BytesRead: int64(len(body))}, &saveListRequestError{
 			reason:       saveListFailureHTTPStatus,

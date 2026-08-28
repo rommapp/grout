@@ -399,7 +399,7 @@ func fetchSavesForRomsFallback(client *romm.Client, deviceID string, uncovered m
 		go func() {
 			defer wg.Done()
 			for id := range jobs {
-				saves, err := client.GetSaves(romm.SaveQuery{RomID: id, DeviceID: deviceID})
+				saves, _, err := client.GetSavesForROMIDs(romm.SaveQuery{RomID: id, DeviceID: deviceID}, []int{id})
 				results <- result{romID: id, saves: saves, err: err}
 			}
 		}()
