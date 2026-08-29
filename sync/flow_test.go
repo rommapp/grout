@@ -268,8 +268,8 @@ func TestFetchSavesForRomsBulkErrorsFallBackAndStayBounded(t *testing.T) {
 	}
 }
 
-func TestFetchSavesForRomsFallbackWorkerPoolBoundsHighCardinality(t *testing.T) {
-	for _, uncoveredCount := range []int{0, 3, 1888, 6000} {
+func TestFetchSavesForRomsFallbackWorkerPoolBoundsConcurrency(t *testing.T) {
+	for _, uncoveredCount := range []int{0, maxConcurrentRequests - 1, maxConcurrentRequests + 1} {
 		t.Run(fmt.Sprintf("U=%d", uncoveredCount), func(t *testing.T) {
 			var requests, active, peak atomic.Int32
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
