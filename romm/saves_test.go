@@ -76,7 +76,7 @@ func TestGetSavesForROMIDsValidatesWholeResponse(t *testing.T) {
 		wantID int
 		failed bool
 	}{
-		{name: "exact ROM filter", status: http.StatusOK, body: `[{"id":1,"rom_id":7},{"id":2,"rom_id":8}]`, wantID: 1},
+		{name: "matching result", status: http.StatusOK, body: `[{"id":1,"rom_id":7}]`, wantID: 1},
 		{name: "empty", status: http.StatusOK, body: `[]`},
 		{name: "no content", status: http.StatusNoContent},
 		{name: "partial content", status: http.StatusPartialContent, body: `[]`, failed: true},
@@ -87,7 +87,7 @@ func TestGetSavesForROMIDsValidatesWholeResponse(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if r.URL.Query().Get("device_id") != "device-1" {
+				if query := r.URL.Query(); query.Get("device_id") != "device-1" || query.Get("rom_ids") != "7" {
 					t.Errorf("query = %q", r.URL.RawQuery)
 				}
 				w.WriteHeader(tt.status)
@@ -106,6 +106,97 @@ func TestGetSavesForROMIDsValidatesWholeResponse(t *testing.T) {
 				t.Fatalf("saves=%+v, want ID %d", saves, tt.wantID)
 			}
 		})
+	}
+}
+
+func TestGetSavesForROMIDsBatchesAndAppliesLimitsPerResponse(t *testing.T) {
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		ids := r.URL.Query()["rom_ids"]
+		wantIDs := 500
+		if requests == 2 {
+			wantIDs = 1
+		}
+		if len(ids) != wantIDs {
+			t.Errorf("rom_ids count = %d, want %d", len(ids), wantIDs)
+			return
+		}
+		if requests == 1 && (ids[0] != "1" || ids[len(ids)-1] != "500") {
+			t.Errorf("first batch bounds = %q..%q", ids[0], ids[len(ids)-1])
+		}
+		if requests == 2 && ids[0] != "501" {
+			t.Errorf("second batch = %q", ids)
+		}
+		romID := 1
+		if requests == 2 {
+			romID = 501
+		}
+		_ = json.NewEncoder(w).Encode([]Save{{ID: requests*10 + 1, RomID: romID}, {ID: requests*10 + 2, RomID: romID}})
+	}))
+	defer server.Close()
+
+	romIDs := []int{0, -1, 1, 501}
+	for romID := 1; romID <= 501; romID++ {
+		romIDs = append(romIDs, romID)
+	}
+	saves, err := NewClient(server.URL).getSavesForROMIDs(
+		SaveQuery{DeviceID: "device-1"},
+		romIDs,
+		saveListLimits{bytes: maxSaveListBytes, records: 2},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if requests != 2 || len(saves) != 4 {
+		t.Fatalf("requests=%d saves=%+v", requests, saves)
+	}
+}
+
+func TestGetSavesForROMIDsRefetchesBroadWhenServerIgnoresScope(t *testing.T) {
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		if r.URL.Query().Has("rom_ids") {
+			_ = json.NewEncoder(w).Encode([]Save{{ID: 1, RomID: 1}, {ID: 501, RomID: 501}})
+			return
+		}
+		_ = json.NewEncoder(w).Encode([]Save{{ID: 1, RomID: 1}, {ID: 501, RomID: 501}, {ID: 1001, RomID: 1001}, {ID: 9999, RomID: 9999}})
+	}))
+	defer server.Close()
+
+	romIDs := make([]int, 1001)
+	for i := range romIDs {
+		romIDs[i] = i + 1
+	}
+	saves, err := NewClient(server.URL).GetSavesForROMIDs(SaveQuery{DeviceID: "device-1"}, romIDs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if requests != 2 || len(saves) != 3 {
+		t.Fatalf("requests=%d saves=%+v", requests, saves)
+	}
+}
+
+func TestGetSavesForROMIDsLaterBatchFailureLeaksNothing(t *testing.T) {
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		if requests == 2 {
+			http.Error(w, "failed", http.StatusInternalServerError)
+			return
+		}
+		_ = json.NewEncoder(w).Encode([]Save{{ID: 1, RomID: 1}})
+	}))
+	defer server.Close()
+
+	romIDs := make([]int, 501)
+	for i := range romIDs {
+		romIDs[i] = i + 1
+	}
+	saves, err := NewClient(server.URL).GetSavesForROMIDs(SaveQuery{DeviceID: "device-1"}, romIDs)
+	if err == nil || len(saves) != 0 {
+		t.Fatalf("requests=%d saves=%+v err=%v", requests, saves, err)
 	}
 }
 
@@ -137,7 +228,7 @@ func TestDecodeSaveListLimitsAndInterruptionLeakNothing(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			saves, err := decodeSaveList(tt.reader, wanted, tt.limits)
+			saves, err := decodeSaveList(tt.reader, wanted, nil, tt.limits)
 			if err == nil || len(saves) != 0 {
 				t.Fatalf("invalid response returned saves=%+v err=%v", saves, err)
 			}
@@ -174,7 +265,7 @@ func BenchmarkDecodeSaveList10000(b *testing.B) {
 	limits := saveListLimits{bytes: maxSaveListBytes, records: maxSaveListRecords}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		if _, err := decodeSaveList(strings.NewReader(payload), wanted, limits); err != nil {
+		if _, err := decodeSaveList(strings.NewReader(payload), wanted, nil, limits); err != nil {
 			b.Fatal(err)
 		}
 	}

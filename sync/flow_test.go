@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"slices"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -113,17 +114,16 @@ func TestBuildDiscoveryItems_NullSlotIncluded(t *testing.T) {
 	}
 }
 
-func TestFetchSavesForRomsBulkFiltersAndPreservesDuplicatesAndOrder(t *testing.T) {
+func TestFetchSavesForRomsBulkPreservesDuplicatesAndOrder(t *testing.T) {
 	var requests atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requests.Add(1)
 		query := r.URL.Query()
-		if query.Get("device_id") != "device-1" || query.Has("rom_id") || query.Has("platform_id") {
+		if query.Get("device_id") != "device-1" || !slices.Equal(query["rom_ids"], []string{"2", "3"}) || query.Has("rom_id") || query.Has("platform_id") {
 			t.Errorf("bulk query = %q", r.URL.RawQuery)
 		}
 		_ = json.NewEncoder(w).Encode([]romm.Save{
-			{ID: 10, RomID: 2}, {ID: 11, RomID: 999}, {ID: 12, RomID: 2},
-			{ID: 13, RomID: 0}, {ID: 14, RomID: 3}, {ID: 10, RomID: 2},
+			{ID: 10, RomID: 2}, {ID: 12, RomID: 2}, {ID: 14, RomID: 3}, {ID: 10, RomID: 2},
 		})
 	}))
 	defer server.Close()
@@ -147,19 +147,27 @@ func TestFetchSavesForRomsBulkFiltersAndPreservesDuplicatesAndOrder(t *testing.T
 	}
 }
 
-func TestFetchSavesForRomsBulk6000RomsUsesOneRequest(t *testing.T) {
+func TestFetchSavesForRomsBulk1001RomsUsesThreeRequests(t *testing.T) {
 	var requests atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requests.Add(1)
-		_ = json.NewEncoder(w).Encode([]romm.Save{{ID: 60, RomID: 6000}})
+		ids := r.URL.Query()["rom_ids"]
+		if len(ids) == 0 || len(ids) > 500 {
+			t.Errorf("rom_ids count = %d", len(ids))
+		}
+		if slices.Contains(ids, "1001") {
+			_ = json.NewEncoder(w).Encode([]romm.Save{{ID: 60, RomID: 1001}})
+			return
+		}
+		_ = json.NewEncoder(w).Encode([]romm.Save{})
 	}))
 	defer server.Close()
-	uncovered := make(map[int]cfw.LocalRomFile, 6000)
-	for romID := 1; romID <= 6000; romID++ {
+	uncovered := make(map[int]cfw.LocalRomFile, 1001)
+	for romID := 1; romID <= 1001; romID++ {
 		uncovered[romID] = cfw.LocalRomFile{RomID: romID}
 	}
 	got := fetchSavesForRoms(romm.NewClient(server.URL), "device-large", uncovered)
-	if requests.Load() != 1 || len(got) != 1 {
+	if requests.Load() != 3 || len(got) != 1 {
 		t.Fatalf("requests=%d groups=%d", requests.Load(), len(got))
 	}
 }
@@ -416,7 +424,7 @@ func TestDiscoverRemoteOnlySavesCreatesIntentWithoutWriting(t *testing.T) {
 	var requests atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requests.Add(1)
-		_ = json.NewEncoder(w).Encode([]romm.Save{{ID: 10, RomID: 1}, {ID: 20, RomID: 2, FileName: "two.srm"}})
+		_ = json.NewEncoder(w).Encode([]romm.Save{{ID: 20, RomID: 2, FileName: "two.srm"}})
 	}))
 	defer server.Close()
 	resolved := map[int]cfw.LocalRomFile{

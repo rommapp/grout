@@ -241,9 +241,8 @@ func discoverRemoteOnlySaves(client *romm.Client, config *internal.Config, devic
 	return buildDiscoveryItems(uncovered, savesByRom, config)
 }
 
-// fetchSavesForRoms first asks for all saves scoped to the authenticated device, then
-// filters them to uncovered ROMs. If that request fails, or no device ID is available,
-// it uses the compatibility path with bounded per-ROM concurrency.
+// fetchSavesForRoms asks for saves scoped to the uncovered ROMs. If that request
+// fails, or no device ID is available, it uses bounded per-ROM concurrency.
 func fetchSavesForRoms(client *romm.Client, deviceID string, uncovered map[int]cfw.LocalRomFile) map[int][]romm.Save {
 	logger := gaba.GetLogger()
 
@@ -258,11 +257,11 @@ func fetchSavesForRoms(client *romm.Client, deviceID string, uncovered map[int]c
 			for _, save := range bulkSaves {
 				out[save.RomID] = append(out[save.RomID], save)
 			}
-			logger.Debug("Discovery: fetched saves in bulk", "requests", 1, "records", len(bulkSaves))
+			logger.Debug("Discovery: fetched saves in bulk", "roms", len(romIDs), "records", len(bulkSaves))
 			return out
 		}
 		logger.Warn("Discovery: device-scoped bulk save fetch failed; using per-ROM fallback",
-			"requests", 1+len(uncovered),
+			"fallbackRequests", len(uncovered),
 			"error", err)
 	} else {
 		logger.Warn("Discovery: device ID empty; using per-ROM fallback", "requests", len(uncovered))

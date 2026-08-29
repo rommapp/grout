@@ -3,12 +3,15 @@ package romm
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"time"
 
 	"github.com/sonh/qs"
@@ -18,7 +21,10 @@ const (
 	maxSaveListBytes     = int64(16 * 1024 * 1024)
 	maxSaveListRecords   = 10000
 	maxSaveListErrorBody = int64(64 * 1024)
+	maxSaveROMIDs        = 500
 )
+
+var errSaveScopeIgnored = errors.New("save list ROM scope ignored")
 
 type saveListLimits struct {
 	bytes   int64
@@ -145,7 +151,7 @@ func (ssq SaveSummaryQuery) Valid() bool {
 }
 
 func (c *Client) GetSaves(query SaveQuery) ([]Save, error) {
-	var saves []Save
+	saves := make([]Save, 0)
 	err := c.doRequest("GET", endpointSaves, query, nil, &saves)
 	return saves, err
 }
@@ -153,13 +159,13 @@ func (c *Client) GetSaves(query SaveQuery) ([]Save, error) {
 // GetSavesForROMIDs fetches a bounded save list and returns matching ROMs only
 // after the complete response has been validated.
 func (c *Client) GetSavesForROMIDs(query SaveQuery, romIDs []int) ([]Save, error) {
-	return c.streamSavesForROMIDs(query, romIDs, saveListLimits{
+	return c.getSavesForROMIDs(query, romIDs, saveListLimits{
 		bytes:   maxSaveListBytes,
 		records: maxSaveListRecords,
 	})
 }
 
-func (c *Client) streamSavesForROMIDs(query SaveQuery, romIDs []int, limits saveListLimits) ([]Save, error) {
+func (c *Client) getSavesForROMIDs(query SaveQuery, romIDs []int, limits saveListLimits) ([]Save, error) {
 	wanted := make(map[int]struct{}, len(romIDs))
 	for _, romID := range romIDs {
 		if romID > 0 {
@@ -173,6 +179,32 @@ func (c *Client) streamSavesForROMIDs(query SaveQuery, romIDs []int, limits save
 		return []Save{}, nil
 	}
 
+	ids := make([]int, 0, len(wanted))
+	for romID := range wanted {
+		ids = append(ids, romID)
+	}
+	sort.Ints(ids)
+
+	if query.RomID != 0 {
+		return c.streamSavesForROMIDs(query, wanted, nil, limits)
+	}
+
+	var saves []Save
+	for start := 0; start < len(ids); start += maxSaveROMIDs {
+		end := min(start+maxSaveROMIDs, len(ids))
+		batch, err := c.streamSavesForROMIDs(query, wanted, ids[start:end], limits)
+		if errors.Is(err, errSaveScopeIgnored) {
+			return c.streamSavesForROMIDs(query, wanted, nil, limits)
+		}
+		if err != nil {
+			return nil, err
+		}
+		saves = append(saves, batch...)
+	}
+	return saves, nil
+}
+
+func (c *Client) streamSavesForROMIDs(query SaveQuery, wanted map[int]struct{}, scope []int, limits saveListLimits) ([]Save, error) {
 	req, err := http.NewRequest(http.MethodGet, c.baseURL+endpointSaves, nil)
 	if err != nil {
 		return nil, err
@@ -180,6 +212,13 @@ func (c *Client) streamSavesForROMIDs(query SaveQuery, romIDs []int, limits save
 	values, err := qs.NewEncoder().Values(query)
 	if err != nil {
 		return nil, err
+	}
+	scoped := make(map[int]struct{}, len(scope))
+	if len(scope) > 0 {
+		for _, romID := range scope {
+			values.Add("rom_ids", strconv.Itoa(romID))
+			scoped[romID] = struct{}{}
+		}
 	}
 	req.URL.RawQuery = values.Encode()
 	if c.authHeader != "" {
@@ -201,10 +240,10 @@ func (c *Client) streamSavesForROMIDs(query SaveQuery, romIDs []int, limits save
 		return nil, fmt.Errorf("save list request failed with status %d", resp.StatusCode)
 	}
 
-	return decodeSaveList(resp.Body, wanted, limits)
+	return decodeSaveList(resp.Body, wanted, scoped, limits)
 }
 
-func decodeSaveList(body io.Reader, wanted map[int]struct{}, limits saveListLimits) ([]Save, error) {
+func decodeSaveList(body io.Reader, wanted, scoped map[int]struct{}, limits saveListLimits) ([]Save, error) {
 	reader := &countingReader{r: io.LimitReader(body, limits.bytes+1)}
 	decoder := json.NewDecoder(reader)
 	fail := func(err error) ([]Save, error) {
@@ -223,6 +262,7 @@ func decodeSaveList(body io.Reader, wanted map[int]struct{}, limits saveListLimi
 	}
 
 	retained := make([]Save, 0)
+	scopeIgnored := false
 	records := 0
 	for decoder.More() {
 		var save Save
@@ -232,6 +272,11 @@ func decodeSaveList(body io.Reader, wanted map[int]struct{}, limits saveListLimi
 		records++
 		if records > limits.records {
 			return fail(fmt.Errorf("save list record limit exceeded"))
+		}
+		if len(scoped) > 0 {
+			if _, ok := scoped[save.RomID]; !ok {
+				scopeIgnored = true
+			}
 		}
 		if _, ok := wanted[save.RomID]; ok && save.RomID > 0 {
 			retained = append(retained, save)
@@ -254,6 +299,9 @@ func decodeSaveList(body io.Reader, wanted map[int]struct{}, limits saveListLimi
 	}
 	if reader.n > limits.bytes {
 		return fail(fmt.Errorf("save list decoded byte limit exceeded"))
+	}
+	if scopeIgnored {
+		return nil, errSaveScopeIgnored
 	}
 	return retained, nil
 }
