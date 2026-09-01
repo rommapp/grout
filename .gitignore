@@ -17,6 +17,7 @@ grout
 app/app
 es_restart_request
 /save-sync-preview
+/gen-platform-docs
 
 # Local config
 .env

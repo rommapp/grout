@@ -61,6 +61,7 @@ This table shows the mappings of RomM Fs Slug to Onion's platform folders.
 | PC-9800 Series                | pc-9800-series             | *(none)*                                        |
 | PC-FX                         | pc-fx                      | *(none)*                                        |
 | Philips CD-i                  | philips-cd-i               | *(none)*                                        |
+| Philips Videopac G7000        | videopac                   | VIDEOPAC                                        |
 | PICO-8                        | pico                       | PICO                                            |
 | PICO-8                        | pico-8                     | PICO                                            |
 | PlayStation                   | psx                        | PS                                              |
@@ -88,7 +89,6 @@ This table shows the mappings of RomM Fs Slug to Onion's platform folders.
 | TurboGrafx-16                 | tg16                       | PCE                                             |
 | TurboGrafx-CD                 | turbografx-cd              | PCECD                                           |
 | Vectrex                       | vectrex                    | VECTREX                                         |
-| VideoPac                      | videopac                   | VIDEOPAC                                        |
 | Virtual Boy                   | virtualboy                 | VB                                              |
 | WonderSwan                    | wonderswan                 | WS                                              |
 | WonderSwan Color              | wonderswan-color           | WS                                              |

@@ -13,17 +13,17 @@ This table shows the mappings of RomM Fs Slug to ArkOS's platform folders.
 | Amstrad CPC                   | acpc                       | amstradcpc                  |
 | Arcade                        | arcade                     | arcade, mame, fbneo, neogeo |
 | Arduboy                       | arduboy                    | arduboy                     |
+| Atari 800                     | atari800                   | atari800                    |
 | Atari 2600                    | atari2600                  | atari2600                   |
 | Atari 5200                    | atari5200                  | atari5200                   |
 | Atari 7800                    | atari7800                  | atari7800                   |
-| Atari 800                     | atari800                   | atari800                    |
 | Atari Jaguar                  | jaguar                     | atarijaguar                 |
 | Atari Lynx                    | lynx                       | atarilynx                   |
 | Atari ST/STE                  | atari-st                   | atarist                     |
 | Cave Story                    | cave-story                 | *(none)*                    |
 | ColecoVision                  | colecovision               | coleco                      |
-| Commodore 128                 | c128                       | c128                        |
 | Commodore 16                  | c16                        | c16                         |
+| Commodore 128                 | c128                       | c128                        |
 | Commodore C64/128/MAX         | c64                        | c64                         |
 | Commodore PET                 | cpet                       | pet                         |
 | Commodore VIC-20              | vic-20                     | *(none)*                    |
