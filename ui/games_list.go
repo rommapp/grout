@@ -6,7 +6,6 @@ import (
 	"grout/cache"
 	"grout/internal"
 	"grout/internal/environment"
-	"grout/internal/stringutil"
 	"grout/romm"
 	"slices"
 	"strings"
@@ -104,7 +103,7 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 		LastSelectedPosition: input.LastSelectedPosition,
 	}
 
-	displayGames := stringutil.PrepareRomNames(games)
+	displayGames := prepareRomNames(games)
 
 	if input.GameFilter.HasActiveFilters() {
 		if cm := cache.GetCacheManager(); cm != nil {
@@ -125,7 +124,7 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 					}
 					displayGames = kept
 				} else {
-					displayGames = stringutil.PrepareRomNames(filtered)
+					displayGames = prepareRomNames(filtered)
 				}
 			}
 		}
