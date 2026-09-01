@@ -6,6 +6,7 @@ import (
 	"grout/internal/stringutil"
 	"grout/romm"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -35,6 +36,22 @@ type RomGameEntry struct {
 	GamePath     string
 	RomDirectory string
 	Platform     *romm.Platform
+}
+
+// FileName is the stable identity of this entry: the rom's file name on disk.
+//
+// It is deliberately not derived from Game.Name. That is a display string —
+// PrepareRomName folds in the region and rewrites punctuation, and it changes
+// with user settings — so using it as a key appends a duplicate entry whenever
+// the displayed name changes.
+func (e RomGameEntry) FileName() string {
+	if e.Game != nil && e.Game.FsName != "" {
+		return e.Game.FsName
+	}
+	if e.GamePath == "" {
+		return ""
+	}
+	return filepath.Base(e.GamePath)
 }
 
 func (gl *GameList) AddRomGame(entry RomGameEntry) {
@@ -114,9 +131,7 @@ func (gl *GameList) AddRomGame(entry RomGameEntry) {
 	}
 
 	if entry.Game.ScreenScraperID > 0 {
-		screenscraperID := strconv.Itoa(entry.Game.ScreenScraperID)
-		gameMetadata[ScraperIDElement] = screenscraperID
-		gl.SetGameID(entry.Game.Name, screenscraperID)
+		gameMetadata[ScraperIDElement] = strconv.Itoa(entry.Game.ScreenScraperID)
 	}
 
 	if entry.Game.RetroAchievementsID > 0 {
@@ -127,7 +142,13 @@ func (gl *GameList) AddRomGame(entry RomGameEntry) {
 		gameMetadata[CheevosHashElement] = entry.Game.RetroAchievementsHash
 	}
 
-	gl.AdddOrUpdateEntry(entry.Game.Name, gameMetadata)
+	game := gl.AddOrUpdateRomEntry(entry.FileName(), gameMetadata)
+
+	// The id attribute can only be written once the element exists, so this
+	// must follow the upsert rather than precede it.
+	if game != nil && entry.Game.ScreenScraperID > 0 {
+		game.CreateAttr("id", strconv.Itoa(entry.Game.ScreenScraperID))
+	}
 }
 
 func AddRomGamesToGamelist(entry []RomGameEntry, gamelistFilename FileName) error {
