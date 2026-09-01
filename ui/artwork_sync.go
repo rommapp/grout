@@ -244,6 +244,7 @@ func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 
 	res, err := gaba.DownloadManager(downloads, headers, gaba.DownloadManagerOptions{
 		AutoContinueOnComplete: true,
+		SkipSSLVerification:    input.Host.InsecureSkipVerify,
 	})
 	if err != nil {
 		logger.Error("Artwork download failed", "error", err)

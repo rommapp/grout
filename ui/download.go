@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"grout/cfw"
@@ -332,7 +331,7 @@ func (s *DownloadScreen) draw(input DownloadInput) (DownloadOutput, error) {
 				Progress:            progress,
 			},
 			func() (interface{}, error) {
-				s.downloadArt(artDownloads, downloadedGames, headers, progress, input.Host.InsecureSkipVerify)
+				s.downloadArt(artDownloads, downloadedGames, headers, progress, input.Host)
 				return nil, nil
 			},
 		)
@@ -626,8 +625,12 @@ func resolveExtractedGamePath(romDirectory, extractDir, fsNameNoExt string) stri
 	return extractDir
 }
 
-func (s *DownloadScreen) downloadArt(artDownloads []artDownload, downloadedGames []romm.Rom, headers map[string]string, progress *atomic.Float64, insecureSkipVerify bool) {
+func (s *DownloadScreen) downloadArt(artDownloads []artDownload, downloadedGames []romm.Rom, headers map[string]string, progress *atomic.Float64, host romm.Host) {
 	logger := gaba.GetLogger()
+
+	// One client for the whole run so connections are reused across what can be
+	// hundreds of art downloads.
+	client := romm.NewHTTPClient(host, romm.DefaultClientTimeout)
 
 	downloadedGameNames := make(map[string]bool)
 	for _, g := range downloadedGames {
@@ -676,12 +679,6 @@ func (s *DownloadScreen) downloadArt(artDownloads []artDownload, downloadedGames
 			req.Header.Set(k, v)
 		}
 
-		client := &http.Client{Timeout: romm.DefaultClientTimeout}
-		if insecureSkipVerify {
-			client.Transport = &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			}
-		}
 		resp, err := client.Do(req)
 		if err != nil {
 			logger.Warn("Failed to download art", "game", art.GameName, "url", art.URL, "error", err)

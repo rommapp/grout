@@ -222,6 +222,7 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (BIOSDownloadOutput, 
 
 	res, err := gaba.DownloadManager(downloads, headers, gaba.DownloadManagerOptions{
 		AutoContinueOnComplete: true,
+		SkipSSLVerification:    input.Host.InsecureSkipVerify,
 	})
 	if err != nil {
 		logger.Error("BIOS download failed", "error", err)

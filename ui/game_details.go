@@ -321,7 +321,7 @@ func (s *GameDetailsScreen) fetchImageFromURL(host romm.Host, imageURL string) [
 
 	req.Header.Set("Authorization", host.AuthHeader())
 
-	client := &http.Client{Timeout: internal.DefaultHTTPTimeout}
+	client := romm.NewHTTPClient(host, internal.DefaultHTTPTimeout)
 	resp, err := client.Do(req)
 	if err != nil {
 		logger.Warn("Failed to fetch image", "url", imageURL, "error", err)
