@@ -100,6 +100,7 @@ nav:
   - Contributing:
       - contributing/index.md
       - Development Guide: contributing/development.md
+      - Unverified Platform Mappings: platforms/unverified.md
       - State Machine Reference: contributing/state-machine.md
       - Kudos: contributing/kudos.md
   - FAQ: usage/faq.md
