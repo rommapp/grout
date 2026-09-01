@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"grout/cache"
+	"grout/cfw"
 	"grout/internal"
 	"grout/internal/artutil"
 	"grout/internal/fileutil"
@@ -323,13 +324,15 @@ func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 
 // filterMissingCFWArt returns only roms that are missing art in the CFW art directory.
 func filterMissingCFWArt(roms []romm.Rom, platform romm.Platform, config internal.Config, host romm.Host) []romm.Rom {
+	activeCFW := cfw.GetCFW()
+
 	var missing []romm.Rom
 	for _, rom := range roms {
 		if !cache.HasArtworkURL(rom) {
 			continue
 		}
 		artDir := config.GetArtDirectory(platform)
-		artPath := filepath.Join(artDir, rom.FsNameNoExt+".png")
+		artPath := filepath.Join(artDir, cfw.ArtFileName(activeCFW, cfw.ArtCover, rom))
 		if !fileutil.FileExists(artPath) {
 			missing = append(missing, rom)
 			continue
@@ -338,7 +341,7 @@ func filterMissingCFWArt(roms []romm.Rom, platform romm.Platform, config interna
 		if config.DownloadArtScreenshotPreview {
 			previewDir := config.GetArtPreviewDirectory(platform)
 			if previewDir != "" && rom.GetScreenshotURL(host) != "" {
-				if !fileutil.FileExists(filepath.Join(previewDir, rom.FsNameNoExt+".png")) {
+				if !fileutil.FileExists(filepath.Join(previewDir, cfw.ArtFileName(activeCFW, cfw.ArtScreenshotPreview, rom))) {
 					missing = append(missing, rom)
 					continue
 				}
@@ -347,7 +350,7 @@ func filterMissingCFWArt(roms []romm.Rom, platform romm.Platform, config interna
 		if config.DownloadSplashArt != artutil.ArtKindNone {
 			splashDir := config.GetArtSplashDirectory(platform)
 			if splashDir != "" && rom.GetSplashArtURL(config.DownloadSplashArt, host) != "" {
-				if !fileutil.FileExists(filepath.Join(splashDir, rom.FsNameNoExt+".png")) {
+				if !fileutil.FileExists(filepath.Join(splashDir, cfw.ArtFileName(activeCFW, cfw.ArtThumbnail, rom))) {
 					missing = append(missing, rom)
 					continue
 				}
@@ -365,10 +368,11 @@ type platformRoms struct {
 // buildCFWArtDownloads builds download entries targeting CFW art directories.
 func buildCFWArtDownloads(results []platformRoms, config internal.Config, host romm.Host) []gaba.Download {
 	var downloads []gaba.Download
+	activeCFW := cfw.GetCFW()
 
 	for _, sr := range results {
 		for _, rom := range sr.roms {
-			artFileName := rom.FsNameNoExt + ".png"
+			artFileName := cfw.ArtFileName(activeCFW, cfw.ArtCover, rom)
 
 			// Cover art
 			coverURL := rom.GetArtworkURL(config.ArtKind, host)
@@ -403,7 +407,7 @@ func buildCFWArtDownloads(results []platformRoms, config internal.Config, host r
 					if splashURL := rom.GetSplashArtURL(config.DownloadSplashArt, host); splashURL != "" {
 						downloads = append(downloads, gaba.Download{
 							URL:         splashURL,
-							Location:    filepath.Join(splashDir, artFileName),
+							Location:    filepath.Join(splashDir, cfw.ArtFileName(activeCFW, cfw.ArtThumbnail, rom)),
 							DisplayName: rom.Name,
 						})
 					}

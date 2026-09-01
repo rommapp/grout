@@ -352,6 +352,11 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 	artDownloads := make([]artDownload, 0, len(games))
 	gamesSummaries := make([]gamelist.RomGameEntry, 0, len(games))
 
+	// Resolved once rather than per game per art kind: GetCFW re-reads the
+	// environment on every call.
+	activeCFW := cfw.GetCFW()
+	isESBased := activeCFW.IsBasedOnEmulationStation()
+
 	for _, g := range games {
 		gamelistRomEntry := gamelist.RomGameEntry{
 			Game:     &g,
@@ -412,12 +417,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 		if config.DownloadArt && (g.PathCoverLarge != "" || g.PathCoverSmall != "" || g.URLCover != "") {
 			// Prepare download for cover art
 			artDir := config.GetArtDirectory(gamePlatform)
-			var artFileName string
-			if cfw.GetCFW() == cfw.MinUI && len(g.Files) > 0 {
-				artFileName = g.Files[0].FileName + ".png"
-			} else {
-				artFileName = g.FsNameNoExt + ".png"
-			}
+			artFileName := cfw.ArtFileName(activeCFW, cfw.ArtCover, g)
 			artLocation := filepath.Join(artDir, artFileName)
 			coverURL := g.GetArtworkURL(config.ArtKind, host)
 			gamelistRomEntry.ArtLocation.ImagePath = artLocation
@@ -445,13 +445,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 
 			artSplashDir := config.GetArtSplashDirectory(gamePlatform)
 			if (config.DownloadSplashArt != artutil.ArtKindNone || config.AdditionalDownloads.Thumbnail != artutil.ArtKindNone) && artSplashDir != "" {
-				artSplashFileName := g.FsNameNoExt
-				isESBased := cfw.GetCFW().IsBasedOnEmulationStation()
-				if isESBased {
-					artSplashFileName += "-thumb.png"
-				} else {
-					artSplashFileName += ".png"
-				}
+				artSplashFileName := cfw.ArtFileName(activeCFW, cfw.ArtThumbnail, g)
 				splashArtLocation := filepath.Join(artSplashDir, artSplashFileName)
 				kind := config.DownloadSplashArt
 				if config.AdditionalDownloads.Thumbnail != artutil.ArtKindNone {
@@ -472,13 +466,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 
 			artMarqueeDir := config.GetArtMarqueeDirectory(gamePlatform)
 			if config.AdditionalDownloads.Marquee != artutil.ArtKindNone && artMarqueeDir != "" {
-				marqueeArtFileName := g.FsNameNoExt
-				// is cfw is ES based, use -marquee suffix to avoid conflicts with cover art
-				if cfw.GetCFW().IsBasedOnEmulationStation() {
-					marqueeArtFileName += "-marquee.png"
-				} else {
-					marqueeArtFileName += ".png"
-				}
+				marqueeArtFileName := cfw.ArtFileName(activeCFW, cfw.ArtMarquee, g)
 				marqueeArtLocation := filepath.Join(artMarqueeDir, marqueeArtFileName)
 				marqueeURL := ""
 				switch config.AdditionalDownloads.Marquee {
@@ -542,13 +530,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 
 			boxbackDir := config.GetBoxbackDirectory(gamePlatform)
 			if config.AdditionalDownloads.BoxBack && boxbackDir != "" {
-				boxbackArtFileName := g.FsNameNoExt
-				// is cfw is ES based, use -boxback suffix to avoid conflicts with cover art
-				if cfw.GetCFW().IsBasedOnEmulationStation() {
-					boxbackArtFileName += "-boxback.png"
-				} else {
-					boxbackArtFileName += ".png"
-				}
+				boxbackArtFileName := cfw.ArtFileName(activeCFW, cfw.ArtBoxback, g)
 				boxbackArtLocation := filepath.Join(boxbackDir, boxbackArtFileName)
 				if boxbackURL := g.GetBoxbackURL(host); boxbackURL != "" {
 					gamelistRomEntry.ArtLocation.BoxBackPath = boxbackArtLocation
@@ -563,13 +545,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 
 			fanartDir := config.GetFanartDirectory(gamePlatform)
 			if config.AdditionalDownloads.Fanart && fanartDir != "" {
-				fanartFileName := g.FsNameNoExt
-				// is cfw is ES based, use -fanart suffix to avoid conflicts with cover art
-				if cfw.GetCFW().IsBasedOnEmulationStation() {
-					fanartFileName += "-fanart.png"
-				} else {
-					fanartFileName += ".png"
-				}
+				fanartFileName := cfw.ArtFileName(activeCFW, cfw.ArtFanart, g)
 				fanartLocation := filepath.Join(fanartDir, fanartFileName)
 				if fanartURL := g.GetFanartURL(host); fanartURL != "" {
 					gamelistRomEntry.ArtLocation.FanartPath = fanartLocation
