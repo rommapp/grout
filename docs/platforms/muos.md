@@ -72,7 +72,7 @@ This table shows the mappings of RomM Fs Slug to muOS's platform folders.
 | TurboGrafx-CD                 | turbografx-cd              | pcecd, tgcd, turbografxcd, NEC PC Engine CD                |
 | Vectrex                       | vectrex                    | vectrex, GCE - Vectrex                                     |
 | Virtual Boy                   | virtualboy                 | vb, Nintendo Virtual Boy                                   |
-| WonderSwan                    | wonderswan                 | ws, Bandai WonderSwan-Color                                |
-| WonderSwan Color              | wonderswan-color           | wsc,                                                       |
+| WonderSwan                    | wonderswan                 | ws, Bandai WonderSwan                                      |
+| WonderSwan Color              | wonderswan-color           | wsc, Bandai WonderSwan-Color                               |
 | ZX Spectrum                   | zxs                        | spectrum, Sinclair ZX Spectrum                             |
 | ZX81                          | zx81                       | zx81, Sinclair ZX 81                                       |
