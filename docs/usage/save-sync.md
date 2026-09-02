@@ -8,10 +8,10 @@ Save Sync keeps your game saves synchronized between your RomM server and your h
 
 Save Sync needs a device registered with your RomM server so it can track which saves belong to which device.
 
-If you signed in with **Device Pairing** (RomM 5.0+), your device is registered automatically as part of pairing —
+If you signed in with **Device Pairing** (RomM 5.0+), your device is registered automatically as part of pairing:
 there's no separate step, and the **Sync** button (`Y`) is available on the main menu right away.
 
-If your device isn't registered yet — for example, you signed in with a **Pairing Code** — open **Save Sync** from
+If your device isn't registered yet (for example, you signed in with a **Pairing Code**), open **Save Sync** from
 Settings and choose **Register Device**, then enter a device name. The **Sync** button (`Y`) then appears on the main
 menu, giving you quick access to the Sync Menu.
 
@@ -68,8 +68,8 @@ save an **upload**, a **download**, a **conflict**, or nothing to do.
 
 ### Uploads
 
-Local saves the server doesn't have yet — or whose content changed since the last
-sync — are uploaded. If a local save is byte-identical to what was previously
+Local saves the server doesn't have yet, or whose content changed since the last
+sync, are uploaded. If a local save is byte-identical to what was previously
 downloaded from the server, the upload is skipped: the content is already there.
 The server timestamps stored saves; your local filenames are left untouched.
 
@@ -89,11 +89,11 @@ games that have no local save yet, so your saves come back automatically.
 
 When both the local and the server save have changed since the last sync, the item
 is flagged as a conflict. You'll be shown a conflict resolution screen where each
-item defaults to **Skip** — nothing is overwritten unless you actively choose
+item defaults to **Skip**; nothing is overwritten unless you actively choose
 **Keep Local** or **Keep Remote**.
 
 Use `Left/Right` to choose a resolution for each game, then press `Start` to apply.
-Pressing `B` cancels — unresolved conflicts are offered again on the next sync.
+Pressing `B` cancels; unresolved conflicts are offered again on the next sync.
 
 ### No matching ROM in RomM
 

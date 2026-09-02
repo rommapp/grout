@@ -74,7 +74,7 @@ func scenarioSlotSwitch(w io.Writer) error {
 	// The device's recorded last-synced slot for this ROM (from the issue's SQLite dump).
 	recorded := map[saveKey]string{{romID: romID, fileName: fileName}: "default"}
 
-	fmt.Fprintln(w, "Scenario #250 — switch a ROM's active save slot to autosave")
+	fmt.Fprintln(w, "Scenario #250: switch a ROM's active save slot to autosave")
 	fmt.Fprintf(w, "  ROM %d (%s), recorded slot on this device: %q\n\n", romID, fileName, "default")
 
 	// No explicit preference yet: the sticky recorded slot is reported.
@@ -116,11 +116,11 @@ func scenarioNextUINaming(w io.Writer, keepStyle bool) error {
 	const romFile = "Donkey Kong Country (USA) (Rev 2).sfc" // ROM as it sits on disk
 	var sibling, scannedSave string
 	if keepStyle {
-		fmt.Fprintln(w, "Scenario #245 — NextUI minarch save naming (keeps the ROM extension)")
+		fmt.Fprintln(w, "Scenario #245: NextUI minarch save naming (keeps the ROM extension)")
 		sibling = "Super Mario World (USA).sfc.sav"
 		scannedSave = "Donkey Kong Country (USA) (Rev 2).sfc.sav"
 	} else {
-		fmt.Fprintln(w, "Scenario #245 — NextUI RetroArch-style save naming (strips the ROM extension)")
+		fmt.Fprintln(w, "Scenario #245: NextUI RetroArch-style save naming (strips the ROM extension)")
 		sibling = "Super Mario World (USA).srm"
 		scannedSave = "Donkey Kong Country (USA) (Rev 2).srm"
 	}

@@ -4,7 +4,7 @@ import "testing"
 
 // A downloaded save's save-state record is keyed on file_name (PK is
 // device_id+rom_id+file_name). The next ScanSaves finds the file under its plain
-// on-disk basename, so the record MUST be keyed on that same basename — not the
+// on-disk basename, so the record MUST be keyed on that same basename, not the
 // server's datetime-tagged op.FileName, which would never be looked up again and
 // leaves the save reporting the fallback "autosave" slot (the re-upload churn).
 func TestRecordedDownloadFileName(t *testing.T) {

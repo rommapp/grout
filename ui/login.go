@@ -353,7 +353,7 @@ func LoginFlow(existingHost romm.Host) (*internal.Config, error) {
 				return config, nil
 			}
 
-			// A cancelled device pairing has no message — loop back silently.
+			// A cancelled device pairing has no message, so loop back silently.
 			if loginOutput.Result.ErrorMsg != nil {
 				gabagool.ConfirmationMessage(
 					i18n.Localize(loginOutput.Result.ErrorMsg, nil),
@@ -467,7 +467,7 @@ func attemptPairingCode(host romm.Host) loginAttemptOutput {
 		i18n.Localize(&goi18n.Message{ID: "login_validating", Other: "Logging in..."}, nil),
 		gabagool.ProcessMessageOptions{},
 		func() (loginAttemptOutput, error) {
-			// Token field contains a pairing code — exchange it for a real token
+			// Token field contains a pairing code, so exchange it for a real token
 			tokenResp, err := romm.ExchangeToken(host.URL(), host.Token, host.InsecureSkipVerify)
 			if err != nil {
 				return loginAttemptOutput{Result: classifyLoginError(err), Host: host}, nil

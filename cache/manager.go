@@ -68,7 +68,7 @@ func InitCacheManager(host romm.Host, config Config) error {
 	defer cacheManagerMu.Unlock()
 
 	if cacheManager != nil {
-		// Already initialized — just update the host
+		// Already initialized: just update the host
 		cacheManager.mu.Lock()
 		cacheManager.host = host
 		cacheManager.config = config

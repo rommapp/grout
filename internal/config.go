@@ -308,7 +308,7 @@ func (c *Config) SetSlotPreference(romID int, slot string) {
 	}
 	key := fmt.Sprintf("%d", romID)
 	if slot == "" {
-		// An empty slot means "no explicit choice" — clear any stored preference so the
+		// An empty slot means "no explicit choice", so clear any stored preference so the
 		// recorded/last-synced slot (or the autosave default) applies again.
 		delete(c.SlotPreferences, key)
 		return

@@ -212,7 +212,7 @@ func (r *Rom) GetGamePage(host Host) string {
 }
 
 // CanonicalLocalBasename returns the extension-less filename this ROM occupies on
-// disk once downloaded — the single identity used to resolve local ROM files and
+// disk once downloaded: the single identity used to resolve local ROM files and
 // emulator save files back to this ROM. It mirrors the download path exactly:
 //   - multi-file ROMs are written/loaded through an m3u named after FsNameNoExt;
 //   - single-file ROMs (including RomM "nested single file" entries, where FsName
@@ -234,7 +234,7 @@ func (r *Rom) CanonicalLocalBasename() string {
 // the user installed. Multi-disc ROMs are loaded through an m3u named after FsNameNoExt, so
 // that single basename identifies them. Other ROMs may bundle several alternative files
 // (regions/revisions) and the user downloads one of them (ui/download.go selectedFileID), so
-// EACH file's basename is a valid on-disk identity — keying matching on only Files[0] left
+// EACH file's basename is a valid on-disk identity, so keying matching on only Files[0] left
 // saves for any other version unmatched (issue #242). Falls back to FsNameNoExt when there
 // is no file metadata. The result is de-duplicated, preserving first-seen order.
 func (r *Rom) LocalBasenames() []string {

@@ -109,7 +109,7 @@ func (s *DevicePairingScreen) Execute(input DevicePairingInput) DevicePairingOut
 		if res.Outcome == DevicePairingSuccess && res.Token != nil {
 			// The token was minted microseconds ago; RomM can briefly reject
 			// resource reads with it before its scopes take effect. Wait that
-			// window out here — while the pairing screen is still up — so the
+			// window out here (while the pairing screen is still up) so the
 			// first platform load after login doesn't hit the race.
 			warm := host
 			warm.Token = res.Token.AccessToken
@@ -123,7 +123,7 @@ func (s *DevicePairingScreen) Execute(input DevicePairingInput) DevicePairingOut
 	cancelled.Store(true)
 
 	if msgErr != nil {
-		// A cancel that raced pairing completion still has the token — honor
+		// A cancel that raced pairing completion still has the token, so honor
 		// the success instead of discarding an issued credential.
 		if errors.Is(msgErr, gaba.ErrCancelled) && result.Outcome != DevicePairingSuccess {
 			return DevicePairingOutput{Outcome: DevicePairingCancelled, Host: host}
@@ -170,8 +170,8 @@ const (
 // warmUpToken retries a platforms read (the same call first-launch setup makes)
 // until the just-issued token works, the user cancels, or the attempts are
 // exhausted. RomM can transiently 403 a token in the moment right after
-// approval; retrying here keeps that race from cascading into a failed — and
-// silently fatal — platform load on first launch. A token that never succeeds
+// approval; retrying here keeps that race from cascading into a failed (and
+// silently fatal) platform load on first launch. A token that never succeeds
 // is left to the normal downstream error handling, so a genuine permission
 // problem still surfaces rather than being masked.
 func warmUpToken(host romm.Host, cancelled *atomic.Bool) {

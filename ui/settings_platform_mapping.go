@@ -298,7 +298,7 @@ func (s *PlatformMappingScreen) Draw(input PlatformMappingInput) (PlatformMappin
 					},
 				}
 
-				// Only show a metadata filter when RomM actually populated values for it —
+				// Only show a metadata filter when RomM actually populated values for it,
 				// otherwise it's a useless "All"-only picker (#247). Category/Family are
 				// frequently empty (they require IGDB platform metadata); Generation usually
 				// has values but is gated the same way for consistency.

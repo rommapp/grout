@@ -163,7 +163,7 @@ jobs:
     needs: prepare
     runs-on: ubuntu-22.04
     # linux/386 runs natively on the x86_64 runner (IA32 compat), so no QEMU is
-    # needed — emulating it through qemu-i386 is slow and prone to hanging.
+    # needed; emulating it through qemu-i386 is slow and prone to hanging.
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -378,7 +378,7 @@ jobs:
             fi
           }
 
-          # Distribution zip assets (name only — path is resolved via find)
+          # Distribution zip assets (name only; path is resolved via find)
           DIST_NAMES=(
             "Grout.pak.zip"
             "Grout.muxapp"

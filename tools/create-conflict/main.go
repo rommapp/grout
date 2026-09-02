@@ -136,7 +136,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// PUT the save back to the same ID — updates updatedAt in place
+	// PUT the save back to the same ID: updates updatedAt in place
 	fmt.Println("\nStep 2: Re-uploading save via PUT (advances updatedAt in place)...")
 	updated, err := client.UpdateSave(targetSave.ID, savePath)
 	if err != nil {
@@ -158,7 +158,7 @@ func main() {
 					if s.UpdatedAt.After(ds.LastSyncedAt) {
 						fmt.Println("  remoteChanged=true (updatedAt > lastSyncedAt)")
 					} else {
-						fmt.Println("  remoteChanged=false (updatedAt <= lastSyncedAt) — conflict won't trigger!")
+						fmt.Println("  remoteChanged=false (updatedAt <= lastSyncedAt): conflict won't trigger!")
 					}
 				}
 			}

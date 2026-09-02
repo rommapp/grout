@@ -33,7 +33,7 @@ So a `pico` game's rom is written to the **PICO-8** folder while its box art is
 written to the **Sega Pico** catalogue. One of them is wrong.
 
 All twelve platform docs map `pico` to PICO-8, which suggests the art table is
-the outlier — but if RomM's `pico` slug really does mean Sega Pico, then all
+the outlier, but if RomM's `pico` slug really does mean Sega Pico then all
 twelve are wrong and the fix is much larger.
 
 **To verify:** check what RomM reports as the `fs_slug` for a Sega Pico library
@@ -74,7 +74,7 @@ Whichever of the two is wrong silently never syncs saves.
 emulator's directory and note its exact name.
 
 **To fix:** make both slugs list the same folder first. If Koriki genuinely
-ships both directories, list them in preference order rather than picking one —
+ships both directories, list them in preference order rather than picking one:
 the list is already ordered.
 
 ---
@@ -92,7 +92,7 @@ The same emulator is spelled two ways, all at line 116 of each firmware's
 | Koriki | `["PCSX-ReARMed"]` (hyphen) |
 | Onion | `["PCSX-ReARMed"]` (hyphen) |
 
-These are three separate firmwares, so this may not be a bug at all — each is
+These are three separate firmwares, so this may not be a bug at all: each is
 free to name the folder differently. It is listed here because the difference
 looks like a typo and should be confirmed rather than assumed either way.
 
@@ -105,5 +105,5 @@ root after running a PlayStation game.
 
 Keep entries in this shape: what disagrees (with file and line), what the
 neighbouring firmwares do, what to physically check, and what to change once
-the answer is known. Remove an entry when it is resolved — the fix itself is
+the answer is known. Remove an entry when it is resolved; the fix itself is
 the record.

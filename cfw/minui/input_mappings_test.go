@@ -289,7 +289,7 @@ func TestGetInputMappingBytes_TrimuiMappingContent(t *testing.T) {
 
 	// The TrimUI Smart Pro maps 13 controller buttons (A, B, X, Y, L1, R1, Start,
 	// Select, Menu, Up, Down, Left, Right) and 2 joystick buttons (L2, R2 as analog
-	// triggers). No keyboard events — the device uses SDL controller/joystick events.
+	// triggers). No keyboard events: the device uses SDL controller/joystick events.
 	if len(mapping.ControllerButtonMap) != 13 {
 		t.Errorf("controller_button_map has %d entries, want 13", len(mapping.ControllerButtonMap))
 	}

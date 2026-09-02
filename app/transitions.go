@@ -209,7 +209,7 @@ func transitionSyncedGames(ctx *transitionContext, result any) (router.Screen, a
 
 	if r.Action == ui.SyncedGamesActionSyncNow {
 		// Resume data is nil because SyncedGamesScreen doesn't track scroll position
-		// externally — it manages its own navigation loops internally.
+		// externally: it manages its own navigation loops internally.
 		ctx.stack.Push(ScreenSyncedGames, ui.SyncedGamesInput{
 			Config:    ctx.state.Config,
 			Host:      ctx.state.Host,
@@ -276,7 +276,7 @@ func transitionSaveSync(ctx *transitionContext, result any) (router.Screen, any)
 	}
 
 	// Build the conflict display list from ConflictIndices (in order) so it stays
-	// aligned with the index map and shows exactly the conflicts the caller selected —
+	// aligned with the index map and shows exactly the conflicts the caller selected,
 	// e.g. on an execution-time 409 loop-back, only the newly surfaced conflicts, not
 	// ones the user already skipped.
 	conflicts := make([]sync.SyncItem, 0, len(r.ConflictIndices))

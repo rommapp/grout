@@ -7,7 +7,7 @@ import (
 	"github.com/sonh/qs"
 )
 
-// optimistic=false must be transmitted, not dropped by omitempty — the server defaults
+// optimistic=false must be transmitted, not dropped by omitempty: the server defaults
 // it to true, which would mark the device synced before the file is written.
 func TestSaveContentQuery_OptimisticFalseIsEncoded(t *testing.T) {
 	v, err := qs.NewEncoder().Values(SaveContentQuery{DeviceID: "dev-1", Optimistic: false})

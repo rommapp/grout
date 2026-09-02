@@ -75,7 +75,7 @@ func migrateIfNeeded(db *sql.DB) error {
 	var versionStr string
 	err := db.QueryRow(`SELECT value FROM cache_metadata WHERE key = 'schema_version'`).Scan(&versionStr)
 	if err != nil {
-		// Table doesn't exist yet or no version — fresh database, nothing to migrate
+		// Table doesn't exist yet or no version: fresh database, nothing to migrate
 		return nil
 	}
 

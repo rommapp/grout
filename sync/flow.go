@@ -304,7 +304,7 @@ func mapOperationsToItems(
 		romID int
 		slot  string
 	}
-	// byRomSlot indexes local saves by (rom_id, reported slot) — the same key the RomM
+	// byRomSlot indexes local saves by (rom_id, reported slot), the same key the RomM
 	// orchestrator and Argosy pair on. We must NOT match upload/conflict ops by filename:
 	// the server datetime-tags slot saves (e.g. "Name [2026-06-09_14-49-22].srm") while
 	// grout's local file keeps the plain name, so a filename match misses every time.
@@ -342,7 +342,7 @@ func mapOperationsToItems(
 	for _, op := range ops {
 		switch op.Action {
 		case "upload":
-			// Match by (rom_id, slot) — the orchestrator's pairing key — not by filename,
+			// Match by (rom_id, slot), the orchestrator's pairing key, not by filename,
 			// which diverges once the server datetime-tags the stored save.
 			slot := reportedOpSlot(op)
 			ls, ok := byRomSlot[romSlotKey{op.RomID, slot}]
@@ -353,7 +353,7 @@ func mapOperationsToItems(
 			}
 			// Suppress a redundant promotion-upload: when the local save's content is
 			// byte-identical to what we previously downloaded from the server (recorded
-			// hash matches), the content is already on the server — just under a slot
+			// hash matches), the content is already on the server, just under a slot
 			// negotiate doesn't pair on (e.g. a null-slot "archival" save). Re-uploading
 			// it now would only duplicate it (the "uploads everything I just downloaded"
 			// churn). It uploads later once the user actually changes the save and the
@@ -382,7 +382,7 @@ func mapOperationsToItems(
 				continue
 			}
 			// grout keeps one save (one slot) per ROM. If the ROM already has a local
-			// save, only its own slot is managed — a download for any other slot is the
+			// save, only its own slot is managed, so a download for any other slot is the
 			// orchestrator offering an alternate-slot save we don't use here, and pulling
 			// it would clobber the local save and flip-flop on every sync. Skip it.
 			if ls, ok := localByRom[op.RomID]; ok {
@@ -663,7 +663,7 @@ func isLikelyRomExt(ext string) bool {
 // downloadSaveFileName computes the on-disk filename a downloaded save should be written
 // under when the ROM has no existing local save. It pairs the save basename for the ROM
 // (keepRomExt retains the ROM extension, minarch-style; otherwise it is stripped,
-// RetroArch-style — issue #245) with the server save's extension, falling back to the
+// RetroArch-style, issue #245) with the server save's extension, falling back to the
 // server's filename when the ROM filename is unknown.
 func downloadSaveFileName(romFileName, serverFileName, serverExt string, keepRomExt bool) string {
 	if romFileName == "" {
@@ -1134,7 +1134,7 @@ func ExecuteActions(client *romm.Client, config *internal.Config, deviceID strin
 				item.Success = true
 				report.Uploaded++
 			case uploadSupersededByDownload:
-				// 409: server slot is ahead and local is unmodified — reconcile by
+				// 409: server slot is ahead and local is unmodified, so reconcile by
 				// downloading the server save (download() backs up the local first).
 				item.Action = ActionDownload
 				if download(client, config, deviceID, item) {
@@ -1183,7 +1183,7 @@ const (
 	uploadConflict
 	// uploadSupersededByDownload: a 409 revealed the server slot is ahead and the
 	// local save is unmodified since its last sync, so the item was converted to a
-	// download to reconcile (option b — no user prompt needed).
+	// download to reconcile (option b, no user prompt needed).
 	uploadSupersededByDownload
 )
 
@@ -1195,10 +1195,10 @@ const (
 	// resolve409Unresolved: no server save for the slot, so we can't reconcile;
 	// the upload stays a bare (non-resolvable) conflict.
 	resolve409Unresolved conflict409Resolution = iota
-	// resolve409AsDownload: local is unmodified since its last sync — the server is
+	// resolve409AsDownload: local is unmodified since its last sync, so the server is
 	// simply ahead, so auto-download the server save.
 	resolve409AsDownload
-	// resolve409AsConflict: local diverged from its last sync — a genuine conflict;
+	// resolve409AsConflict: local diverged from its last sync, a genuine conflict;
 	// surface it with the server save populated so it is resolvable.
 	resolve409AsConflict
 )
@@ -1222,7 +1222,7 @@ func resolveUpload409(serverSaves []romm.Save, slot, localHash, recordedHash str
 // ONLY when the user explicitly chose keep-local (ForceOverwrite); a normal upload op goes
 // out with overwrite=false so the server's optimistic-concurrency guard can return 409 if
 // the slot changed since negotiate (which grout then surfaces as a conflict). This mirrors
-// Argosy and the server's intent — forcing on every upload would clobber a concurrent
+// Argosy and the server's intent; forcing on every upload would clobber a concurrent
 // write from another device.
 func buildUploadQuery(deviceID string, item *SyncItem) romm.UploadSaveQuery {
 	slot := "autosave"
@@ -1256,7 +1256,7 @@ func buildUploadQuery(deviceID string, item *SyncItem) romm.UploadSaveQuery {
 
 // resolveUploadConflict handles a 409 "slot has a newer save" rejection. It fetches
 // the server's current save for the slot and, via resolveUpload409, either converts the
-// item to an auto-download (local unmodified since last sync — option b) or surfaces a
+// item to an auto-download (local unmodified since last sync, option b) or surfaces a
 // resolvable conflict with the server save populated. A bare conflict remains only if
 // the server save can't be fetched.
 func resolveUploadConflict(client *romm.Client, deviceID string, item *SyncItem, slot string, cause error) uploadOutcome {
@@ -1434,7 +1434,7 @@ func download(client *romm.Client, config *internal.Config, deviceID string, ite
 		}
 		tmpZip.Close()
 
-		// Validate the downloaded zip BEFORE deleting any local dirs — a corrupt or
+		// Validate the downloaded zip BEFORE deleting any local dirs: a corrupt or
 		// empty body (server bug, truncation) must not wipe the live save. The backup
 		// already exists, but we'd rather never destroy the original.
 		if zr, zerr := zip.OpenReader(tmpZipPath); zerr != nil || len(zr.File) == 0 {

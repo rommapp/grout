@@ -70,7 +70,7 @@ func (s *SaveMappingScreen) Draw(input SaveMappingInput) (SaveMappingOutput, err
 		emulatorDirs, ok := emulatorMap[effectiveFSSlug]
 		if !ok || len(emulatorDirs) < 2 {
 			logger.Debug("Save mapping: skipping platform", "fsSlug", fsSlug, "effectiveFSSlug", effectiveFSSlug, "found", ok, "emulatorDirs", len(emulatorDirs))
-			// Skip platforms with only one emulator option — no choice to make
+			// Skip platforms with only one emulator option: no choice to make
 			continue
 		}
 		logger.Debug("Save mapping: processing platform", "fsSlug", fsSlug, "effectiveFSSlug", effectiveFSSlug, "emulatorDirs", emulatorDirs)
@@ -164,7 +164,7 @@ func (s *SaveMappingScreen) Draw(input SaveMappingInput) (SaveMappingOutput, err
 		emulatorDirs := emulatorMap[effectiveFSSlug]
 
 		if len(emulatorDirs) > 0 && selectedDir == emulatorDirs[0] {
-			// Default selection — remove mapping so the default is used
+			// Default selection: remove mapping so the default is used
 			logger.Debug("Save mapping: removing mapping (default selected)", "fsSlug", fsSlug)
 			delete(output.Config.SaveDirectoryMappings, fsSlug)
 		} else {

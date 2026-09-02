@@ -129,7 +129,7 @@ pre-selected. If not, it'll suggest creating one with the correct name for your 
 - `Left/Right` to cycle through options for the selected platform
 - `A` to open a list picker showing all available options at once
 - `Up/Down` to move between platforms
-- `Y` to open filters (Mapping Status, Generation, Category, Family) to narrow the platform list — inside, `X` resets
+- `Y` to open filters (Mapping Status, Generation, Category, Family) to narrow the platform list. Inside, `X` resets
   all filters and `Start` applies them
 - `Start` to save your mappings
 
@@ -288,7 +288,7 @@ Only filter categories that have values for the current platform are shown. On t
 cycle a filter's values (or press `A` to open a list picker), then press `Start` to apply or `B` to cancel.
 
 When a filter is active, the title bar displays `[Filtered]`. Pressing `B` in the game list clears the active search
-and filters — most recently applied first — before going back.
+and filters, most recently applied first, before going back.
 
 ### Search
 

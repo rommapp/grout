@@ -143,7 +143,7 @@ task build:arm64 LOCAL=true   # Build using local gabagool via go.work
 task all LOCAL=true           # Build and package all platforms with local gabagool
 ```
 
-This relies on the committed `go.work` file in the repository root, which references both projects — Grout (`.`) and a sibling `../gabagool` checkout — so make sure gabagool is cloned alongside Grout.
+This relies on the committed `go.work` file in the repository root, which references both projects, Grout (`.`) and a sibling `../gabagool` checkout, so make sure gabagool is cloned alongside Grout.
 
 ### Output Structure
 

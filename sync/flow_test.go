@@ -281,7 +281,7 @@ func TestMapOperationsToItems_DownloadGatedToInstalledAndDeduped(t *testing.T) {
 
 func TestMapOperationsToItems_SkipsOtherSlotDownloadWhenLocalSaveExists(t *testing.T) {
 	// The ROM already has a local save synced under "autosave". The server offers a
-	// "default"-slot save for the same ROM — grout manages one slot per ROM, so it must
+	// "default"-slot save for the same ROM, and grout manages one slot per ROM, so it must
 	// NOT pull the other slot (which would clobber the local save and flip-flop).
 	local := []LocalSave{{RomID: 303, FileName: "Pokemon.srm", FilePath: "/x/Pokemon.srm", FSSlug: "gba"}}
 	recorded := map[saveKey]string{{romID: 303, fileName: "Pokemon.srm"}: "autosave"}
@@ -297,7 +297,7 @@ func TestMapOperationsToItems_SkipsOtherSlotDownloadWhenLocalSaveExists(t *testi
 }
 
 func TestMapOperationsToItems_AcceptsSameSlotDownloadWhenLocalSaveExists(t *testing.T) {
-	// A download for the ROM's own (managed) slot — e.g. the server copy is newer — is
+	// A download for the ROM's own (managed) slot, e.g. the server copy is newer, is
 	// legitimate and must be applied.
 	local := []LocalSave{{RomID: 303, FileName: "Pokemon.srm", FilePath: "/x/Pokemon.srm", FSSlug: "gba"}}
 	recorded := map[saveKey]string{{romID: 303, fileName: "Pokemon.srm"}: "autosave"}
@@ -314,7 +314,7 @@ func TestMapOperationsToItems_AcceptsSameSlotDownloadWhenLocalSaveExists(t *test
 
 func TestBuildUploadQuery_OverwriteOnlyWhenForced(t *testing.T) {
 	// A normal upload op (orchestrator said client is newer) carries a RemoteSave stub but
-	// must NOT force overwrite — overwrite=false lets the server's 409 guard catch races.
+	// must NOT force overwrite: overwrite=false lets the server's 409 guard catch races.
 	normal := &SyncItem{
 		LocalSave:  LocalSave{RomID: 303, EmulatorDir: "/saves/mGBA"},
 		RemoteSave: &romm.Save{ID: 235},
@@ -352,7 +352,7 @@ func TestBuildUploadQuery_AutocleanupOnlyForAutosave(t *testing.T) {
 func TestMapOperationsToItems_UploadMatchesBySlotNotFilename(t *testing.T) {
 	// The server datetime-tags slot saves, so the upload op's file_name does not equal
 	// grout's plain local filename. The op must still pair to the local save by
-	// (rom_id, slot) — matching the orchestrator's and Argosy's pairing key.
+	// (rom_id, slot), matching the orchestrator's and Argosy's pairing key.
 	local := []LocalSave{{RomID: 303, FileName: "Pokemon.srm", FilePath: "/x/Pokemon.srm", FSSlug: "gba"}}
 	ops := []romm.SyncOperationSchema{
 		{

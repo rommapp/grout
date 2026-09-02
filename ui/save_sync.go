@@ -46,7 +46,7 @@ func (s *SaveSyncScreen) Execute(input SaveSyncInput) SaveSyncOutput {
 		return s.executeSyncPhase(client, config, host.DeviceID, input.ResolvedItems, input.SessionID)
 	}
 
-	// Health check — verify server is reachable before starting sync
+	// Health check: verify server is reachable before starting sync
 	if _, err := client.GetHeartbeat(); err != nil {
 		gaba.ConfirmationMessage(
 			i18n.Localize(&goi18n.Message{ID: "save_sync_resolve_error", Other: "Failed to connect to server.\nPlease check your connection and try again."}, nil),
@@ -61,7 +61,7 @@ func (s *SaveSyncScreen) Execute(input SaveSyncInput) SaveSyncOutput {
 		return s.executeNewSlotUpload(client, config, host.DeviceID, input.NewSlotRomID, input.NewSlotName)
 	}
 
-	// Phase 1: Resolve — scan local saves, fetch summaries, determine actions
+	// Phase 1: Resolve: scan local saves, fetch summaries, determine actions
 	var result sync.SyncResult
 	var resolveErr error
 	gaba.ProcessMessage(
@@ -86,7 +86,7 @@ func (s *SaveSyncScreen) Execute(input SaveSyncInput) SaveSyncOutput {
 	// Slot selection for first-time downloads with multiple slots
 	items = s.resolveMultiSlotDownloads(config, items)
 
-	// Check for conflicts — if any, return to router for conflict screen
+	// Check for conflicts: if any, return to router for conflict screen
 	conflictIndices := map[int]int{} // maps conflict slice index → items slice index
 	hasConflicts := false
 	conflictCount := 0
@@ -107,7 +107,7 @@ func (s *SaveSyncScreen) Execute(input SaveSyncInput) SaveSyncOutput {
 		}
 	}
 
-	// No conflicts — execute directly
+	// No conflicts: execute directly
 	return s.executeSyncPhase(client, config, host.DeviceID, items, result.SessionID)
 }
 
@@ -285,7 +285,7 @@ func (s *SaveSyncScreen) resolveMultiSlotDownloads(config *internal.Config, item
 		optionItems,
 	)
 	if err != nil {
-		// Cancelled (or picker error) — skip the downloads the user never confirmed a
+		// Cancelled (or picker error): skip the downloads the user never confirmed a
 		// slot for rather than silently pulling a default slot.
 		if !errors.Is(err, gaba.ErrCancelled) {
 			gaba.GetLogger().Warn("Slot selector failed; skipping unconfirmed downloads", "error", err)

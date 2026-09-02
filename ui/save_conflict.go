@@ -107,7 +107,7 @@ func (s *SaveConflictScreen) applyResolutions(conflicts []sync.SyncItem, resultI
 			case "remote":
 				conflicts[i].Resolve(sync.ActionDownload)
 			case "skip":
-				// Leave it as ActionConflict — not executed this run, re-offered next sync.
+				// Leave it as ActionConflict: not executed this run, re-offered next sync.
 			}
 		}
 	}

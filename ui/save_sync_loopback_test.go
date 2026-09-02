@@ -8,8 +8,8 @@ import (
 )
 
 // After execution, an upload that the server rejected with 409 is turned into a
-// resolvable conflict (Action=Conflict, RemoteSave populated). Those — and only those
-// — must be looped back to the conflict screen in the same run. Pre-existing conflicts
+// resolvable conflict (Action=Conflict, RemoteSave populated). Those, and only those,
+// must be looped back to the conflict screen in the same run. Pre-existing conflicts
 // the user already skipped (wasUpload=false) and conflicts with no server save (not
 // resolvable) must be left alone, so the loop terminates.
 func TestNewlySurfacedConflicts(t *testing.T) {
