@@ -4,6 +4,7 @@ import (
 	"grout/cache"
 	"grout/internal"
 	"grout/romm"
+	"grout/service/library"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
@@ -94,13 +95,13 @@ func (s *RebuildCacheScreen) Draw(input RebuildCacheInput) (RebuildCacheOutput, 
 
 	// Only rebuild metadata cache if metadata was cleared
 	if selected == clearOptionMetadata || selected == clearOptionBoth {
-		platforms, err := internal.GetMappedPlatforms(input.Host, input.Config.DirectoryMappings, input.Config.ApiTimeout.Duration())
+		platforms, err := library.MappedPlatforms(input.Host, input.Config.DirectoryMappings, input.Config.ApiTimeout.Duration())
 		if err != nil {
 			logger.Error("Failed to fetch platforms", "error", err)
 			return RebuildCacheOutput{Action: RebuildCacheActionError}, err
 		}
 
-		platforms = internal.SortPlatformsByOrder(platforms, input.Config.PlatformOrder)
+		platforms = library.SortByOrder(platforms, input.Config.PlatformOrder)
 
 		progress := uatomic.NewFloat64(0)
 		gaba.ProcessMessage(

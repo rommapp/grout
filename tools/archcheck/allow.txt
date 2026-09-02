@@ -8,7 +8,6 @@
 # Do not add entries by hand without a reason; each line is a known defect.
 
 # An import that goes against the layer matrix in layers.go.
-layer grout/internal -> grout/cache
 layer grout/internal -> grout/cfw
 layer grout/internal -> grout/romm
 layer grout/ui -> grout/cache

@@ -3,7 +3,6 @@ package internal
 import (
 	"encoding/json"
 	"fmt"
-	"grout/cache"
 	"grout/cfw"
 	"grout/domain/library"
 	"grout/romm"
@@ -233,22 +232,6 @@ func SetKidMode(enabled bool) {
 }
 
 // LoadPlatformsBinding fetches the PLATFORMS_BINDING from the RomM server
-// and stores it in the config for use in CFW lookups.
-// This requires the pointer receiver!
-//
-//goland:noinspection ALL
-func (c *Config) LoadPlatformsBinding(host romm.Host, timeout ...time.Duration) error {
-	client := romm.NewClientFromHost(host, timeout...)
-
-	rommConfig, err := client.GetConfig()
-	if err != nil {
-		// Non-fatal - older RomM versions may not have this endpoint
-		return err
-	}
-
-	c.PlatformsBinding = rommConfig.PlatformsBinding
-	return nil
-}
 
 func (c Config) GetDirectoryMapping(fsSlug string) (string, bool) {
 	if mapping, ok := c.DirectoryMappings[fsSlug]; ok {
@@ -371,41 +354,4 @@ func (c Config) GetPlatformRomDirectory(platform romm.Platform) string {
 // "skip this kind" rather than as an error.
 func (c Config) ArtDirectory(platform romm.Platform, slot cfw.ArtSlot) string {
 	return cfw.ArtDirectory(cfw.GetCFW(), slot, c.GetPlatformRomDirectory(platform), platform.FSSlug, platform.Name)
-}
-
-func (c Config) ShowCollections(host romm.Host) bool {
-	if !c.ShowRegularCollections && !c.ShowSmartCollections && !c.ShowVirtualCollections {
-		return false
-	}
-
-	// Check cache first
-	if cm := cache.GetCacheManager(); cm != nil && cm.HasCollections() {
-		return true
-	}
-
-	// Fallback to network check
-	rc := romm.NewClientFromHost(host, c.ApiTimeout.Duration())
-
-	if c.ShowRegularCollections {
-		col, err := rc.GetCollections()
-		if err == nil && len(col) > 0 {
-			return true
-		}
-	}
-
-	if c.ShowSmartCollections {
-		smartCol, err := rc.GetSmartCollections()
-		if err == nil && len(smartCol) > 0 {
-			return true
-		}
-	}
-
-	if c.ShowVirtualCollections {
-		virtualCol, err := rc.GetVirtualCollections()
-		if err == nil && len(virtualCol) > 0 {
-			return true
-		}
-	}
-
-	return false
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"grout/internal"
+	"grout/service/library"
 	"os"
 	"strconv"
 	"strings"
@@ -349,7 +350,7 @@ func LoginFlow(existingHost romm.Host) (*internal.Config, error) {
 				config := &internal.Config{
 					Hosts: []romm.Host{loginOutput.Host},
 				}
-				_ = config.LoadPlatformsBinding(loginOutput.Host)
+				_ = library.LoadPlatformsBinding(config, loginOutput.Host)
 				return config, nil
 			}
 

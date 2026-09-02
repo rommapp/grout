@@ -9,6 +9,7 @@ import (
 	"grout/internal/fileutil"
 	"grout/resources"
 	"grout/romm"
+	"grout/service/library"
 	"grout/sync"
 	"grout/ui"
 	"log"
@@ -307,17 +308,17 @@ func connectAndLoadPlatforms(config *internal.Config, logger *slog.Logger) []rom
 			}
 
 			// Load platforms
-			if err := config.LoadPlatformsBinding(config.Hosts[0], config.ApiTimeout.Duration()); err != nil {
+			if err := library.LoadPlatformsBinding(config, config.Hosts[0], config.ApiTimeout.Duration()); err != nil {
 				logger.Debug("Failed to load platform bindings", "error", err)
 			}
 
 			var err error
-			platforms, err = internal.GetMappedPlatforms(config.Hosts[0], config.DirectoryMappings, config.ApiTimeout.Duration())
+			platforms, err = library.MappedPlatforms(config.Hosts[0], config.DirectoryMappings, config.ApiTimeout.Duration())
 			if err != nil {
 				loadErr = err
 				return nil, nil
 			}
-			platforms = internal.SortPlatformsByOrder(platforms, config.PlatformOrder)
+			platforms = library.SortByOrder(platforms, config.PlatformOrder)
 			return nil, nil
 		})
 
