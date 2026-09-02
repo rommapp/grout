@@ -8,8 +8,6 @@ import (
 	"grout/internal/fileutil"
 	"grout/internal/imageutil"
 	"grout/internal/stringutil"
-	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -309,41 +307,10 @@ func (s *GameDetailsScreen) getCoverImagePath(config *internal.Config, host romm
 }
 
 func (s *GameDetailsScreen) fetchImageFromURL(host romm.Host, imageURL string) []byte {
-	logger := gaba.GetLogger()
-
-	imageURL = strings.ReplaceAll(imageURL, " ", "%20")
-
-	req, err := http.NewRequest("GET", imageURL, nil)
+	data, err := romm.NewArtFetcher(host, internal.DefaultHTTPTimeout).Fetch(imageURL)
 	if err != nil {
-		logger.Warn("Failed to create image request", "url", imageURL, "error", err)
+		gaba.GetLogger().Warn("Failed to fetch image", "url", imageURL, "error", err)
 		return nil
 	}
-
-	req.Header.Set("Authorization", host.AuthHeader())
-
-	client := romm.NewHTTPClient(host, internal.DefaultHTTPTimeout)
-	resp, err := client.Do(req)
-	if err != nil {
-		logger.Warn("Failed to fetch image", "url", imageURL, "error", err)
-		return nil
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			logger.Warn("Failed to close response body", "error", err)
-		}
-	}()
-
-	if resp.StatusCode != http.StatusOK {
-		logger.Warn("Image fetch failed with bad status", "url", imageURL, "status", resp.Status)
-		return nil
-	}
-
-	imageData, err := io.ReadAll(resp.Body)
-	if err != nil {
-		logger.Warn("Failed to read image data", "error", err)
-		return nil
-	}
-
-	logger.Debug("Successfully fetched image", "url", imageURL, "size", len(imageData))
-	return imageData
+	return data
 }

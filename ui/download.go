@@ -15,8 +15,6 @@ import (
 	"grout/romm"
 	_ "image/gif"
 	_ "image/jpeg"
-	"io"
-	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -333,7 +331,7 @@ func (s *DownloadScreen) draw(input DownloadInput) (DownloadOutput, error) {
 				Progress:            progress,
 			},
 			func() (interface{}, error) {
-				s.downloadArt(artDownloads, downloadedGames, headers, progress, input.Host)
+				s.downloadArt(artDownloads, downloadedGames, progress, input.Host)
 				return nil, nil
 			},
 		)
@@ -601,127 +599,46 @@ func resolveExtractedGamePath(romDirectory, extractDir, fsNameNoExt string) stri
 	return extractDir
 }
 
-func (s *DownloadScreen) downloadArt(artDownloads []artDownload, downloadedGames []romm.Rom, headers map[string]string, progress *atomic.Float64, host romm.Host) {
+func (s *DownloadScreen) downloadArt(artDownloads []artDownload, downloadedGames []romm.Rom, progress *atomic.Float64, host romm.Host) {
 	logger := gaba.GetLogger()
 
-	// One client for the whole run so connections are reused across what can be
-	// hundreds of art downloads.
-	client := romm.NewHTTPClient(host, romm.DefaultClientTimeout)
+	// One fetcher for the whole run so connections are reused across what can
+	// be hundreds of art downloads.
+	fetcher := romm.NewArtFetcher(host, romm.DefaultClientTimeout)
+	fetcher.Process = imageutil.ProcessArtImage
 
-	downloadedGameNames := make(map[string]bool)
+	downloaded := make(map[string]bool, len(downloadedGames))
 	for _, g := range downloadedGames {
-		downloadedGameNames[g.Name] = true
+		downloaded[g.Name] = true
 	}
 
-	totalArt := 0
+	wanted := make([]artDownload, 0, len(artDownloads))
 	for _, art := range artDownloads {
-		if downloadedGameNames[art.GameName] {
-			totalArt++
+		if downloaded[art.GameName] {
+			wanted = append(wanted, art)
 		}
 	}
+	if len(wanted) == 0 {
+		return
+	}
 
-	successCount := 0
-	failCount := 0
-	processedCount := 0
-
-	for _, art := range artDownloads {
-		if !downloadedGameNames[art.GameName] {
-			continue
-		}
-
-		artDir := filepath.Dir(art.Location)
-		if err := os.MkdirAll(artDir, 0755); err != nil {
-			logger.Warn("Failed to create art directory", "dir", artDir, "game", art.GameName, "error", err)
-			failCount++
-			processedCount++
-			if totalArt > 0 {
-				progress.Store(float64(processedCount) / float64(totalArt))
-			}
-			continue
-		}
-
-		req, err := http.NewRequest("GET", art.URL, nil)
-		if err != nil {
-			logger.Warn("Failed to create art request", "game", art.GameName, "error", err)
-			failCount++
-			processedCount++
-			if totalArt > 0 {
-				progress.Store(float64(processedCount) / float64(totalArt))
-			}
-			continue
-		}
-
-		for k, v := range headers {
-			req.Header.Set(k, v)
-		}
-
-		resp, err := client.Do(req)
-		if err != nil {
-			logger.Warn("Failed to download art", "game", art.GameName, "url", art.URL, "error", err)
-			failCount++
-			processedCount++
-			if totalArt > 0 {
-				progress.Store(float64(processedCount) / float64(totalArt))
-			}
-			continue
-		}
-
-		if resp.StatusCode != http.StatusOK {
-			resp.Body.Close()
-			logger.Warn("Art download failed with bad status", "game", art.GameName, "url", art.URL, "status", resp.Status)
-			failCount++
-			processedCount++
-			if totalArt > 0 {
-				progress.Store(float64(processedCount) / float64(totalArt))
-			}
-			continue
-		}
-
-		outFile, err := os.Create(art.Location)
-		if err != nil {
-			resp.Body.Close()
-			logger.Warn("Failed to create art file", "game", art.GameName, "location", art.Location, "error", err)
-			failCount++
-			processedCount++
-			if totalArt > 0 {
-				progress.Store(float64(processedCount) / float64(totalArt))
-			}
-			continue
-		}
-
-		_, err = io.Copy(outFile, resp.Body)
-		resp.Body.Close()
-		outFile.Close()
-
-		if err != nil {
-			logger.Warn("Failed to write art file", "game", art.GameName, "location", art.Location, "error", err)
-			os.Remove(art.Location)
-			failCount++
-			processedCount++
-			if totalArt > 0 {
-				progress.Store(float64(processedCount) / float64(totalArt))
-			}
-			continue
-		}
-
+	var succeeded, failed int
+	for i, art := range wanted {
+		save := fetcher.SaveRaw
 		if art.IsImage {
-			if err := imageutil.ProcessArtImage(art.Location); err != nil {
-				logger.Warn("Failed to process art image", "game", art.GameName, "location", art.Location, "error", err, "url", art.URL)
-				os.Remove(art.Location)
-				failCount++
-				processedCount++
-				if totalArt > 0 {
-					progress.Store(float64(processedCount) / float64(totalArt))
-				}
-				continue
-			}
+			save = fetcher.Save
 		}
 
-		successCount++
-
-		processedCount++
-		if totalArt > 0 {
-			progress.Store(float64(processedCount) / float64(totalArt))
+		if err := save(art.URL, art.Location); err != nil {
+			logger.Warn("Failed to download art",
+				"game", art.GameName, "url", art.URL, "location", art.Location, "error", err)
+			failed++
+		} else {
+			succeeded++
 		}
+
+		progress.Store(float64(i+1) / float64(len(wanted)))
 	}
+
+	logger.Debug("Art download complete", "succeeded", succeeded, "failed", failed)
 }

@@ -7,8 +7,6 @@ import (
 	"grout/internal/imageutil"
 	"grout/romm"
 	"image/png"
-	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -121,8 +119,6 @@ func GetArtworkCoverPath(rom romm.Rom, artkind artutil.ArtKind, host romm.Host) 
 }
 
 func DownloadAndCacheArtwork(rom romm.Rom, kind artutil.ArtKind, host romm.Host) error {
-	logger := gaba.GetLogger()
-
 	artURL := GetArtworkCoverPath(rom, kind, host)
 	if artURL == "" {
 		return nil // No artwork available
@@ -132,55 +128,9 @@ func DownloadAndCacheArtwork(rom romm.Rom, kind artutil.ArtKind, host romm.Host)
 		return fmt.Errorf("failed to create cache directory: %w", err)
 	}
 
-	cachePath := GetArtworkCachePath(rom.PlatformFSSlug, rom.ID)
-
-	req, err := http.NewRequest("GET", artURL, nil)
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Authorization", host.AuthHeader())
-
-	client := romm.NewHTTPClient(host, romm.DefaultClientTimeout)
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to download artwork: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("bad status: %s", resp.Status)
-	}
-
-	outFile, err := os.Create(cachePath)
-	if err != nil {
-		return fmt.Errorf("failed to create cache file: %w", err)
-	}
-	defer outFile.Close()
-
-	if _, err = io.Copy(outFile, resp.Body); err != nil {
-		os.Remove(cachePath)
-		return fmt.Errorf("failed to write cache file: %w", err)
-	}
-	outFile.Close()
-
-	if err := imageutil.ProcessArtImage(cachePath); err != nil {
-		logger.Warn("Failed to process artwork image", "path", cachePath, "error", err)
-		os.Remove(cachePath)
-		return fmt.Errorf("failed to process artwork: %w", err)
-	}
-
-	file, err := os.Open(cachePath)
-	if err != nil {
-		return fmt.Errorf("failed to open processed artwork: %w", err)
-	}
-	_, err = png.DecodeConfig(file)
-	file.Close()
-	if err != nil {
-		os.Remove(cachePath)
-		return fmt.Errorf("processed artwork is not a valid PNG: %w", err)
-	}
-
-	return nil
+	fetcher := romm.NewArtFetcher(host, romm.DefaultClientTimeout)
+	fetcher.Process = imageutil.ProcessArtImage
+	return fetcher.Save(artURL, GetArtworkCachePath(rom.PlatformFSSlug, rom.ID))
 }
 
 func SyncArtworkInBackground(artkind artutil.ArtKind, host romm.Host, games []romm.Rom) {
