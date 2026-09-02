@@ -7,9 +7,8 @@ import (
 	"testing"
 )
 
-// allFirmwares is every firmware grout supports. A conformance table over this
-// list is what stops a new firmware from silently returning "" for a directory
-// nobody remembered to add it to.
+// A conformance table over every firmware stops a new one silently returning ""
+// for a directory nobody remembered to add it to.
 var allFirmwares = All
 
 var esFirmwares = []CFW{Knulli, ROCKNIX, ArkOS, Batocera}
@@ -151,9 +150,8 @@ func TestArtDirectory_UnknownInputsReturnEmpty(t *testing.T) {
 	}
 }
 
-// Batocera used to be routed to Knulli's directory for one slot. Both happened
-// to resolve to the same path, so it went unnoticed; assert each firmware
-// answers for itself.
+// Each firmware must answer for itself. Two resolving to the same path by
+// coincidence would hide a misrouted one.
 func TestArtDirectory_EachFirmwareAnswersForItself(t *testing.T) {
 	for _, slot := range []ArtSlot{ArtCover, ArtMarquee, ArtBoxback, ArtFanart, ArtVideo, ArtManual, ArtBezel} {
 		for _, c := range esFirmwares {

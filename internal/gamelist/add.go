@@ -18,20 +18,15 @@ type GameListEntry struct {
 	Path string
 }
 
-// RomGameEntry is one game to write into a gamelist.
-//
-// It carries library.Game rather than the RomM wire type so that this package
-// performs no text transformation of its own: the display name arrives already
-// rendered, and identity is the game's file name. When AddRomGame derived the
-// name itself, the written <name> and the key used to find the entry again
-// disagreed for every region-tagged game.
+// RomGameEntry is one game to write into a gamelist. It carries library.Game
+// rather than the wire type so this package performs no text transformation:
+// the display name arrives rendered, and identity is the file name.
 type RomGameEntry struct {
 	Game         library.Game
 	Platform     library.Platform
 	RomDirectory string
 }
 
-// FileName is the stable identity of this entry: the rom's file name on disk.
 func (e RomGameEntry) FileName() string {
 	if e.Game.FileName != "" {
 		return e.Game.FileName
@@ -106,8 +101,7 @@ func (gl *GameList) AddRomGame(entry RomGameEntry) {
 
 	element := gl.AddOrUpdateRomEntry(entry.FileName(), gameMetadata)
 
-	// The id attribute can only be written once the element exists, so this
-	// must follow the upsert rather than precede it.
+	// Requires the element to exist, so it follows the upsert.
 	if element != nil && game.ScreenScraperID > 0 {
 		element.CreateAttr("id", strconv.Itoa(game.ScreenScraperID))
 	}

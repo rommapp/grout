@@ -1,28 +1,23 @@
 // archcheck enforces grout's package layering.
 //
-// Go's own import-cycle rule stops a cycle from compiling, but it says nothing
-// about direction: a device-layer package importing the HTTP client compiles
-// perfectly well, and that is how grout ended up with the shape the refactor is
-// unwinding. archcheck states the direction and fails the build when an import
-// goes the wrong way.
+// Go rejects an import cycle but says nothing about direction, so a device
+// package importing the HTTP client compiles fine. archcheck states the
+// direction and fails the build when an import goes the wrong way.
 //
-// It deliberately runs on `go list` rather than a type-checking linter. grout
-// needs cgo and SDL2 to compile, but `go list` only resolves the import graph,
-// so this runs on a bare CI machine in about a second with CGO_ENABLED=0.
+// It runs on `go list` rather than a type-checking linter: grout needs cgo and
+// SDL2 to compile, but `go list` only resolves the import graph, so this runs
+// on a bare CI machine with CGO_ENABLED=0.
 //
-// Three rules are enforced:
+// Three rules:
 //
 //   - layer:   an import must be permitted by the matrix in layers.go.
-//   - toolkit: only ui and cmd may import the gabagool UI toolkit. Everything
-//     else linking SDL is why `go test ./cache` needs a display.
-//   - global:  only cmd may hold package-level mutable state. Singletons like
-//     cache.GetCacheManager are the reason most of the codebase cannot be
-//     tested without touching real files.
+//   - toolkit: only ui and cmd may import the gabagool UI toolkit. Anything
+//     else linking SDL needs a display to run its tests.
+//   - global:  only cmd may hold package-level mutable state.
 //
-// Known violations live in allow.txt so the rules can be turned on before the
+// Known violations live in allow.txt, so the rules can be turned on before the
 // code satisfies them. archcheck fails both when a new violation appears and
-// when an allowlisted one is fixed but left in the file, so the list ratchets
-// down and cannot rot.
+// when an allowlisted one is fixed but left behind, so the list only shrinks.
 //
 // Usage:
 //
@@ -154,8 +149,8 @@ func writeAllowFile(violations []violation) error {
 	b.WriteString(`# Known layering violations, tolerated until the refactor removes them.
 #
 # archcheck fails when a violation appears that is not listed here, and also
-# when an entry here no longer applies -- so this file can only shrink, and a
-# fix cannot silently leave dead weight behind.
+# when an entry here no longer applies, so this file can only shrink and a fix
+# cannot silently leave dead weight behind.
 #
 # Regenerate with: go run ./tools/archcheck -update
 # Do not add entries by hand without a reason; each line is a known defect.

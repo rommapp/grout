@@ -14,30 +14,23 @@ import (
 type processFunc func(path string) error
 
 // ArtFetcher downloads artwork from one RomM host.
-//
-// It exists because four call sites each built their own request, auth header,
-// status check and write loop, and drifted apart: only one honoured the host's
-// self-signed certificate setting, only one checked that what came back was an
-// image, and they disagreed about cleaning up a half-written file.
 type ArtFetcher struct {
 	client *http.Client
 	host   Host
 
-	// Process, when set, normalises a saved image in place. Save removes the
-	// file if it returns an error, so a response that is not an image never
-	// survives on disk. It is a field rather than a dependency because
-	// resizing artwork needs the display, which this layer must not know
-	// about.
+	// Process normalises a saved image in place; Save removes the file if it
+	// errors, so a non-image response never survives. A field rather than a
+	// dependency because resizing needs the display, which this layer must not
+	// know about.
 	Process processFunc
 }
 
-// NewArtFetcher returns an ArtFetcher for host. A zero timeout uses the client
-// default.
+// NewArtFetcher returns an ArtFetcher for host. A zero timeout uses the
+// client default.
 func NewArtFetcher(host Host, timeout time.Duration) *ArtFetcher {
 	return &ArtFetcher{client: NewHTTPClient(host, timeout), host: host}
 }
 
-// Fetch returns the bytes at url.
 func (f *ArtFetcher) Fetch(url string) ([]byte, error) {
 	resp, err := f.get(url)
 	if err != nil {
@@ -52,17 +45,13 @@ func (f *ArtFetcher) Fetch(url string) ([]byte, error) {
 	return data, nil
 }
 
-// Save writes the image at url to dest and normalises it for display.
-//
-// dest is removed if anything fails, so an error response or a truncated
-// transfer never survives as a file where artwork is expected. Callers that
-// want the bytes without touching disk should use Fetch.
+// Save writes the image at url to dest and normalises it for display. dest is
+// removed if anything fails, so a failed download never counts as present.
 func (f *ArtFetcher) Save(url, dest string) error {
 	return f.save(url, dest, true)
 }
 
-// SaveRaw writes url to dest without image processing, for artwork that is not
-// an image -- manuals and videos.
+// SaveRaw writes url to dest without image processing, for manuals and videos.
 func (f *ArtFetcher) SaveRaw(url, dest string) error {
 	return f.save(url, dest, false)
 }
@@ -105,8 +94,7 @@ func (f *ArtFetcher) save(url, dest string, isImage bool) error {
 }
 
 func (f *ArtFetcher) get(url string) (*http.Response, error) {
-	// RomM serves art under paths containing the rom's name, which routinely
-	// has spaces in it.
+	// Art paths contain the rom's name, which routinely has spaces.
 	req, err := http.NewRequest(http.MethodGet, strings.ReplaceAll(url, " ", "%20"), nil)
 	if err != nil {
 		return nil, fmt.Errorf("build artwork request: %w", err)

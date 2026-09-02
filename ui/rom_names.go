@@ -8,13 +8,8 @@ import (
 	"grout/romm"
 )
 
-// prepareRomNames fills in each rom's DisplayName and sorts the slice by name.
-//
-// DisplayName is presentation only. It folds in the region, rewrites
-// punctuation, and changes with user settings, so nothing may key off it --
-// identity comes from the rom's file name. This lives in ui rather than
-// stringutil because it is the one thing that made a pure string package depend
-// on the RomM wire types.
+// prepareRomNames fills in each rom's DisplayName and sorts by name.
+// DisplayName is presentation only; nothing may key off it.
 func prepareRomNames(games []romm.Rom) []romm.Rom {
 	for i := range games {
 		games[i].DisplayName = stringutil.PrepareRomName(games[i].Name, games[i].Regions)
@@ -27,8 +22,8 @@ func prepareRomNames(games []romm.Rom) []romm.Rom {
 	return games
 }
 
-// romArtFileName returns the rom's file name for artwork naming, or empty when
-// the rom has no file list. Only MinUI uses it; see cfw.ArtFileName.
+// romArtFileName returns the file name used for artwork naming, or "" when the
+// rom has no file list. See cfw.ArtFileName.
 func romArtFileName(g romm.Rom) string {
 	if len(g.Files) > 0 {
 		return g.Files[0].FileName

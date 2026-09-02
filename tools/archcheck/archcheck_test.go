@@ -279,9 +279,9 @@ func TestRootIdent(t *testing.T) {
 	}
 }
 
-// A package can break more than one rule at once. An earlier version reported
-// the toolkit import and then stopped scanning, which hid every layer
-// violation in a package that imports gabagool -- most of the repo.
+// A package can break more than one rule at once. Reporting the toolkit import
+// must not stop the layer scan, or every gabagool-importing package (most of
+// the repo) goes unchecked.
 func TestCheckImports_ReportsToolkitAndLayerTogether(t *testing.T) {
 	p := pkg{
 		ImportPath: "grout/cache",

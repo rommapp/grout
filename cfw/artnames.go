@@ -1,10 +1,9 @@
 package cfw
 
-// ArtSlot identifies which piece of artwork a file holds on device.
+// ArtSlot is where a piece of artwork is stored on device.
 //
-// It is distinct from library.ArtKind, which names the image RomM serves
-// (Box2D, Screenshot, and so on). A slot is where that image is stored locally,
-// and several kinds can share one slot.
+// Distinct from library.ArtKind, which names the image RomM serves. Several
+// kinds can share one slot.
 type ArtSlot int
 
 const (
@@ -15,8 +14,7 @@ const (
 	ArtMarquee
 	ArtBoxback
 	ArtFanart
-	// ArtVideo and ArtManual are not images. They take no filename suffix and
-	// are written without image processing.
+	// Not images: no suffix, and written without image processing.
 	ArtVideo
 	ArtManual
 )
@@ -46,10 +44,8 @@ func (s ArtSlot) String() string {
 	}
 }
 
-// esSuffix is the filename suffix a slot takes on EmulationStation-based
-// firmwares, which keep every art kind in a single directory and would
-// otherwise overwrite the cover. Slots absent from this map share the cover's
-// name deliberately.
+// esSuffix distinguishes slots on EmulationStation firmwares, which keep every
+// art kind in one directory. Slots absent from the map share the cover's name.
 var esSuffix = map[ArtSlot]string{
 	ArtThumbnail: "-thumb",
 	ArtMarquee:   "-marquee",
@@ -57,24 +53,17 @@ var esSuffix = map[ArtSlot]string{
 	ArtFanart:    "-fanart",
 }
 
-// ArtFileName returns the file name a rom's artwork must have for firmware c to
-// find it.
+// ArtFileName returns the file name a rom's artwork must have for firmware c.
 //
-// romFileName is the rom's file name including its extension, or empty when the
-// rom has no file list; baseName is the name without it.
+// romFileName includes the extension, or is empty when the rom has no file
+// list; baseName excludes it. MinUI names artwork after the whole rom file
+// ("Sonic.gba.png"); every other firmware drops the extension.
 //
-// Two rules apply. MinUI names artwork after the rom file including its
-// extension ("Sonic.gba.png") where every other firmware drops it
-// ("Sonic.png"); and ES-based firmwares suffix the secondary slots.
-//
-// Callers must not build these names themselves. When ui/download.go and
-// ui/artwork_sync.go each had their own copy they disagreed, so artwork sync
-// probed for a name MinUI never wrote and re-downloaded every rom's art on
-// every run.
+// Build names here rather than at the call site: writers and the
+// missing-artwork check must agree, or art is re-downloaded forever.
 func ArtFileName(c CFW, slot ArtSlot, romFileName, baseName string) string {
 	stem := baseName
 
-	// Only MinUI is special cased here, matching long-standing behaviour.
 	// NextUI shares much of MinUI's layout but has never used this rule.
 	if c == MinUI && romFileName != "" {
 		stem = romFileName

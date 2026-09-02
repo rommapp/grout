@@ -10,7 +10,7 @@ const (
 	// Pkg holds standalone utilities with no grout dependencies beyond other
 	// pkg packages: archives, hashing, images, text.
 	Pkg Layer = "pkg"
-	// Domain holds the types and rules grout works in -- games, platforms,
+	// Domain holds the types and rules grout works in: games, platforms,
 	// settings, sync decisions. No I/O, no device, no network.
 	Domain Layer = "domain"
 	// Platform knows about firmware: where things live on device, what a
@@ -29,11 +29,9 @@ const (
 	Cmd Layer = "cmd"
 )
 
-// allowedImports records, for each layer, the layers it may import.
-//
-// The shape is a staircase: each layer may use everything below it. UI is the
-// exception -- it may reach services and domain types but not infrastructure or
-// the device, so a screen cannot open a database or build a firmware path.
+// allowedImports is a staircase: each layer may use everything below it. UI is
+// the exception, reaching services and domain but not infrastructure or the
+// device, so a screen cannot open a database or build a firmware path.
 var allowedImports = map[Layer]map[Layer]bool{
 	Pkg:      set(Pkg),
 	Domain:   set(Pkg, Domain),
@@ -44,13 +42,10 @@ var allowedImports = map[Layer]map[Layer]bool{
 	Cmd:      set(Pkg, Domain, Platform, Infra, Service, UI, Cmd),
 }
 
-// layerOf maps an import path to its layer. The longest matching prefix wins,
-// so a specific subpackage can differ from its parent.
-//
-// Several packages are classified by where they are going rather than where
-// they are: grout/internal is the settings god-object whose destination is the
-// domain, so its imports of cache and cfw show up as violations. That is
-// intentional -- allow.txt carries them until the split lands.
+// layerRules maps an import path to its layer; the longest matching prefix
+// wins. Some packages are classified by where they are going, not where they
+// are: grout/internal is headed for the domain, so its imports of cache and cfw
+// show up as violations until the split lands.
 var layerRules = []struct {
 	prefix string
 	layer  Layer
@@ -71,8 +66,7 @@ var layerRules = []struct {
 	{"grout/ui", UI},
 	{"grout/app", Cmd},
 
-	// Leaf utilities. These are the pkg/ tree in waiting; they already have no
-	// grout dependencies, so classifying them now costs nothing.
+	// Leaf utilities: the pkg/ tree in waiting.
 	{"grout/internal/environment", Pkg},
 	{"grout/internal/fileutil", Pkg},
 	{"grout/internal/imageutil", Pkg},
@@ -105,21 +99,18 @@ func layerOf(importPath string) (Layer, bool) {
 	return layer, true
 }
 
-// isExempt reports whether a package is outside archcheck's remit. Developer
-// tools are standalone programs that never ship to a device.
+// isExempt excludes developer tools, which never ship to a device.
 func isExempt(importPath string) bool {
 	return strings.HasPrefix(importPath, "grout/tools/")
 }
 
-// toolkitPrefix is the UI toolkit. Importing it links SDL, which is why a
-// package that pulls it in cannot be tested without a display.
+// toolkitPrefix is the UI toolkit. Importing it links SDL, so the package
+// cannot be tested without a display.
 const toolkitPrefix = "github.com/BrandonKowalski/gabagool/v2"
 
-// mayUseToolkit reports whether a layer is allowed to import the UI toolkit.
 func mayUseToolkit(l Layer) bool { return l == UI || l == Cmd }
 
-// mayHoldGlobalState reports whether a layer may declare package-level mutable
-// state. Only the composition root may.
+// mayHoldGlobalState is true only for the composition root.
 func mayHoldGlobalState(l Layer) bool { return l == Cmd }
 
 func set(layers ...Layer) map[Layer]bool {

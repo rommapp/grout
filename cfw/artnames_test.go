@@ -57,7 +57,7 @@ func TestArtFileName(t *testing.T) {
 }
 
 // On an ES-based firmware every art kind shares one directory, so no two slots
-// may produce the same file name -- otherwise one overwrites another.
+// may produce the same file name, or one overwrites another.
 func TestArtFileName_ESSlotsDoNotCollide(t *testing.T) {
 	distinct := []ArtSlot{ArtCover, ArtThumbnail, ArtMarquee, ArtBoxback, ArtFanart}
 

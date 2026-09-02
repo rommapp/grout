@@ -6,18 +6,12 @@ import (
 	"time"
 )
 
-// NewHTTPClient returns an http.Client for talking to host, honouring its
-// InsecureSkipVerify setting.
+// NewHTTPClient returns an http.Client for host, honouring its
+// InsecureSkipVerify setting. Build every client here: artwork, cover art and
+// firmware downloads bypass Client and must not lose that setting.
 //
-// Not every request to a RomM instance goes through Client: artwork, cover art
-// and firmware downloads fetch bytes directly. Those callers used to build a
-// bare http.Client, which silently ignored the host's self-signed certificate
-// setting -- so on a self-signed instance roms downloaded while artwork and
-// BIOS failed. Build clients here instead, so there is one place where that
-// decision is made.
-//
-// A zero timeout falls back to DefaultClientTimeout; a client with no timeout
-// can hang a screen indefinitely on a flaky handheld connection.
+// A zero timeout falls back to DefaultClientTimeout, since a client with no
+// timeout can hang a screen on a flaky connection.
 func NewHTTPClient(host Host, timeout time.Duration) *http.Client {
 	if timeout <= 0 {
 		timeout = DefaultClientTimeout

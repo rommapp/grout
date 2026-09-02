@@ -69,9 +69,8 @@ func (gl *GameList) Parse(b []byte) error {
 	return nil
 }
 
-// root returns the <gameList> element, or nil if this document does not have
-// one. A gamelist file written by another tool may have any root element, so
-// callers must tolerate its absence rather than dereferencing blindly.
+// root returns the <gameList> element, or nil. A file written by another tool
+// may have any root, so callers must tolerate its absence.
 func (gl *GameList) root() *etree.Element {
 	if gl.document == nil {
 		return nil
@@ -79,7 +78,6 @@ func (gl *GameList) root() *etree.Element {
 	return gl.document.SelectElement(GameListElement)
 }
 
-// gameMatcher reports whether a <game> element is the one being looked for.
 type gameMatcher func(*etree.Element) bool
 
 func (gl *GameList) findGame(match gameMatcher) *etree.Element {
@@ -102,14 +100,12 @@ func byName(name string) gameMatcher {
 	}
 }
 
-// byFileName matches an entry on the rom's file name, taken from <path>.
+// byFileName matches an entry on the rom's file name from <path>, the stable
+// identity of a rom entry. <name> is a display string and changes with regions,
+// locale and settings.
 //
-// This is the stable identity of a rom entry. <name> is a display string: it
-// carries region suffixes, is rewritten by nameCleaner, and varies with user
-// settings and locale, so keying on it appends a duplicate entry whenever the
-// displayed name changes. Comparing base names also lets grout adopt entries
-// written by EmulationStation, which stores "./Game.gba" where grout stores an
-// absolute path.
+// Base names are compared so grout adopts entries written by EmulationStation,
+// which stores "./Game.gba" where grout stores an absolute path.
 func byFileName(fileName string) gameMatcher {
 	return func(game *etree.Element) bool {
 		pathElement := game.FindElement(PathElement)
@@ -131,7 +127,6 @@ func (gl *GameList) GetGameElementByName(name string) *etree.Element {
 	return gl.findGame(byName(name))
 }
 
-// GetGameElementByFileName finds a rom entry by its file name on disk.
 func (gl *GameList) GetGameElementByFileName(fileName string) *etree.Element {
 	if fileName == "" {
 		return nil
@@ -173,9 +168,8 @@ func (gl *GameList) AddGameEntry(info map[string]string) *etree.Element {
 	return newGame
 }
 
-// upsert updates the entry matched by match, creating it if absent. It returns
-// the element so callers can set attributes on it — which must happen after
-// the element exists, not before.
+// upsert updates the entry matched by match, creating it if absent. Returns the
+// element so callers can set attributes, which requires it to exist.
 func (gl *GameList) upsert(match gameMatcher, info map[string]string) *etree.Element {
 	game := gl.findGame(match)
 	if game == nil {
@@ -192,15 +186,12 @@ func (gl *GameList) upsert(match gameMatcher, info map[string]string) *etree.Ele
 	return game
 }
 
-// AddOrUpdateEntry upserts an entry keyed by its <name>. This is for entries
-// that are not roms — the Grout launcher shortcut — where the name is a fixed
-// literal rather than a display string. Rom entries must use
-// AddOrUpdateRomEntry, which keys on the file name.
+// AddOrUpdateEntry upserts an entry keyed by <name>, for non-rom entries such
+// as the Grout launcher shortcut. Rom entries must use AddOrUpdateRomEntry.
 func (gl *GameList) AddOrUpdateEntry(name string, info map[string]string) *etree.Element {
 	return gl.upsert(byName(name), info)
 }
 
-// AddOrUpdateRomEntry upserts a rom entry keyed by its file name on disk.
 func (gl *GameList) AddOrUpdateRomEntry(fileName string, info map[string]string) *etree.Element {
 	if fileName == "" {
 		return gl.AddGameEntry(info)

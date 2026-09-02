@@ -1,12 +1,9 @@
 // gen-platform-docs generates the platform mapping tables in docs/platforms/*.md
-// from the platforms.json files the application actually reads.
+// from the platforms.json files the application reads.
 //
-// The generation direction is deliberate. cfw/<name>/data/platforms.json is the
-// source of truth: it is embedded in the binary and decides where roms are
-// written on device. The documentation is a rendering of it. Generating in the
-// other direction -- as the retired tools/gen-platforms did -- meant a typo in a
-// markdown table silently changed runtime behaviour, which is how muOS came to
-// write WonderSwan Color box art into the "Book Reader" catalogue.
+// The direction matters: platforms.json is embedded in the binary and decides
+// where roms are written on device, so the docs are a rendering of it. Generated
+// the other way, a typo in a markdown table silently changes runtime behaviour.
 //
 // Usage:
 //
@@ -33,9 +30,7 @@ import (
 //go:embed platform_names.json
 var platformNamesJSON []byte
 
-// cfwDocs maps a firmware's package directory to its documentation page. Both
-// are named for the firmware, but the doc set is the authority on which
-// firmwares have a mapping page.
+// cfwDocs lists the firmwares with a mapping page.
 var cfwDocs = []string{
 	"allium", "arkos", "batocera", "knulli", "koriki", "minui",
 	"muos", "nextui", "onion", "rocknix", "spruce", "trimui",
@@ -110,8 +105,8 @@ func loadPlatformNames() (map[string]string, error) {
 	return names, nil
 }
 
-// generate rewrites the mapping table in one doc. It reports whether the file's
-// content changed. When dryRun is set nothing is written.
+// generate rewrites the mapping table in one doc, reporting whether it
+// changed. Writes nothing when dryRun is set.
 func generate(cfw string, names map[string]string, dryRun bool) (bool, error) {
 	jsonPath := filepath.Join("cfw", cfw, "data", "platforms.json")
 	docPath := filepath.Join("docs", "platforms", cfw+".md")
@@ -142,8 +137,8 @@ func generate(cfw string, names map[string]string, dryRun bool) (bool, error) {
 		return false, fmt.Errorf("%s: %w", docPath, err)
 	}
 
-	// Reuse the existing header and separator so column widths -- and therefore
-	// the rest of the file -- stay byte-identical.
+	// Reuse the existing header and separator so column widths, and therefore
+	// the rest of the file, stay byte-identical.
 	header, separator := lines[start], lines[start+1]
 	widths, err := columnWidths(separator)
 	if err != nil {
@@ -166,7 +161,7 @@ func generate(cfw string, names map[string]string, dryRun bool) (bool, error) {
 			jsonPath, strings.Join(missing, ", "))
 	}
 
-	// Order by display name, which is how the tables have always read.
+	// Order by display name.
 	sort.Slice(slugs, func(i, j int) bool {
 		ni, nj := names[slugs[i]], names[slugs[j]]
 		if ni != nj {
@@ -203,8 +198,7 @@ func generate(cfw string, names map[string]string, dryRun bool) (bool, error) {
 	return true, nil
 }
 
-// findTable returns the inclusive line range of the mapping table: its header
-// row through its last row.
+// findTable returns the inclusive line range of the mapping table.
 func findTable(lines []string) (start, end int, err error) {
 	start = -1
 	for i, line := range lines {
@@ -228,9 +222,8 @@ func findTable(lines []string) (start, end int, err error) {
 	return start, end, nil
 }
 
-// naturalLess orders display names the way the tables were maintained by hand:
-// runs of digits compare numerically, so "Atari 800" precedes "Atari 2600"
-// rather than sorting between "Atari 7800" and "Atari Jaguar".
+// naturalLess compares digit runs numerically, so "Atari 800" precedes
+// "Atari 2600" rather than sorting after "Atari 7800".
 func naturalLess(a, b string) bool {
 	ai, bi := 0, 0
 	for ai < len(a) && bi < len(b) {
@@ -243,8 +236,7 @@ func naturalLess(a, b string) bool {
 			for bi < len(b) && isDigit(b[bi]) {
 				bi++
 			}
-			// Compare digit runs by value: shorter run is smaller once any
-			// leading zeroes are ignored, otherwise compare digit by digit.
+			// Shorter run is smaller once leading zeroes are ignored.
 			an := strings.TrimLeft(a[aStart:ai], "0")
 			bn := strings.TrimLeft(b[bStart:bi], "0")
 			if len(an) != len(bn) {
@@ -274,7 +266,6 @@ func lower(c byte) byte {
 	return c
 }
 
-// columnWidths reads the three cell widths from a markdown separator row.
 func columnWidths(separator string) ([]int, error) {
 	cells := strings.Split(strings.TrimSpace(separator), "|")
 	if len(cells) < 5 {
@@ -283,10 +274,8 @@ func columnWidths(separator string) ([]int, error) {
 	return []int{len(cells[1]), len(cells[2]), len(cells[3])}, nil
 }
 
-// row renders one table row, padding each cell to its column width. Content
-// longer than its column overflows rather than being truncated, keeping a
-// single trailing space before the closing pipe -- which is how the tables were
-// already written by hand.
+// row renders one table row, padding cells to their column width. Overflowing
+// content keeps a single trailing space before the closing pipe.
 func row(widths []int, cells ...string) string {
 	var b strings.Builder
 	b.WriteString("|")

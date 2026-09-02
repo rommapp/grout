@@ -49,7 +49,7 @@ func gameElements(t *testing.T, gl *GameList) []string {
 
 // A game whose display name differs from its raw name must not be duplicated
 // when written twice. PrepareRomName appends the region, so "Sonic" is stored
-// as "Sonic (USA)" — looking the entry back up by the raw name misses it.
+// as "Sonic (USA)", so looking the entry back up by the raw name misses it.
 func TestAddRomGame_RegionTaggedGameIsNotDuplicated(t *testing.T) {
 	gl := New()
 	e := entry(rom("Sonic the Hedgehog", "Sonic the Hedgehog.gba", "USA"), "/roms/gba")

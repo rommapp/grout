@@ -25,9 +25,7 @@ const (
 	MinUI    CFW = "MINUI"
 )
 
-// All lists every supported firmware. Table-driven tests range over it so that
-// adding one without teaching it a directory or a save path is a test failure
-// rather than an empty string at runtime.
+// All lists every supported firmware. Conformance tests range over it.
 var All = []CFW{
 	NextUI, MuOS, Knulli, Spruce, ROCKNIX, Trimui,
 	Allium, Onion, Koriki, ArkOS, Batocera, MinUI,
@@ -36,11 +34,10 @@ var All = []CFW{
 // ErrUnsupported reports a firmware name grout does not recognise.
 var ErrUnsupported = errors.New("unsupported CFW")
 
-// EnvVar names the environment variable each firmware's launch script sets to
-// tell grout which one it is running on.
+// EnvVar is set by each firmware's launch script.
 const EnvVar = "CFW"
 
-// Supported reports whether c is a firmware grout knows.
+// Supported reports whether c is a known firmware.
 func (c CFW) Supported() bool {
 	for _, known := range All {
 		if c == known {
@@ -50,8 +47,7 @@ func (c CFW) Supported() bool {
 	return false
 }
 
-// Parse returns the firmware named by s, matched without regard to case or
-// surrounding whitespace.
+// Parse returns the firmware named by s, ignoring case and surrounding space.
 func Parse(s string) (CFW, error) {
 	c := CFW(strings.ToUpper(strings.TrimSpace(s)))
 	if !c.Supported() {
@@ -64,22 +60,14 @@ func Parse(s string) (CFW, error) {
 	return c, nil
 }
 
-// Active returns the firmware grout is running on, named by the CFW
-// environment variable. The application resolves this once at startup and
-// reports the error to the user; nothing deeper in the stack should have to
-// decide what to do about a misconfigured device.
+// Active returns the firmware named by the CFW environment variable. Resolved
+// once at startup so nothing deeper has to handle a misconfigured device.
 func Active() (CFW, error) {
 	return Parse(os.Getenv(EnvVar))
 }
 
-// GetCFW returns the active firmware, or "" when the environment names one
-// grout does not support.
-//
-// It used to call log.Fatalf, which killed the process from inside path
-// helpers that run during rendering, and forced tests to set the environment
-// variable purely to avoid being terminated. Callers already treat "" as "this
-// firmware has no such thing", so an unknown firmware now takes that path.
-// Startup validates properly through Active.
+// GetCFW returns the active firmware, or "" if unsupported. Callers treat ""
+// as "no such thing here"; startup validates through Active.
 func GetCFW() CFW {
 	c, err := Active()
 	if err != nil {
@@ -89,11 +77,7 @@ func GetCFW() CFW {
 	return c
 }
 
+// IsBasedOnEmulationStation decides where artwork goes and what it is called.
 func (c CFW) IsBasedOnEmulationStation() bool {
-	switch c {
-	case Knulli, ROCKNIX, ArkOS, Batocera:
-		return true
-	default:
-		return false
-	}
+	return Lookup(c).IsBasedOnEmulationStation()
 }

@@ -7,8 +7,8 @@ import (
 	"testing"
 )
 
-// All is what the conformance tables range over, so a firmware missing from it
-// is a firmware nothing checks.
+// Conformance tables range over All, so a firmware missing from it is a
+// firmware nothing checks.
 func TestAll_ContainsEverySupportedFirmware(t *testing.T) {
 	declared := []CFW{
 		NextUI, MuOS, Knulli, Spruce, ROCKNIX, Trimui,
@@ -98,10 +98,9 @@ func TestActive(t *testing.T) {
 	}
 }
 
-// GetCFW used to call log.Fatalf, so an unset or wrong environment variable
-// terminated the process -- including from path helpers that run while drawing
-// a screen, and from any test that forgot to set it. It now returns the empty
-// firmware, which every switch already handles as "no such thing here".
+// An unset or wrong environment variable must not terminate the process: these
+// helpers run while drawing a screen. GetCFW returns the empty firmware, which
+// every switch handles as "no such thing here".
 func TestGetCFW_UnknownFirmwareDoesNotTerminate(t *testing.T) {
 	t.Setenv(EnvVar, "NOT_A_FIRMWARE")
 	if got := GetCFW(); got != "" {
