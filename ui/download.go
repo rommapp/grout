@@ -409,7 +409,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 
 		if config.DownloadArt && (g.PathCoverLarge != "" || g.PathCoverSmall != "" || g.URLCover != "") {
 			// Prepare download for cover art
-			artDir := config.GetArtDirectory(gamePlatform)
+			artDir := config.ArtDirectory(gamePlatform, cfw.ArtCover)
 			artFileName := cfw.ArtFileName(activeCFW, cfw.ArtCover, romArtFileName(g), g.FsNameNoExt)
 			artLocation := filepath.Join(artDir, artFileName)
 			coverURL := g.GetArtworkURL(config.ArtKind, host)
@@ -423,7 +423,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 			})
 
 			// Prepare download for additional art types if enabled
-			artPreviewDir := config.GetArtPreviewDirectory(gamePlatform)
+			artPreviewDir := config.ArtDirectory(gamePlatform, cfw.ArtScreenshotPreview)
 			if config.DownloadArtScreenshotPreview && artPreviewDir != "" {
 				screenshotPreviewLocation := filepath.Join(artPreviewDir, artFileName)
 				if screenshotURL := g.GetScreenshotURL(host); screenshotURL != "" {
@@ -436,7 +436,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 				}
 			}
 
-			artSplashDir := config.GetArtSplashDirectory(gamePlatform)
+			artSplashDir := config.ArtDirectory(gamePlatform, cfw.ArtThumbnail)
 			if (config.DownloadSplashArt != library.ArtKindNone || config.AdditionalDownloads.Thumbnail != library.ArtKindNone) && artSplashDir != "" {
 				artSplashFileName := cfw.ArtFileName(activeCFW, cfw.ArtThumbnail, romArtFileName(g), g.FsNameNoExt)
 				splashArtLocation := filepath.Join(artSplashDir, artSplashFileName)
@@ -457,7 +457,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 				}
 			}
 
-			artMarqueeDir := config.GetArtMarqueeDirectory(gamePlatform)
+			artMarqueeDir := config.ArtDirectory(gamePlatform, cfw.ArtMarquee)
 			if config.AdditionalDownloads.Marquee != library.ArtKindNone && artMarqueeDir != "" {
 				marqueeArtFileName := cfw.ArtFileName(activeCFW, cfw.ArtMarquee, romArtFileName(g), g.FsNameNoExt)
 				marqueeArtLocation := filepath.Join(artMarqueeDir, marqueeArtFileName)
@@ -479,7 +479,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 				}
 			}
 
-			artVideoDir := config.GetArtVideoDirectory(gamePlatform)
+			artVideoDir := config.ArtDirectory(gamePlatform, cfw.ArtVideo)
 			if config.AdditionalDownloads.Video && artVideoDir != "" {
 				videoLocation := filepath.Join(artVideoDir, g.FsNameNoExt+".mp4")
 				if videoURL := g.GetVideoURL(host); videoURL != "" {
@@ -493,7 +493,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 				}
 			}
 
-			artBezelDir := config.GetArtBezelDirectory(gamePlatform)
+			artBezelDir := config.ArtDirectory(gamePlatform, cfw.ArtBezel)
 			if config.AdditionalDownloads.Bezel && artBezelDir != "" {
 				bezelArtLocation := filepath.Join(artBezelDir, artFileName)
 				if bezelURL := g.GetBezelURL(host); bezelURL != "" {
@@ -507,7 +507,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 				}
 			}
 
-			manualDir := config.GetManualDirectory(gamePlatform)
+			manualDir := config.ArtDirectory(gamePlatform, cfw.ArtManual)
 			if config.AdditionalDownloads.Manual && manualDir != "" {
 				manualLocation := filepath.Join(manualDir, g.FsNameNoExt+".pdf")
 				if manualURL := g.GetManualURL(host); manualURL != "" {
@@ -521,7 +521,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 				}
 			}
 
-			boxbackDir := config.GetBoxbackDirectory(gamePlatform)
+			boxbackDir := config.ArtDirectory(gamePlatform, cfw.ArtBoxback)
 			if config.AdditionalDownloads.BoxBack && boxbackDir != "" {
 				boxbackArtFileName := cfw.ArtFileName(activeCFW, cfw.ArtBoxback, romArtFileName(g), g.FsNameNoExt)
 				boxbackArtLocation := filepath.Join(boxbackDir, boxbackArtFileName)
@@ -536,7 +536,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 				}
 			}
 
-			fanartDir := config.GetFanartDirectory(gamePlatform)
+			fanartDir := config.ArtDirectory(gamePlatform, cfw.ArtFanart)
 			if config.AdditionalDownloads.Fanart && fanartDir != "" {
 				fanartFileName := cfw.ArtFileName(activeCFW, cfw.ArtFanart, romArtFileName(g), g.FsNameNoExt)
 				fanartLocation := filepath.Join(fanartDir, fanartFileName)

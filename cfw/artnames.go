@@ -15,6 +15,10 @@ const (
 	ArtMarquee
 	ArtBoxback
 	ArtFanart
+	// ArtVideo and ArtManual are not images. They take no filename suffix and
+	// are written without image processing.
+	ArtVideo
+	ArtManual
 )
 
 func (s ArtSlot) String() string {
@@ -33,6 +37,10 @@ func (s ArtSlot) String() string {
 		return "boxback"
 	case ArtFanart:
 		return "fanart"
+	case ArtVideo:
+		return "video"
+	case ArtManual:
+		return "manual"
 	default:
 		return "unknown"
 	}

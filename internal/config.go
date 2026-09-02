@@ -366,54 +366,11 @@ func (c Config) GetPlatformRomDirectory(platform romm.Platform) string {
 	return cfw.GetPlatformRomDirectory(rp, effectiveFSSlug)
 }
 
-func (c Config) GetArtDirectory(platform romm.Platform) string {
-	romDir := c.GetPlatformRomDirectory(platform)
-	return cfw.GetArtDirectory(romDir, platform.FSSlug, platform.Name)
-}
-
-func (c Config) GetArtPreviewDirectory(platform romm.Platform) string {
-	romDir := c.GetPlatformRomDirectory(platform)
-	return cfw.GetArtPreviewDirectory(romDir, platform.FSSlug, platform.Name)
-}
-
-func (c Config) GetArtSplashDirectory(platform romm.Platform) string {
-	romDir := c.GetPlatformRomDirectory(platform)
-	return cfw.GetArtSplashDirectory(romDir, platform.FSSlug, platform.Name)
-}
-
-func (c Config) GetArtMarqueeDirectory(platform romm.Platform) string {
-	romDir := c.GetPlatformRomDirectory(platform)
-	return cfw.GetArtMarqueeDirectory(romDir, platform.FSSlug, platform.Name)
-}
-
-func (c Config) GetArtVideoDirectory(platform romm.Platform) string {
-	romDir := c.GetPlatformRomDirectory(platform)
-	return cfw.GetArtVideoDirectory(romDir, platform.FSSlug, platform.Name)
-}
-
-func (c Config) GetArtThumbnailDirectory(platform romm.Platform) string {
-	romDir := c.GetPlatformRomDirectory(platform)
-	return cfw.GetArtThumbnailDirectory(romDir, platform.FSSlug, platform.Name)
-}
-
-func (c Config) GetArtBezelDirectory(platform romm.Platform) string {
-	romDir := c.GetPlatformRomDirectory(platform)
-	return cfw.GetArtBezelDirectory(romDir, platform.FSSlug, platform.Name)
-}
-
-func (c Config) GetManualDirectory(platform romm.Platform) string {
-	romDir := c.GetPlatformRomDirectory(platform)
-	return cfw.GetManualDirectory(romDir, platform.FSSlug, platform.Name)
-}
-
-func (c Config) GetFanartDirectory(platform romm.Platform) string {
-	romDir := c.GetPlatformRomDirectory(platform)
-	return cfw.GetFanartDirectory(romDir, platform.FSSlug, platform.Name)
-}
-
-func (c Config) GetBoxbackDirectory(platform romm.Platform) string {
-	romDir := c.GetPlatformRomDirectory(platform)
-	return cfw.GetBoxbackDirectory(romDir, platform.FSSlug, platform.Name)
+// ArtDirectory returns where this device keeps a given kind of artwork for a
+// platform, or "" when the firmware keeps none. Callers must treat "" as
+// "skip this kind" rather than as an error.
+func (c Config) ArtDirectory(platform romm.Platform, slot cfw.ArtSlot) string {
+	return cfw.ArtDirectory(cfw.GetCFW(), slot, c.GetPlatformRomDirectory(platform), platform.FSSlug, platform.Name)
 }
 
 func (c Config) ShowCollections(host romm.Host) bool {

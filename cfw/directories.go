@@ -112,9 +112,13 @@ func GetPlatformRomDirectory(relativePath, platformFSSlug string) string {
 	return filepath.Join(GetRomDirectory(), rp)
 }
 
-// GetArtDirectory returns the artwork directory for a platform.
-func GetArtDirectory(romDir string, platformFSSlug, platformName string) string {
-	switch GetCFW() {
+// coverDirectory returns where a firmware keeps cover art for a platform.
+//
+// Most firmwares put artwork beside the roms, so they need only the rom
+// directory. muOS and TrimUI keep a separate catalogue keyed by platform
+// instead, which is why this takes both and each firmware uses what it needs.
+func coverDirectory(c CFW, romDir, platformFSSlug, platformName string) string {
+	switch c {
 	case NextUI:
 		return nextui.GetArtDirectory(romDir)
 	case Knulli:
@@ -144,19 +148,70 @@ func GetArtDirectory(romDir string, platformFSSlug, platformName string) string 
 	}
 }
 
-func GetArtPreviewDirectory(romDir string, platformFSSlug, platformName string) string {
-	switch GetCFW() {
-	case MuOS:
-		return muos.GetPreviewDirectory(platformFSSlug, platformName)
+// esSidecarDirectories returns the video, manual and bezel directories for the
+// EmulationStation family, which are the only firmwares that keep them.
+func esSidecarDirectories(c CFW, romDir string) (video, manual, bezel string) {
+	switch c {
+	case ROCKNIX:
+		return rocknix.GetVideoDirectory(romDir), rocknix.GetManualDirectory(romDir), rocknix.GetBezelDirectory(romDir)
+	case ArkOS:
+		return arkos.GetVideoDirectory(romDir), arkos.GetManualDirectory(romDir), arkos.GetBezelDirectory(romDir)
+	case Knulli:
+		return knulli.GetVideoDirectory(romDir), knulli.GetManualDirectory(romDir), knulli.GetBezelDirectory(romDir)
+	case Batocera:
+		return batocera.GetVideoDirectory(romDir), batocera.GetManualDirectory(romDir), batocera.GetBezelDirectory(romDir)
 	default:
-		return ""
+		return "", "", ""
 	}
 }
 
-func GetArtSplashDirectory(romDir string, platformFSSlug, platformName string) string {
-	switch GetCFW() {
-	case MuOS:
-		return muos.GetSplashDirectory(platformFSSlug, platformName)
+// ArtDirectory returns where firmware c keeps a given kind of artwork for a
+// platform, or "" when it keeps none.
+//
+// This replaced nine near-identical functions that each switched over the same
+// firmwares. Four of them were textually the same, one routed Batocera to
+// Knulli's directory, and one had no callers at all -- which is what happens
+// when adding an art kind means copying a switch statement.
+//
+// An empty result means the firmware has nowhere to put this kind. Callers
+// must treat that as "skip", not as an error.
+func ArtDirectory(c CFW, slot ArtSlot, romDir, platformFSSlug, platformName string) string {
+	switch slot {
+	case ArtCover:
+		return coverDirectory(c, romDir, platformFSSlug, platformName)
+
+	case ArtMarquee, ArtBoxback, ArtFanart:
+		// The EmulationStation family keeps these beside the cover and tells
+		// them apart by a filename suffix; see ArtFileName. No other firmware
+		// has anywhere to put them.
+		if !c.IsBasedOnEmulationStation() {
+			return ""
+		}
+		return coverDirectory(c, romDir, platformFSSlug, platformName)
+
+	case ArtVideo:
+		video, _, _ := esSidecarDirectories(c, romDir)
+		return video
+	case ArtManual:
+		_, manual, _ := esSidecarDirectories(c, romDir)
+		return manual
+	case ArtBezel:
+		_, _, bezel := esSidecarDirectories(c, romDir)
+		return bezel
+
+	case ArtScreenshotPreview:
+		if c == MuOS {
+			return muos.GetPreviewDirectory(platformFSSlug, platformName)
+		}
+		return ""
+
+	case ArtThumbnail:
+		// muOS calls this the splash directory.
+		if c == MuOS {
+			return muos.GetSplashDirectory(platformFSSlug, platformName)
+		}
+		return ""
+
 	default:
 		return ""
 	}
@@ -191,109 +246,4 @@ func BaseSavePath() string {
 		return minui.GetBaseSavePath()
 	}
 	return ""
-}
-
-func GetArtMarqueeDirectory(romDir string, platformFSSlug, platformName string) string {
-	switch GetCFW() {
-	case ROCKNIX:
-		return rocknix.GetArtDirectory(romDir)
-	case ArkOS:
-		return arkos.GetArtDirectory(romDir)
-	case Knulli:
-		return knulli.GetArtDirectory(romDir)
-	case Batocera:
-		return batocera.GetArtDirectory(romDir)
-	default:
-		return ""
-	}
-}
-
-func GetArtVideoDirectory(romDir string, platformFSSlug, platformName string) string {
-	switch GetCFW() {
-	case ROCKNIX:
-		return rocknix.GetVideoDirectory(romDir)
-	case ArkOS:
-		return arkos.GetVideoDirectory(romDir)
-	case Knulli:
-		return knulli.GetVideoDirectory(romDir)
-	case Batocera:
-		return batocera.GetVideoDirectory(romDir)
-	default:
-		return ""
-	}
-}
-
-func GetArtThumbnailDirectory(romDir string, platformFSSlug, platformName string) string {
-	switch GetCFW() {
-	case ROCKNIX:
-		return rocknix.GetArtDirectory(romDir)
-	case ArkOS:
-		return arkos.GetArtDirectory(romDir)
-	case Knulli:
-		return knulli.GetArtDirectory(romDir)
-	case Batocera:
-		return knulli.GetArtDirectory(romDir)
-	default:
-		return ""
-	}
-}
-
-func GetArtBezelDirectory(romDir string, platformFSSlug, platformName string) string {
-	switch GetCFW() {
-	case ROCKNIX:
-		return rocknix.GetBezelDirectory(romDir)
-	case ArkOS:
-		return arkos.GetBezelDirectory(romDir)
-	case Knulli:
-		return knulli.GetBezelDirectory(romDir)
-	case Batocera:
-		return batocera.GetBezelDirectory(romDir)
-	default:
-		return ""
-	}
-}
-
-func GetManualDirectory(romDir string, platformFSSlug, platformName string) string {
-	switch GetCFW() {
-	case ROCKNIX:
-		return rocknix.GetManualDirectory(romDir)
-	case ArkOS:
-		return arkos.GetManualDirectory(romDir)
-	case Knulli:
-		return knulli.GetManualDirectory(romDir)
-	case Batocera:
-		return batocera.GetManualDirectory(romDir)
-	default:
-		return ""
-	}
-}
-
-func GetBoxbackDirectory(romDir string, platformFSSlug, platformName string) string {
-	switch GetCFW() {
-	case ROCKNIX:
-		return rocknix.GetArtDirectory(romDir)
-	case ArkOS:
-		return arkos.GetArtDirectory(romDir)
-	case Knulli:
-		return knulli.GetArtDirectory(romDir)
-	case Batocera:
-		return batocera.GetArtDirectory(romDir)
-	default:
-		return ""
-	}
-}
-
-func GetFanartDirectory(romDir string, platformFSSlug, platformName string) string {
-	switch GetCFW() {
-	case ROCKNIX:
-		return rocknix.GetArtDirectory(romDir)
-	case ArkOS:
-		return arkos.GetArtDirectory(romDir)
-	case Knulli:
-		return knulli.GetArtDirectory(romDir)
-	case Batocera:
-		return batocera.GetArtDirectory(romDir)
-	default:
-		return ""
-	}
 }
