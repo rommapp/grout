@@ -70,6 +70,17 @@ type Firmware struct {
 	// directories and the art filename suffixes.
 	emulationStationBased bool
 
+	// inputMapping is the firmware's controller mapping, embedded in its
+	// package. nil for firmwares that use gabagool's default.
+	inputMapping func() ([]byte, error)
+
+	// packaging describes the release archive.
+	packaging Packaging
+
+	// display, when set, reports quirks of the specific device this firmware
+	// is running on.
+	display func() DisplayQuirks
+
 	// keepsRomExtInSaves names saves after the whole rom file rather than
 	// stripping the extension as RetroArch does. Fallback only, when the
 	// convention cannot be read off saves already on the device (issue #245).
@@ -81,6 +92,67 @@ func (f *Firmware) IsBasedOnEmulationStation() bool {
 }
 
 func (f *Firmware) KeepsRomExtInSaves() bool { return f != nil && f.keepsRomExtInSaves }
+
+// DisplayQuirks describes handling a particular device needs. Rotation is in
+// degrees rather than a toolkit enum so this package stays free of the UI.
+type DisplayQuirks struct {
+	// RotationDegrees the framebuffer needs, clockwise.
+	RotationDegrees int
+	// DisableKeyboardAndJoystick suppresses input sources that produce
+	// spurious events on some devices.
+	DisableKeyboardAndJoystick bool
+}
+
+// Display reports quirks of the device this firmware is running on.
+func (f *Firmware) Display() DisplayQuirks {
+	if f == nil || f.display == nil {
+		return DisplayQuirks{}
+	}
+	return f.display()
+}
+
+// Packaging describes a firmware's release archive. The asset names must match
+// what .github/workflows/release.yml publishes, or in-app update silently does
+// nothing.
+type Packaging struct {
+	// Asset names the release zip, or is empty when the firmware ships one per
+	// architecture in ArchAssets.
+	Asset string
+	// ArchAssets names the release zip per GOARCH.
+	ArchAssets map[string]string
+	// LaunchScript is the path inside the archive of the script the frontend
+	// runs.
+	LaunchScript string
+	// InstallDepth is how many directories up from the binary the archive's
+	// extraction root sits.
+	InstallDepth int
+}
+
+// AssetName returns the release zip for goarch, or "" if this firmware has no
+// build for it.
+func (p Packaging) AssetName(goarch string) string {
+	if p.ArchAssets != nil {
+		return p.ArchAssets[goarch]
+	}
+	return p.Asset
+}
+
+// Packaging describes this firmware's release archive.
+func (f *Firmware) Packaging() Packaging {
+	if f == nil {
+		return Packaging{}
+	}
+	return f.packaging
+}
+
+// InputMapping returns the firmware's embedded controller mapping. A nil slice
+// means it uses the toolkit default.
+func (f *Firmware) InputMapping() ([]byte, error) {
+	if f == nil || f.inputMapping == nil {
+		return nil, nil
+	}
+	return f.inputMapping()
+}
 
 // GamelistFormat is how a firmware expects game metadata to be recorded.
 type GamelistFormat int
@@ -153,6 +225,8 @@ var firmwares = map[CFW]*Firmware{
 		platforms:        muos.Platforms,
 		saveDirectories:  muos.SaveDirectories,
 		gamelist:         GamelistMuOSText,
+		inputMapping:     muos.GetInputMappingBytes,
+		packaging:        Packaging{Asset: "Grout.muxapp", LaunchScript: "Grout/mux_launch.sh", InstallDepth: 2},
 	},
 	NextUI: {
 		id:                 NextUI,
@@ -165,6 +239,8 @@ var firmwares = map[CFW]*Firmware{
 		platforms:          nextui.Platforms,
 		saveDirectories:    nextui.SaveDirectories,
 		keepsRomExtInSaves: true,
+		packaging:          Packaging{Asset: "Grout.pak.zip", LaunchScript: "launch.sh", InstallDepth: 1},
+		display:            nextuiDisplay,
 	},
 	MinUI: {
 		id:                 MinUI,
@@ -177,6 +253,9 @@ var firmwares = map[CFW]*Firmware{
 		platforms:          minui.Platforms,
 		saveDirectories:    minui.SaveDirectories,
 		keepsRomExtInSaves: true,
+		inputMapping:       minui.GetInputMappingBytes,
+		packaging:          Packaging{Asset: "Grout-MinUI.zip", LaunchScript: "Grout.pak/launch.sh", InstallDepth: 2},
+		display:            minuiDisplay,
 	},
 	Trimui: {
 		id:              Trimui,
@@ -186,6 +265,7 @@ var firmwares = map[CFW]*Firmware{
 		coverDirectory:  inCatalogue(trimui.GetArtDirectory),
 		platforms:       trimui.Platforms,
 		saveDirectories: trimui.SaveDirectories,
+		packaging:       Packaging{Asset: "Grout-Trimui.zip", LaunchScript: "Grout/launch.sh", InstallDepth: 3},
 	},
 
 	// The Miyoo family: art beside the roms, saves in their own tree.
@@ -198,6 +278,9 @@ var firmwares = map[CFW]*Firmware{
 		platforms:       spruce.Platforms,
 		saveDirectories: spruce.SaveDirectories,
 		gamelist:        GamelistMiyoo,
+		inputMapping:    spruce.GetInputMappingBytes,
+		packaging:       Packaging{Asset: "Grout.spruce.zip", LaunchScript: "Grout/launch.sh", InstallDepth: 3},
+		display:         spruceDisplay,
 	},
 	Allium: {
 		id:              Allium,
@@ -208,6 +291,8 @@ var firmwares = map[CFW]*Firmware{
 		platforms:       allium.Platforms,
 		saveDirectories: allium.SaveDirectories,
 		gamelist:        GamelistMiyoo,
+		inputMapping:    allium.GetInputMappingBytes,
+		packaging:       Packaging{Asset: "Grout-Allium.zip", LaunchScript: "Grout.pak/launch.sh", InstallDepth: 3},
 	},
 	Onion: {
 		id:              Onion,
@@ -218,6 +303,8 @@ var firmwares = map[CFW]*Firmware{
 		platforms:       onion.Platforms,
 		saveDirectories: onion.SaveDirectories,
 		gamelist:        GamelistMiyoo,
+		inputMapping:    onion.GetInputMappingBytes,
+		packaging:       Packaging{Asset: "Grout-Onion.zip", LaunchScript: "Grout/launch.sh", InstallDepth: 3},
 	},
 	Koriki: {
 		id:              Koriki,
@@ -228,6 +315,8 @@ var firmwares = map[CFW]*Firmware{
 		platforms:       koriki.Platforms,
 		saveDirectories: koriki.SaveDirectories,
 		gamelist:        GamelistMiyoo,
+		inputMapping:    koriki.GetInputMappingBytes,
+		packaging:       Packaging{Asset: "Grout-Koriki.zip", LaunchScript: "Grout/launch.sh", InstallDepth: 3},
 	},
 
 	// The EmulationStation family: separate directories per art kind, and a
@@ -245,6 +334,7 @@ var firmwares = map[CFW]*Firmware{
 		gamelist:              GamelistEmulationStation,
 		groutLauncherPath:     "./Grout/Grout.sh",
 		emulationStationBased: true,
+		packaging:             Packaging{Asset: "Grout-Knulli.zip", LaunchScript: "Grout/Grout.sh", InstallDepth: 2},
 	},
 	ROCKNIX: {
 		id:                    ROCKNIX,
@@ -259,6 +349,8 @@ var firmwares = map[CFW]*Firmware{
 		gamelist:              GamelistEmulationStation,
 		groutLauncherPath:     "./Grout.sh",
 		emulationStationBased: true,
+		inputMapping:          rocknix.GetInputMappingBytes,
+		packaging:             Packaging{Asset: "Grout-ROCKNIX.zip", LaunchScript: "Grout.sh", InstallDepth: 2},
 	},
 	ArkOS: {
 		id:                    ArkOS,
@@ -273,6 +365,8 @@ var firmwares = map[CFW]*Firmware{
 		gamelist:              GamelistEmulationStation,
 		groutLauncherPath:     "./Grout.sh",
 		emulationStationBased: true,
+		inputMapping:          arkos.GetInputMappingBytes,
+		packaging:             Packaging{Asset: "Grout-ArkOS.zip", LaunchScript: "Grout.sh", InstallDepth: 2},
 	},
 	Batocera: {
 		id:                    Batocera,
@@ -287,6 +381,13 @@ var firmwares = map[CFW]*Firmware{
 		gamelist:              GamelistEmulationStation,
 		groutLauncherPath:     "./Grout/Grout.sh",
 		emulationStationBased: true,
+		packaging: Packaging{ArchAssets: map[string]string{
+			"arm64": "Grout-Batocera-arm64.zip",
+			"amd64": "Grout-Batocera-amd64.zip",
+			"386":   "Grout-Batocera-x86.zip",
+		},
+			LaunchScript: "Grout.sh",
+			InstallDepth: 2},
 	},
 }
 
@@ -364,6 +465,10 @@ func (f *Firmware) BIOSFilePaths(relativePath, platformFSSlug string) []string {
 	return []string{joinPath(f.BIOSDirectory(), relativePath)}
 }
 
+// UsesTaggedRomFolders reports whether this firmware allows a tag in the folder
+// name, as in "Game Boy Advance (GBA)", and matches platforms on the tag.
+func (f *Firmware) UsesTaggedRomFolders() bool { return f != nil && f.romFolderBase != nil }
+
 // RomFolderBase strips folder decorations before matching; most firmwares use
 // the name as-is.
 func (f *Firmware) RomFolderBase(path string, tagParser func(string) string) string {
@@ -429,4 +534,30 @@ func (f *Firmware) ArtDirectory(slot ArtSlot, romDir, platformFSSlug, platformNa
 	default:
 		return ""
 	}
+}
+
+// The A30 reports a portrait framebuffer and needs rotating for landscape.
+func spruceDisplay() DisplayQuirks {
+	if spruce.DetectDevice() == spruce.DeviceA30 {
+		return DisplayQuirks{RotationDegrees: 270}
+	}
+	return DisplayQuirks{}
+}
+
+func minuiDisplay() DisplayQuirks {
+	switch minui.DetectDevice() {
+	case minui.DeviceZero28:
+		return DisplayQuirks{RotationDegrees: 90}
+	case minui.DeviceMiyooFlip:
+		return DisplayQuirks{DisableKeyboardAndJoystick: true}
+	default:
+		return DisplayQuirks{}
+	}
+}
+
+func nextuiDisplay() DisplayQuirks {
+	if nextui.DetectDevice() == nextui.DeviceMiyooFlip {
+		return DisplayQuirks{DisableKeyboardAndJoystick: true}
+	}
+	return DisplayQuirks{}
 }

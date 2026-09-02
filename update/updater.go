@@ -30,43 +30,10 @@ type Info struct {
 	UpdateAvailable bool
 }
 
-// GetDistributionAssetName returns the distribution zip asset name for a given CFW and architecture.
+// GetDistributionAssetName returns the release zip for a CFW on this
+// architecture, or "" when there is no build for it.
 func GetDistributionAssetName(c cfw.CFW) string {
-	switch c {
-	case cfw.NextUI:
-		return "Grout.pak.zip"
-	case cfw.MuOS:
-		return "Grout.muxapp"
-	case cfw.Knulli:
-		return "Grout-Knulli.zip"
-	case cfw.Spruce:
-		return "Grout.spruce.zip"
-	case cfw.ROCKNIX:
-		return "Grout-ROCKNIX.zip"
-	case cfw.Trimui:
-		return "Grout-Trimui.zip"
-	case cfw.Allium:
-		return "Grout-Allium.zip"
-	case cfw.Onion:
-		return "Grout-Onion.zip"
-	case cfw.Koriki:
-		return "Grout-Koriki.zip"
-	case cfw.MinUI:
-		return "Grout-MinUI.zip"
-	case cfw.Batocera:
-		switch runtime.GOARCH {
-		case "arm64":
-			return "Grout-Batocera-arm64.zip"
-		case "amd64":
-			return "Grout-Batocera-amd64.zip"
-		case "386":
-			return "Grout-Batocera-x86.zip"
-		default:
-			return ""
-		}
-	default:
-		return ""
-	}
+	return cfw.Lookup(c).Packaging().AssetName(runtime.GOARCH)
 }
 
 // getInstallRoot returns the top-level install directory where the
@@ -81,13 +48,9 @@ func getInstallRoot(c cfw.CFW) (string, error) {
 		return "", fmt.Errorf("failed to resolve executable path: %w", err)
 	}
 
-	// Number of directory levels up from the binary to the zip extraction root.
-	levels := 2
-	switch c {
-	case cfw.NextUI:
-		levels = 1 // zip has no wrapper dir
-	case cfw.Spruce, cfw.Allium, cfw.Onion, cfw.Trimui, cfw.Koriki:
-		levels = 3 // binary is nested: e.g. Grout.pak/grout/grout
+	levels := cfw.Lookup(c).Packaging().InstallDepth
+	if levels < 1 {
+		return "", fmt.Errorf("no packaging layout known for %s", c)
 	}
 
 	root := execPath
@@ -234,32 +197,7 @@ func PerformUpdate(c cfw.CFW, downloadURL string, expectedSize int64, expectedSH
 }
 
 func getLaunchScriptPath(c cfw.CFW) string {
-	switch c {
-	case cfw.NextUI:
-		return "launch.sh"
-	case cfw.MuOS:
-		return "Grout/mux_launch.sh"
-	case cfw.Knulli:
-		return "Grout/Grout.sh"
-	case cfw.Spruce:
-		return "Grout/launch.sh"
-	case cfw.ROCKNIX:
-		return "Grout.sh"
-	case cfw.Trimui:
-		return "Grout/launch.sh"
-	case cfw.Allium:
-		return "Grout.pak/launch.sh"
-	case cfw.Onion:
-		return "Grout/launch.sh"
-	case cfw.Koriki:
-		return "Grout/launch.sh"
-	case cfw.MinUI:
-		return "Grout.pak/launch.sh"
-	case cfw.Batocera:
-		return "Grout.sh"
-	default:
-		return ""
-	}
+	return cfw.Lookup(c).Packaging().LaunchScript
 }
 
 func extractZip(zipPath, destDir string) error {

@@ -532,7 +532,7 @@ func (s *PlatformMappingScreen) buildPlatformOptions(
 
 		if !dirExists {
 			displayName := cfwDir
-			if input.CFW == cfw.NextUI || input.CFW == cfw.MinUI {
+			if cfw.Lookup(input.CFW).UsesTaggedRomFolders() {
 				displayName = stringutil.ParseTag(cfwDir)
 			}
 			options = append(options, gaba.Option{
@@ -553,7 +553,7 @@ func (s *PlatformMappingScreen) buildPlatformOptions(
 
 		if s.isValidDirectoryForPlatform(dirName, input.CFW, cfwDirectories) {
 			displayName := dirName
-			if input.CFW == cfw.NextUI || input.CFW == cfw.MinUI {
+			if cfw.Lookup(input.CFW).UsesTaggedRomFolders() {
 				displayName = stringutil.ParseTag(dirName)
 			}
 
@@ -615,12 +615,10 @@ func (s *PlatformMappingScreen) directoryMatchesPlatform(
 	cfwFSSlug := cfw.RomMFSSlugToCFW(platform.FSSlug)
 	romFolderBase := cfw.RomFolderBase(dirName, stringutil.ParseTag)
 
-	switch c {
-	case cfw.NextUI, cfw.MinUI:
+	if cfw.Lookup(c).UsesTaggedRomFolders() {
 		return stringutil.ParseTag(cfwFSSlug) == romFolderBase
-	default:
-		return cfwFSSlug == romFolderBase
 	}
+	return cfwFSSlug == romFolderBase
 }
 
 func (s *PlatformMappingScreen) getCFWDirectoriesForPlatform(fsSlug string, c cfw.CFW, platformsBinding map[string]string) []string {
@@ -645,7 +643,7 @@ func (s *PlatformMappingScreen) getCFWDirectoriesForPlatform(fsSlug string, c cf
 }
 
 func (s *PlatformMappingScreen) directoriesMatch(dir1, dir2 string, c cfw.CFW) bool {
-	if c == cfw.NextUI || c == cfw.MinUI {
+	if cfw.Lookup(c).UsesTaggedRomFolders() {
 		return stringutil.ParseTag(dir1) == stringutil.ParseTag(dir2)
 	}
 	return dir1 == dir2

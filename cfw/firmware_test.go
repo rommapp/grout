@@ -1,7 +1,10 @@
 package cfw
 
 import (
+	"os"
+	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -206,6 +209,117 @@ func TestFirmwares_CatalogueFirmwaresIgnoreTheRomDirectory(t *testing.T) {
 		b := f.ArtDirectory(ArtCover, "/somewhere/else", "gba", "Game Boy Advance")
 		if a == b {
 			t.Errorf("%s art directory ignored the rom directory", c)
+		}
+	}
+}
+
+// Every firmware ships a release archive, and its asset name must match what
+// the release workflow publishes. ArkOS built and published Grout-ArkOS.zip
+// while the updater returned "" for it, so in-app update silently did nothing.
+func TestFirmwares_HavePackaging(t *testing.T) {
+	for _, c := range All {
+		p := Lookup(c).Packaging()
+
+		if p.Asset == "" && len(p.ArchAssets) == 0 {
+			t.Errorf("%s has no release asset name", c)
+		}
+		if p.LaunchScript == "" {
+			t.Errorf("%s has no launch script path", c)
+		}
+		if p.InstallDepth < 1 {
+			t.Errorf("%s has install depth %d; it must be at least 1", c, p.InstallDepth)
+		}
+	}
+}
+
+// Every architecture grout builds for must resolve to an asset.
+func TestPackaging_AssetNamePerArch(t *testing.T) {
+	for _, c := range All {
+		p := Lookup(c).Packaging()
+		if p.ArchAssets == nil {
+			// One asset for every architecture.
+			if got := p.AssetName("arm64"); got != p.Asset {
+				t.Errorf("%s: AssetName = %q, want %q", c, got, p.Asset)
+			}
+			continue
+		}
+		for _, arch := range []string{"arm64", "amd64", "386"} {
+			if p.AssetName(arch) == "" {
+				t.Errorf("%s has no asset for GOARCH %s", c, arch)
+			}
+		}
+	}
+}
+
+// Two firmwares sharing an asset name would have one overwrite the other's
+// release.
+func TestFirmwares_AssetNamesAreUnique(t *testing.T) {
+	seen := map[string]CFW{}
+	for _, c := range All {
+		p := Lookup(c).Packaging()
+		names := []string{p.Asset}
+		for _, n := range p.ArchAssets {
+			names = append(names, n)
+		}
+		for _, name := range names {
+			if name == "" {
+				continue
+			}
+			if other, clash := seen[name]; clash {
+				t.Errorf("%s and %s both publish %q", other, c, name)
+			}
+			seen[name] = c
+		}
+	}
+}
+
+// Only the firmwares that allow a tag in the folder name resolve one.
+func TestFirmwares_TaggedRomFoldersMatchesRomFolderBase(t *testing.T) {
+	tagged := []CFW{NextUI, MinUI}
+	for _, c := range All {
+		want := slices.Contains(tagged, c)
+		if got := Lookup(c).UsesTaggedRomFolders(); got != want {
+			t.Errorf("%s: UsesTaggedRomFolders = %v, want %v", c, got, want)
+		}
+	}
+}
+
+// A rotation the toolkit cannot express would be silently ignored by app.
+func TestFirmwares_DisplayRotationIsQuarterTurns(t *testing.T) {
+	setupDevice(t)
+
+	for _, c := range All {
+		switch d := Lookup(c).Display(); d.RotationDegrees {
+		case 0, 90, 180, 270:
+		default:
+			t.Errorf("%s reports rotation %d; only quarter turns are supported", c, d.RotationDegrees)
+		}
+	}
+}
+
+// The registry's asset names are only useful if they match what the release
+// workflow actually publishes. Nothing else connects the two, and a mismatch
+// makes in-app update do nothing rather than fail.
+func TestFirmwares_AssetNamesMatchReleaseWorkflow(t *testing.T) {
+	workflow, err := os.ReadFile(filepath.Join("..", ".github", "workflows", "release.yml"))
+	if err != nil {
+		t.Skipf("release workflow not readable: %v", err)
+	}
+	published := string(workflow)
+
+	for _, c := range All {
+		p := Lookup(c).Packaging()
+		names := []string{p.Asset}
+		for _, n := range p.ArchAssets {
+			names = append(names, n)
+		}
+		for _, name := range names {
+			if name == "" {
+				continue
+			}
+			if !strings.Contains(published, name) {
+				t.Errorf("%s publishes %q, which release.yml never produces", c, name)
+			}
 		}
 	}
 }

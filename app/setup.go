@@ -4,15 +4,6 @@ import (
 	"errors"
 	"grout/cache"
 	"grout/cfw"
-	"grout/cfw/allium"
-	"grout/cfw/arkos"
-	"grout/cfw/koriki"
-	"grout/cfw/minui"
-	"grout/cfw/muos"
-	"grout/cfw/nextui"
-	"grout/cfw/onion"
-	"grout/cfw/rocknix"
-	"grout/cfw/spruce"
 	"grout/internal"
 	"grout/internal/environment"
 	"grout/internal/fileutil"
@@ -85,31 +76,13 @@ func setupInputMapping(currentCFW cfw.CFW) {
 		return
 	}
 
-	var mappingBytes []byte
-	var mappingErr error
-	switch currentCFW {
-	case cfw.MuOS:
-		mappingBytes, mappingErr = muos.GetInputMappingBytes()
-	case cfw.Allium:
-		mappingBytes, mappingErr = allium.GetInputMappingBytes()
-	case cfw.Onion:
-		mappingBytes, mappingErr = onion.GetInputMappingBytes()
-	case cfw.Koriki:
-		mappingBytes, mappingErr = koriki.GetInputMappingBytes()
-	case cfw.MinUI:
-		mappingBytes, mappingErr = minui.GetInputMappingBytes()
-	case cfw.Spruce:
-		mappingBytes, mappingErr = spruce.GetInputMappingBytes()
-	case cfw.ROCKNIX:
-		mappingBytes, mappingErr = rocknix.GetInputMappingBytes()
-	case cfw.ArkOS:
-		mappingBytes, mappingErr = arkos.GetInputMappingBytes()
+	mappingBytes, err := cfw.Lookup(currentCFW).InputMapping()
+	if err != nil {
+		gaba.GetLogger().Error("Unable to read input mapping file", "error", err)
+		return
 	}
-
-	if mappingBytes != nil && mappingErr == nil {
+	if mappingBytes != nil {
 		gaba.SetInputMappingBytes(mappingBytes)
-	} else if mappingErr != nil {
-		gaba.GetLogger().Error("Unable to read input mapping file", "error", mappingErr)
 	}
 }
 
@@ -124,20 +97,16 @@ func initFramework(currentCFW cfw.CFW) {
 	if preConfig, err := internal.LoadConfig(); err == nil {
 		gaba.SetFlipFaceButtons(preConfig.SwapFaceButtons)
 	}
-	if currentCFW == cfw.Spruce && spruce.DetectDevice() == spruce.DeviceA30 {
+	display := cfw.Lookup(currentCFW).Display()
+	switch display.RotationDegrees {
+	case 90:
+		gabaOptions.DisplayOrientation = gaba.OrientationRotate90
+	case 180:
+		gabaOptions.DisplayOrientation = gaba.OrientationRotate180
+	case 270:
 		gabaOptions.DisplayOrientation = gaba.OrientationRotate270
 	}
-
-	var minuiDevice minui.Device
-	if currentCFW == cfw.MinUI {
-		minuiDevice = minui.DetectDevice()
-		if minuiDevice == minui.DeviceZero28 {
-			gabaOptions.DisplayOrientation = gaba.OrientationRotate90
-		}
-	}
-
-	if (currentCFW == cfw.MinUI && minuiDevice == minui.DeviceMiyooFlip) ||
-		(currentCFW == cfw.NextUI && nextui.DetectDevice() == nextui.DeviceMiyooFlip) {
+	if display.DisableKeyboardAndJoystick {
 		gabaOptions.DisabledInputSources = gaba.DisabledInputSources{
 			Keyboard: true,
 			Joystick: true,
