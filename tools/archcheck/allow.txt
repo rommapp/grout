@@ -1,0 +1,41 @@
+# Known layering violations, tolerated until the refactor removes them.
+#
+# archcheck fails when a violation appears that is not listed here, and also
+# when an entry here no longer applies -- so this file can only shrink, and a
+# fix cannot silently leave dead weight behind.
+#
+# Regenerate with: go run ./tools/archcheck -update
+# Do not add entries by hand without a reason; each line is a known defect.
+
+# An import that goes against the layer matrix in layers.go.
+layer grout/internal -> grout/cache
+layer grout/internal -> grout/cfw
+layer grout/internal -> grout/romm
+layer grout/ui -> grout/cache
+layer grout/ui -> grout/cfw
+layer grout/ui -> grout/cfw/muos
+layer grout/ui -> grout/internal/gamelist
+layer grout/ui -> grout/romm
+
+# Packages outside ui and cmd that import the gabagool UI toolkit,
+# which is why running their tests needs a display.
+toolkit grout/cache
+toolkit grout/cfw
+toolkit grout/cfw/minui
+toolkit grout/cfw/muos
+toolkit grout/cfw/nextui
+toolkit grout/cfw/spruce
+toolkit grout/internal
+toolkit grout/internal/gamelist
+toolkit grout/internal/imageutil
+toolkit grout/resources
+toolkit grout/romm
+toolkit grout/sync
+toolkit grout/update
+
+# Package-level mutable state outside cmd.
+global grout/cache.cacheManager
+global grout/cache.cacheManagerErr
+global grout/cfw/minui.cachedBasePath
+global grout/internal.kidModeEnabled
+global grout/ui.defaultStatusBar

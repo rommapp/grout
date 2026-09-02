@@ -13,11 +13,11 @@ import (
 const sfoMagic = "\x00PSF"
 
 type sfoHeader struct {
-	Magic          [4]byte
-	Version        uint32
-	KeyTableOffset uint32
+	Magic           [4]byte
+	Version         uint32
+	KeyTableOffset  uint32
 	DataTableOffset uint32
-	NumEntries     uint32
+	NumEntries      uint32
 }
 
 type sfoIndexEntry struct {
@@ -29,7 +29,7 @@ type sfoIndexEntry struct {
 }
 
 const (
-	sfoFormatUTF8 = 0x0204
+	sfoFormatUTF8  = 0x0204
 	sfoFormatInt32 = 0x0404
 )
 

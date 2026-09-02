@@ -18,6 +18,7 @@ app/app
 es_restart_request
 /save-sync-preview
 /gen-platform-docs
+/archcheck
 
 # Local config
 .env

@@ -48,6 +48,8 @@ The codebase is laid out fairly well. It attempts to keep everything grouped by 
 - `cache` contains the logic for the SQLite database that powers the local cache
 - `cfw` contains all the logic for adapting Grout to the various CFWs that are supported
 - `docs` for the user guide and other repo housekeeping, including this document!
+- `domain` holds the types grout works in once data has left the RomM client. These have no I/O and no
+  device knowledge, so identity and display can be kept apart -- see `domain/library`.
 - `internal` the college educated utils package. App-wide / stateless utilities live here
 - `resources` the splash screen image and localization files live here, along with the go file that embeds them
 - `romm` a client library for the RomM API.
@@ -195,6 +197,50 @@ This runs `go fmt`, `go vet`, and `staticcheck` across the codebase.
 
 Requires [staticcheck](https://staticcheck.dev/) to be installed (
 `go install honnef.co/go/tools/cmd/staticcheck@latest`).
+
+### Package Layering
+
+```shell
+# Check that imports go in the right direction
+task code:archcheck
+```
+
+Grout is being reorganised into layers, and `archcheck` is what keeps that
+direction honest. Go's compiler rejects an import *cycle* but says nothing
+about *direction*, so nothing otherwise stops a device package importing the
+HTTP client -- which is how the current shape came about.
+
+The layers, each of which may only import the ones below it:
+
+| Layer      | What lives there                                    |
+|------------|-----------------------------------------------------|
+| `pkg`      | standalone utilities with no grout dependencies      |
+| `domain`   | types and rules; no I/O, no device, no network       |
+| `platform` | firmware knowledge: paths, gamelists, save layouts   |
+| `infra`    | the RomM API, the SQLite store, the settings file    |
+| `service`  | orchestration of a use case                          |
+| `ui`       | screens; may call services, not infrastructure       |
+| `cmd`      | the composition root, and the only place with state  |
+
+Two extra rules: only `ui` and `cmd` may import the gabagool UI toolkit, and
+only `cmd` may hold package-level mutable state.
+
+The codebase does not satisfy this yet. Known violations are listed in
+`tools/archcheck/allow.txt`, and the check fails both when a **new** violation
+appears and when a listed one has been **fixed but left in the file** -- so the
+list can only shrink.
+
+If `archcheck` fails on your change:
+
+- Fixing the import is almost always right. The error names the offending
+  packages and the files that import them.
+- If the violation is a deliberate intermediate step, add its line to
+  `allow.txt` with a note in your PR explaining why.
+- If it says an entry is no longer present, you fixed something. Delete that
+  line from `allow.txt`.
+
+Regenerate the whole list after a large migration with `task
+code:archcheck-update`, but read the diff -- the file should get shorter.
 
 ### Media Conversion
 

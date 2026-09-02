@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # go.work points at a sibling gabagool checkout that only exists on a
+  # developer's machine. CI builds against the pinned module version.
+  GOWORK: "off"
+
+jobs:
+  # Structure checks resolve the import graph without compiling anything, so
+  # they need no SDL toolchain and report in seconds. Kept separate from the
+  # test job for exactly that reason.
+  structure:
+    name: Structure
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Formatting
+        run: |
+          unformatted=$(gofmt -l . | grep -v '^vendored/' | grep -v '^site/' || true)
+          if [ -n "$unformatted" ]; then
+            echo "These files are not gofmt-formatted:"
+            echo "$unformatted"
+            echo
+            echo "Run: gofmt -w ."
+            exit 1
+          fi
+
+      - name: Package layering
+        run: go run ./tools/archcheck -v
+
+      - name: Platform docs are current
+        run: go run ./tools/gen-platform-docs -check
+
+  test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # grout links SDL through the gabagool UI toolkit, and enough non-UI
+      # packages still import it that the whole test suite needs these present.
+      # The archcheck toolkit rule exists to shrink that surface over time.
+      - name: Install SDL2
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libsdl2-dev libsdl2-ttf-dev libsdl2-gfx-dev libsdl2-image-dev
+
+      - name: Build
+        run: go build ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./... -race -cover
+
+  # A refactor that compiles on amd64 can still break a device target, and
+  # every device grout runs on is arm.
+  #
+  # The package list is short because it has to be: today only domain/library
+  # builds without SDL, since everything else reaches the UI toolkit somewhere
+  # in its import graph. That set is exactly the inverse of the toolkit
+  # entries in tools/archcheck/allow.txt, so this list grows on its own as
+  # those are removed. Add packages here as they become cgo-free.
+  cross-compile:
+    name: Cross-compile (arm64)
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "0"
+      GOOS: linux
+      GOARCH: arm64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Vet arm64 packages
+        run: go vet ./domain/... ./tools/archcheck ./tools/gen-platform-docs

@@ -10,6 +10,18 @@ tasks:
       - staticcheck ./...
     silent: true
 
+  archcheck:
+    desc: Check package layering (imports, UI toolkit, package-level state)
+    cmds:
+      - go run ./tools/archcheck -v
+    silent: true
+
+  archcheck-update:
+    desc: Rewrite the archcheck allowlist from the current tree
+    cmds:
+      - go run ./tools/archcheck -update
+    silent: true
+
   gen-platform-docs:
     desc: Regenerate docs/platforms/*.md from the platforms.json files the app reads
     cmds:
