@@ -2,14 +2,13 @@ package gamelist
 
 import (
 	"fmt"
-	"grout/internal/fileutil"
-	"grout/internal/stringutil"
-	"grout/romm"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
+
+	"grout/domain/library"
+	"grout/internal/fileutil"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
@@ -19,135 +18,98 @@ type GameListEntry struct {
 	Path string
 }
 
-type artLocation struct {
-	ImagePath     string
-	MarqueePath   string
-	VideoPath     string
-	BezelPath     string
-	ManualPath    string
-	BoxBackPath   string
-	FanartPath    string
-	ThumbnailPath string
-}
-
+// RomGameEntry is one game to write into a gamelist.
+//
+// It carries library.Game rather than the RomM wire type so that this package
+// performs no text transformation of its own: the display name arrives already
+// rendered, and identity is the game's file name. When AddRomGame derived the
+// name itself, the written <name> and the key used to find the entry again
+// disagreed for every region-tagged game.
 type RomGameEntry struct {
-	Game         *romm.Rom
-	ArtLocation  artLocation
-	GamePath     string
+	Game         library.Game
+	Platform     library.Platform
 	RomDirectory string
-	Platform     *romm.Platform
 }
 
 // FileName is the stable identity of this entry: the rom's file name on disk.
-//
-// It is deliberately not derived from Game.Name. That is a display string —
-// PrepareRomName folds in the region and rewrites punctuation, and it changes
-// with user settings — so using it as a key appends a duplicate entry whenever
-// the displayed name changes.
 func (e RomGameEntry) FileName() string {
-	if e.Game != nil && e.Game.FsName != "" {
-		return e.Game.FsName
+	if e.Game.FileName != "" {
+		return e.Game.FileName
 	}
-	if e.GamePath == "" {
+	if e.Game.Path == "" {
 		return ""
 	}
-	return filepath.Base(e.GamePath)
+	return filepath.Base(e.Game.Path)
 }
 
 func (gl *GameList) AddRomGame(entry RomGameEntry) {
-	gameMetadata := make(map[string]string)
-	gameMetadata[NameElement] = stringutil.PrepareRomName(entry.Game.Name, entry.Game.Regions)
-	gameMetadata[DescElement] = entry.Game.Summary
-	gameMetadata[MD5Element] = entry.Game.Md5Hash
-	if entry.Game.Metadatum.AverageRating != 0 {
-		gameMetadata[RatingElement] = fmt.Sprintf("%.1f", entry.Game.Metadatum.AverageRating/100)
+	game := entry.Game
+
+	gameMetadata := map[string]string{
+		NameElement: game.DisplayName,
+		DescElement: game.Summary,
+		MD5Element:  game.MD5,
 	}
 
-	if entry.Game.Metadatum.FirstReleaseDate != 0 {
-		t := time.Unix(entry.Game.Metadatum.FirstReleaseDate/1000, 0).UTC()
-		formatted := t.Format("20060102T150405")
-		gameMetadata[ReleaseDateElement] = fmt.Sprintf("%s", formatted)
+	if game.HasRating() {
+		gameMetadata[RatingElement] = fmt.Sprintf("%.1f", game.Rating)
 	}
 
-	if entry.ArtLocation.ImagePath != "" {
-		gameMetadata[ImageElement] = entry.ArtLocation.ImagePath
+	if game.HasReleaseDate() {
+		gameMetadata[ReleaseDateElement] = game.ReleaseDate.Format("20060102T150405")
 	}
 
-	if entry.ArtLocation.ThumbnailPath != "" {
-		gameMetadata[ThumbnailElement] = entry.ArtLocation.ThumbnailPath
+	for element, path := range map[string]string{
+		ImageElement:     game.Art.Cover,
+		ThumbnailElement: game.Art.Thumbnail,
+		MarqueeElement:   game.Art.Marquee,
+		VideoElement:     game.Art.Video,
+		BezelElement:     game.Art.Bezel,
+		ManualElement:    game.Art.Manual,
+		BoxbackElement:   game.Art.BoxBack,
+		FanartElement:    game.Art.Fanart,
+		PathElement:      game.Path,
+	} {
+		if path != "" {
+			gameMetadata[element] = path
+		}
 	}
 
-	if entry.ArtLocation.MarqueePath != "" {
-		gameMetadata[MarqueeElement] = entry.ArtLocation.MarqueePath
-	}
-
-	if entry.ArtLocation.VideoPath != "" {
-		gameMetadata[VideoElement] = entry.ArtLocation.VideoPath
-	}
-
-	if entry.ArtLocation.BezelPath != "" {
-		gameMetadata[BezelElement] = entry.ArtLocation.BezelPath
-	}
-
-	if entry.ArtLocation.ManualPath != "" {
-		gameMetadata[ManualElement] = entry.ArtLocation.ManualPath
-	}
-
-	if entry.ArtLocation.BoxBackPath != "" {
-		gameMetadata[BoxbackElement] = entry.ArtLocation.BoxBackPath
-	}
-
-	if entry.ArtLocation.FanartPath != "" {
-		gameMetadata[FanartElement] = entry.ArtLocation.FanartPath
-	}
-
-	if entry.GamePath != "" {
-		gameMetadata[PathElement] = entry.GamePath
-	}
-
-	maxPlayers := entry.Game.MaxPlayerCount()
-	if maxPlayers > 1 {
-		gameMetadata[PlayersElement] = fmt.Sprintf("1-%d", maxPlayers)
+	if game.MaxPlayers > 1 {
+		gameMetadata[PlayersElement] = fmt.Sprintf("1-%d", game.MaxPlayers)
 	} else {
 		gameMetadata[PlayersElement] = "1"
 	}
 
-	if len(entry.Game.Regions) > 0 {
-		gameMetadata[RegionElement] = strings.Join(entry.Game.Regions, ", ")
+	for element, values := range map[string][]string{
+		RegionElement:    game.Regions,
+		LangElement:      game.Languages,
+		GenreElement:     game.Genres,
+		DeveloperElement: game.Developers,
+	} {
+		if len(values) > 0 {
+			gameMetadata[element] = strings.Join(values, ", ")
+		}
 	}
 
-	if len(entry.Game.Languages) > 0 {
-		gameMetadata[LangElement] = strings.Join(entry.Game.Languages, ", ")
+	if game.ScreenScraperID > 0 {
+		gameMetadata[ScraperIDElement] = strconv.Itoa(game.ScreenScraperID)
 	}
 
-	if len(entry.Game.Metadatum.Genres) > 0 {
-		gameMetadata[GenreElement] = strings.Join(entry.Game.Metadatum.Genres, ", ")
+	if game.RetroAchievementsID > 0 {
+		gameMetadata[CheevosIDElement] = strconv.Itoa(game.RetroAchievementsID)
 	}
 
-	if len(entry.Game.Metadatum.Companies) > 0 {
-		gameMetadata[DeveloperElement] = strings.Join(entry.Game.Metadatum.Companies, ", ")
-	} else if entry.Game.ScreenScraperMetadata.Companies != nil && len(entry.Game.ScreenScraperMetadata.Companies) > 0 {
-		gameMetadata[DeveloperElement] = strings.Join(entry.Game.ScreenScraperMetadata.Companies, ", ")
+	if game.RetroAchievementsHash != "" {
+		gameMetadata[CheevosHashElement] = game.RetroAchievementsHash
 	}
 
-	if entry.Game.ScreenScraperID > 0 {
-		gameMetadata[ScraperIDElement] = strconv.Itoa(entry.Game.ScreenScraperID)
-	}
-
-	if entry.Game.RetroAchievementsID > 0 {
-		gameMetadata[CheevosIDElement] = strconv.Itoa(entry.Game.RetroAchievementsID)
-	}
-
-	if entry.Game.RetroAchievementsHash != "" {
-		gameMetadata[CheevosHashElement] = entry.Game.RetroAchievementsHash
-	}
-
-	game := gl.AddOrUpdateRomEntry(entry.FileName(), gameMetadata)
+	element := gl.AddOrUpdateRomEntry(entry.FileName(), gameMetadata)
 
 	// The id attribute can only be written once the element exists, so this
 	// must follow the upsert rather than precede it.
-	if game != nil && entry.Game.ScreenScraperID > 0 {
-		game.CreateAttr("id", strconv.Itoa(entry.Game.ScreenScraperID))
+	if element != nil && game.ScreenScraperID > 0 {
+		element.CreateAttr("id", strconv.Itoa(game.ScreenScraperID))
 	}
 }
 
@@ -164,12 +126,9 @@ func AddRomGamesToGamelist(entry []RomGameEntry, gamelistFilename FileName) erro
 					gaba.GetLogger().Debug("Error reading gamelist file", "error", err, "path", gamelistPath)
 				}
 				if len(data) > 0 {
-					gaba.GetLogger().Debug("Found gamelist file", "path", gamelistPath, "data", string(data))
 					if err := gl.Parse(data); err != nil {
 						gaba.GetLogger().Error("gamelist not found or can't be parsed, skipping platform", "path", gamelistPath, "error", err)
 						continue
-					} else {
-						gaba.GetLogger().Debug("Successfully parsed gamelist file", "path", gamelistPath, "data", string(data))
 					}
 				}
 			}

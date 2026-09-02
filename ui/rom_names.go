@@ -26,3 +26,12 @@ func prepareRomNames(games []romm.Rom) []romm.Rom {
 
 	return games
 }
+
+// romArtFileName returns the rom's file name for artwork naming, or empty when
+// the rom has no file list. Only MinUI uses it; see cfw.ArtFileName.
+func romArtFileName(g romm.Rom) string {
+	if len(g.Files) > 0 {
+		return g.Files[0].FileName
+	}
+	return ""
+}

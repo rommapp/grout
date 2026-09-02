@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"grout/cfw"
 	"grout/cfw/muos"
+	"grout/domain/library"
 	"grout/internal"
 	"grout/internal/artutil"
 	"grout/internal/fileutil"
 	"grout/internal/gamelist"
 	"grout/internal/imageutil"
+	"grout/internal/stringutil"
 	"grout/romm"
 	_ "image/gif"
 	_ "image/jpeg"
@@ -202,8 +204,8 @@ func (s *DownloadScreen) draw(input DownloadInput) (DownloadOutput, error) {
 				// instead of the (now deleted) temporary zip.
 				newGamePath := resolveExtractedGamePath(romDirectory, extractDir, g.FsNameNoExt)
 				for i, entry := range gamelistEntries {
-					if entry.Game.ID == g.ID {
-						gamelistEntries[i].GamePath = newGamePath
+					if entry.Game.FileName == g.FsName {
+						gamelistEntries[i].Game.Path = newGamePath
 						break
 					}
 				}
@@ -290,8 +292,8 @@ func (s *DownloadScreen) draw(input DownloadInput) (DownloadOutput, error) {
 									}
 								}
 								for i, entry := range gamelistEntries {
-									if entry.Game.ID == g.ID {
-										gamelistEntries[i].GamePath = filepath.Join(romDirectory, gamePath)
+									if entry.Game.FileName == g.FsName {
+										gamelistEntries[i].Game.Path = filepath.Join(romDirectory, gamePath)
 										break
 									}
 								}
@@ -358,10 +360,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 	isESBased := activeCFW.IsBasedOnEmulationStation()
 
 	for _, g := range games {
-		gamelistRomEntry := gamelist.RomGameEntry{
-			Game:     &g,
-			Platform: &platform,
-		}
+		var artPaths library.ArtPaths
 		gamePlatform := platform
 		if platform.ID == 0 && g.PlatformID != 0 {
 			gamePlatform = romm.Platform{
@@ -372,7 +371,6 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 		}
 
 		romDirectory := config.GetPlatformRomDirectory(gamePlatform)
-		gamelistRomEntry.RomDirectory = romDirectory
 		downloadLocation := ""
 
 		sourceURL := ""
@@ -405,8 +403,6 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 			sourceURL += "?" + url.Values{"file_ids": {strconv.Itoa(fileToDownload.ID)}}.Encode()
 		}
 
-		gamelistRomEntry.GamePath = downloadLocation
-
 		downloads = append(downloads, gaba.Download{
 			URL:         sourceURL,
 			Location:    downloadLocation,
@@ -417,10 +413,10 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 		if config.DownloadArt && (g.PathCoverLarge != "" || g.PathCoverSmall != "" || g.URLCover != "") {
 			// Prepare download for cover art
 			artDir := config.GetArtDirectory(gamePlatform)
-			artFileName := cfw.ArtFileName(activeCFW, cfw.ArtCover, g)
+			artFileName := cfw.ArtFileName(activeCFW, cfw.ArtCover, romArtFileName(g), g.FsNameNoExt)
 			artLocation := filepath.Join(artDir, artFileName)
 			coverURL := g.GetArtworkURL(config.ArtKind, host)
-			gamelistRomEntry.ArtLocation.ImagePath = artLocation
+			artPaths.Cover = artLocation
 
 			artDownloads = append(artDownloads, artDownload{
 				URL:      coverURL,
@@ -445,7 +441,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 
 			artSplashDir := config.GetArtSplashDirectory(gamePlatform)
 			if (config.DownloadSplashArt != artutil.ArtKindNone || config.AdditionalDownloads.Thumbnail != artutil.ArtKindNone) && artSplashDir != "" {
-				artSplashFileName := cfw.ArtFileName(activeCFW, cfw.ArtThumbnail, g)
+				artSplashFileName := cfw.ArtFileName(activeCFW, cfw.ArtThumbnail, romArtFileName(g), g.FsNameNoExt)
 				splashArtLocation := filepath.Join(artSplashDir, artSplashFileName)
 				kind := config.DownloadSplashArt
 				if config.AdditionalDownloads.Thumbnail != artutil.ArtKindNone {
@@ -453,7 +449,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 				}
 				if splashURL := g.GetSplashArtURL(kind, host); splashURL != "" {
 					if isESBased {
-						gamelistRomEntry.ArtLocation.ThumbnailPath = splashArtLocation
+						artPaths.Thumbnail = splashArtLocation
 					}
 					artDownloads = append(artDownloads, artDownload{
 						URL:      splashURL,
@@ -466,7 +462,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 
 			artMarqueeDir := config.GetArtMarqueeDirectory(gamePlatform)
 			if config.AdditionalDownloads.Marquee != artutil.ArtKindNone && artMarqueeDir != "" {
-				marqueeArtFileName := cfw.ArtFileName(activeCFW, cfw.ArtMarquee, g)
+				marqueeArtFileName := cfw.ArtFileName(activeCFW, cfw.ArtMarquee, romArtFileName(g), g.FsNameNoExt)
 				marqueeArtLocation := filepath.Join(artMarqueeDir, marqueeArtFileName)
 				marqueeURL := ""
 				switch config.AdditionalDownloads.Marquee {
@@ -476,7 +472,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 					marqueeURL = g.GetLogoURL(host)
 				}
 				if marqueeURL != "" {
-					gamelistRomEntry.ArtLocation.MarqueePath = marqueeArtLocation
+					artPaths.Marquee = marqueeArtLocation
 					artDownloads = append(artDownloads, artDownload{
 						URL:      marqueeURL,
 						Location: marqueeArtLocation,
@@ -490,7 +486,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 			if config.AdditionalDownloads.Video && artVideoDir != "" {
 				videoLocation := filepath.Join(artVideoDir, g.FsNameNoExt+".mp4")
 				if videoURL := g.GetVideoURL(host); videoURL != "" {
-					gamelistRomEntry.ArtLocation.VideoPath = videoLocation
+					artPaths.Video = videoLocation
 					artDownloads = append(artDownloads, artDownload{
 						URL:      videoURL,
 						Location: videoLocation,
@@ -504,7 +500,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 			if config.AdditionalDownloads.Bezel && artBezelDir != "" {
 				bezelArtLocation := filepath.Join(artBezelDir, artFileName)
 				if bezelURL := g.GetBezelURL(host); bezelURL != "" {
-					gamelistRomEntry.ArtLocation.BezelPath = bezelArtLocation
+					artPaths.Bezel = bezelArtLocation
 					artDownloads = append(artDownloads, artDownload{
 						URL:      bezelURL,
 						Location: bezelArtLocation,
@@ -518,7 +514,7 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 			if config.AdditionalDownloads.Manual && manualDir != "" {
 				manualLocation := filepath.Join(manualDir, g.FsNameNoExt+".pdf")
 				if manualURL := g.GetManualURL(host); manualURL != "" {
-					gamelistRomEntry.ArtLocation.ManualPath = manualLocation
+					artPaths.Manual = manualLocation
 					artDownloads = append(artDownloads, artDownload{
 						URL:      manualURL,
 						Location: manualLocation,
@@ -530,10 +526,10 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 
 			boxbackDir := config.GetBoxbackDirectory(gamePlatform)
 			if config.AdditionalDownloads.BoxBack && boxbackDir != "" {
-				boxbackArtFileName := cfw.ArtFileName(activeCFW, cfw.ArtBoxback, g)
+				boxbackArtFileName := cfw.ArtFileName(activeCFW, cfw.ArtBoxback, romArtFileName(g), g.FsNameNoExt)
 				boxbackArtLocation := filepath.Join(boxbackDir, boxbackArtFileName)
 				if boxbackURL := g.GetBoxbackURL(host); boxbackURL != "" {
-					gamelistRomEntry.ArtLocation.BoxBackPath = boxbackArtLocation
+					artPaths.BoxBack = boxbackArtLocation
 					artDownloads = append(artDownloads, artDownload{
 						URL:      boxbackURL,
 						Location: boxbackArtLocation,
@@ -545,10 +541,10 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 
 			fanartDir := config.GetFanartDirectory(gamePlatform)
 			if config.AdditionalDownloads.Fanart && fanartDir != "" {
-				fanartFileName := cfw.ArtFileName(activeCFW, cfw.ArtFanart, g)
+				fanartFileName := cfw.ArtFileName(activeCFW, cfw.ArtFanart, romArtFileName(g), g.FsNameNoExt)
 				fanartLocation := filepath.Join(fanartDir, fanartFileName)
 				if fanartURL := g.GetFanartURL(host); fanartURL != "" {
-					gamelistRomEntry.ArtLocation.FanartPath = fanartLocation
+					artPaths.Fanart = fanartLocation
 					artDownloads = append(artDownloads, artDownload{
 						URL:      fanartURL,
 						Location: fanartLocation,
@@ -559,7 +555,11 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 			}
 
 		}
-		gamesSummaries = append(gamesSummaries, gamelistRomEntry)
+		gamesSummaries = append(gamesSummaries, gamelist.RomGameEntry{
+			Game:         g.ToGame(stringutil.PrepareRomName(g.Name, g.Regions), downloadLocation, artPaths),
+			Platform:     gamePlatform.ToPlatform(),
+			RomDirectory: romDirectory,
+		})
 	}
 
 	return downloads, artDownloads, gamesSummaries

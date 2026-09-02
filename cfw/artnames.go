@@ -1,7 +1,5 @@
 package cfw
 
-import "grout/romm"
-
 // ArtSlot identifies which piece of artwork a file holds on device.
 //
 // It is distinct from artutil.ArtKind, which names the image RomM serves
@@ -54,6 +52,9 @@ var esSuffix = map[ArtSlot]string{
 // ArtFileName returns the file name a rom's artwork must have for firmware c to
 // find it.
 //
+// romFileName is the rom's file name including its extension, or empty when the
+// rom has no file list; baseName is the name without it.
+//
 // Two rules apply. MinUI names artwork after the rom file including its
 // extension ("Sonic.gba.png") where every other firmware drops it
 // ("Sonic.png"); and ES-based firmwares suffix the secondary slots.
@@ -62,13 +63,13 @@ var esSuffix = map[ArtSlot]string{
 // ui/artwork_sync.go each had their own copy they disagreed, so artwork sync
 // probed for a name MinUI never wrote and re-downloaded every rom's art on
 // every run.
-func ArtFileName(c CFW, slot ArtSlot, rom romm.Rom) string {
-	stem := rom.FsNameNoExt
+func ArtFileName(c CFW, slot ArtSlot, romFileName, baseName string) string {
+	stem := baseName
 
 	// Only MinUI is special cased here, matching long-standing behaviour.
 	// NextUI shares much of MinUI's layout but has never used this rule.
-	if c == MinUI && len(rom.Files) > 0 {
-		stem = rom.Files[0].FileName
+	if c == MinUI && romFileName != "" {
+		stem = romFileName
 	}
 
 	if c.IsBasedOnEmulationStation() {

@@ -5,25 +5,28 @@ import (
 	"strings"
 	"testing"
 
-	"grout/romm"
+	"grout/domain/library"
+	"grout/internal/stringutil"
 )
 
-// rom builds a minimal romm.Rom for gamelist tests.
-func rom(name, fsName string, regions ...string) *romm.Rom {
-	return &romm.Rom{
-		Name:    name,
-		FsName:  fsName,
-		Regions: regions,
+// rom builds a game the way a caller would: the display name is already
+// rendered, and identity is the file name.
+func rom(name, fsName string, regions ...string) library.Game {
+	return library.Game{
+		FileName:    fsName,
+		BaseName:    stringutil.StripExtension(fsName),
+		DisplayName: stringutil.PrepareRomName(name, regions),
+		Regions:     regions,
 	}
 }
 
 // entry builds a RomGameEntry pointing at a rom installed in romDir.
-func entry(r *romm.Rom, romDir string) RomGameEntry {
+func entry(g library.Game, romDir string) RomGameEntry {
+	g.Path = filepath.Join(romDir, g.FileName)
 	return RomGameEntry{
-		Game:         r,
-		Platform:     &romm.Platform{FSSlug: "gba"},
+		Game:         g,
+		Platform:     library.Platform{FSSlug: "gba"},
 		RomDirectory: romDir,
-		GamePath:     filepath.Join(romDir, r.FsName),
 	}
 }
 
