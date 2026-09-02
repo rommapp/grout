@@ -20,7 +20,6 @@ layer grout/ui -> grout/romm
 # Packages outside ui and cmd that import the gabagool UI toolkit,
 # which is why running their tests needs a display.
 toolkit grout/cache
-toolkit grout/cfw
 toolkit grout/cfw/minui
 toolkit grout/cfw/muos
 toolkit grout/cfw/nextui

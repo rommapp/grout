@@ -38,7 +38,15 @@ type SetupResult struct {
 }
 
 func setup() SetupResult {
-	currentCFW := cfw.GetCFW()
+	// The launch script for each firmware sets this. Resolving it once here,
+	// before anything else runs, is what lets the rest of the codebase treat an
+	// unknown firmware as "no such directory" instead of terminating from
+	// wherever it happened to notice.
+	currentCFW, err := cfw.Active()
+	if err != nil {
+		log.SetOutput(os.Stderr)
+		log.Fatalf("Cannot start: %v", err)
+	}
 
 	setupInputMapping(currentCFW)
 	initFramework(currentCFW)

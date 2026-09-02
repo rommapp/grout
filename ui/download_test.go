@@ -9,8 +9,10 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	// cfw.GetCFW() (called from buildDownloads) requires the CFW env var to
-	// be set to a recognised value, otherwise it terminates the process.
+	// buildDownloads resolves the firmware, which decides where artwork goes
+	// and what it is called. Pin one so these tests do not depend on the
+	// developer's environment; an unset variable is no longer fatal, it just
+	// yields no directories.
 	if os.Getenv("CFW") == "" {
 		os.Setenv("CFW", "ROCKNIX")
 	}

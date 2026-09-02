@@ -2,6 +2,7 @@ package cfw
 
 import (
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -9,20 +10,12 @@ import (
 // allFirmwares is every firmware grout supports. A conformance table over this
 // list is what stops a new firmware from silently returning "" for a directory
 // nobody remembered to add it to.
-var allFirmwares = []CFW{
-	NextUI, MuOS, Knulli, Spruce, ROCKNIX, Trimui,
-	Allium, Onion, Koriki, ArkOS, Batocera, MinUI,
-}
+var allFirmwares = All
 
 var esFirmwares = []CFW{Knulli, ROCKNIX, ArkOS, Batocera}
 
 func isES(c CFW) bool {
-	for _, e := range esFirmwares {
-		if e == c {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(esFirmwares, c)
 }
 
 const (

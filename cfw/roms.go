@@ -3,12 +3,11 @@ package cfw
 import (
 	"grout/internal/fileutil"
 	"grout/internal/stringutil"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 	gosync "sync"
-
-	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
 
 // RomScanConfig provides configuration needed for ROM scanning.
@@ -29,7 +28,7 @@ type LocalRomFile struct {
 type LocalRomScan map[string][]LocalRomFile
 
 func ScanRoms(config RomScanConfig) LocalRomScan {
-	logger := gaba.GetLogger()
+	logger := slog.Default()
 	result := make(map[string][]LocalRomFile)
 	currentCFW := GetCFW()
 
@@ -54,7 +53,7 @@ func ScanRoms(config RomScanConfig) LocalRomScan {
 }
 
 func scanRomsByPlatform(baseRomDir string, platformMap map[string][]string, config RomScanConfig, currentCFW CFW) map[string][]LocalRomFile {
-	logger := gaba.GetLogger()
+	logger := slog.Default()
 	result := make(map[string][]LocalRomFile)
 
 	if currentCFW == NextUI {
@@ -178,7 +177,7 @@ func scanRomsByPlatform(baseRomDir string, platformMap map[string][]string, conf
 }
 
 func scanRomDirectory(fsSlug, romDir string) []LocalRomFile {
-	logger := gaba.GetLogger()
+	logger := slog.Default()
 	var roms []LocalRomFile
 
 	entries, err := os.ReadDir(romDir)
