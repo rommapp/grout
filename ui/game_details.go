@@ -58,7 +58,7 @@ func (s *GameDetailsScreen) Draw(input GameDetailsInput) (GameDetailsOutput, err
 
 	// Determine initial download text based on first file
 	initialDownloadText := downloadText
-	if input.Game.IsDownloaded(input.Config) {
+	if isRomDownloaded(input.Config, input.Game) {
 		initialDownloadText = redownloadText
 	}
 

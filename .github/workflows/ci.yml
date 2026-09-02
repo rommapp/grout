@@ -83,11 +83,12 @@ jobs:
   # A refactor that compiles on amd64 can still break a device target, and
   # every device grout runs on is arm.
   #
-  # The package list is short because it has to be: today only domain/library
-  # builds without SDL, since everything else reaches the UI toolkit somewhere
-  # in its import graph. That set is exactly the inverse of the toolkit
-  # entries in tools/archcheck/allow.txt, so this list grows on its own as
-  # those are removed. Add packages here as they become cgo-free.
+  # Only packages that build without cgo can be checked here; anything reaching
+  # the UI toolkit needs SDL headers for the target architecture, which is what
+  # the Docker build is for. That makes this list the inverse of the toolkit
+  # entries in tools/archcheck/allow.txt, and it grows as those are removed --
+  # freeing romm of the toolkit added it and every cfw backend that does not
+  # log. Extend it whenever a package becomes cgo-free.
   cross-compile:
     name: Cross-compile (arm64)
     runs-on: ubuntu-latest
@@ -104,4 +105,26 @@ jobs:
           cache: true
 
       - name: Vet arm64 packages
-        run: go vet ./domain/... ./tools/archcheck ./tools/gen-platform-docs
+        run: |
+          go vet \
+            ./domain/... \
+            ./romm \
+            ./version \
+            ./resources \
+            ./internal/artutil \
+            ./internal/emulationstation \
+            ./internal/environment \
+            ./internal/fileutil \
+            ./internal/jsonutil \
+            ./internal/pspdb \
+            ./internal/stringutil \
+            ./cfw/allium \
+            ./cfw/arkos \
+            ./cfw/batocera \
+            ./cfw/knulli \
+            ./cfw/koriki \
+            ./cfw/onion \
+            ./cfw/rocknix \
+            ./cfw/trimui \
+            ./tools/archcheck \
+            ./tools/gen-platform-docs

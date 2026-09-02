@@ -3,24 +3,18 @@ package romm
 import (
 	"fmt"
 	"grout/internal/artutil"
-	"grout/internal/fileutil"
+	"log/slog"
 	"net/url"
 	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
-
-	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
 
 const (
 	RommAssetPrefix = "/assets/romm/resources"
 )
-
-type PlatformDirResolver interface {
-	GetPlatformRomDirectory(Platform) string
-}
 
 type PaginatedRoms struct {
 	Items  []Rom `json:"items"`
@@ -201,7 +195,7 @@ func resolveAssetURL(host Host, path, fallbackURL string) string {
 			result, err = joinPathWithQuery(host.URL(), path)
 		}
 		if err != nil {
-			gaba.GetLogger().Error("Error resolving asset URL", "error", err, "hostURL", host.ToLoggable(), "path", path)
+			slog.Default().Error("Error resolving asset URL", "error", err, "hostURL", host.ToLoggable(), "path", path)
 			return ""
 		}
 		return strings.ReplaceAll(result, " ", "%20")
@@ -262,72 +256,6 @@ func (r *Rom) LocalBasenames() []string {
 	return out
 }
 
-func (r *Rom) GetLocalPath(resolver PlatformDirResolver) string {
-	if r.PlatformFSSlug == "" {
-		return ""
-	}
-
-	platform := Platform{
-		ID:     r.PlatformID,
-		FSSlug: r.PlatformFSSlug,
-		Name:   r.PlatformDisplayName,
-	}
-
-	romDirectory := resolver.GetPlatformRomDirectory(platform)
-
-	if r.HasMultipleFiles {
-		return filepath.Join(romDirectory, r.FsNameNoExt+".m3u")
-	} else if len(r.Files) > 0 {
-		return filepath.Join(romDirectory, r.Files[0].FileName)
-	}
-
-	return ""
-}
-
-func (r *Rom) IsDownloaded(resolver PlatformDirResolver) bool {
-	if r.PlatformFSSlug == "" {
-		return false
-	}
-
-	platform := Platform{
-		ID:     r.PlatformID,
-		FSSlug: r.PlatformFSSlug,
-		Name:   r.PlatformDisplayName,
-	}
-	romDirectory := resolver.GetPlatformRomDirectory(platform)
-
-	// For multi-disk games, check the m3u file
-	if r.HasMultipleFiles {
-		m3uPath := filepath.Join(romDirectory, r.FsNameNoExt+".m3u")
-		return fileutil.FileExists(m3uPath)
-	}
-
-	// Check if any of the associated files exist
-	for _, file := range r.Files {
-		filePath := filepath.Join(romDirectory, file.FileName)
-		if fileutil.FileExists(filePath) {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (r *Rom) IsFileDownloaded(resolver PlatformDirResolver, fileName string) bool {
-	if r.PlatformFSSlug == "" {
-		return false
-	}
-
-	platform := Platform{
-		ID:     r.PlatformID,
-		FSSlug: r.PlatformFSSlug,
-		Name:   r.PlatformDisplayName,
-	}
-	romDirectory := resolver.GetPlatformRomDirectory(platform)
-	filePath := filepath.Join(romDirectory, fileName)
-	return fileutil.FileExists(filePath)
-}
-
 func (r *Rom) MaxPlayerCount() int {
 	maxPlayers := 1
 	if r.Metadatum.GameModes != nil && len(r.Metadatum.GameModes) > 0 {
@@ -348,7 +276,7 @@ func (r *Rom) GetArtworkURL(kind artutil.ArtKind, host Host) string {
 		boxPath  string
 	)
 	var err error
-	logger := gaba.GetLogger()
+	logger := slog.Default()
 	logger.Debug("Getting artwork URL for ROM", "romID", r.ID, "romName", r.Name, "artKind", kind)
 
 	if kind == artutil.ArtKindBox2D {
@@ -406,7 +334,7 @@ func (r *Rom) GetArtworkURL(kind artutil.ArtKind, host Host) string {
 func (r *Rom) GetScreenshotURL(host Host) string {
 	var screenshotURL string
 	var err error
-	logger := gaba.GetLogger()
+	logger := slog.Default()
 	if len(r.UserScreenshots) > 0 {
 		screenshotURL, err = joinPathWithQuery(host.URL(), r.UserScreenshots[0].URLPath)
 	} else if len(r.MergedScreenshots) > 0 {

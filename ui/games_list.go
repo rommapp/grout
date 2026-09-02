@@ -133,7 +133,7 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 	if input.Config.DownloadedGames == internal.DownloadedGamesModeFilter {
 		filteredGames := make([]romm.Rom, 0, len(displayGames))
 		for _, game := range displayGames {
-			if !game.IsDownloaded(*input.Config) {
+			if !isRomDownloaded(input.Config, game) {
 				filteredGames = append(filteredGames, game)
 			}
 		}
@@ -158,7 +158,7 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 		if input.Platform.ID == 0 {
 			for i := range displayGames {
 				prefix := ""
-				if input.Config.DownloadedGames == internal.DownloadedGamesModeMark && displayGames[i].IsDownloaded(*input.Config) {
+				if input.Config.DownloadedGames == internal.DownloadedGamesModeMark && isRomDownloaded(input.Config, displayGames[i]) {
 					prefix = gabaconst.Download + " "
 				}
 				displayGames[i].DisplayName = fmt.Sprintf("%s[%s] %s", prefix, displayGames[i].PlatformFSSlug, displayGames[i].DisplayName)
@@ -167,7 +167,7 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 			displayName = fmt.Sprintf("%s - %s", input.Collection.Name, input.Platform.Name)
 			if input.Config.DownloadedGames == internal.DownloadedGamesModeMark {
 				for i := range displayGames {
-					if displayGames[i].IsDownloaded(*input.Config) {
+					if isRomDownloaded(input.Config, displayGames[i]) {
 						displayGames[i].DisplayName = fmt.Sprintf("%s %s", gabaconst.Download, displayGames[i].DisplayName)
 					}
 				}
@@ -183,7 +183,7 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 				allDownloaded := len(game.Files) > 0
 				anyDownloaded := false
 				for _, file := range game.Files {
-					if game.IsFileDownloaded(*input.Config, file.FileName) {
+					if isRomFileDownloaded(input.Config, *game, file.FileName) {
 						anyDownloaded = true
 					} else {
 						allDownloaded = false
@@ -199,7 +199,7 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 				}
 				prefix += internal.MultipleFilesIcon + " "
 			} else {
-				if input.Config.DownloadedGames == internal.DownloadedGamesModeMark && game.IsDownloaded(*input.Config) {
+				if input.Config.DownloadedGames == internal.DownloadedGamesModeMark && isRomDownloaded(input.Config, *game) {
 					prefix = gabaconst.Download + " "
 				}
 			}

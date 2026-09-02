@@ -29,7 +29,6 @@ toolkit grout/internal
 toolkit grout/internal/gamelist
 toolkit grout/internal/imageutil
 toolkit grout/resources
-toolkit grout/romm
 toolkit grout/sync
 toolkit grout/update
 

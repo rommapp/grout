@@ -143,7 +143,7 @@ func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 				if input.DownloadedOnly {
 					var downloaded []romm.Rom
 					for _, r := range roms {
-						if r.IsDownloaded(input.Config) {
+						if isRomDownloaded(input.Config, r) {
 							downloaded = append(downloaded, r)
 						}
 					}

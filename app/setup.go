@@ -153,6 +153,10 @@ func initFramework(currentCFW cfw.CFW) {
 
 	gaba.SetLogLevel(slog.LevelDebug)
 
+	// Lower layers log through slog rather than importing the UI toolkit, so
+	// point the standard logger at the same place gabagool writes.
+	slog.SetDefault(gaba.GetLogger())
+
 	localeFiles, err := resources.GetLocaleMessageFiles()
 	if err != nil {
 		log.SetOutput(os.Stderr)
