@@ -38,7 +38,49 @@ func CreateTempQRCode(content string, size int) (string, error) {
 	return tempFile.Name(), nil
 }
 
+// FitDimensions returns the size an imgW x imgH image should be drawn at to
+// fill a maxW x maxH box while keeping its aspect ratio.
+//
+// Note that it scales in both directions: an image smaller than the box is
+// enlarged to fill it, not left alone. That is long-standing behaviour and is
+// preserved here, but it means a small cover is written to disk larger than it
+// arrived.
+//
+// Degenerate inputs return the original size rather than dividing by zero.
+func FitDimensions(imgW, imgH, maxW, maxH int) (int, int) {
+	if imgW <= 0 || imgH <= 0 || maxW <= 0 || maxH <= 0 {
+		return imgW, imgH
+	}
+
+	imgAspect := float64(imgW) / float64(imgH)
+	boxAspect := float64(maxW) / float64(maxH)
+
+	if imgAspect > boxAspect {
+		return maxW, atLeastOne(int(float64(maxW) / imgAspect))
+	}
+	return atLeastOne(int(float64(maxH) * imgAspect)), maxH
+}
+
+// atLeastOne keeps an extreme aspect ratio from rounding a side down to zero.
+// A banner wider than the box is many times over -- 1000x1 into 200x200 --
+// otherwise yields a zero-height image, which encodes as a corrupt PNG.
+func atLeastOne(n int) int {
+	if n < 1 {
+		return 1
+	}
+	return n
+}
+
+// ProcessArtImage normalises the image at inputPath to a PNG sized for the
+// current display.
 func ProcessArtImage(inputPath string) error {
+	window := gabagool.GetWindow()
+	return ProcessArtImageTo(inputPath, int(window.GetWidth())/2, int(window.GetHeight())/2)
+}
+
+// ProcessArtImageTo is ProcessArtImage with the target box supplied by the
+// caller, so it can be exercised without a display.
+func ProcessArtImageTo(inputPath string, maxW, maxH int) error {
 	inputFile, err := os.Open(inputPath)
 	if err != nil {
 		return fmt.Errorf("failed to open image: %w", err)
@@ -51,27 +93,11 @@ func ProcessArtImage(inputPath string) error {
 	}
 	inputFile.Close()
 
-	windowWidth := int(gabagool.GetWindow().GetWidth()) / 2
-	windowHeight := int(gabagool.GetWindow().GetHeight()) / 2
-
 	bounds := img.Bounds()
-	imgWidth := bounds.Dx()
-	imgHeight := bounds.Dy()
-
-	var newWidth, newHeight int
-	imgAspect := float64(imgWidth) / float64(imgHeight)
-	windowAspect := float64(windowWidth) / float64(windowHeight)
-
-	if imgAspect > windowAspect {
-		newWidth = windowWidth
-		newHeight = int(float64(windowWidth) / imgAspect)
-	} else {
-		newHeight = windowHeight
-		newWidth = int(float64(windowHeight) * imgAspect)
-	}
+	newWidth, newHeight := FitDimensions(bounds.Dx(), bounds.Dy(), maxW, maxH)
 
 	var processedImg = img
-	if newWidth != imgWidth || newHeight != imgHeight {
+	if newWidth != bounds.Dx() || newHeight != bounds.Dy() {
 		dst := image.NewRGBA(image.Rect(0, 0, newWidth, newHeight))
 
 		draw.BiLinear.Scale(dst, dst.Bounds(), img, img.Bounds(), draw.Over, nil)
