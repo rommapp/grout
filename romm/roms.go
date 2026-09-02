@@ -2,7 +2,7 @@ package romm
 
 import (
 	"fmt"
-	"grout/internal/artutil"
+	"grout/domain/library"
 	"log/slog"
 	"net/url"
 	"path/filepath"
@@ -270,7 +270,7 @@ func (r *Rom) MaxPlayerCount() int {
 	return maxPlayers
 }
 
-func (r *Rom) GetArtworkURL(kind artutil.ArtKind, host Host) string {
+func (r *Rom) GetArtworkURL(kind library.ArtKind, host Host) string {
 	var (
 		coverURL string
 		boxPath  string
@@ -279,12 +279,12 @@ func (r *Rom) GetArtworkURL(kind artutil.ArtKind, host Host) string {
 	logger := slog.Default()
 	logger.Debug("Getting artwork URL for ROM", "romID", r.ID, "romName", r.Name, "artKind", kind)
 
-	if kind == artutil.ArtKindBox2D {
+	if kind == library.ArtKindBox2D {
 		if r.ScreenScraperMetadata.Box2DURL != "" {
 			coverURL = r.ScreenScraperMetadata.Box2DURL
 			boxPath = r.ScreenScraperMetadata.Box2DURL
 		}
-	} else if kind == artutil.ArtKindBox3D {
+	} else if kind == library.ArtKindBox3D {
 		if r.ScreenScraperMetadata.Box3DPath != "" {
 			if !strings.Contains(r.ScreenScraperMetadata.Box3DPath, RommAssetPrefix) {
 				coverURL, err = joinPathWithQuery(host.URL(), RommAssetPrefix, r.ScreenScraperMetadata.Box3DPath)
@@ -296,7 +296,7 @@ func (r *Rom) GetArtworkURL(kind artutil.ArtKind, host Host) string {
 			coverURL = r.ScreenScraperMetadata.Box3DURL
 			boxPath = r.ScreenScraperMetadata.Box3DURL
 		}
-	} else if kind == artutil.ArtKindMixImage {
+	} else if kind == library.ArtKindMixImage {
 		if r.ScreenScraperMetadata.MiximagePath != "" {
 			if !strings.Contains(r.ScreenScraperMetadata.MiximagePath, RommAssetPrefix) {
 				coverURL, err = joinPathWithQuery(host.URL(), RommAssetPrefix, r.ScreenScraperMetadata.MiximagePath)
@@ -310,7 +310,7 @@ func (r *Rom) GetArtworkURL(kind artutil.ArtKind, host Host) string {
 		}
 	}
 
-	if kind == artutil.ArtKindDefault || coverURL == "" {
+	if kind == library.ArtKindDefault || coverURL == "" {
 		if r.PathCoverSmall != "" {
 			coverURL, err = joinPathWithQuery(host.URL(), r.PathCoverSmall)
 			boxPath = r.PathCoverSmall
@@ -350,11 +350,11 @@ func (r *Rom) GetScreenshotURL(host Host) string {
 	return strings.ReplaceAll(screenshotURL, " ", "%20")
 }
 
-func (r *Rom) GetSplashArtURL(kind artutil.ArtKind, host Host) string {
+func (r *Rom) GetSplashArtURL(kind library.ArtKind, host Host) string {
 	switch kind {
-	case artutil.ArtKindMarquee:
+	case library.ArtKindMarquee:
 		return resolveAssetURL(host, r.ScreenScraperMetadata.MarqueePath, r.ScreenScraperMetadata.MarqueeURL)
-	case artutil.ArtKindTitle:
+	case library.ArtKindTitle:
 		return resolveAssetURL(host, "", r.ScreenScraperMetadata.TitleScreenURL)
 	default:
 		return ""

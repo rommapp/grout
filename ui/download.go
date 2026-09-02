@@ -7,7 +7,6 @@ import (
 	"grout/cfw/muos"
 	"grout/domain/library"
 	"grout/internal"
-	"grout/internal/artutil"
 	"grout/internal/fileutil"
 	"grout/internal/gamelist"
 	"grout/internal/imageutil"
@@ -438,11 +437,11 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 			}
 
 			artSplashDir := config.GetArtSplashDirectory(gamePlatform)
-			if (config.DownloadSplashArt != artutil.ArtKindNone || config.AdditionalDownloads.Thumbnail != artutil.ArtKindNone) && artSplashDir != "" {
+			if (config.DownloadSplashArt != library.ArtKindNone || config.AdditionalDownloads.Thumbnail != library.ArtKindNone) && artSplashDir != "" {
 				artSplashFileName := cfw.ArtFileName(activeCFW, cfw.ArtThumbnail, romArtFileName(g), g.FsNameNoExt)
 				splashArtLocation := filepath.Join(artSplashDir, artSplashFileName)
 				kind := config.DownloadSplashArt
-				if config.AdditionalDownloads.Thumbnail != artutil.ArtKindNone {
+				if config.AdditionalDownloads.Thumbnail != library.ArtKindNone {
 					kind = config.AdditionalDownloads.Thumbnail
 				}
 				if splashURL := g.GetSplashArtURL(kind, host); splashURL != "" {
@@ -459,14 +458,14 @@ func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, 
 			}
 
 			artMarqueeDir := config.GetArtMarqueeDirectory(gamePlatform)
-			if config.AdditionalDownloads.Marquee != artutil.ArtKindNone && artMarqueeDir != "" {
+			if config.AdditionalDownloads.Marquee != library.ArtKindNone && artMarqueeDir != "" {
 				marqueeArtFileName := cfw.ArtFileName(activeCFW, cfw.ArtMarquee, romArtFileName(g), g.FsNameNoExt)
 				marqueeArtLocation := filepath.Join(artMarqueeDir, marqueeArtFileName)
 				marqueeURL := ""
 				switch config.AdditionalDownloads.Marquee {
-				case artutil.ArtKindMarquee:
+				case library.ArtKindMarquee:
 					marqueeURL = g.GetMarqueeURL(host)
-				case artutil.ArtKindLogo:
+				case library.ArtKindLogo:
 					marqueeURL = g.GetLogoURL(host)
 				}
 				if marqueeURL != "" {

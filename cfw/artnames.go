@@ -2,7 +2,7 @@ package cfw
 
 // ArtSlot identifies which piece of artwork a file holds on device.
 //
-// It is distinct from artutil.ArtKind, which names the image RomM serves
+// It is distinct from library.ArtKind, which names the image RomM serves
 // (Box2D, Screenshot, and so on). A slot is where that image is stored locally,
 // and several kinds can share one slot.
 type ArtSlot int

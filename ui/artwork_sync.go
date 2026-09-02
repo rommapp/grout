@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"grout/cache"
 	"grout/cfw"
+	"grout/domain/library"
 	"grout/internal"
-	"grout/internal/artutil"
 	"grout/internal/fileutil"
 	"grout/internal/imageutil"
 	"grout/romm"
@@ -347,7 +347,7 @@ func filterMissingCFWArt(roms []romm.Rom, platform romm.Platform, config interna
 				}
 			}
 		}
-		if config.DownloadSplashArt != artutil.ArtKindNone {
+		if config.DownloadSplashArt != library.ArtKindNone {
 			splashDir := config.GetArtSplashDirectory(platform)
 			if splashDir != "" && rom.GetSplashArtURL(config.DownloadSplashArt, host) != "" {
 				if !fileutil.FileExists(filepath.Join(splashDir, cfw.ArtFileName(activeCFW, cfw.ArtThumbnail, romArtFileName(rom), rom.FsNameNoExt))) {
@@ -401,7 +401,7 @@ func buildCFWArtDownloads(results []platformRoms, config internal.Config, host r
 			}
 
 			// Splash art
-			if config.DownloadSplashArt != artutil.ArtKindNone {
+			if config.DownloadSplashArt != library.ArtKindNone {
 				splashDir := config.GetArtSplashDirectory(sr.platform)
 				if splashDir != "" {
 					if splashURL := rom.GetSplashArtURL(config.DownloadSplashArt, host); splashURL != "" {

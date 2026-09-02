@@ -73,7 +73,6 @@ var layerRules = []struct {
 
 	// Leaf utilities. These are the pkg/ tree in waiting; they already have no
 	// grout dependencies, so classifying them now costs nothing.
-	{"grout/internal/artutil", Pkg},
 	{"grout/internal/environment", Pkg},
 	{"grout/internal/fileutil", Pkg},
 	{"grout/internal/imageutil", Pkg},

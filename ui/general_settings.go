@@ -3,8 +3,8 @@ package ui
 import (
 	"errors"
 	"grout/cfw"
+	"grout/domain/library"
 	"grout/internal"
-	"grout/internal/artutil"
 	"sync/atomic"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -117,10 +117,10 @@ func (s *GeneralSettingsScreen) buildMenuItems(config *internal.Config) []gaba.I
 		{
 			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind", Other: "Download Art Kind"}, nil)},
 			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_default", Other: "Default"}, nil), Value: artutil.ArtKindDefault},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_box2d", Other: "Box2D"}, nil), Value: artutil.ArtKindBox2D},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_box3d", Other: "Box3D"}, nil), Value: artutil.ArtKindBox3D},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_miximage", Other: "MixImage"}, nil), Value: artutil.ArtKindMixImage},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_default", Other: "Default"}, nil), Value: library.ArtKindDefault},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_box2d", Other: "Box2D"}, nil), Value: library.ArtKindBox2D},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_box3d", Other: "Box3D"}, nil), Value: library.ArtKindBox3D},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_miximage", Other: "MixImage"}, nil), Value: library.ArtKindMixImage},
 			},
 			SelectedOption: boxArtToIndex(config.ArtKind),
 			VisibleWhen:    &showArtKind,
@@ -137,9 +137,9 @@ func (s *GeneralSettingsScreen) buildMenuItems(config *internal.Config) []gaba.I
 		{
 			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_art_splash", Other: "Download Splash Art"}, nil)},
 			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_none", Other: "None"}, nil), Value: artutil.ArtKindNone},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_marquee", Other: "Marquee"}, nil), Value: artutil.ArtKindMarquee},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_title", Other: "Title"}, nil), Value: artutil.ArtKindTitle},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_none", Other: "None"}, nil), Value: library.ArtKindNone},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_marquee", Other: "Marquee"}, nil), Value: library.ArtKindMarquee},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_title", Other: "Title"}, nil), Value: library.ArtKindTitle},
 			},
 			SelectedOption: boxArtToIndex(config.DownloadSplashArt),
 			VisibleWhen:    &displayDownloadArtPreview,
@@ -147,9 +147,9 @@ func (s *GeneralSettingsScreen) buildMenuItems(config *internal.Config) []gaba.I
 		{
 			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_thumbnail", Other: "Download Game Thumbnail"}, nil)},
 			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_none", Other: "None"}, nil), Value: artutil.ArtKindNone},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_box2d", Other: "Box2D"}, nil), Value: artutil.ArtKindBox2D},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_box3d", Other: "Box3D"}, nil), Value: artutil.ArtKindBox3D},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_none", Other: "None"}, nil), Value: library.ArtKindNone},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_box2d", Other: "Box2D"}, nil), Value: library.ArtKindBox2D},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_box3d", Other: "Box3D"}, nil), Value: library.ArtKindBox3D},
 			},
 			SelectedOption: boxArtToIndex(config.AdditionalDownloads.Thumbnail),
 			VisibleWhen:    &displayEmulationStationOptions,
@@ -157,9 +157,9 @@ func (s *GeneralSettingsScreen) buildMenuItems(config *internal.Config) []gaba.I
 		{
 			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_marquee", Other: "Download Marquee Image"}, nil)},
 			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_none", Other: "None"}, nil), Value: artutil.ArtKindNone},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_marquee", Other: "Marquee"}, nil), Value: artutil.ArtKindMarquee},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_logo", Other: "Logo"}, nil), Value: artutil.ArtKindLogo},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_none", Other: "None"}, nil), Value: library.ArtKindNone},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_marquee", Other: "Marquee"}, nil), Value: library.ArtKindMarquee},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_logo", Other: "Logo"}, nil), Value: library.ArtKindLogo},
 			},
 			SelectedOption: marqueeArtToIndex(config.AdditionalDownloads.Marquee),
 			VisibleWhen:    &displayEmulationStationOptions,
@@ -254,7 +254,7 @@ func (s *GeneralSettingsScreen) applySettings(config *internal.Config, items []g
 				config.DownloadArt = val
 			}
 		case i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind", Other: "Download Art Kind"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(artutil.ArtKind); ok {
+			if val, ok := item.Options[item.SelectedOption].Value.(library.ArtKind); ok {
 				config.ArtKind = val
 			}
 		case i18n.Localize(&goi18n.Message{ID: "settings_download_art_preview", Other: "Download Screenshot Preview"}, nil):
@@ -262,7 +262,7 @@ func (s *GeneralSettingsScreen) applySettings(config *internal.Config, items []g
 				config.DownloadArtScreenshotPreview = val
 			}
 		case i18n.Localize(&goi18n.Message{ID: "settings_download_art_splash", Other: "Download Splash Art"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(artutil.ArtKind); ok {
+			if val, ok := item.Options[item.SelectedOption].Value.(library.ArtKind); ok {
 				config.DownloadSplashArt = val
 			}
 
@@ -272,7 +272,7 @@ func (s *GeneralSettingsScreen) applySettings(config *internal.Config, items []g
 			}
 
 		case i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_marquee", Other: "Download Marquee Image"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(artutil.ArtKind); ok {
+			if val, ok := item.Options[item.SelectedOption].Value.(library.ArtKind); ok {
 				config.AdditionalDownloads.Marquee = val
 			}
 
@@ -282,7 +282,7 @@ func (s *GeneralSettingsScreen) applySettings(config *internal.Config, items []g
 			}
 
 		case i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_thumbnail", Other: "Download Game Thumbnail"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(artutil.ArtKind); ok {
+			if val, ok := item.Options[item.SelectedOption].Value.(library.ArtKind); ok {
 				config.AdditionalDownloads.Thumbnail = val
 			}
 

@@ -3,8 +3,8 @@ package ui
 import (
 	"errors"
 	"grout/cfw"
+	"grout/domain/library"
 	"grout/internal"
-	"grout/internal/artutil"
 	"grout/romm"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -253,28 +253,28 @@ func releaseChannelToIndex(releaseChannel internal.ReleaseChannel) int {
 	}
 }
 
-func boxArtToIndex(boxArt artutil.ArtKind) int {
+func boxArtToIndex(boxArt library.ArtKind) int {
 	switch boxArt {
-	case artutil.ArtKindDefault:
+	case library.ArtKindDefault:
 		return 0
-	case artutil.ArtKindBox2D:
+	case library.ArtKindBox2D:
 		return 1
-	case artutil.ArtKindBox3D:
+	case library.ArtKindBox3D:
 		return 2
-	case artutil.ArtKindMixImage:
+	case library.ArtKindMixImage:
 		return 3
 	default:
 		return 0
 	}
 }
 
-func marqueeArtToIndex(boxArt artutil.ArtKind) int {
+func marqueeArtToIndex(boxArt library.ArtKind) int {
 	switch boxArt {
-	case artutil.ArtKindNone:
+	case library.ArtKindNone:
 		return 0
-	case artutil.ArtKindMarquee:
+	case library.ArtKindMarquee:
 		return 1
-	case artutil.ArtKindLogo:
+	case library.ArtKindLogo:
 		return 2
 	default:
 		return 0

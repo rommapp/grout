@@ -111,7 +111,6 @@ jobs:
             ./romm \
             ./version \
             ./resources \
-            ./internal/artutil \
             ./internal/emulationstation \
             ./internal/environment \
             ./internal/fileutil \

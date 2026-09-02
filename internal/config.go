@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"grout/cache"
 	"grout/cfw"
-	"grout/internal/artutil"
+	"grout/domain/library"
 	"grout/romm"
 	"os"
 	"sync/atomic"
@@ -18,9 +18,9 @@ import (
 var kidModeEnabled atomic.Bool
 
 type AdditionalDownloads struct {
-	Marquee   artutil.ArtKind `json:"marquee,omitempty"`
+	Marquee   library.ArtKind `json:"marquee,omitempty"`
 	Video     bool            `json:"video,omitempty"`
-	Thumbnail artutil.ArtKind `json:"thumbnail,omitempty"`
+	Thumbnail library.ArtKind `json:"thumbnail,omitempty"`
 	Bezel     bool            `json:"bezel,omitempty"`
 	Manual    bool            `json:"manual,omitempty"`
 	BoxBack   bool            `json:"box_back,omitempty"`
@@ -71,9 +71,9 @@ type Config struct {
 	CollectionView               CollectionView              `json:"collection_view,omitempty"`
 	KidMode                      bool                        `json:"kid_mode,omitempty"`
 	ReleaseChannel               ReleaseChannel              `json:"release_channel,omitempty"`
-	ArtKind                      artutil.ArtKind             `json:"art_kind,omitempty"`
+	ArtKind                      library.ArtKind             `json:"art_kind,omitempty"`
 	DownloadArtScreenshotPreview bool                        `json:"download_art_screenshot_preview,omitempty"`
-	DownloadSplashArt            artutil.ArtKind             `json:"download_splash_art,omitempty"`
+	DownloadSplashArt            library.ArtKind             `json:"download_splash_art,omitempty"`
 	AdditionalDownloads          AdditionalDownloads         `json:"additional_downloads,omitempty"`
 
 	SwapFaceButtons       bool              `json:"swap_face_buttons,omitempty"`
@@ -150,15 +150,15 @@ func LoadConfig() (*Config, error) {
 	}
 
 	if config.ArtKind == "" {
-		config.ArtKind = artutil.ArtKindDefault
+		config.ArtKind = library.ArtKindDefault
 	}
 
 	if config.AdditionalDownloads.Thumbnail == "" {
-		config.AdditionalDownloads.Thumbnail = artutil.ArtKindNone
+		config.AdditionalDownloads.Thumbnail = library.ArtKindNone
 	}
 
 	if config.AdditionalDownloads.Marquee == "" {
-		config.AdditionalDownloads.Marquee = artutil.ArtKindNone
+		config.AdditionalDownloads.Marquee = library.ArtKindNone
 	}
 
 	// Load slot preferences from dedicated file
@@ -189,15 +189,15 @@ func SaveConfig(config *Config) error {
 	}
 
 	if config.ArtKind == "" {
-		config.ArtKind = artutil.ArtKindDefault
+		config.ArtKind = library.ArtKindDefault
 	}
 
 	if config.AdditionalDownloads.Thumbnail == "" {
-		config.AdditionalDownloads.Thumbnail = artutil.ArtKindNone
+		config.AdditionalDownloads.Thumbnail = library.ArtKindNone
 	}
 
 	if config.AdditionalDownloads.Marquee == "" {
-		config.AdditionalDownloads.Marquee = artutil.ArtKindNone
+		config.AdditionalDownloads.Marquee = library.ArtKindNone
 	}
 
 	gaba.SetRawLogLevel(string(config.LogLevel))
