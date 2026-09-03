@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"grout/cache"
 	"grout/cfw"
-	"grout/internal/fileutil"
-	"grout/internal/stringutil"
+	"grout/files"
 	"grout/settings"
+	"grout/textmatch"
 	"os"
 	"path/filepath"
 	"slices"
@@ -480,7 +480,7 @@ func (s *PlatformMappingScreen) getRomDirectories(romDir string) ([]os.DirEntry,
 		os.Exit(1)
 	}
 
-	return fileutil.FilterHiddenDirectories(entries), nil
+	return files.FilterHiddenDirectories(entries), nil
 }
 
 func (s *PlatformMappingScreen) buildMappingOptions(
@@ -533,7 +533,7 @@ func (s *PlatformMappingScreen) buildPlatformOptions(
 		if !dirExists {
 			displayName := cfwDir
 			if cfw.Lookup(input.CFW).UsesTaggedRomFolders() {
-				displayName = stringutil.ParseTag(cfwDir)
+				displayName = textmatch.ParseTag(cfwDir)
 			}
 			options = append(options, gaba.Option{
 				DisplayName: i18n.Localize(&goi18n.Message{ID: "platform_mapping_create", Other: "Create '{{.Name}}'"}, map[string]interface{}{"Name": displayName}),
@@ -554,7 +554,7 @@ func (s *PlatformMappingScreen) buildPlatformOptions(
 		if s.isValidDirectoryForPlatform(dirName, input.CFW, cfwDirectories) {
 			displayName := dirName
 			if cfw.Lookup(input.CFW).UsesTaggedRomFolders() {
-				displayName = stringutil.ParseTag(dirName)
+				displayName = textmatch.ParseTag(dirName)
 			}
 
 			options = append(options, gaba.Option{
@@ -613,10 +613,10 @@ func (s *PlatformMappingScreen) directoryMatchesPlatform(
 	c cfw.CFW,
 ) bool {
 	cfwFSSlug := cfw.RomMFSSlugToCFW(platform.FSSlug)
-	romFolderBase := cfw.RomFolderBase(dirName, stringutil.ParseTag)
+	romFolderBase := cfw.RomFolderBase(dirName, textmatch.ParseTag)
 
 	if cfw.Lookup(c).UsesTaggedRomFolders() {
-		return stringutil.ParseTag(cfwFSSlug) == romFolderBase
+		return textmatch.ParseTag(cfwFSSlug) == romFolderBase
 	}
 	return cfwFSSlug == romFolderBase
 }
@@ -644,7 +644,7 @@ func (s *PlatformMappingScreen) getCFWDirectoriesForPlatform(fsSlug string, c cf
 
 func (s *PlatformMappingScreen) directoriesMatch(dir1, dir2 string, c cfw.CFW) bool {
 	if cfw.Lookup(c).UsesTaggedRomFolders() {
-		return stringutil.ParseTag(dir1) == stringutil.ParseTag(dir2)
+		return textmatch.ParseTag(dir1) == textmatch.ParseTag(dir2)
 	}
 	return dir1 == dir2
 }

@@ -3,15 +3,13 @@ package settings
 import (
 	"encoding/json"
 	"fmt"
-	"grout/internal/fileutil"
+	"grout/files"
 	"grout/library"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sync/atomic"
 	"time"
-
-	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
 )
 
 // kidModeEnabled is the session's kid mode, which starts from Config.KidMode
@@ -187,26 +185,10 @@ func LoadConfigFrom(path string) (*Config, error) {
 	return &config, nil
 }
 
-// SaveConfig writes settings and applies the ones that take effect
-// immediately.
+// SaveConfig writes settings to the default path. Applying the ones that take
+// effect immediately is the caller's job; see app.ApplyRuntimeSettings.
 func SaveConfig(config *Config) error {
-	if err := SaveConfigTo(config, ConfigFileName); err != nil {
-		return err
-	}
-	ApplyRuntimeSettings(config)
-	return nil
-}
-
-// ApplyRuntimeSettings pushes the settings that change how the running app
-// behaves into the UI toolkit.
-//
-// Separate from SaveConfigTo because it needs an initialised toolkit, and
-// writing a settings file should not.
-func ApplyRuntimeSettings(config *Config) {
-	gaba.SetRawLogLevel(string(config.LogLevel))
-	if err := i18n.SetWithCode(config.Language); err != nil {
-		gaba.GetLogger().Error("Failed to set language", "error", err, "language", config.Language)
-	}
+	return SaveConfigTo(config, ConfigFileName)
 }
 
 // SaveConfigTo writes settings to path.
@@ -221,7 +203,7 @@ func SaveConfigTo(config *Config, path string) error {
 	// Written atomically: a truncated config.json fails to parse, and a failed
 	// parse is treated as a first launch, which discards the user's hosts,
 	// credentials and directory mappings.
-	if err := fileutil.WriteFileAtomic(path, pretty, 0644); err != nil {
+	if err := files.WriteFileAtomic(path, pretty, 0644); err != nil {
 		return fmt.Errorf("writing %s: %w", path, err)
 	}
 	return nil
@@ -289,7 +271,7 @@ func SaveSlotPreferencesTo(config *Config, path string) error {
 	if err != nil {
 		return err
 	}
-	return fileutil.WriteFileAtomic(path, pretty, 0644)
+	return files.WriteFileAtomic(path, pretty, 0644)
 }
 
 func (c Config) GetSlotPreference(romID int) string {
@@ -343,7 +325,7 @@ func (c Config) GetShowVirtualCollections() bool { return c.ShowVirtualCollectio
 func (c Config) ResolveFSSlug(fsSlug string) string {
 	if c.PlatformsBinding != nil {
 		if bound, ok := c.PlatformsBinding[fsSlug]; ok {
-			gaba.GetLogger().Debug("Using platform binding for CFW lookup",
+			slog.Default().Debug("Using platform binding for CFW lookup",
 				"fsSlug", fsSlug, "boundTo", bound)
 			return bound
 		}
@@ -359,7 +341,7 @@ func (c Config) ResolveRommFSSlug(cfwKey string) string {
 	if c.PlatformsBinding != nil {
 		for rommSlug, cfwSlug := range c.PlatformsBinding {
 			if cfwSlug == cfwKey {
-				gaba.GetLogger().Debug("Using inverse platform binding",
+				slog.Default().Debug("Using inverse platform binding",
 					"cfwKey", cfwKey, "rommFSSlug", rommSlug)
 				return rommSlug
 			}

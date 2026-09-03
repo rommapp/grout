@@ -2,8 +2,8 @@ package cache
 
 import (
 	"fmt"
-	"grout/internal/fileutil"
-	"grout/internal/imageutil"
+	"grout/files"
+	"grout/imaging"
 	"grout/library"
 	"grout/romm"
 	"grout/settings"
@@ -20,7 +20,7 @@ func GetArtworkCachePath(platformFSSlug string, romID int) string {
 }
 
 func ArtworkExists(platformFSSlug string, romID int) bool {
-	return fileutil.FileExists(GetArtworkCachePath(platformFSSlug, romID))
+	return files.FileExists(GetArtworkCachePath(platformFSSlug, romID))
 }
 
 func EnsureArtworkCacheDir(platformFSSlug string) error {
@@ -130,7 +130,7 @@ func DownloadAndCacheArtwork(rom romm.Rom, kind library.ArtKind, host settings.H
 	}
 
 	fetcher := romm.NewArtFetcher(host, romm.DefaultClientTimeout)
-	fetcher.Process = imageutil.ProcessArtImage
+	fetcher.Process = imaging.ProcessArtImage
 	return fetcher.Save(artURL, GetArtworkCachePath(rom.PlatformFSSlug, rom.ID))
 }
 

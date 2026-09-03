@@ -53,32 +53,31 @@ var layerRules = []struct {
 	{"grout/settings", Domain},
 
 	{"grout/cfw", Platform},
-	{"grout/internal/gamelist", Platform},
-	{"grout/internal/emulationstation", Platform},
+	{"grout/gamelist", Platform},
+	{"grout/emulationstation", Platform},
 
 	{"grout/romm", Infra},
 	{"grout/cache", Infra},
 
-	{"grout/service", Service},
-	{"grout/sync", Service},
+	{"grout/catalog", Service},
+	{"grout/saves", Service},
 	{"grout/bios", Service},
 	{"grout/update", Service},
 
 	{"grout/ui", UI},
 	{"grout/app", Cmd},
 
-	// Leaf utilities: the pkg/ tree in waiting.
-	{"grout/internal/environment", Pkg},
-	{"grout/internal/fileutil", Pkg},
-	{"grout/internal/imageutil", Pkg},
-	{"grout/internal/jsonutil", Pkg},
-	{"grout/internal/pspdb", Pkg},
-	{"grout/internal/stringutil", Pkg},
+	// Leaf utilities.
+	{"grout/archive", Pkg},
+	{"grout/environment", Pkg},
+	{"grout/files", Pkg},
+	{"grout/hashing", Pkg},
+	{"grout/imaging", Pkg},
+	{"grout/pspdb", Pkg},
 	{"grout/resources", Pkg},
+	{"grout/tables", Pkg},
+	{"grout/textmatch", Pkg},
 	{"grout/version", Pkg},
-
-	// The settings god-object. Target is a leaf domain package.
-	{"grout/settings", Domain},
 }
 
 // layerOf returns the layer for an import path, and whether it is a grout

@@ -2,7 +2,7 @@ package ui
 
 import (
 	"errors"
-	"grout/internal/imageutil"
+	"grout/imaging"
 	"grout/romm"
 	"grout/settings"
 
@@ -30,7 +30,7 @@ func (s *GameQRScreen) Draw(input GameQRInput) (GameQROutput, error) {
 	logger := gaba.GetLogger()
 
 	gameURL := input.Game.GetGamePage(input.Host)
-	qrcode, err := imageutil.CreateTempQRCode(gameURL, 256)
+	qrcode, err := imaging.CreateTempQRCode(gameURL, 256)
 	if err != nil {
 		logger.Error("Unable to generate QR code", "error", err)
 		return output, err

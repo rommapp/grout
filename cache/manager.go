@@ -2,7 +2,7 @@ package cache
 
 import (
 	"database/sql"
-	"grout/internal/fileutil"
+	"grout/files"
 	"grout/romm"
 	"grout/settings"
 	"os"
@@ -257,7 +257,7 @@ func (cm *Manager) ClearArtwork() {
 	logger := gaba.GetLogger()
 
 	artworkDir := GetArtworkCacheDir()
-	if fileutil.FileExists(artworkDir) {
+	if files.FileExists(artworkDir) {
 		os.RemoveAll(artworkDir)
 	}
 
@@ -502,7 +502,7 @@ func cleanupLegacyCache() {
 	}
 
 	gamesDir := filepath.Join(wd, ".cache", "games")
-	if fileutil.FileExists(gamesDir) {
+	if files.FileExists(gamesDir) {
 		if err := os.RemoveAll(gamesDir); err != nil {
 			logger.Debug("Failed to remove legacy games cache", "error", err)
 		} else {
@@ -511,7 +511,7 @@ func cleanupLegacyCache() {
 	}
 
 	romsDir := filepath.Join(wd, ".cache", "roms")
-	if fileutil.FileExists(romsDir) {
+	if files.FileExists(romsDir) {
 		if err := os.RemoveAll(romsDir); err != nil {
 			logger.Debug("Failed to remove legacy roms cache", "error", err)
 		} else {

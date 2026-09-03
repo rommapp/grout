@@ -4,15 +4,15 @@ import (
 	"slices"
 	"strings"
 
-	"grout/internal/stringutil"
 	"grout/romm"
+	"grout/textmatch"
 )
 
 // prepareRomNames fills in each rom's DisplayName and sorts by name.
 // DisplayName is presentation only; nothing may key off it.
 func prepareRomNames(games []romm.Rom) []romm.Rom {
 	for i := range games {
-		games[i].DisplayName = stringutil.PrepareRomName(games[i].Name, games[i].Regions)
+		games[i].DisplayName = textmatch.PrepareRomName(games[i].Name, games[i].Regions)
 	}
 
 	slices.SortFunc(games, func(a, b romm.Rom) int {

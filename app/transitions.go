@@ -2,10 +2,10 @@ package main
 
 import (
 	"grout/cache"
+	"grout/catalog"
 	"grout/cfw"
-	"grout/service/catalog"
+	"grout/saves"
 	"grout/settings"
-	"grout/sync"
 	"grout/ui"
 	"os"
 
@@ -196,6 +196,7 @@ func transitionSaveMapping(ctx *transitionContext, result any) (router.Screen, a
 		ctx.state.Config = r.Config
 		if r.Action == ui.SaveMappingActionSaved {
 			settings.SaveConfig(r.Config)
+			ui.ApplyRuntimeSettings(r.Config)
 		}
 	}
 	return popOrExit(ctx.stack)
@@ -254,6 +255,7 @@ func transitionSaveSyncSettings(ctx *transitionContext, result any) (router.Scre
 			ctx.state.Config.Hosts = []settings.Host{ctx.state.Host}
 		}
 		settings.SaveConfig(ctx.state.Config)
+		ui.ApplyRuntimeSettings(ctx.state.Config)
 	}
 
 	if r.Action == ui.SaveSyncSettingsActionSaveMapping {
@@ -279,7 +281,7 @@ func transitionSaveSync(ctx *transitionContext, result any) (router.Screen, any)
 	// aligned with the index map and shows exactly the conflicts the caller selected,
 	// e.g. on an execution-time 409 loop-back, only the newly surfaced conflicts, not
 	// ones the user already skipped.
-	conflicts := make([]sync.SyncItem, 0, len(r.ConflictIndices))
+	conflicts := make([]saves.SyncItem, 0, len(r.ConflictIndices))
 	for ci := 0; ci < len(r.ConflictIndices); ci++ {
 		if idx, ok := r.ConflictIndices[ci]; ok && idx < len(r.Items) {
 			conflicts = append(conflicts, r.Items[idx])
@@ -612,6 +614,7 @@ func transitionSettings(ctx *transitionContext, result any) (router.Screen, any)
 	if r.Config != nil {
 		ctx.state.Config = r.Config
 		settings.SaveConfig(ctx.state.Config)
+		ui.ApplyRuntimeSettings(ctx.state.Config)
 	}
 
 	pushInput := ui.SettingsInput{Config: ctx.state.Config, CFW: ctx.state.CFW, Host: ctx.state.Host}
@@ -770,6 +773,7 @@ func transitionServerAddress(ctx *transitionContext, result any) (router.Screen,
 		ctx.state.Host = r.Host
 		ctx.state.Config.Hosts[0] = r.Host
 		if err := settings.SaveConfig(ctx.state.Config); err != nil {
+			ui.ApplyRuntimeSettings(ctx.state.Config)
 			gaba.GetLogger().Error("Failed to save config after server address change", "error", err)
 		}
 	}

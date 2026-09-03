@@ -117,6 +117,8 @@ func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (AdvancedSett
 	s.applySettings(config, result.Items)
 
 	err = settings.SaveConfig(config)
+
+	ApplyRuntimeSettings(config)
 	if err != nil {
 		gaba.GetLogger().Error("Error saving advanced settings", "error", err)
 		return output, err

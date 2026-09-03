@@ -1,7 +1,7 @@
 package cfw
 
 import (
-	"grout/internal/stringutil"
+	"grout/textmatch"
 	"path/filepath"
 	"strings"
 )
@@ -81,7 +81,7 @@ func GetSaveDirectoryForRomPath(fsSlug, romPath string) string {
 	}
 
 	romDir := filepath.Base(filepath.Dir(romPath))
-	romTag := stringutil.ParseTag(romDir)
+	romTag := textmatch.ParseTag(romDir)
 	for _, emulatorDir := range emulatorDirs {
 		if strings.EqualFold(emulatorDir, romDir) || (romTag != "" && strings.EqualFold(emulatorDir, romTag)) {
 			return filepath.Join(baseSavePath, emulatorDir)

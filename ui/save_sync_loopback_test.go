@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"grout/romm"
-	"grout/sync"
+	"grout/saves"
 )
 
 // After execution, an upload that the server rejected with 409 is turned into a
@@ -15,12 +15,12 @@ import (
 func TestNewlySurfacedConflicts(t *testing.T) {
 	remote := &romm.Save{ID: 75}
 
-	items := []sync.SyncItem{
-		{Action: sync.ActionDownload},                     // 0: a download, ignore
-		{Action: sync.ActionConflict, RemoteSave: remote}, // 1: upload->409 conflict (resolvable)
-		{Action: sync.ActionUpload},                       // 2: upload that succeeded -> still upload
-		{Action: sync.ActionConflict, RemoteSave: remote}, // 3: skipped round-1 conflict (wasUpload=false)
-		{Action: sync.ActionConflict, RemoteSave: nil},    // 4: upload->409 but no server save (unresolvable)
+	items := []saves.SyncItem{
+		{Action: saves.ActionDownload},                     // 0: a download, ignore
+		{Action: saves.ActionConflict, RemoteSave: remote}, // 1: upload->409 conflict (resolvable)
+		{Action: saves.ActionUpload},                       // 2: upload that succeeded -> still upload
+		{Action: saves.ActionConflict, RemoteSave: remote}, // 3: skipped round-1 conflict (wasUpload=false)
+		{Action: saves.ActionConflict, RemoteSave: nil},    // 4: upload->409 but no server save (unresolvable)
 	}
 	wasUpload := []bool{false, true, true, false, true}
 
@@ -39,9 +39,9 @@ func TestNewlySurfacedConflicts(t *testing.T) {
 }
 
 func TestNewlySurfacedConflicts_NoneWhenAllResolved(t *testing.T) {
-	items := []sync.SyncItem{
-		{Action: sync.ActionUpload, Success: true},
-		{Action: sync.ActionDownload, Success: true},
+	items := []saves.SyncItem{
+		{Action: saves.ActionUpload, Success: true},
+		{Action: saves.ActionDownload, Success: true},
 	}
 	wasUpload := []bool{true, false}
 

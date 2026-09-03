@@ -3,7 +3,7 @@ package ui
 import (
 	"errors"
 	"fmt"
-	"grout/service/catalog"
+	"grout/catalog"
 	"grout/settings"
 	"os"
 	"strconv"

@@ -11,7 +11,7 @@
 layer grout/ui -> grout/cache
 layer grout/ui -> grout/cfw
 layer grout/ui -> grout/cfw/muos
-layer grout/ui -> grout/internal/gamelist
+layer grout/ui -> grout/gamelist
 layer grout/ui -> grout/romm
 
 # Packages outside ui and cmd that import the gabagool UI toolkit,
@@ -21,11 +21,10 @@ toolkit grout/cfw/minui
 toolkit grout/cfw/muos
 toolkit grout/cfw/nextui
 toolkit grout/cfw/spruce
-toolkit grout/settings
-toolkit grout/internal/gamelist
-toolkit grout/internal/imageutil
+toolkit grout/gamelist
+toolkit grout/imaging
 toolkit grout/resources
-toolkit grout/sync
+toolkit grout/saves
 toolkit grout/update
 
 # Package-level mutable state outside cmd.

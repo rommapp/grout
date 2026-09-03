@@ -107,16 +107,7 @@ jobs:
       - name: Vet arm64 packages
         run: |
           go vet \
-            ./library \
-            ./romm \
-            ./version \
-            ./resources \
-            ./internal/emulationstation \
-            ./internal/environment \
-            ./internal/fileutil \
-            ./internal/jsonutil \
-            ./internal/pspdb \
-            ./internal/stringutil \
+            ./archive \
             ./cfw/allium \
             ./cfw/arkos \
             ./cfw/batocera \
@@ -125,5 +116,19 @@ jobs:
             ./cfw/onion \
             ./cfw/rocknix \
             ./cfw/trimui \
+            ./emulationstation \
+            ./environment \
+            ./files \
+            ./hashing \
+            ./library \
+            ./pspdb \
+            ./resources \
+            ./romm \
+            ./settings \
+            ./tables \
+            ./textmatch \
             ./tools/archcheck \
-            ./tools/gen-platform-docs
+            ./tools/create-conflict \
+            ./tools/gen-platform-docs \
+            ./tools/gen-psp-rom-list \
+            ./version

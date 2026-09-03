@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"grout/cache"
 	"grout/cfw"
-	"grout/internal/fileutil"
-	"grout/internal/imageutil"
-	"grout/internal/stringutil"
+	"grout/files"
+	"grout/imaging"
 	"grout/settings"
+	"grout/textmatch"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -81,7 +81,7 @@ func (s *GameDetailsScreen) Draw(input GameDetailsInput) (GameDetailsOutput, err
 						for _, file := range input.Game.Files {
 							if file.ID == fileID {
 								filePath := filepath.Join(romDirectory, file.FileName)
-								if fileutil.FileExists(filePath) {
+								if files.FileExists(filePath) {
 									dynamicDownloadText.Store(redownloadText)
 								} else {
 									dynamicDownloadText.Store(downloadText)
@@ -178,7 +178,7 @@ func (s *GameDetailsScreen) buildSections(input GameDetailsInput) []gaba.Section
 		for i, file := range game.Files {
 			label := file.FileName
 			filePath := filepath.Join(romDirectory, file.FileName)
-			if fileutil.FileExists(filePath) {
+			if files.FileExists(filePath) {
 				label = constants.Download + " " + label
 			}
 			fileOptions[i] = gaba.DropdownOption{
@@ -253,7 +253,7 @@ func (s *GameDetailsScreen) buildSections(input GameDetailsInput) []gaba.Section
 	if game.FsSizeBytes > 0 {
 		metadata = append(metadata, gaba.MetadataItem{
 			Label: i18n.Localize(&goi18n.Message{ID: "game_details_file_size", Other: "File Size"}, nil),
-			Value: stringutil.FormatBytes(int64(game.FsSizeBytes)),
+			Value: textmatch.FormatBytes(int64(game.FsSizeBytes)),
 		})
 	}
 
@@ -298,7 +298,7 @@ func (s *GameDetailsScreen) getCoverImagePath(config *settings.Config, host sett
 		if err := cache.EnsureArtworkCacheDir(game.PlatformFSSlug); err == nil {
 			cachePath := cache.GetArtworkCachePath(game.PlatformFSSlug, game.ID)
 			if err := os.WriteFile(cachePath, imageData, 0644); err == nil {
-				imageutil.ProcessArtImage(cachePath)
+				imaging.ProcessArtImage(cachePath)
 				return cachePath
 			}
 		}

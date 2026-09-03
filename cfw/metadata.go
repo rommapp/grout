@@ -4,8 +4,8 @@ import (
 	"log/slog"
 
 	"grout/cfw/muos"
-	"grout/internal/emulationstation"
-	"grout/internal/gamelist"
+	"grout/emulationstation"
+	"grout/gamelist"
 )
 
 func scheduleESRestart() {

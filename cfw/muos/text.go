@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"grout/internal/gamelist"
+	"grout/gamelist"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"grout/romm"
+	"grout/saves"
 	"grout/settings"
-	"grout/sync"
 	"grout/version"
 	"os"
 
@@ -218,7 +218,7 @@ func (s *SaveSyncSettingsScreen) registerDevice(output SaveSyncSettingsOutput) (
 		i18n.Localize(&goi18n.Message{ID: "device_registration_registering", Other: "Registering device..."}, nil),
 		gaba.ProcessMessageOptions{ShowThemeBackground: true},
 		func() (any, error) {
-			device, regErr = sync.RegisterDevice(client, deviceName)
+			device, regErr = saves.RegisterDevice(client, deviceName)
 			return nil, nil
 		},
 	)

@@ -1,9 +1,9 @@
 package cfw
 
 import (
-	"grout/internal/fileutil"
-	"grout/internal/stringutil"
+	"grout/files"
 	"grout/settings"
+	"grout/textmatch"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -63,7 +63,7 @@ func scanRomsByPlatform(baseRomDir string, platformMap map[string][]string, conf
 			}
 
 			dirName := entry.Name()
-			tag := stringutil.ParseTag(dirName)
+			tag := textmatch.ParseTag(dirName)
 			if tag == "" {
 				logger.Debug("No tag found in directory", "dir", dirName)
 				continue
@@ -72,7 +72,7 @@ func scanRomsByPlatform(baseRomDir string, platformMap map[string][]string, conf
 			for fsSlug, cfwDirs := range platformMap {
 				matched := false
 				for _, cfwDir := range cfwDirs {
-					cfwTag := stringutil.ParseTag(cfwDir)
+					cfwTag := textmatch.ParseTag(cfwDir)
 					if cfwTag == tag {
 						matched = true
 						break
@@ -82,7 +82,7 @@ func scanRomsByPlatform(baseRomDir string, platformMap map[string][]string, conf
 				if !matched {
 					rommFSSlug := config.ResolveRommFSSlug(fsSlug)
 					if relPath, ok := config.GetDirectoryMapping(rommFSSlug); ok {
-						matched = stringutil.ParseTag(relPath) == tag
+						matched = textmatch.ParseTag(relPath) == tag
 					}
 				}
 
@@ -130,7 +130,7 @@ func scanRomsByPlatform(baseRomDir string, platformMap map[string][]string, conf
 
 				romDir := filepath.Join(baseRomDir, romFolderName)
 
-				if !fileutil.FileExists(romDir) {
+				if !files.FileExists(romDir) {
 					resultChan <- platformResult{fsSlug: rommFSSlug, roms: nil}
 					return
 				}
@@ -168,7 +168,7 @@ func scanRomDirectory(fsSlug, romDir string) []LocalRomFile {
 		return roms
 	}
 
-	visibleFiles := fileutil.FilterVisibleFiles(entries)
+	visibleFiles := files.FilterVisibleFiles(entries)
 	for _, entry := range visibleFiles {
 		rom := LocalRomFile{
 			FSSlug:   fsSlug,

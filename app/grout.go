@@ -1,8 +1,8 @@
 package main
 
 import (
+	"grout/catalog"
 	"grout/cfw"
-	"grout/service/catalog"
 	"grout/update"
 	"os"
 

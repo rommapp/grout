@@ -3,10 +3,10 @@
 package main
 
 import (
-	"grout/sync"
+	"grout/saves"
 	"os"
 )
 
 func runScenario(name string) error {
-	return sync.RunScenario(name, os.Stdout)
+	return saves.RunScenario(name, os.Stdout)
 }

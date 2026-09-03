@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"grout/cache"
 	"grout/romm"
+	"grout/saves"
 	"grout/settings"
-	"grout/sync"
 	"os"
 	"strings"
 	"time"
@@ -56,7 +56,7 @@ func main() {
 	fmt.Printf("Device:   %s\n", host.DeviceID)
 	fmt.Println()
 
-	result, err := sync.ResolveSaveSync(client, config, host.DeviceID)
+	result, err := saves.ResolveSaveSync(client, config, host.DeviceID)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to resolve sync: %v\n", err)
 		os.Exit(1)
@@ -84,7 +84,7 @@ type row struct {
 	slot          string
 }
 
-func printTable(items []sync.SyncItem, deviceID string) {
+func printTable(items []saves.SyncItem, deviceID string) {
 	headers := row{"ACTION", "ROM", "LOCAL FILE", "LOCAL MTIME", "REMOTE ID", "REMOTE UPDATED", "CURRENT", "SLOT"}
 
 	var rows []row

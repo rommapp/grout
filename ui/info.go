@@ -3,7 +3,7 @@ package ui
 import (
 	"errors"
 	"grout/cfw"
-	"grout/internal/imageutil"
+	"grout/imaging"
 	"grout/settings"
 	"grout/version"
 	"time"
@@ -124,7 +124,7 @@ func (s *InfoScreen) buildSections(input InfoInput) []gaba.Section {
 	sections = append(sections, gaba.NewInfoSection("RomM", metadata))
 
 	qrText := "https://github.com/rommapp/grout"
-	qrcode, err := imageutil.CreateTempQRCode(qrText, 256)
+	qrcode, err := imaging.CreateTempQRCode(qrText, 256)
 	if err == nil {
 		sections = append(sections, gaba.NewImageSection(
 			i18n.Localize(&goi18n.Message{ID: "info_repository", Other: "GitHub Repository"}, nil),

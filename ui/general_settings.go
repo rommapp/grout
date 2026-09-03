@@ -54,6 +54,8 @@ func (s *GeneralSettingsScreen) Draw(input GeneralSettingsInput) (GeneralSetting
 	s.applySettings(config, result.Items)
 
 	err = settings.SaveConfig(config)
+
+	ApplyRuntimeSettings(config)
 	if err != nil {
 		gaba.GetLogger().Error("Error saving general settings", "error", err)
 		return output, err

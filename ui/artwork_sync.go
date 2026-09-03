@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"grout/cache"
 	"grout/cfw"
-	"grout/internal/fileutil"
-	"grout/internal/imageutil"
+	"grout/files"
+	"grout/imaging"
 	"grout/library"
 	"grout/romm"
 	"grout/settings"
@@ -268,7 +268,7 @@ func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 			semaphore <- struct{}{}
 			defer func() { <-semaphore }()
 
-			if err := imageutil.ProcessArtImage(dl.Location); err != nil {
+			if err := imaging.ProcessArtImage(dl.Location); err != nil {
 				logger.Warn("Failed to process artwork", "path", dl.Location, "error", err)
 				return
 			}
@@ -333,7 +333,7 @@ func filterMissingCFWArt(roms []romm.Rom, platform romm.Platform, config setting
 		}
 		artDir := cfw.PlatformArtDirectory(config, cfw.ArtCover, platform.FSSlug, platform.Name)
 		artPath := filepath.Join(artDir, cfw.ArtFileName(activeCFW, cfw.ArtCover, romArtFileName(rom), rom.FsNameNoExt))
-		if !fileutil.FileExists(artPath) {
+		if !files.FileExists(artPath) {
 			missing = append(missing, rom)
 			continue
 		}
@@ -341,7 +341,7 @@ func filterMissingCFWArt(roms []romm.Rom, platform romm.Platform, config setting
 		if config.DownloadArtScreenshotPreview {
 			previewDir := cfw.PlatformArtDirectory(config, cfw.ArtScreenshotPreview, platform.FSSlug, platform.Name)
 			if previewDir != "" && rom.GetScreenshotURL(host) != "" {
-				if !fileutil.FileExists(filepath.Join(previewDir, cfw.ArtFileName(activeCFW, cfw.ArtScreenshotPreview, romArtFileName(rom), rom.FsNameNoExt))) {
+				if !files.FileExists(filepath.Join(previewDir, cfw.ArtFileName(activeCFW, cfw.ArtScreenshotPreview, romArtFileName(rom), rom.FsNameNoExt))) {
 					missing = append(missing, rom)
 					continue
 				}
@@ -350,7 +350,7 @@ func filterMissingCFWArt(roms []romm.Rom, platform romm.Platform, config setting
 		if config.DownloadSplashArt != library.ArtKindNone {
 			splashDir := cfw.PlatformArtDirectory(config, cfw.ArtThumbnail, platform.FSSlug, platform.Name)
 			if splashDir != "" && rom.GetSplashArtURL(config.DownloadSplashArt, host) != "" {
-				if !fileutil.FileExists(filepath.Join(splashDir, cfw.ArtFileName(activeCFW, cfw.ArtThumbnail, romArtFileName(rom), rom.FsNameNoExt))) {
+				if !files.FileExists(filepath.Join(splashDir, cfw.ArtFileName(activeCFW, cfw.ArtThumbnail, romArtFileName(rom), rom.FsNameNoExt))) {
 					missing = append(missing, rom)
 					continue
 				}

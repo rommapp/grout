@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"grout/cfw"
-	"grout/internal/stringutil"
 	"grout/settings"
+	"grout/textmatch"
 	"grout/update"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -83,7 +83,7 @@ func (s *UpdateScreen) Draw(input UpdateInput) (UpdateOutput, error) {
 		"%s\n%s\n%s",
 		i18n.Localize(&goi18n.Message{ID: "update_available", Other: "Update available: {{.Version}}"}, map[string]interface{}{"Version": updateInfo.LatestVersion}),
 		i18n.Localize(&goi18n.Message{ID: "update_current_version", Other: "Current: {{.Version}}"}, map[string]interface{}{"Version": updateInfo.CurrentVersion}),
-		i18n.Localize(&goi18n.Message{ID: "update_size", Other: "Size: {{.Size}}"}, map[string]interface{}{"Size": stringutil.FormatBytes(updateInfo.AssetSize)}),
+		i18n.Localize(&goi18n.Message{ID: "update_size", Other: "Size: {{.Size}}"}, map[string]interface{}{"Size": textmatch.FormatBytes(updateInfo.AssetSize)}),
 	)
 
 	_, err = gaba.ConfirmationMessage(

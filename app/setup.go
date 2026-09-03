@@ -3,14 +3,14 @@ package main
 import (
 	"errors"
 	"grout/cache"
+	"grout/catalog"
 	"grout/cfw"
-	"grout/internal/environment"
-	"grout/internal/fileutil"
+	"grout/environment"
+	"grout/files"
 	"grout/resources"
 	"grout/romm"
-	"grout/service/catalog"
+	"grout/saves"
 	"grout/settings"
-	"grout/sync"
 	"grout/ui"
 	"log"
 	"log/slog"
@@ -68,7 +68,7 @@ func setupInputMapping(currentCFW cfw.CFW) {
 	}
 
 	cwdMappingPath := filepath.Join(cwd, "input_mapping.json")
-	if fileutil.FileExists(cwdMappingPath) {
+	if files.FileExists(cwdMappingPath) {
 		os.Setenv("INPUT_MAPPING_PATH", cwdMappingPath)
 		return
 	}
@@ -196,6 +196,7 @@ func handleFirstLaunch(config *settings.Config, isFirstLaunch bool, logger *slog
 	config.Hosts = loginConfig.Hosts
 	config.PlatformsBinding = loginConfig.PlatformsBinding
 	settings.SaveConfig(config)
+	ui.ApplyRuntimeSettings(config)
 
 	return config
 }
@@ -249,6 +250,7 @@ func applyConfig(config *settings.Config, isFirstLaunch bool, currentCFW cfw.CFW
 		if err == nil && result.Action == ui.PlatformMappingActionSaved {
 			config.DirectoryMappings = result.Mappings
 			settings.SaveConfig(config)
+			ui.ApplyRuntimeSettings(config)
 		}
 	}
 
@@ -296,15 +298,17 @@ func connectAndLoadPlatforms(config *settings.Config, logger *slog.Logger) []rom
 					host.Username = user.Username
 					config.Hosts[0] = host
 					settings.SaveConfig(config)
+					ui.ApplyRuntimeSettings(config)
 				}
 			}
 
 			// If grout was upgraded since this device last reported in, refresh the
 			// client_version the server has on record (diagnostic/display only).
-			if v, changed := sync.RefreshDeviceVersion(authClient, host.DeviceID, host.DeviceClientVersion); changed {
+			if v, changed := saves.RefreshDeviceVersion(authClient, host.DeviceID, host.DeviceClientVersion); changed {
 				host.DeviceClientVersion = v
 				config.Hosts[0] = host
 				settings.SaveConfig(config)
+				ui.ApplyRuntimeSettings(config)
 			}
 
 			// Load platforms
@@ -376,6 +380,7 @@ func handleAuthFailure(config *settings.Config, logger *slog.Logger) *settings.C
 	config.Hosts = loginConfig.Hosts
 	config.PlatformsBinding = loginConfig.PlatformsBinding
 	settings.SaveConfig(config)
+	ui.ApplyRuntimeSettings(config)
 
 	if err := cache.InitCacheManager(config.Hosts[0], *config); err != nil {
 		logger.Error("Failed to re-initialize cache manager", "error", err)

@@ -2,9 +2,9 @@ package main
 
 import (
 	"grout/cache"
+	"grout/catalog"
 	"grout/cfw"
 	"grout/romm"
-	"grout/service/catalog"
 	"grout/settings"
 	"grout/ui"
 
@@ -33,6 +33,7 @@ func savePlatformOrder(state *AppState, platforms []romm.Platform) {
 	state.Config.PlatformOrder = platformOrder
 	state.Platforms = platforms
 	settings.SaveConfig(state.Config)
+	ui.ApplyRuntimeSettings(state.Config)
 }
 
 func executeDownloadUI(state *AppState, r ui.GameDetailsOutput, stack *router.Stack) {
@@ -59,6 +60,7 @@ func handlePlatformMappingUpdateUI(state *AppState, r ui.PlatformMappingOutput) 
 	state.Config.DirectoryMappings = r.Mappings
 	state.Config.PlatformOrder = catalog.PruneOrder(state.Config.PlatformOrder, r.Mappings)
 	settings.SaveConfig(state.Config)
+	ui.ApplyRuntimeSettings(state.Config)
 
 	platforms, err := catalog.MappedPlatforms(state.Host, r.Mappings, state.Config.ApiTimeout.Duration())
 	if err != nil {
@@ -97,6 +99,8 @@ func handleLogout(state *AppState) {
 	state.Config.PlatformOrder = nil
 
 	if err := settings.SaveConfig(state.Config); err != nil {
+
+		ui.ApplyRuntimeSettings(state.Config)
 		logger.Error("Failed to save config after logout", "error", err)
 		return
 	}
@@ -111,6 +115,7 @@ func handleLogout(state *AppState) {
 
 	state.Config.Hosts = loginConfig.Hosts
 	if err := settings.SaveConfig(state.Config); err != nil {
+		ui.ApplyRuntimeSettings(state.Config)
 		logger.Error("Failed to save config after re-login", "error", err)
 		return
 	}
@@ -132,6 +137,7 @@ func handleLogout(state *AppState) {
 		if err == nil && result.Action == ui.PlatformMappingActionSaved {
 			state.Config.DirectoryMappings = result.Mappings
 			settings.SaveConfig(state.Config)
+			ui.ApplyRuntimeSettings(state.Config)
 		}
 	}
 

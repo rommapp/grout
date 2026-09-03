@@ -2,8 +2,8 @@ package ui
 
 import (
 	"grout/cache"
+	"grout/catalog"
 	"grout/romm"
-	"grout/service/catalog"
 	"grout/settings"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"

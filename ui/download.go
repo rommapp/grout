@@ -3,15 +3,16 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"grout/archive"
 	"grout/cfw"
 	"grout/cfw/muos"
-	"grout/internal/fileutil"
-	"grout/internal/gamelist"
-	"grout/internal/imageutil"
-	"grout/internal/stringutil"
+	"grout/files"
+	"grout/gamelist"
+	"grout/imaging"
 	"grout/library"
 	"grout/romm"
 	"grout/settings"
+	"grout/textmatch"
 	_ "image/gif"
 	_ "image/jpeg"
 	"net/url"
@@ -114,7 +115,7 @@ func (s *DownloadScreen) draw(input DownloadInput) (DownloadOutput, error) {
 		// Clean up any partial downloads when cancelled
 		if errors.Is(err, gaba.ErrCancelled) {
 			for _, d := range downloads {
-				fileutil.DeleteFile(d.Location)
+				files.DeleteFile(d.Location)
 			}
 		}
 
@@ -133,7 +134,7 @@ func (s *DownloadScreen) draw(input DownloadInput) (DownloadOutput, error) {
 				return de.Download.DisplayName == g.DisplayName
 			})
 			if failedMatch {
-				fileutil.DeleteFile(g.Location)
+				files.DeleteFile(g.Location)
 			}
 		}
 	}
@@ -163,7 +164,7 @@ func (s *DownloadScreen) draw(input DownloadInput) (DownloadOutput, error) {
 			}
 		}
 
-		tmpZipPath := filepath.Join(fileutil.TempDir(), fmt.Sprintf("grout_multirom_%d.zip", g.ID))
+		tmpZipPath := filepath.Join(files.TempDir(), fmt.Sprintf("grout_multirom_%d.zip", g.ID))
 		romDirectory := cfw.PlatformRomDirectory(input.Config, gamePlatform.FSSlug)
 		extractDir := filepath.Join(romDirectory, g.FsNameNoExt)
 
@@ -178,7 +179,7 @@ func (s *DownloadScreen) draw(input DownloadInput) (DownloadOutput, error) {
 			func() (interface{}, error) {
 				logger.Debug("Extracting multi-file ROM", "game", g.DisplayName, "dest", extractDir)
 
-				if err := fileutil.Unzip(tmpZipPath, extractDir, progress); err != nil {
+				if err := archive.Unzip(tmpZipPath, extractDir, progress); err != nil {
 					logger.Error("Failed to extract multi-file ROM", "game", g.DisplayName, "error", err)
 					os.Remove(tmpZipPath)
 					return nil, err
@@ -258,14 +259,14 @@ func (s *DownloadScreen) draw(input DownloadInput) (DownloadOutput, error) {
 							var archiveFiles []string
 							var extractErr error
 							if ext == ".7z" {
-								archiveFiles, extractErr = fileutil.SevenZipFileNames(archivePath)
+								archiveFiles, extractErr = archive.SevenZipFileNames(archivePath)
 								if extractErr == nil {
-									extractErr = fileutil.Un7zip(archivePath, romDirectory, progress)
+									extractErr = archive.Un7zip(archivePath, romDirectory, progress)
 								}
 							} else {
-								archiveFiles, extractErr = fileutil.ZipFileNames(archivePath)
+								archiveFiles, extractErr = archive.ZipFileNames(archivePath)
 								if extractErr == nil {
-									extractErr = fileutil.Unzip(archivePath, romDirectory, progress)
+									extractErr = archive.Unzip(archivePath, romDirectory, progress)
 								}
 							}
 
@@ -373,7 +374,7 @@ func (s *DownloadScreen) buildDownloads(config settings.Config, host settings.Ho
 		sourceURL := ""
 
 		if g.HasMultipleFiles {
-			tmpDir := fileutil.TempDir()
+			tmpDir := files.TempDir()
 			downloadLocation = filepath.Join(tmpDir, fmt.Sprintf("grout_multirom_%d.zip", g.ID))
 			sourceURL, _ = url.JoinPath(host.URL(), "/api/roms/", strconv.Itoa(g.ID), "content", g.FsName)
 		} else {
@@ -553,7 +554,7 @@ func (s *DownloadScreen) buildDownloads(config settings.Config, host settings.Ho
 
 		}
 		gamesSummaries = append(gamesSummaries, gamelist.RomGameEntry{
-			Game:         g.ToGame(stringutil.PrepareRomName(g.Name, g.Regions), downloadLocation, artPaths),
+			Game:         g.ToGame(textmatch.PrepareRomName(g.Name, g.Regions), downloadLocation, artPaths),
 			Platform:     gamePlatform.ToPlatform(),
 			RomDirectory: romDirectory,
 		})
@@ -604,7 +605,7 @@ func (s *DownloadScreen) downloadArt(artDownloads []artDownload, downloadedGames
 	// One fetcher for the whole run so connections are reused across what can
 	// be hundreds of art downloads.
 	fetcher := romm.NewArtFetcher(host, romm.DefaultClientTimeout)
-	fetcher.Process = imageutil.ProcessArtImage
+	fetcher.Process = imaging.ProcessArtImage
 
 	downloaded := make(map[string]bool, len(downloadedGames))
 	for _, g := range downloadedGames {

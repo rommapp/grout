@@ -3,7 +3,7 @@ package ui
 import (
 	"testing"
 
-	"grout/sync"
+	"grout/saves"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
@@ -17,10 +17,10 @@ func TestApplyResolutions_SkipDefaultLeavesConflictUntouched(t *testing.T) {
 	}
 
 	s := NewSaveConflictScreen()
-	conflicts := []sync.SyncItem{
-		{LocalSave: sync.LocalSave{RomID: 1, RomName: "A"}, Action: sync.ActionConflict},
-		{LocalSave: sync.LocalSave{RomID: 2, RomName: "B"}, Action: sync.ActionConflict},
-		{LocalSave: sync.LocalSave{RomID: 3, RomName: "C"}, Action: sync.ActionConflict},
+	conflicts := []saves.SyncItem{
+		{LocalSave: saves.LocalSave{RomID: 1, RomName: "A"}, Action: saves.ActionConflict},
+		{LocalSave: saves.LocalSave{RomID: 2, RomName: "B"}, Action: saves.ActionConflict},
+		{LocalSave: saves.LocalSave{RomID: 3, RomName: "C"}, Action: saves.ActionConflict},
 	}
 	menu := s.buildMenuItems(conflicts)
 	// Default selection (index 0) must be "skip" for every row.
@@ -36,13 +36,13 @@ func TestApplyResolutions_SkipDefaultLeavesConflictUntouched(t *testing.T) {
 
 	s.applyResolutions(conflicts, menu)
 
-	if conflicts[0].Action != sync.ActionConflict || conflicts[0].ForceOverwrite {
+	if conflicts[0].Action != saves.ActionConflict || conflicts[0].ForceOverwrite {
 		t.Errorf("skipped conflict must stay ActionConflict with no overwrite, got %+v", conflicts[0])
 	}
-	if conflicts[1].Action != sync.ActionUpload || !conflicts[1].ForceOverwrite {
+	if conflicts[1].Action != saves.ActionUpload || !conflicts[1].ForceOverwrite {
 		t.Errorf("keep-local must be upload+overwrite, got %+v", conflicts[1])
 	}
-	if conflicts[2].Action != sync.ActionDownload {
+	if conflicts[2].Action != saves.ActionDownload {
 		t.Errorf("keep-remote must be download, got %v", conflicts[2].Action)
 	}
 }

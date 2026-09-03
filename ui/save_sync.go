@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"grout/romm"
+	"grout/saves"
 	"grout/settings"
-	"grout/sync"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	buttons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
@@ -17,15 +17,15 @@ import (
 type SaveSyncInput struct {
 	Config        *settings.Config
 	Host          settings.Host
-	NewSlotName   string          // If set, upload-only mode for a new slot
-	NewSlotRomID  int             // ROM ID to upload saves for
-	ResolvedItems []sync.SyncItem // If set, skip resolve phase and execute directly
-	SessionID     int             // Sync session ID from negotiate (passed through conflict resolution)
+	NewSlotName   string           // If set, upload-only mode for a new slot
+	NewSlotRomID  int              // ROM ID to upload saves for
+	ResolvedItems []saves.SyncItem // If set, skip resolve phase and execute directly
+	SessionID     int              // Sync session ID from negotiate (passed through conflict resolution)
 }
 
 type SaveSyncOutput struct {
 	NeedsConflictResolution bool
-	Items                   []sync.SyncItem
+	Items                   []saves.SyncItem
 	ConflictIndices         map[int]int // maps conflict slice index → items slice index
 	SessionID               int         // Sync session ID to pass through conflict resolution
 }
@@ -62,13 +62,13 @@ func (s *SaveSyncScreen) Execute(input SaveSyncInput) SaveSyncOutput {
 	}
 
 	// Phase 1: Resolve: scan local saves, fetch summaries, determine actions
-	var result sync.SyncResult
+	var result saves.SyncResult
 	var resolveErr error
 	gaba.ProcessMessage(
 		i18n.Localize(&goi18n.Message{ID: "save_sync_scanning", Other: "Scanning saves..."}, nil),
 		gaba.ProcessMessageOptions{ShowThemeBackground: true},
 		func() (any, error) {
-			result, resolveErr = sync.ResolveSaveSync(client, config, host.DeviceID)
+			result, resolveErr = saves.ResolveSaveSync(client, config, host.DeviceID)
 			return nil, nil
 		},
 	)
@@ -91,7 +91,7 @@ func (s *SaveSyncScreen) Execute(input SaveSyncInput) SaveSyncOutput {
 	hasConflicts := false
 	conflictCount := 0
 	for i, item := range items {
-		if item.Action == sync.ActionConflict {
+		if item.Action == saves.ActionConflict {
 			conflictIndices[conflictCount] = i
 			conflictCount++
 			hasConflicts = true
@@ -117,12 +117,12 @@ func (s *SaveSyncScreen) Execute(input SaveSyncInput) SaveSyncOutput {
 // It deliberately excludes conflicts the user already handled (wasUpload[i] == false,
 // e.g. a skipped negotiate conflict) and conflicts with no server save (not resolvable),
 // so re-running execution on the resolved items terminates instead of looping forever.
-func newlySurfacedConflicts(items []sync.SyncItem, wasUpload []bool) map[int]int {
+func newlySurfacedConflicts(items []saves.SyncItem, wasUpload []bool) map[int]int {
 	out := map[int]int{}
 	ci := 0
 	for i := range items {
 		if i < len(wasUpload) && wasUpload[i] &&
-			items[i].Action == sync.ActionConflict && items[i].RemoteSave != nil {
+			items[i].Action == saves.ActionConflict && items[i].RemoteSave != nil {
 			out[ci] = i
 			ci++
 		}
@@ -130,19 +130,19 @@ func newlySurfacedConflicts(items []sync.SyncItem, wasUpload []bool) map[int]int
 	return out
 }
 
-func (s *SaveSyncScreen) executeSyncPhase(client *romm.Client, config *settings.Config, deviceID string, items []sync.SyncItem, sessionID int) SaveSyncOutput {
-	var report sync.SyncReport
+func (s *SaveSyncScreen) executeSyncPhase(client *romm.Client, config *settings.Config, deviceID string, items []saves.SyncItem, sessionID int) SaveSyncOutput {
+	var report saves.SyncReport
 
 	// Snapshot which items are uploads so we can detect 409s that turn an upload into
 	// a resolvable conflict during execution and loop back to the conflict screen.
 	wasUpload := make([]bool, len(items))
 	for i := range items {
-		wasUpload[i] = items[i].Action == sync.ActionUpload
+		wasUpload[i] = items[i].Action == saves.ActionUpload
 	}
 
 	hasActionable := false
 	for _, item := range items {
-		if item.Action != sync.ActionSkip && item.Action != sync.ActionConflict {
+		if item.Action != saves.ActionSkip && item.Action != saves.ActionConflict {
 			hasActionable = true
 			break
 		}
@@ -158,7 +158,7 @@ func (s *SaveSyncScreen) executeSyncPhase(client *romm.Client, config *settings.
 				Progress:            progress,
 			},
 			func() (any, error) {
-				report = sync.ExecuteSaveSync(client, config, deviceID, items, sessionID, func(current, total int) {
+				report = saves.ExecuteSaveSync(client, config, deviceID, items, sessionID, func(current, total int) {
 					if total > 0 {
 						progress.Store(float64(current) / float64(total))
 					}
@@ -167,7 +167,7 @@ func (s *SaveSyncScreen) executeSyncPhase(client *romm.Client, config *settings.
 			},
 		)
 	} else {
-		report = sync.ExecuteSaveSync(client, config, deviceID, items, sessionID, nil)
+		report = saves.ExecuteSaveSync(client, config, deviceID, items, sessionID, nil)
 	}
 
 	// A 409 during execution can turn an upload into a resolvable conflict; loop back
@@ -186,7 +186,7 @@ func (s *SaveSyncScreen) executeSyncPhase(client *romm.Client, config *settings.
 }
 
 func (s *SaveSyncScreen) executeNewSlotUpload(client *romm.Client, config *settings.Config, deviceID string, romID int, slotName string) SaveSyncOutput {
-	var report sync.SyncReport
+	var report saves.SyncReport
 	progress := uatomic.NewFloat64(0)
 
 	gaba.ProcessMessage(
@@ -197,18 +197,18 @@ func (s *SaveSyncScreen) executeNewSlotUpload(client *romm.Client, config *setti
 			Progress:            progress,
 		},
 		func() (any, error) {
-			localSaves := sync.ScanSaves(config)
-			var items []sync.SyncItem
+			localSaves := saves.ScanSaves(config)
+			var items []saves.SyncItem
 			for _, ls := range localSaves {
 				if ls.RomID == romID {
-					items = append(items, sync.SyncItem{
+					items = append(items, saves.SyncItem{
 						LocalSave:  ls,
 						TargetSlot: slotName,
-						Action:     sync.ActionUpload,
+						Action:     saves.ActionUpload,
 					})
 				}
 			}
-			report = sync.ExecuteSaveSync(client, config, deviceID, items, 0, func(current, total int) {
+			report = saves.ExecuteSaveSync(client, config, deviceID, items, 0, func(current, total int) {
 				if total > 0 {
 					progress.Store(float64(current) / float64(total))
 				}
@@ -223,7 +223,7 @@ func (s *SaveSyncScreen) executeNewSlotUpload(client *romm.Client, config *setti
 
 // resolveMultiSlotDownloads shows a slot picker for first-time downloads that have
 // multiple slots on the server. Returns the (potentially modified) items slice.
-func (s *SaveSyncScreen) resolveMultiSlotDownloads(config *settings.Config, items []sync.SyncItem) []sync.SyncItem {
+func (s *SaveSyncScreen) resolveMultiSlotDownloads(config *settings.Config, items []saves.SyncItem) []saves.SyncItem {
 	// Collect items that need slot selection
 	type slotChoice struct {
 		itemIndex int
@@ -304,7 +304,7 @@ func (s *SaveSyncScreen) resolveMultiSlotDownloads(config *settings.Config, item
 			if item.SelectedOption >= 0 && item.SelectedOption < len(item.Options) {
 				if selectedSlot, ok := item.Options[item.SelectedOption].Value.(string); ok {
 					config.SetSlotPreference(items[c.itemIndex].LocalSave.RomID, selectedSlot)
-					newSave := sync.SelectSaveForSlot(items[c.itemIndex].AllRemoteSaves, selectedSlot)
+					newSave := saves.SelectSaveForSlot(items[c.itemIndex].AllRemoteSaves, selectedSlot)
 					if newSave != nil {
 						items[c.itemIndex].RemoteSave = newSave
 					}
@@ -321,11 +321,11 @@ func (s *SaveSyncScreen) resolveMultiSlotDownloads(config *settings.Config, item
 
 // dropSyncItems returns items with the indexed entries removed. Used when the user
 // cancels slot selection so unconfirmed multi-slot downloads are skipped entirely.
-func dropSyncItems(items []sync.SyncItem, drop map[int]bool) []sync.SyncItem {
+func dropSyncItems(items []saves.SyncItem, drop map[int]bool) []saves.SyncItem {
 	if len(drop) == 0 {
 		return items
 	}
-	kept := make([]sync.SyncItem, 0, len(items))
+	kept := make([]saves.SyncItem, 0, len(items))
 	for i, it := range items {
 		if !drop[i] {
 			kept = append(kept, it)
@@ -334,7 +334,7 @@ func dropSyncItems(items []sync.SyncItem, drop map[int]bool) []sync.SyncItem {
 	return kept
 }
 
-func (s *SaveSyncScreen) showReport(report sync.SyncReport) {
+func (s *SaveSyncScreen) showReport(report saves.SyncReport) {
 	sections := s.buildReportSections(report)
 
 	if len(sections) == 0 {
@@ -359,13 +359,13 @@ func (s *SaveSyncScreen) showReport(report sync.SyncReport) {
 	)
 }
 
-func (s *SaveSyncScreen) buildReportSections(report sync.SyncReport) []gaba.Section {
+func (s *SaveSyncScreen) buildReportSections(report saves.SyncReport) []gaba.Section {
 	var sections []gaba.Section
 
 	if report.Uploaded > 0 {
 		var items []gaba.MetadataItem
 		for _, item := range report.Items {
-			if item.Action == sync.ActionUpload && item.Success {
+			if item.Action == saves.ActionUpload && item.Success {
 				items = append(items, gaba.MetadataItem{
 					Label: item.LocalSave.RomName,
 				})
@@ -380,7 +380,7 @@ func (s *SaveSyncScreen) buildReportSections(report sync.SyncReport) []gaba.Sect
 	if report.Downloaded > 0 {
 		var items []gaba.MetadataItem
 		for _, item := range report.Items {
-			if item.Action == sync.ActionDownload && item.Success {
+			if item.Action == saves.ActionDownload && item.Success {
 				items = append(items, gaba.MetadataItem{
 					Label: item.LocalSave.RomName,
 				})
@@ -395,7 +395,7 @@ func (s *SaveSyncScreen) buildReportSections(report sync.SyncReport) []gaba.Sect
 	if report.Conflicts > 0 {
 		var items []gaba.MetadataItem
 		for _, item := range report.Items {
-			if item.Action == sync.ActionConflict {
+			if item.Action == saves.ActionConflict {
 				items = append(items, gaba.MetadataItem{
 					Label: item.LocalSave.RomName,
 				})
@@ -410,7 +410,7 @@ func (s *SaveSyncScreen) buildReportSections(report sync.SyncReport) []gaba.Sect
 	if report.Errors > 0 {
 		var items []gaba.MetadataItem
 		for _, item := range report.Items {
-			if (item.Action == sync.ActionUpload || item.Action == sync.ActionDownload) && !item.Success {
+			if (item.Action == saves.ActionUpload || item.Action == saves.ActionDownload) && !item.Success {
 				items = append(items, gaba.MetadataItem{
 					Label: item.LocalSave.RomName,
 				})

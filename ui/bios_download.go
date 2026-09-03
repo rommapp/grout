@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"grout/bios"
 	"grout/cfw"
-	"grout/internal/fileutil"
+	"grout/files"
 	"grout/romm"
 	"grout/settings"
 	"os"
@@ -137,7 +137,7 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (BIOSDownloadOutput, 
 		} else {
 			relativePath := fw.FileName
 			for _, p := range cfw.GetBIOSFilePaths(relativePath, input.Platform.FSSlug) {
-				if fileutil.FileExists(p) {
+				if files.FileExists(p) {
 					fileExists = true
 					break
 				}
@@ -201,7 +201,7 @@ func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (BIOSDownloadOutput, 
 	baseURL := input.Host.URL()
 	for _, item := range selectedItems {
 		downloadURL := baseURL + item.firmware.DownloadURL
-		tempPath := filepath.Join(fileutil.TempDir(), fmt.Sprintf("bios_%s", item.firmware.FileName))
+		tempPath := filepath.Join(files.TempDir(), fmt.Sprintf("bios_%s", item.firmware.FileName))
 
 		downloads = append(downloads, gaba.Download{
 			URL:         downloadURL,

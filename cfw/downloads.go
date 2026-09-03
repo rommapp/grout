@@ -1,9 +1,8 @@
 package cfw
 
 import (
+	"grout/files"
 	"path/filepath"
-
-	"grout/internal/fileutil"
 )
 
 // playlistExt names the playlist that represents a multi-disc game.
@@ -43,11 +42,11 @@ func (l RomLayout) IsDownloaded(romDir string) bool {
 	}
 
 	if l.MultiDisc {
-		return fileutil.FileExists(filepath.Join(romDir, l.BaseName+playlistExt))
+		return files.FileExists(filepath.Join(romDir, l.BaseName+playlistExt))
 	}
 
 	for _, name := range l.FileNames {
-		if fileutil.FileExists(filepath.Join(romDir, name)) {
+		if files.FileExists(filepath.Join(romDir, name)) {
 			return true
 		}
 	}
@@ -59,5 +58,5 @@ func IsFileDownloaded(romDir, fileName string) bool {
 	if romDir == "" || fileName == "" {
 		return false
 	}
-	return fileutil.FileExists(filepath.Join(romDir, fileName))
+	return files.FileExists(filepath.Join(romDir, fileName))
 }

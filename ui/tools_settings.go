@@ -77,6 +77,8 @@ func (s *ToolsSettingsScreen) Draw(input ToolsSettingsInput) (ToolsSettingsOutpu
 	s.applySettings(config, result.Items)
 
 	err = settings.SaveConfig(config)
+
+	ApplyRuntimeSettings(config)
 	if err != nil {
 		gaba.GetLogger().Error("Error saving tools settings", "error", err)
 		return output, err

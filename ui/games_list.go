@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"grout/cache"
-	"grout/internal/environment"
+	"grout/environment"
 	"grout/romm"
 	"grout/settings"
 	"slices"

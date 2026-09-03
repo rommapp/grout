@@ -66,6 +66,8 @@ func (s *CollectionsSettingsScreen) Draw(input CollectionsSettingsInput) (Collec
 	}
 
 	err = settings.SaveConfig(config)
+
+	ApplyRuntimeSettings(config)
 	if err != nil {
 		gaba.GetLogger().Error("Error saving collections settings", "error", err)
 		return output, err

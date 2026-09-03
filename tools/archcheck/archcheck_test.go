@@ -22,7 +22,7 @@ func TestLayerOf(t *testing.T) {
 		{"grout/cfw/muos", Platform, true},
 		{"grout/romm", Infra, true},
 		{"grout/cache", Infra, true},
-		{"grout/sync", Service, true},
+		{"grout/saves", Service, true},
 		{"grout/ui", UI, true},
 		{"grout/app", Cmd, true},
 
@@ -30,13 +30,13 @@ func TestLayerOf(t *testing.T) {
 		// its parent. internal is the settings god-object heading for the
 		// domain; its leaf utilities are already pkg material.
 		{"grout/settings", Domain, true},
-		{"grout/internal/fileutil", Pkg, true},
-		{"grout/internal/stringutil", Pkg, true},
-		{"grout/internal/gamelist", Platform, true},
+		{"grout/files", Pkg, true},
+		{"grout/textmatch", Pkg, true},
+		{"grout/gamelist", Platform, true},
 
 		// A prefix must not match a longer package name by accident.
 		{"grout/uixyz", "", false},
-		{"grout/syncthing", "", false},
+		{"grout/savesthing", "", false},
 
 		{"net/http", "", false},
 		{"github.com/beevik/etree", "", false},
@@ -304,7 +304,7 @@ func TestCheckImports_ReportsToolkitAndLayerTogether(t *testing.T) {
 
 func TestCheckImports_AllowsPermittedEdges(t *testing.T) {
 	p := pkg{
-		ImportPath: "grout/sync",
+		ImportPath: "grout/saves",
 		Imports:    []string{"grout/cache", "grout/library", "grout/cfw", "net/http"},
 	}
 	if got := checkImports(p, Service); len(got) != 0 {

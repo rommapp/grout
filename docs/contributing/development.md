@@ -50,15 +50,17 @@ The codebase is laid out fairly well. It attempts to keep everything grouped by 
 - `docs` for the user guide and other repo housekeeping, including this document!
 - `library` holds the game and platform types grout works in once data has left the RomM client. No I/O and no
   device knowledge, so identity and display stay apart.
-- `internal` app-wide stateless utilities: archives, hashing, images, text, the gamelist writer
 - `settings` the user's configuration and the servers they connect to, plus loading and saving it
-- `service` orchestration that spans the cache and the RomM client, such as which platforms are mapped
+- `catalog` orchestration that spans the cache and the RomM client, such as which platforms are mapped
+- `saves` the save sync functionality
+- `archive`, `hashing`, `files`, `imaging`, `textmatch`, `tables` standalone utilities with no grout
+  dependencies. Each is named for what it does; there is no `util` grab bag.
+- `gamelist`, `emulationstation` write the metadata each frontend reads
 - `resources` the splash screen image and localization files live here, along with the go file that embeds them
 - `romm` a client library for the RomM API.
     - Why wasn't this generated with the OpenAPI spec? We tried a number of the codegen tools for OpenAPI and they
       weren't compatible with version 3 of the spec and hacking around this limitation produced frustrating to use code.
 - `scripts` contains the scripts (and metadata) associated with creating a package for each CFW
-- `sync` contains the save sync functionality
 - `ui` contains the screens that the FSM references in `app/screens.go` (transitions live in `app/transitions.go`)
 - `update` handles the in-app updater functionality, excluding the UI
 - `version` exposes the version information that is injected at build time. Having it as its own package made the script

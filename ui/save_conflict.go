@@ -2,7 +2,7 @@ package ui
 
 import (
 	"errors"
-	"grout/sync"
+	"grout/saves"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
@@ -10,18 +10,18 @@ import (
 )
 
 type SaveConflictInput struct {
-	Items           []sync.SyncItem
-	AllItems        []sync.SyncItem // Full items list (passed through for transition)
-	ConflictIndices map[int]int     // Conflict index → AllItems index (passed through)
-	SessionID       int             // Sync session ID (passed through)
+	Items           []saves.SyncItem
+	AllItems        []saves.SyncItem // Full items list (passed through for transition)
+	ConflictIndices map[int]int      // Conflict index → AllItems index (passed through)
+	SessionID       int              // Sync session ID (passed through)
 }
 
 type SaveConflictOutput struct {
 	Action          SaveConflictAction
-	Items           []sync.SyncItem
-	AllItems        []sync.SyncItem // Passed through from input
-	ConflictIndices map[int]int     // Passed through from input
-	SessionID       int             // Sync session ID (passed through)
+	Items           []saves.SyncItem
+	AllItems        []saves.SyncItem // Passed through from input
+	ConflictIndices map[int]int      // Passed through from input
+	SessionID       int              // Sync session ID (passed through)
 }
 
 type SaveConflictScreen struct{}
@@ -69,7 +69,7 @@ func (s *SaveConflictScreen) Draw(input SaveConflictInput) (SaveConflictOutput, 
 	return output, nil
 }
 
-func (s *SaveConflictScreen) buildMenuItems(conflicts []sync.SyncItem) []gaba.ItemWithOptions {
+func (s *SaveConflictScreen) buildMenuItems(conflicts []saves.SyncItem) []gaba.ItemWithOptions {
 	skip := i18n.Localize(&goi18n.Message{ID: "save_conflict_skip", Other: "Skip"}, nil)
 	keepLocal := i18n.Localize(&goi18n.Message{ID: "save_conflict_keep_local", Other: "Keep Local"}, nil)
 	keepRemote := i18n.Localize(&goi18n.Message{ID: "save_conflict_keep_remote", Other: "Keep Remote"}, nil)
@@ -93,7 +93,7 @@ func (s *SaveConflictScreen) buildMenuItems(conflicts []sync.SyncItem) []gaba.It
 	return items
 }
 
-func (s *SaveConflictScreen) applyResolutions(conflicts []sync.SyncItem, resultItems []gaba.ItemWithOptions) {
+func (s *SaveConflictScreen) applyResolutions(conflicts []saves.SyncItem, resultItems []gaba.ItemWithOptions) {
 	for i := range conflicts {
 		if i >= len(resultItems) {
 			break
@@ -102,10 +102,10 @@ func (s *SaveConflictScreen) applyResolutions(conflicts []sync.SyncItem, resultI
 		if selected >= 0 && selected < len(resultItems[i].Options) {
 			switch resultItems[i].Options[selected].Value {
 			case "local":
-				conflicts[i].Resolve(sync.ActionUpload)
+				conflicts[i].Resolve(saves.ActionUpload)
 				conflicts[i].ForceOverwrite = true
 			case "remote":
-				conflicts[i].Resolve(sync.ActionDownload)
+				conflicts[i].Resolve(saves.ActionDownload)
 			case "skip":
 				// Leave it as ActionConflict: not executed this run, re-offered next sync.
 			}

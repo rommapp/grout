@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"grout/cfw"
-	"grout/internal/imageutil"
+	"grout/imaging"
 	"grout/romm"
 	"grout/settings"
 	"grout/version"
@@ -86,7 +86,7 @@ func (s *DevicePairingScreen) Execute(input DevicePairingInput) DevicePairingOut
 
 	verificationURL := host.URL() + initResp.VerificationPathComplete
 	const qrDrawSize = 320
-	qrPath, err := imageutil.CreateTempQRCode(verificationURL, qrDrawSize)
+	qrPath, err := imaging.CreateTempQRCode(verificationURL, qrDrawSize)
 	if err != nil {
 		logger.Warn("Unable to generate pairing QR code", "error", err)
 		qrPath = ""
