@@ -473,3 +473,34 @@ func ComputeSHA1(filePath string) (string, error) {
 
 	return fmt.Sprintf("%x", hash.Sum(nil)), nil
 }
+
+// WriteFileAtomic writes data to a temp file in path's directory, then renames
+// it into place. The rename is atomic on the same filesystem, so an interrupted
+// write cannot leave a truncated file at path. These devices have a hardware
+// power switch, so that is a routine event rather than a rare one.
+func WriteFileAtomic(path string, data []byte, perm os.FileMode) error {
+	tmp, err := os.CreateTemp(filepath.Dir(path), ".grout-*.tmp")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		os.Remove(tmpName)
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		os.Remove(tmpName)
+		return err
+	}
+	if err := os.Chmod(tmpName, perm); err != nil {
+		os.Remove(tmpName)
+		return err
+	}
+	if err := os.Rename(tmpName, path); err != nil {
+		os.Remove(tmpName)
+		return err
+	}
+	return nil
+}

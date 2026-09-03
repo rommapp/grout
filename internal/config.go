@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"grout/cfw"
 	"grout/domain/library"
+	"grout/internal/fileutil"
 	"grout/romm"
 	"os"
+	"path/filepath"
 	"sync/atomic"
 	"time"
 
@@ -14,6 +16,10 @@ import (
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
 )
 
+// kidModeEnabled is the session's kid mode, which starts from Config.KidMode
+// but can be unlocked for this run without persisting the change. The chord
+// handler in app clears it; the stored setting is untouched, so the next launch
+// is locked again.
 var kidModeEnabled atomic.Bool
 
 type AdditionalDownloads struct {
@@ -112,113 +118,118 @@ func (c Config) ToLoggable() any {
 	}
 }
 
+// ConfigFileName is where settings live, relative to the working directory the
+// launch script starts grout in.
+const ConfigFileName = "config.json"
+
+// applyDefaults fills in every unset field.
+//
+// Load and save both call this. When they each had their own list they
+// disagreed: log level and release channel were only defaulted on save, so a
+// config file without them loaded with an empty log level and never applied
+// one until something happened to write the file back.
+func applyDefaults(config *Config) {
+	if config.ApiTimeout == 0 {
+		config.ApiTimeout = DurationSeconds(30 * time.Second)
+	}
+	// The settings picker only offers 15s to 300s, so a larger stored value
+	// cannot be represented and is reset rather than shown wrong.
+	if config.ApiTimeout.Duration() > 300*time.Second {
+		config.ApiTimeout = DurationSeconds(30 * time.Second)
+	}
+	if config.DownloadTimeout == 0 {
+		config.DownloadTimeout = DurationSeconds(60 * time.Minute)
+	}
+	if config.Language == "" {
+		config.Language = "en"
+	}
+	if config.LogLevel == "" {
+		config.LogLevel = LogLevelError
+	}
+	if config.ReleaseChannel == "" {
+		config.ReleaseChannel = ReleaseChannelMatchRomM
+	}
+	if config.DownloadedGames == "" {
+		config.DownloadedGames = DownloadedGamesModeDoNothing
+	}
+	if config.CollectionView == "" {
+		config.CollectionView = CollectionViewPlatform
+	}
+	if config.ArtKind == "" {
+		config.ArtKind = library.ArtKindDefault
+	}
+	if config.AdditionalDownloads.Thumbnail == "" {
+		config.AdditionalDownloads.Thumbnail = library.ArtKindNone
+	}
+	if config.AdditionalDownloads.Marquee == "" {
+		config.AdditionalDownloads.Marquee = library.ArtKindNone
+	}
+}
+
 func LoadConfig() (*Config, error) {
-	data, err := os.ReadFile("config.json")
+	return LoadConfigFrom(ConfigFileName)
+}
+
+// LoadConfigFrom reads settings from path, filling in defaults for anything
+// absent.
+func LoadConfigFrom(path string) (*Config, error) {
+	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("reading config.json: %w", err)
+		return nil, fmt.Errorf("reading %s: %w", path, err)
 	}
 
 	var config Config
 	if err := json.Unmarshal(data, &config); err != nil {
-		return nil, fmt.Errorf("parsing config.json: %w", err)
+		return nil, fmt.Errorf("parsing %s: %w", path, err)
 	}
 
-	if config.ApiTimeout == 0 {
-		config.ApiTimeout = DurationSeconds(30 * time.Second)
-	}
-
-	if config.DownloadTimeout == 0 {
-		config.DownloadTimeout = DurationSeconds(60 * time.Minute)
-	}
-
-	// Clamp API timeout to valid picker range (15s–300s)
-	if config.ApiTimeout.Duration() > 300*time.Second {
-		config.ApiTimeout = DurationSeconds(30 * time.Second)
-	}
-
-	if config.Language == "" {
-		config.Language = "en"
-	}
-
-	if config.DownloadedGames == "" {
-		config.DownloadedGames = DownloadedGamesModeDoNothing
-	}
-
-	if config.CollectionView == "" {
-		config.CollectionView = CollectionViewPlatform
-	}
-
-	if config.ArtKind == "" {
-		config.ArtKind = library.ArtKindDefault
-	}
-
-	if config.AdditionalDownloads.Thumbnail == "" {
-		config.AdditionalDownloads.Thumbnail = library.ArtKindNone
-	}
-
-	if config.AdditionalDownloads.Marquee == "" {
-		config.AdditionalDownloads.Marquee = library.ArtKindNone
-	}
-
-	// Load slot preferences from dedicated file
-	config.SlotPreferences = LoadSlotPreferences()
+	applyDefaults(&config)
+	config.SlotPreferences = loadSlotPreferencesFrom(slotPreferencesPathFor(path))
 
 	return &config, nil
 }
 
+// SaveConfig writes settings and applies the ones that take effect
+// immediately.
 func SaveConfig(config *Config) error {
-	if config.LogLevel == "" {
-		config.LogLevel = LogLevelError
-	}
-
-	if config.Language == "" {
-		config.Language = "en"
-	}
-
-	if config.DownloadedGames == "" {
-		config.DownloadedGames = DownloadedGamesModeDoNothing
-	}
-
-	if config.CollectionView == "" {
-		config.CollectionView = CollectionViewPlatform
-	}
-
-	if config.ReleaseChannel == "" {
-		config.ReleaseChannel = ReleaseChannelMatchRomM
-	}
-
-	if config.ArtKind == "" {
-		config.ArtKind = library.ArtKindDefault
-	}
-
-	if config.AdditionalDownloads.Thumbnail == "" {
-		config.AdditionalDownloads.Thumbnail = library.ArtKindNone
-	}
-
-	if config.AdditionalDownloads.Marquee == "" {
-		config.AdditionalDownloads.Marquee = library.ArtKindNone
-	}
-
-	gaba.SetRawLogLevel(string(config.LogLevel))
-
-	if err := i18n.SetWithCode(config.Language); err != nil {
-		gaba.GetLogger().Error("Failed to set language", "error", err, "language", config.Language)
-	}
-
-	pretty, err := json.MarshalIndent(config, "", "  ")
-	if err != nil {
-		gaba.GetLogger().Error("Failed to marshal config to JSON", "error", err)
+	if err := SaveConfigTo(config, ConfigFileName); err != nil {
 		return err
 	}
-
-	if err := os.WriteFile("config.json", pretty, 0644); err != nil {
-		gaba.GetLogger().Error("Failed to write config file", "error", err)
-		return err
-	}
-
+	ApplyRuntimeSettings(config)
 	return nil
 }
 
+// ApplyRuntimeSettings pushes the settings that change how the running app
+// behaves into the UI toolkit.
+//
+// Separate from SaveConfigTo because it needs an initialised toolkit, and
+// writing a settings file should not.
+func ApplyRuntimeSettings(config *Config) {
+	gaba.SetRawLogLevel(string(config.LogLevel))
+	if err := i18n.SetWithCode(config.Language); err != nil {
+		gaba.GetLogger().Error("Failed to set language", "error", err, "language", config.Language)
+	}
+}
+
+// SaveConfigTo writes settings to path.
+func SaveConfigTo(config *Config, path string) error {
+	applyDefaults(config)
+
+	pretty, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		return fmt.Errorf("encoding %s: %w", path, err)
+	}
+
+	// Written atomically: a truncated config.json fails to parse, and a failed
+	// parse is treated as a first launch, which discards the user's hosts,
+	// credentials and directory mappings.
+	if err := fileutil.WriteFileAtomic(path, pretty, 0644); err != nil {
+		return fmt.Errorf("writing %s: %w", path, err)
+	}
+	return nil
+}
+
+// InitKidMode seeds the session from the stored setting.
 func InitKidMode(config *Config) {
 	kidModeEnabled.Store(config.KidMode)
 }
@@ -240,8 +251,21 @@ func (c Config) GetDirectoryMapping(fsSlug string) (string, bool) {
 	return "", false
 }
 
+// SlotPreferencesFileName holds the per-rom save slot choices, kept out of
+// config.json so a settings write cannot lose them and vice versa.
+const SlotPreferencesFileName = "save_slots.json"
+
+// slotPreferencesPathFor puts the slot file beside the config it belongs to.
+func slotPreferencesPathFor(configPath string) string {
+	return filepath.Join(filepath.Dir(configPath), SlotPreferencesFileName)
+}
+
 func LoadSlotPreferences() map[string]string {
-	data, err := os.ReadFile("save_slots.json")
+	return loadSlotPreferencesFrom(SlotPreferencesFileName)
+}
+
+func loadSlotPreferencesFrom(path string) map[string]string {
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil
 	}
@@ -253,15 +277,21 @@ func LoadSlotPreferences() map[string]string {
 }
 
 func SaveSlotPreferences(config *Config) error {
+	return SaveSlotPreferencesTo(config, SlotPreferencesFileName)
+}
+
+// SaveSlotPreferencesTo writes the slot choices to path, removing the file when
+// there are none left to record.
+func SaveSlotPreferencesTo(config *Config, path string) error {
 	if len(config.SlotPreferences) == 0 {
-		os.Remove("save_slots.json")
+		os.Remove(path)
 		return nil
 	}
 	pretty, err := json.MarshalIndent(config.SlotPreferences, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile("save_slots.json", pretty, 0644)
+	return fileutil.WriteFileAtomic(path, pretty, 0644)
 }
 
 func (c Config) GetSlotPreference(romID int) string {

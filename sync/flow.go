@@ -1034,35 +1034,6 @@ func buildClientSaveStates(localSaves []LocalSave, config *internal.Config, reco
 	return states
 }
 
-// writeFileAtomic writes data to a temp file in path's directory, then renames it into
-// place. On Linux/macOS the rename is atomic on the same filesystem, so an interrupted
-// write (power loss, I/O error) can't leave a truncated, corrupt save at path.
-func writeFileAtomic(path string, data []byte, perm os.FileMode) error {
-	tmp, err := os.CreateTemp(filepath.Dir(path), ".grout-save-*.tmp")
-	if err != nil {
-		return err
-	}
-	tmpName := tmp.Name()
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
-		os.Remove(tmpName)
-		return err
-	}
-	if err := tmp.Close(); err != nil {
-		os.Remove(tmpName)
-		return err
-	}
-	if err := os.Chmod(tmpName, perm); err != nil {
-		os.Remove(tmpName)
-		return err
-	}
-	if err := os.Rename(tmpName, path); err != nil {
-		os.Remove(tmpName)
-		return err
-	}
-	return nil
-}
-
 // saveContentHash returns the server-compatible content hash for a local save.
 func saveContentHash(ls LocalSave) (string, error) {
 	if ls.IsDirectorySave {
@@ -1470,7 +1441,7 @@ func download(client *romm.Client, config *internal.Config, deviceID string, ite
 
 		// Write atomically (temp file in the same dir + rename) so a power loss or I/O
 		// error mid-write can't leave a truncated, corrupt save in place.
-		if err := writeFileAtomic(savePath, data, 0644); err != nil {
+		if err := fileutil.WriteFileAtomic(savePath, data, 0644); err != nil {
 			logger.Error("Failed to write save file", "path", savePath, "error", err)
 			return false
 		}
