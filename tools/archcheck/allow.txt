@@ -11,17 +11,12 @@
 layer grout/ui -> grout/cache
 layer grout/ui -> grout/cfw
 layer grout/ui -> grout/cfw/muos
-layer grout/ui -> grout/gamelist
 layer grout/ui -> grout/romm
 
 # Packages outside ui and cmd that import the gabagool UI toolkit,
 # which is why running their tests needs a display.
 toolkit grout/cache
-toolkit grout/cfw/minui
 toolkit grout/cfw/muos
-toolkit grout/cfw/nextui
-toolkit grout/cfw/spruce
-toolkit grout/gamelist
 toolkit grout/imaging
 toolkit grout/resources
 toolkit grout/saves

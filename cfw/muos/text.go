@@ -2,19 +2,19 @@ package muos
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"grout/gamelist"
 
-	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
 	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 func AddGameDescription(entry gamelist.RomGameEntry) {
-	logger := gaba.GetLogger()
+	logger := slog.Default()
 	textDir := GetTextDirectory(entry.Platform.FSSlug, entry.Platform.Name)
 	if err := os.MkdirAll(textDir, 0755); err != nil {
 		logger.Warn("Cannot create text directory", "path", textDir, "error", err)

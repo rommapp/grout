@@ -1,10 +1,9 @@
 package nextui
 
 import (
+	"log/slog"
 	"os"
 	"runtime"
-
-	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
 
 const DeviceType = "NEXTUI_DEVICE"
@@ -18,7 +17,7 @@ const (
 )
 
 func detectDeviceByEnv() Device {
-	logger := gaba.GetLogger()
+	logger := slog.Default()
 	logger.Debug("Detecting NextUI device type", "env", DeviceType)
 	deviceType := os.Getenv(DeviceType)
 
@@ -34,7 +33,7 @@ func detectDeviceByEnv() Device {
 }
 
 func DetectDevice() Device {
-	logger := gaba.GetLogger()
+	logger := slog.Default()
 	logger.Debug("Detecting NextUI device type", "arch", runtime.GOARCH)
 
 	deviceType := detectDeviceByEnv()

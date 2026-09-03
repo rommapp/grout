@@ -108,16 +108,24 @@ jobs:
         run: |
           go vet \
             ./archive \
+            ./bios \
+            ./cfw \
             ./cfw/allium \
             ./cfw/arkos \
             ./cfw/batocera \
             ./cfw/knulli \
             ./cfw/koriki \
+            ./cfw/minui \
+            ./cfw/muos \
+            ./cfw/nextui \
             ./cfw/onion \
             ./cfw/rocknix \
+            ./cfw/spruce \
             ./cfw/trimui \
+            ./download \
             ./environment \
             ./files \
+            ./gamelist \
             ./hashing \
             ./library \
             ./pspdb \

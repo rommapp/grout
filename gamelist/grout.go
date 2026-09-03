@@ -2,9 +2,8 @@ package gamelist
 
 import (
 	"grout/files"
+	"log/slog"
 	"os"
-
-	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
 
 const (
@@ -12,23 +11,22 @@ const (
 )
 
 func AddGroutEntry(path string, groutEntryPath string) {
-	gaba.GetLogger().Debug("looking for correct gamelist.xml path", "path", path)
+	slog.Default().Debug("looking for correct gamelist.xml path", "path", path)
 	gl := New()
 
 	if files.FileExists(path) {
 		data, err := os.ReadFile(path)
 		if err != nil {
-			gaba.GetLogger().Debug("Error reading gamelist.xml file", "error", err)
+			slog.Default().Debug("Error reading gamelist.xml file", "error", err)
 		}
 
 		if len(data) > 0 {
-			gaba.GetLogger().Debug("Found gamelist.xml file", "data", string(data))
 			if err := gl.Parse(data); err != nil {
-				gaba.GetLogger().Debug("gamelist.xml not found or can't be parsed, skipping grout entry check", "path", path, "error", err)
+				slog.Default().Debug("gamelist.xml not found or can't be parsed, skipping grout entry check", "path", path, "error", err)
 				return
 			}
 		} else {
-			gaba.GetLogger().Debug("gamelist.xml file is empty", "path", path)
+			slog.Default().Debug("gamelist.xml file is empty", "path", path)
 		}
 	}
 
@@ -37,7 +35,7 @@ func AddGroutEntry(path string, groutEntryPath string) {
 		ImageElement, DeveloperElement,
 		PlayersElement, GenreElement,
 	}) {
-		gaba.GetLogger().Debug("gamelist.xml already contains Grout entry, skipping addition", "path", path)
+		slog.Default().Debug("gamelist.xml already contains Grout entry, skipping addition", "path", path)
 		return
 	}
 
@@ -52,11 +50,11 @@ func AddGroutEntry(path string, groutEntryPath string) {
 	})
 
 	if err := gl.Save(path); err != nil {
-		gaba.GetLogger().Debug("Unable to save gamelist.xml file", "error", err)
+		slog.Default().Debug("Unable to save gamelist.xml file", "error", err)
 		return
 	}
 
-	gaba.GetLogger().Debug("Successfully saved gamelist.xml file with Grout entry", "path", path)
+	slog.Default().Debug("Successfully saved gamelist.xml file with Grout entry", "path", path)
 
 	return
 }

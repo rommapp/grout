@@ -3,12 +3,11 @@ package muos
 import (
 	"embed"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
-
-	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
 
 //go:embed input_mappings/*.json
@@ -26,7 +25,7 @@ const (
 // DetectDevice detects the device type when running on muOS by checking input devices.
 // Returns DeviceTrimui if "TRIMUI" is found in /proc/bus/input/devices, otherwise DeviceAnbernic.
 func DetectDevice() Device {
-	logger := gaba.GetLogger()
+	logger := slog.Default()
 	logger.Info("Detecting muOS device type...")
 
 	cmd := exec.Command("sh", "-c", "cat /proc/bus/input/devices | grep TRIMUI")
