@@ -2,16 +2,26 @@ package cfw
 
 import (
 	"log/slog"
+	"os"
 
 	"grout/cfw/muos"
-	"grout/emulationstation"
 	"grout/gamelist"
 )
 
+// esRestartFlag is watched by the EmulationStation frontend, which reloads its
+// gamelists when it appears. The path is relative to the directory grout was
+// launched from, which is where the frontend expects it.
+const esRestartFlag = "./es_restart_request"
+
+// scheduleESRestart asks the frontend to reload, so metadata just written shows
+// up without the user restarting the device.
 func scheduleESRestart() {
-	if err := emulationstation.ScheduleESRestart(); err != nil {
+	file, err := os.Create(esRestartFlag)
+	if err != nil {
 		slog.Default().Debug("Unable to schedule ES restart", "error", err)
+		return
 	}
+	file.Close()
 }
 
 // AddGroutToGamelist adds grout's launcher entry to the frontend's game list.

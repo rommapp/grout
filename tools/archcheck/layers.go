@@ -54,7 +54,6 @@ var layerRules = []struct {
 
 	{"grout/cfw", Platform},
 	{"grout/gamelist", Platform},
-	{"grout/emulationstation", Platform},
 
 	{"grout/romm", Infra},
 	{"grout/cache", Infra},

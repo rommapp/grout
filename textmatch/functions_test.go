@@ -61,7 +61,7 @@ func TestParseTag(t *testing.T) {
 
 // PrepareRomName produces the string shown to a person. It is not an identity:
 // it folds in the region, rewrites punctuation, and varies with configuration,
-// so nothing may key off it. See internal/gamelist, which used to.
+// so nothing may key off it. See gamelist, which used to.
 func TestPrepareRomName(t *testing.T) {
 	tests := []struct {
 		name    string

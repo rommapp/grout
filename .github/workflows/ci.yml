@@ -116,7 +116,6 @@ jobs:
             ./cfw/onion \
             ./cfw/rocknix \
             ./cfw/trimui \
-            ./emulationstation \
             ./environment \
             ./files \
             ./hashing \

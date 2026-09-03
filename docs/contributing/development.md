@@ -55,7 +55,8 @@ The codebase is laid out fairly well. It attempts to keep everything grouped by 
 - `saves` the save sync functionality
 - `archive`, `hashing`, `files`, `imaging`, `textmatch`, `tables` standalone utilities with no grout
   dependencies. Each is named for what it does; there is no `util` grab bag.
-- `gamelist`, `emulationstation` write the metadata each frontend reads
+- `gamelist` writes the metadata each frontend reads
+- `pspdb` PSP Game ID to title lookup, used by save sync. Slated for removal in favour of Argosy Sigil
 - `resources` the splash screen image and localization files live here, along with the go file that embeds them
 - `romm` a client library for the RomM API.
     - Why wasn't this generated with the OpenAPI spec? We tried a number of the codegen tools for OpenAPI and they
