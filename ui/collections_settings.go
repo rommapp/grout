@@ -2,7 +2,7 @@ package ui
 
 import (
 	"errors"
-	"grout/internal"
+	"grout/settings"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
@@ -10,7 +10,7 @@ import (
 )
 
 type CollectionsSettingsInput struct {
-	Config *internal.Config
+	Config *settings.Config
 }
 
 type CollectionsSettingsOutput struct {
@@ -65,7 +65,7 @@ func (s *CollectionsSettingsScreen) Draw(input CollectionsSettingsInput) (Collec
 		output.SyncNeeded = true
 	}
 
-	err = internal.SaveConfig(config)
+	err = settings.SaveConfig(config)
 	if err != nil {
 		gaba.GetLogger().Error("Error saving collections settings", "error", err)
 		return output, err
@@ -75,7 +75,7 @@ func (s *CollectionsSettingsScreen) Draw(input CollectionsSettingsInput) (Collec
 	return output, nil
 }
 
-func (s *CollectionsSettingsScreen) buildMenuItems(config *internal.Config) []gaba.ItemWithOptions {
+func (s *CollectionsSettingsScreen) buildMenuItems(config *settings.Config) []gaba.ItemWithOptions {
 	return []gaba.ItemWithOptions{
 		{
 			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_show_collections", Other: "Collections"}, nil)},
@@ -104,15 +104,15 @@ func (s *CollectionsSettingsScreen) buildMenuItems(config *internal.Config) []ga
 		{
 			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_collection_view", Other: "Collection View"}, nil)},
 			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "collection_view_platform", Other: "Platform"}, nil), Value: internal.CollectionViewPlatform},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "collection_view_unified", Other: "Unified"}, nil), Value: internal.CollectionViewUnified},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "collection_view_platform", Other: "Platform"}, nil), Value: settings.CollectionViewPlatform},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "collection_view_unified", Other: "Unified"}, nil), Value: settings.CollectionViewUnified},
 			},
 			SelectedOption: collectionViewToIndex(config.CollectionView),
 		},
 	}
 }
 
-func (s *CollectionsSettingsScreen) applySettings(config *internal.Config, items []gaba.ItemWithOptions) {
+func (s *CollectionsSettingsScreen) applySettings(config *settings.Config, items []gaba.ItemWithOptions) {
 	for _, item := range items {
 		selectedText := item.Item.Text
 
@@ -133,7 +133,7 @@ func (s *CollectionsSettingsScreen) applySettings(config *internal.Config, items
 			}
 
 		case i18n.Localize(&goi18n.Message{ID: "settings_collection_view", Other: "Collection View"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(internal.CollectionView); ok {
+			if val, ok := item.Options[item.SelectedOption].Value.(settings.CollectionView); ok {
 				config.CollectionView = val
 			}
 		}

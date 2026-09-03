@@ -4,8 +4,8 @@ import (
 	"slices"
 	"testing"
 
-	"grout/internal"
 	"grout/romm"
+	"grout/settings"
 )
 
 func platforms(names ...string) []romm.Platform {
@@ -92,7 +92,7 @@ func TestSortByOrder_AppendsNewPlatforms(t *testing.T) {
 }
 
 func TestPruneOrder(t *testing.T) {
-	mappings := map[string]internal.DirectoryMapping{
+	mappings := map[string]settings.DirectoryMapping{
 		"gba": {}, "snes": {},
 	}
 
@@ -104,7 +104,7 @@ func TestPruneOrder(t *testing.T) {
 }
 
 func TestPruneOrder_EmptyOrderIsUnchanged(t *testing.T) {
-	if got := PruneOrder(nil, map[string]internal.DirectoryMapping{"gba": {}}); got != nil {
+	if got := PruneOrder(nil, map[string]settings.DirectoryMapping{"gba": {}}); got != nil {
 		t.Errorf("got %v, want nil", got)
 	}
 }
@@ -112,7 +112,7 @@ func TestPruneOrder_EmptyOrderIsUnchanged(t *testing.T) {
 // Pruning everything must yield an empty order, not a nil that reads as "no
 // order saved" and silently reverts to alphabetical.
 func TestPruneOrder_AllRemovedYieldsEmptyNotNil(t *testing.T) {
-	got := PruneOrder([]string{"gba", "psx"}, map[string]internal.DirectoryMapping{})
+	got := PruneOrder([]string{"gba", "psx"}, map[string]settings.DirectoryMapping{})
 	if got == nil {
 		t.Fatal("got nil, want an empty slice")
 	}

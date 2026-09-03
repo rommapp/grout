@@ -4,7 +4,7 @@ import (
 	"errors"
 	"grout/cfw"
 	"grout/internal/imageutil"
-	"grout/romm"
+	"grout/settings"
 	"grout/version"
 	"time"
 
@@ -15,7 +15,7 @@ import (
 )
 
 type InfoInput struct {
-	Host        romm.Host
+	Host        settings.Host
 	CFW         cfw.CFW
 	RommVersion string
 }

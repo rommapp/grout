@@ -50,7 +50,9 @@ The codebase is laid out fairly well. It attempts to keep everything grouped by 
 - `docs` for the user guide and other repo housekeeping, including this document!
 - `library` holds the game and platform types grout works in once data has left the RomM client. No I/O and no
   device knowledge, so identity and display stay apart.
-- `internal` the college educated utils package. App-wide / stateless utilities live here
+- `internal` app-wide stateless utilities: archives, hashing, images, text, the gamelist writer
+- `settings` the user's configuration and the servers they connect to, plus loading and saving it
+- `service` orchestration that spans the cache and the RomM client, such as which platforms are mapped
 - `resources` the splash screen image and localization files live here, along with the go file that embeds them
 - `romm` a client library for the RomM API.
     - Why wasn't this generated with the OpenAPI spec? We tried a number of the codegen tools for OpenAPI and they
@@ -215,7 +217,7 @@ The layers, each of which may only import the ones below it:
 | Layer      | What lives there                                    |
 |------------|-----------------------------------------------------|
 | `pkg`      | standalone utilities with no grout dependencies      |
-| `domain`   | types and rules; no I/O, no device, no network. `library`, and `settings` to come |
+| `domain`   | types and rules; no I/O, no device, no network. `library` and `settings` |
 | `platform` | firmware knowledge: paths, gamelists, save layouts   |
 | `infra`    | the RomM API, the SQLite store, the settings file    |
 | `service`  | orchestration of a use case                          |

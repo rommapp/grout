@@ -6,8 +6,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"grout/cfw"
-	"grout/internal"
 	"grout/romm"
+	"grout/settings"
 	"grout/version"
 	"io"
 	"net/http"
@@ -63,7 +63,7 @@ func getInstallRoot(c cfw.CFW) (string, error) {
 // CheckForUpdate checks for available updates based on the release channel.
 // For ReleaseChannelMatchRomM, the host parameter is required to fetch the RomM version.
 // For other channels, the host parameter is optional and ignored.
-func CheckForUpdate(c cfw.CFW, releaseChannel internal.ReleaseChannel, host *romm.Host) (*Info, error) {
+func CheckForUpdate(c cfw.CFW, releaseChannel settings.ReleaseChannel, host *settings.Host) (*Info, error) {
 	currentVersion := version.Get().Version
 
 	if currentVersion == "dev" {
@@ -83,7 +83,7 @@ func CheckForUpdate(c cfw.CFW, releaseChannel internal.ReleaseChannel, host *rom
 	var release *ChannelRelease
 
 	switch releaseChannel {
-	case internal.ReleaseChannelMatchRomM:
+	case settings.ReleaseChannelMatchRomM:
 		if host == nil {
 			return nil, fmt.Errorf("host is required for Match RomM release channel")
 		}
@@ -107,7 +107,7 @@ func CheckForUpdate(c cfw.CFW, releaseChannel internal.ReleaseChannel, host *rom
 			return nil, fmt.Errorf("no Grout release found matching RomM version %s", key)
 		}
 
-	case internal.ReleaseChannelBeta:
+	case settings.ReleaseChannelBeta:
 		release = versions.Beta
 		if release == nil {
 			return nil, fmt.Errorf("no beta release available")
@@ -274,7 +274,7 @@ func verifySHA256(filePath, expected string) error {
 
 func downloadFile(url, destPath string, expectedSize int64, progress *atomic.Float64) error {
 	client := &http.Client{
-		Timeout: internal.UpdaterTimeout,
+		Timeout: settings.UpdaterTimeout,
 	}
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)

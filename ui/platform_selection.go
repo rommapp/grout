@@ -2,8 +2,8 @@ package ui
 
 import (
 	"errors"
-	"grout/internal"
 	"grout/romm"
+	"grout/settings"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	buttons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
@@ -70,7 +70,7 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (PlatformSe
 	var footerItems []gaba.FooterHelpItem
 	if input.QuitOnBack {
 		footerItems = []gaba.FooterHelpItem{}
-		if !internal.IsKidModeEnabled() {
+		if !settings.IsKidModeEnabled() {
 			footerItems = append(footerItems, gaba.FooterHelpItem{
 				ButtonName: "X",
 				HelpText:   i18n.Localize(&goi18n.Message{ID: "button_settings", Other: "Settings"}, nil),
@@ -97,7 +97,7 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (PlatformSe
 	}
 
 	options := gaba.DefaultListOptions("Grout", menuItems)
-	if !internal.IsKidModeEnabled() {
+	if !settings.IsKidModeEnabled() {
 		options.ActionButton = buttons.VirtualButtonX
 		if input.ShowSaveSync {
 			options.SecondaryActionButton = buttons.VirtualButtonY

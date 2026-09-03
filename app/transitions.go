@@ -3,9 +3,8 @@ package main
 import (
 	"grout/cache"
 	"grout/cfw"
-	"grout/internal"
-	"grout/romm"
 	"grout/service/catalog"
+	"grout/settings"
 	"grout/sync"
 	"grout/ui"
 	"os"
@@ -196,7 +195,7 @@ func transitionSaveMapping(ctx *transitionContext, result any) (router.Screen, a
 	if r.Config != nil {
 		ctx.state.Config = r.Config
 		if r.Action == ui.SaveMappingActionSaved {
-			internal.SaveConfig(r.Config)
+			settings.SaveConfig(r.Config)
 		}
 	}
 	return popOrExit(ctx.stack)
@@ -252,9 +251,9 @@ func transitionSaveSyncSettings(ctx *transitionContext, result any) (router.Scre
 		if len(ctx.state.Config.Hosts) > 0 {
 			ctx.state.Config.Hosts[0] = ctx.state.Host
 		} else {
-			ctx.state.Config.Hosts = []romm.Host{ctx.state.Host}
+			ctx.state.Config.Hosts = []settings.Host{ctx.state.Host}
 		}
-		internal.SaveConfig(ctx.state.Config)
+		settings.SaveConfig(ctx.state.Config)
 	}
 
 	if r.Action == ui.SaveSyncSettingsActionSaveMapping {
@@ -612,7 +611,7 @@ func transitionSettings(ctx *transitionContext, result any) (router.Screen, any)
 
 	if r.Config != nil {
 		ctx.state.Config = r.Config
-		internal.SaveConfig(ctx.state.Config)
+		settings.SaveConfig(ctx.state.Config)
 	}
 
 	pushInput := ui.SettingsInput{Config: ctx.state.Config, CFW: ctx.state.CFW, Host: ctx.state.Host}
@@ -770,7 +769,7 @@ func transitionServerAddress(ctx *transitionContext, result any) (router.Screen,
 	if r.Action == ui.ServerAddressActionSaved {
 		ctx.state.Host = r.Host
 		ctx.state.Config.Hosts[0] = r.Host
-		if err := internal.SaveConfig(ctx.state.Config); err != nil {
+		if err := settings.SaveConfig(ctx.state.Config); err != nil {
 			gaba.GetLogger().Error("Failed to save config after server address change", "error", err)
 		}
 	}

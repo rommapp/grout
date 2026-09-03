@@ -2,8 +2,8 @@ package ui
 
 import (
 	"errors"
-	"grout/internal"
 	"grout/romm"
+	"grout/settings"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
@@ -11,15 +11,15 @@ import (
 )
 
 type GameOptionsInput struct {
-	Config *internal.Config
-	Host   romm.Host
+	Config *settings.Config
+	Host   settings.Host
 	Game   romm.Rom
 }
 
 type GameOptionsOutput struct {
 	Action      GameOptionsAction
-	Config      *internal.Config
-	Host        romm.Host
+	Config      *settings.Config
+	Host        settings.Host
 	Game        romm.Rom
 	NewSlotName string // Set when a new slot is created (for targeted upload)
 }
@@ -101,7 +101,7 @@ func (s *GameOptionsScreen) Draw(input GameOptionsInput) (GameOptionsOutput, err
 
 	s.applySettings(config, input.Game, result.Items)
 
-	if err = internal.SaveSlotPreferences(config); err != nil {
+	if err = settings.SaveSlotPreferences(config); err != nil {
 		gaba.GetLogger().Error("Error saving slot preferences", "error", err)
 		return output, err
 	}
@@ -126,7 +126,7 @@ func (s *GameOptionsScreen) Draw(input GameOptionsInput) (GameOptionsOutput, err
 	return output, nil
 }
 
-func (s *GameOptionsScreen) buildMenuItems(config *internal.Config, game romm.Rom, deviceRegistered bool, slotNames []string) []gaba.ItemWithOptions {
+func (s *GameOptionsScreen) buildMenuItems(config *settings.Config, game romm.Rom, deviceRegistered bool, slotNames []string) []gaba.ItemWithOptions {
 	items := make([]gaba.ItemWithOptions, 0)
 
 	if deviceRegistered {
@@ -143,7 +143,7 @@ func (s *GameOptionsScreen) buildMenuItems(config *internal.Config, game romm.Ro
 	return items
 }
 
-func (s *GameOptionsScreen) applySettings(config *internal.Config, game romm.Rom, items []gaba.ItemWithOptions) {
+func (s *GameOptionsScreen) applySettings(config *settings.Config, game romm.Rom, items []gaba.ItemWithOptions) {
 	saveSlotText := i18n.Localize(&goi18n.Message{ID: "game_options_save_slot", Other: "Save Slot"}, nil)
 
 	for _, item := range items {

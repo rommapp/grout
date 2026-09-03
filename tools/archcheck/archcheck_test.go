@@ -29,7 +29,7 @@ func TestLayerOf(t *testing.T) {
 		// The longest matching prefix wins, so a subpackage may differ from
 		// its parent. internal is the settings god-object heading for the
 		// domain; its leaf utilities are already pkg material.
-		{"grout/internal", Domain, true},
+		{"grout/settings", Domain, true},
 		{"grout/internal/fileutil", Pkg, true},
 		{"grout/internal/stringutil", Pkg, true},
 		{"grout/internal/gamelist", Platform, true},

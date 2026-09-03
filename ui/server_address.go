@@ -3,8 +3,8 @@ package ui
 import (
 	"errors"
 	"fmt"
-	"grout/internal"
 	"grout/romm"
+	"grout/settings"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -16,13 +16,13 @@ import (
 )
 
 type ServerAddressInput struct {
-	Config *internal.Config
-	Host   romm.Host
+	Config *settings.Config
+	Host   settings.Host
 }
 
 type ServerAddressOutput struct {
 	Action ServerAddressAction
-	Host   romm.Host
+	Host   settings.Host
 }
 
 type ServerAddressAction int
@@ -68,7 +68,7 @@ func (s *ServerAddressScreen) Draw(input ServerAddressInput) (ServerAddressOutpu
 	}
 }
 
-func (s *ServerAddressScreen) drawForm(host romm.Host) (ServerAddressOutput, error) {
+func (s *ServerAddressScreen) drawForm(host settings.Host) (ServerAddressOutput, error) {
 	output := ServerAddressOutput{Action: ServerAddressActionBack, Host: host}
 
 	sslVisible := &atomic.Bool{}
@@ -187,25 +187,25 @@ func (s *ServerAddressScreen) drawForm(host romm.Host) (ServerAddressOutput, err
 		return output, err
 	}
 
-	settings := res.Items
+	fields := res.Items
 
 	newHost := host
-	newHost.RootURI = fmt.Sprintf("%s%s", settings[0].Value(), settings[1].Value())
+	newHost.RootURI = fmt.Sprintf("%s%s", fields[0].Value(), fields[1].Value())
 	newHost.Port = func(s string) int {
 		if n, err := strconv.Atoi(s); err == nil {
 			return n
 		}
 		return 0
-	}(settings[2].Value().(string))
-	newHost.InsecureSkipVerify = settings[3].Options[settings[3].SelectedOption].Value.(bool)
+	}(fields[2].Value().(string))
+	newHost.InsecureSkipVerify = fields[3].Options[fields[3].SelectedOption].Value.(bool)
 
 	output.Host = newHost
 	output.Action = ServerAddressActionSaved
 	return output, nil
 }
 
-func validateServerAddress(host romm.Host) loginAttemptResult {
-	validationClient := romm.NewClientFromHost(host, internal.ValidationTimeout)
+func validateServerAddress(host settings.Host) loginAttemptResult {
+	validationClient := romm.NewClientFromHost(host, settings.ValidationTimeout)
 
 	result, _ := gabagool.ProcessMessage(
 		i18n.Localize(&goi18n.Message{ID: "server_address_validating", Other: "Validating new server address..."}, nil),
@@ -216,7 +216,7 @@ func validateServerAddress(host romm.Host) loginAttemptResult {
 				return classifyLoginError(err), nil
 			}
 
-			client := romm.NewClientFromHost(host, internal.LoginTimeout)
+			client := romm.NewClientFromHost(host, settings.LoginTimeout)
 			if err := client.ValidateToken(); err != nil {
 				return classifyLoginError(err), nil
 			}

@@ -4,12 +4,12 @@ import (
 	"errors"
 	"grout/cache"
 	"grout/cfw"
-	"grout/internal"
 	"grout/internal/environment"
 	"grout/internal/fileutil"
 	"grout/resources"
 	"grout/romm"
 	"grout/service/catalog"
+	"grout/settings"
 	"grout/sync"
 	"grout/ui"
 	"log"
@@ -25,7 +25,7 @@ import (
 )
 
 type SetupResult struct {
-	Config    *internal.Config
+	Config    *settings.Config
 	Platforms []romm.Platform
 }
 
@@ -49,7 +49,7 @@ func setup() SetupResult {
 	config = handleFirstLaunch(config, isFirstLaunch, logger)
 	config = applyConfig(config, isFirstLaunch, currentCFW, logger)
 
-	if err := cache.InitCacheManager(config.Hosts[0], config); err != nil {
+	if err := cache.InitCacheManager(config.Hosts[0], *config); err != nil {
 		logger.Error("Failed to initialize cache manager", "error", err)
 	}
 
@@ -95,7 +95,7 @@ func initFramework(currentCFW cfw.CFW) {
 		IsNextUI:             currentCFW == cfw.NextUI,
 		DisplayOrientation:   gaba.OrientationNormal,
 	}
-	if preConfig, err := internal.LoadConfig(); err == nil {
+	if preConfig, err := settings.LoadConfig(); err == nil {
 		gaba.SetFlipFaceButtons(preConfig.SwapFaceButtons)
 	}
 	display := cfw.Lookup(currentCFW).Display()
@@ -122,8 +122,8 @@ func initFramework(currentCFW cfw.CFW) {
 	}, gaba.ChordOptions{
 		Window: time.Millisecond * 1500,
 		OnTrigger: func() {
-			if internal.IsKidModeEnabled() {
-				internal.SetKidMode(false)
+			if settings.IsKidModeEnabled() {
+				settings.SetKidMode(false)
 				gaba.GetLogger().Info("Kid Mode unlocked for this session")
 			}
 		},
@@ -148,8 +148,8 @@ func initFramework(currentCFW cfw.CFW) {
 	cfw.AddGroutToGamelist(currentCFW)
 }
 
-func loadOrCreateConfig(logger *slog.Logger) (*internal.Config, bool) {
-	config, err := internal.LoadConfig()
+func loadOrCreateConfig(logger *slog.Logger) (*settings.Config, bool) {
+	config, err := settings.LoadConfig()
 	isFirstLaunch := err != nil || (len(config.Hosts) == 0 && config.Language == "")
 
 	if isFirstLaunch {
@@ -167,10 +167,10 @@ func loadOrCreateConfig(logger *slog.Logger) (*internal.Config, bool) {
 		}
 
 		if config == nil {
-			config = &internal.Config{
+			config = &settings.Config{
 				ShowRegularCollections: true,
-				ApiTimeout:             internal.DurationSeconds(30 * time.Second),
-				DownloadTimeout:        internal.DurationSeconds(60 * time.Minute),
+				ApiTimeout:             settings.DurationSeconds(30 * time.Second),
+				DownloadTimeout:        settings.DurationSeconds(60 * time.Minute),
 			}
 		}
 		config.Language = selectedLanguage
@@ -179,13 +179,13 @@ func loadOrCreateConfig(logger *slog.Logger) (*internal.Config, bool) {
 	return config, isFirstLaunch
 }
 
-func handleFirstLaunch(config *internal.Config, isFirstLaunch bool, logger *slog.Logger) *internal.Config {
+func handleFirstLaunch(config *settings.Config, isFirstLaunch bool, logger *slog.Logger) *settings.Config {
 	if len(config.Hosts) > 0 {
 		return config
 	}
 
 	logger.Debug("No RomM Host Configured, starting login flow")
-	loginConfig, loginErr := ui.LoginFlow(romm.Host{})
+	loginConfig, loginErr := ui.LoginFlow(settings.Host{})
 	if loginErr != nil {
 		logger.Error("Login flow failed", "error", loginErr)
 		gaba.Close()
@@ -195,12 +195,12 @@ func handleFirstLaunch(config *internal.Config, isFirstLaunch bool, logger *slog
 	logger.Debug("Login successful, saving configuration")
 	config.Hosts = loginConfig.Hosts
 	config.PlatformsBinding = loginConfig.PlatformsBinding
-	internal.SaveConfig(config)
+	settings.SaveConfig(config)
 
 	return config
 }
 
-func applyConfig(config *internal.Config, isFirstLaunch bool, currentCFW cfw.CFW, logger *slog.Logger) *internal.Config {
+func applyConfig(config *settings.Config, isFirstLaunch bool, currentCFW cfw.CFW, logger *slog.Logger) *settings.Config {
 	if config.LogLevel != "" {
 		gaba.SetRawLogLevel(string(config.LogLevel))
 	}
@@ -211,10 +211,10 @@ func applyConfig(config *internal.Config, isFirstLaunch bool, currentCFW cfw.CFW
 		}
 	}
 
-	internal.InitKidMode(config)
+	settings.InitKidMode(config)
 	gaba.SetFlipFaceButtons(config.SwapFaceButtons)
 
-	if internal.IsKidModeEnabled() {
+	if settings.IsKidModeEnabled() {
 		splashBytes, _ := resources.GetSplashImageBytes()
 		gaba.ProcessMessage("", gaba.ProcessMessageOptions{
 			ImageBytes:   splashBytes,
@@ -224,7 +224,7 @@ func applyConfig(config *internal.Config, isFirstLaunch bool, currentCFW cfw.CFW
 		}, func() (interface{}, error) {
 			for i := 0; i < 20; i++ {
 				time.Sleep(100 * time.Millisecond)
-				if !internal.IsKidModeEnabled() {
+				if !settings.IsKidModeEnabled() {
 					break
 				}
 			}
@@ -248,7 +248,7 @@ func applyConfig(config *internal.Config, isFirstLaunch bool, currentCFW cfw.CFW
 
 		if err == nil && result.Action == ui.PlatformMappingActionSaved {
 			config.DirectoryMappings = result.Mappings
-			internal.SaveConfig(config)
+			settings.SaveConfig(config)
 		}
 	}
 
@@ -257,7 +257,7 @@ func applyConfig(config *internal.Config, isFirstLaunch bool, currentCFW cfw.CFW
 	return config
 }
 
-func connectAndLoadPlatforms(config *internal.Config, logger *slog.Logger) []romm.Platform {
+func connectAndLoadPlatforms(config *settings.Config, logger *slog.Logger) []romm.Platform {
 	var platforms []romm.Platform
 	splashBytes, _ := resources.GetSplashImageBytes()
 
@@ -274,7 +274,7 @@ func connectAndLoadPlatforms(config *internal.Config, logger *slog.Logger) []rom
 			host := config.Hosts[0]
 
 			// Validate server connectivity
-			client := romm.NewClient(host.URL(), romm.WithInsecureSkipVerify(host.InsecureSkipVerify), romm.WithTimeout(internal.ValidationTimeout))
+			client := romm.NewClient(host.URL(), romm.WithInsecureSkipVerify(host.InsecureSkipVerify), romm.WithTimeout(settings.ValidationTimeout))
 			if err := client.ValidateConnection(); err != nil {
 				connErr = err
 				return nil, nil
@@ -282,7 +282,7 @@ func connectAndLoadPlatforms(config *internal.Config, logger *slog.Logger) []rom
 
 			// Validate token; configs from before the RomM 5.0 cutover have no
 			// token and must re-pair.
-			authClient := romm.NewClientFromHost(host, internal.LoginTimeout)
+			authClient := romm.NewClientFromHost(host, settings.LoginTimeout)
 			if !host.HasTokenAuth() {
 				authErr = errors.New("stored basic-auth credentials require re-pairing")
 				return nil, nil
@@ -295,7 +295,7 @@ func connectAndLoadPlatforms(config *internal.Config, logger *slog.Logger) []rom
 				if user, err := authClient.GetCurrentUser(); err == nil {
 					host.Username = user.Username
 					config.Hosts[0] = host
-					internal.SaveConfig(config)
+					settings.SaveConfig(config)
 				}
 			}
 
@@ -304,7 +304,7 @@ func connectAndLoadPlatforms(config *internal.Config, logger *slog.Logger) []rom
 			if v, changed := sync.RefreshDeviceVersion(authClient, host.DeviceID, host.DeviceClientVersion); changed {
 				host.DeviceClientVersion = v
 				config.Hosts[0] = host
-				internal.SaveConfig(config)
+				settings.SaveConfig(config)
 			}
 
 			// Load platforms
@@ -354,7 +354,7 @@ func connectAndLoadPlatforms(config *internal.Config, logger *slog.Logger) []rom
 	return platforms
 }
 
-func handleAuthFailure(config *internal.Config, logger *slog.Logger) *internal.Config {
+func handleAuthFailure(config *settings.Config, logger *slog.Logger) *settings.Config {
 	var msg string
 	if config.Hosts[0].HasTokenAuth() {
 		msg = i18n.Localize(&goi18n.Message{ID: "startup_error_token_invalid", Other: "Your API token is invalid or expired.\nPlease set up a new one."}, nil)
@@ -375,9 +375,9 @@ func handleAuthFailure(config *internal.Config, logger *slog.Logger) *internal.C
 	}
 	config.Hosts = loginConfig.Hosts
 	config.PlatformsBinding = loginConfig.PlatformsBinding
-	internal.SaveConfig(config)
+	settings.SaveConfig(config)
 
-	if err := cache.InitCacheManager(config.Hosts[0], config); err != nil {
+	if err := cache.InitCacheManager(config.Hosts[0], *config); err != nil {
 		logger.Error("Failed to re-initialize cache manager", "error", err)
 	}
 

@@ -2,8 +2,8 @@ package sync
 
 import (
 	"grout/cfw"
-	"grout/internal"
 	"grout/romm"
+	"grout/settings"
 	"os"
 	"path/filepath"
 	"testing"
@@ -59,7 +59,7 @@ func TestBuildDiscoveryItems_NextUIPreservesRomEmulatorDirectory(t *testing.T) {
 	savesByRom := map[int][]romm.Save{
 		3112: {{ID: 11, RomID: 3112, FileName: "Final Fantasy Tactics Advance (USA) [2026].srm", FileExtension: "srm", UpdatedAt: time.Now()}},
 	}
-	config := &internal.Config{PlatformsBinding: map[string]string{"GBA": "gba"}}
+	config := &settings.Config{PlatformsBinding: map[string]string{"GBA": "gba"}}
 
 	items := buildDiscoveryItems(uncovered, savesByRom, config)
 	if len(items) != 1 {
@@ -534,7 +534,7 @@ func TestBuildClientSaveStates_SlotPrecedence(t *testing.T) {
 	}
 
 	// 2. Explicit user preference wins over the recorded slot.
-	cfg := &internal.Config{SlotPreferences: map[string]string{"7": "quicksave"}}
+	cfg := &settings.Config{SlotPreferences: map[string]string{"7": "quicksave"}}
 	states = buildClientSaveStates(local, cfg, recorded)
 	if len(states) != 1 || states[0].Slot != "quicksave" {
 		t.Fatalf("explicit preference should win over record: got %+v", states)
@@ -646,7 +646,7 @@ func TestBuildClientSaveStates_ExplicitAutosaveOverridesRecorded(t *testing.T) {
 	local := []LocalSave{{RomID: 6, FileName: "Pokemon.srm", FilePath: p, EmulatorDir: "mgba"}}
 	recorded := map[saveKey]string{{romID: 6, fileName: "Pokemon.srm"}: "default"}
 
-	cfg := &internal.Config{}
+	cfg := &settings.Config{}
 	cfg.SetSlotPreference(6, "autosave") // user explicitly picks autosave
 
 	states := buildClientSaveStates(local, cfg, recorded)

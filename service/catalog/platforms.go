@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"grout/cache"
-	"grout/internal"
 	"grout/romm"
+	"grout/settings"
 )
 
 // MappedPlatforms returns the platforms that have a directory mapping and at
 // least one rom, preferring the cache and falling back to the server.
-func MappedPlatforms(host romm.Host, mappings map[string]internal.DirectoryMapping, timeout ...time.Duration) ([]romm.Platform, error) {
+func MappedPlatforms(host settings.Host, mappings map[string]settings.DirectoryMapping, timeout ...time.Duration) ([]romm.Platform, error) {
 	var platforms []romm.Platform
 	var err error
 
@@ -45,7 +45,7 @@ func MappedPlatforms(host romm.Host, mappings map[string]internal.DirectoryMappi
 // It checks the cache before the server so a device that is offline, or one
 // whose server has no collections, does not pay for a network round trip on
 // every navigation.
-func ShowCollections(config internal.Config, host romm.Host) bool {
+func ShowCollections(config settings.Config, host settings.Host) bool {
 	if !config.ShowRegularCollections && !config.ShowSmartCollections && !config.ShowVirtualCollections {
 		return false
 	}
@@ -78,7 +78,7 @@ func ShowCollections(config internal.Config, host romm.Host) bool {
 // config for later CFW lookups.
 //
 // Older RomM versions have no such endpoint, so an error here is not fatal.
-func LoadPlatformsBinding(config *internal.Config, host romm.Host, timeout ...time.Duration) error {
+func LoadPlatformsBinding(config *settings.Config, host settings.Host, timeout ...time.Duration) error {
 	rommConfig, err := romm.NewClientFromHost(host, timeout...).GetConfig()
 	if err != nil {
 		return err
@@ -131,7 +131,7 @@ func SortAlphabetically(platforms []romm.Platform) []romm.Platform {
 }
 
 // PruneOrder drops entries whose platform no longer has a directory mapping.
-func PruneOrder(order []string, mappings map[string]internal.DirectoryMapping) []string {
+func PruneOrder(order []string, mappings map[string]settings.DirectoryMapping) []string {
 	if len(order) == 0 {
 		return order
 	}

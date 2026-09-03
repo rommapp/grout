@@ -2,6 +2,7 @@ package romm
 
 import (
 	"crypto/tls"
+	"grout/settings"
 	"net/http"
 	"time"
 )
@@ -12,7 +13,7 @@ import (
 //
 // A zero timeout falls back to DefaultClientTimeout, since a client with no
 // timeout can hang a screen on a flaky connection.
-func NewHTTPClient(host Host, timeout time.Duration) *http.Client {
+func NewHTTPClient(host settings.Host, timeout time.Duration) *http.Client {
 	if timeout <= 0 {
 		timeout = DefaultClientTimeout
 	}

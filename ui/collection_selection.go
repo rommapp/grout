@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"grout/cache"
-	"grout/internal"
 	"grout/romm"
+	"grout/settings"
 	"slices"
 	"strings"
 
@@ -16,8 +16,8 @@ import (
 )
 
 type CollectionSelectionInput struct {
-	Config               *internal.Config
-	Host                 romm.Host
+	Config               *settings.Config
+	Host                 settings.Host
 	SearchFilter         string
 	LastSelectedIndex    int
 	LastSelectedPosition int

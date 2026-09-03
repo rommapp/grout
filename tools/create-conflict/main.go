@@ -14,8 +14,8 @@ package main
 
 import (
 	"fmt"
-	"grout/internal"
 	"grout/romm"
+	"grout/settings"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -39,7 +39,7 @@ func main() {
 		slotFilter = os.Args[2]
 	}
 
-	config, err := internal.LoadConfig()
+	config, err := settings.LoadConfig()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to load config: %v\n", err)
 		os.Exit(1)

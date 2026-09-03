@@ -4,7 +4,7 @@ import (
 	"errors"
 	"grout/cache"
 	"grout/cfw"
-	"grout/internal"
+	"grout/settings"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -15,12 +15,12 @@ import (
 )
 
 type SaveMappingInput struct {
-	Config *internal.Config
+	Config *settings.Config
 }
 
 type SaveMappingOutput struct {
 	Action SaveMappingAction
-	Config *internal.Config
+	Config *settings.Config
 }
 
 type SaveMappingScreen struct{}

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"grout/cache"
-	"grout/internal"
 	"grout/romm"
+	"grout/settings"
 	"sort"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -15,15 +15,15 @@ import (
 )
 
 type SyncedGamesInput struct {
-	Config    *internal.Config
-	Host      romm.Host
+	Config    *settings.Config
+	Host      settings.Host
 	Platforms *[]romm.Platform
 	DeviceID  string
 }
 
 type SyncedGamesOutput struct {
 	Action       SyncedGamesAction
-	Config       *internal.Config
+	Config       *settings.Config
 	NewSlotName  string // Set when a new slot is created (for targeted upload)
 	NewSlotRomID int    // ROM ID to upload saves for
 }
@@ -172,7 +172,7 @@ func (s *SyncedGamesScreen) Draw(input SyncedGamesInput) (SyncedGamesOutput, err
 	}
 }
 
-func (s *SyncedGamesScreen) showPlatformGames(client *romm.Client, config *internal.Config, platformName string, games []romm.Rom) *slotChangeResult {
+func (s *SyncedGamesScreen) showPlatformGames(client *romm.Client, config *settings.Config, platformName string, games []romm.Rom) *slotChangeResult {
 	menuItems := make([]gaba.MenuItem, len(games))
 	for i, game := range games {
 		menuItems[i] = gaba.MenuItem{
@@ -211,7 +211,7 @@ func (s *SyncedGamesScreen) showPlatformGames(client *romm.Client, config *inter
 	}
 }
 
-func (s *SyncedGamesScreen) showGameDetail(client *romm.Client, config *internal.Config, romID int, gameName string) *slotChangeResult {
+func (s *SyncedGamesScreen) showGameDetail(client *romm.Client, config *settings.Config, romID int, gameName string) *slotChangeResult {
 	var summary romm.SaveSummary
 	var fetchErr error
 	gaba.ProcessMessage(
@@ -286,7 +286,7 @@ func (s *SyncedGamesScreen) showGameDetail(client *romm.Client, config *internal
 	}
 }
 
-func (s *SyncedGamesScreen) showSlotSelector(config *internal.Config, romID int, summary romm.SaveSummary) bool {
+func (s *SyncedGamesScreen) showSlotSelector(config *settings.Config, romID int, summary romm.SaveSummary) bool {
 	saveSlotText := i18n.Localize(&goi18n.Message{ID: "game_options_save_slot", Other: "Save Slot"}, nil)
 
 	var slotNames []string
@@ -326,7 +326,7 @@ func (s *SyncedGamesScreen) showSlotSelector(config *internal.Config, romID int,
 				selectedOpt := item.Options[item.SelectedOption]
 				if selectedSlot, ok := selectedOpt.Value.(string); ok && selectedSlot != "" {
 					config.SetSlotPreference(romID, selectedSlot)
-					if err := internal.SaveSlotPreferences(config); err != nil {
+					if err := settings.SaveSlotPreferences(config); err != nil {
 						gaba.GetLogger().Warn("Failed to save slot preferences", "error", err)
 					}
 					return true
@@ -338,7 +338,7 @@ func (s *SyncedGamesScreen) showSlotSelector(config *internal.Config, romID int,
 	return false
 }
 
-func (s *SyncedGamesScreen) buildDetailSections(config *internal.Config, romID int, summary romm.SaveSummary) []gaba.Section {
+func (s *SyncedGamesScreen) buildDetailSections(config *settings.Config, romID int, summary romm.SaveSummary) []gaba.Section {
 	var sections []gaba.Section
 
 	slotPref := config.GetSlotPreference(romID)

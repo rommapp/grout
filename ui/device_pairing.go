@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"grout/cfw"
-	"grout/internal"
 	"grout/internal/imageutil"
 	"grout/romm"
+	"grout/settings"
 	"grout/version"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -29,13 +29,13 @@ const (
 )
 
 type DevicePairingInput struct {
-	Host       romm.Host
+	Host       settings.Host
 	DeviceName string
 }
 
 type DevicePairingOutput struct {
 	Outcome DevicePairingOutcome
-	Host    romm.Host
+	Host    settings.Host
 	Err     error
 }
 
@@ -61,7 +61,7 @@ func (s *DevicePairingScreen) Execute(input DevicePairingInput) DevicePairingOut
 	host := input.Host
 
 	if host.ClientDeviceID == "" {
-		host.ClientDeviceID = romm.NewClientDeviceID()
+		host.ClientDeviceID = settings.NewClientDeviceID()
 	}
 
 	client := romm.NewClient(host.URL(), romm.WithInsecureSkipVerify(host.InsecureSkipVerify))
@@ -151,7 +151,7 @@ func (s *DevicePairingScreen) Execute(input DevicePairingInput) DevicePairingOut
 	}
 
 	if host.Username == "" {
-		authClient := romm.NewClientFromHost(host, internal.LoginTimeout)
+		authClient := romm.NewClientFromHost(host, settings.LoginTimeout)
 		if user, err := authClient.GetCurrentUser(); err == nil {
 			host.Username = user.Username
 		}
@@ -174,8 +174,8 @@ const (
 // silently fatal) platform load on first launch. A token that never succeeds
 // is left to the normal downstream error handling, so a genuine permission
 // problem still surfaces rather than being masked.
-func warmUpToken(host romm.Host, cancelled *atomic.Bool) {
-	client := romm.NewClientFromHost(host, internal.LoginTimeout)
+func warmUpToken(host settings.Host, cancelled *atomic.Bool) {
+	client := romm.NewClientFromHost(host, settings.LoginTimeout)
 	warmUpTokenWith(client, cancelled, warmUpTokenAttempts, warmUpTokenBackoff)
 }
 

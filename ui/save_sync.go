@@ -3,8 +3,8 @@ package ui
 import (
 	"errors"
 	"fmt"
-	"grout/internal"
 	"grout/romm"
+	"grout/settings"
 	"grout/sync"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -15,8 +15,8 @@ import (
 )
 
 type SaveSyncInput struct {
-	Config        *internal.Config
-	Host          romm.Host
+	Config        *settings.Config
+	Host          settings.Host
 	NewSlotName   string          // If set, upload-only mode for a new slot
 	NewSlotRomID  int             // ROM ID to upload saves for
 	ResolvedItems []sync.SyncItem // If set, skip resolve phase and execute directly
@@ -130,7 +130,7 @@ func newlySurfacedConflicts(items []sync.SyncItem, wasUpload []bool) map[int]int
 	return out
 }
 
-func (s *SaveSyncScreen) executeSyncPhase(client *romm.Client, config *internal.Config, deviceID string, items []sync.SyncItem, sessionID int) SaveSyncOutput {
+func (s *SaveSyncScreen) executeSyncPhase(client *romm.Client, config *settings.Config, deviceID string, items []sync.SyncItem, sessionID int) SaveSyncOutput {
 	var report sync.SyncReport
 
 	// Snapshot which items are uploads so we can detect 409s that turn an upload into
@@ -185,7 +185,7 @@ func (s *SaveSyncScreen) executeSyncPhase(client *romm.Client, config *internal.
 	return SaveSyncOutput{}
 }
 
-func (s *SaveSyncScreen) executeNewSlotUpload(client *romm.Client, config *internal.Config, deviceID string, romID int, slotName string) SaveSyncOutput {
+func (s *SaveSyncScreen) executeNewSlotUpload(client *romm.Client, config *settings.Config, deviceID string, romID int, slotName string) SaveSyncOutput {
 	var report sync.SyncReport
 	progress := uatomic.NewFloat64(0)
 
@@ -223,7 +223,7 @@ func (s *SaveSyncScreen) executeNewSlotUpload(client *romm.Client, config *inter
 
 // resolveMultiSlotDownloads shows a slot picker for first-time downloads that have
 // multiple slots on the server. Returns the (potentially modified) items slice.
-func (s *SaveSyncScreen) resolveMultiSlotDownloads(config *internal.Config, items []sync.SyncItem) []sync.SyncItem {
+func (s *SaveSyncScreen) resolveMultiSlotDownloads(config *settings.Config, items []sync.SyncItem) []sync.SyncItem {
 	// Collect items that need slot selection
 	type slotChoice struct {
 		itemIndex int
@@ -313,7 +313,7 @@ func (s *SaveSyncScreen) resolveMultiSlotDownloads(config *internal.Config, item
 		}
 	}
 
-	if err := internal.SaveSlotPreferences(config); err != nil {
+	if err := settings.SaveSlotPreferences(config); err != nil {
 		gaba.GetLogger().Warn("Failed to save slot preferences", "error", err)
 	}
 	return items

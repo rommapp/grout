@@ -3,8 +3,8 @@ package ui
 import (
 	"errors"
 	"fmt"
-	"grout/internal"
 	"grout/romm"
+	"grout/settings"
 	"grout/sync"
 	"grout/version"
 	"os"
@@ -15,14 +15,14 @@ import (
 )
 
 type SaveSyncSettingsInput struct {
-	Config *internal.Config
-	Host   romm.Host
+	Config *settings.Config
+	Host   settings.Host
 }
 
 type SaveSyncSettingsOutput struct {
 	Action SaveSyncSettingsAction
-	Config *internal.Config
-	Host   romm.Host
+	Config *settings.Config
+	Host   settings.Host
 }
 
 type SaveSyncSettingsScreen struct{}

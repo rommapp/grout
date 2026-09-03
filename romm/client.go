@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"grout/settings"
 	"io"
 	"net/http"
 	"strings"
@@ -66,7 +67,7 @@ func NewClient(baseURL string, opts ...ClientOption) *Client {
 	return c
 }
 
-func NewClientFromHost(host Host, timeout ...time.Duration) *Client {
+func NewClientFromHost(host settings.Host, timeout ...time.Duration) *Client {
 	opts := []ClientOption{
 		WithAuthHeader(host.AuthHeader()),
 		WithInsecureSkipVerify(host.InsecureSkipVerify),

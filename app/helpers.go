@@ -3,9 +3,9 @@ package main
 import (
 	"grout/cache"
 	"grout/cfw"
-	"grout/internal"
 	"grout/romm"
 	"grout/service/catalog"
+	"grout/settings"
 	"grout/ui"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -32,7 +32,7 @@ func savePlatformOrder(state *AppState, platforms []romm.Platform) {
 	}
 	state.Config.PlatformOrder = platformOrder
 	state.Platforms = platforms
-	internal.SaveConfig(state.Config)
+	settings.SaveConfig(state.Config)
 }
 
 func executeDownloadUI(state *AppState, r ui.GameDetailsOutput, stack *router.Stack) {
@@ -58,7 +58,7 @@ func executeMultiDownloadUI(state *AppState, r ui.GameListOutput) {
 func handlePlatformMappingUpdateUI(state *AppState, r ui.PlatformMappingOutput) {
 	state.Config.DirectoryMappings = r.Mappings
 	state.Config.PlatformOrder = catalog.PruneOrder(state.Config.PlatformOrder, r.Mappings)
-	internal.SaveConfig(state.Config)
+	settings.SaveConfig(state.Config)
 
 	platforms, err := catalog.MappedPlatforms(state.Host, r.Mappings, state.Config.ApiTimeout.Duration())
 	if err != nil {
@@ -96,21 +96,21 @@ func handleLogout(state *AppState) {
 	state.Config.DirectoryMappings = nil
 	state.Config.PlatformOrder = nil
 
-	if err := internal.SaveConfig(state.Config); err != nil {
+	if err := settings.SaveConfig(state.Config); err != nil {
 		logger.Error("Failed to save config after logout", "error", err)
 		return
 	}
 
 	logger.Info("User logged out successfully")
 
-	loginConfig, err := ui.LoginFlow(romm.Host{})
+	loginConfig, err := ui.LoginFlow(settings.Host{})
 	if err != nil {
 		logger.Error("Login flow failed after logout", "error", err)
 		return
 	}
 
 	state.Config.Hosts = loginConfig.Hosts
-	if err := internal.SaveConfig(state.Config); err != nil {
+	if err := settings.SaveConfig(state.Config); err != nil {
 		logger.Error("Failed to save config after re-login", "error", err)
 		return
 	}
@@ -131,11 +131,11 @@ func handleLogout(state *AppState) {
 
 		if err == nil && result.Action == ui.PlatformMappingActionSaved {
 			state.Config.DirectoryMappings = result.Mappings
-			internal.SaveConfig(state.Config)
+			settings.SaveConfig(state.Config)
 		}
 	}
 
-	if err := cache.InitCacheManager(state.Config.Hosts[0], state.Config); err != nil {
+	if err := cache.InitCacheManager(state.Config.Hosts[0], *state.Config); err != nil {
 		logger.Error("Failed to re-initialize cache manager", "error", err)
 	}
 

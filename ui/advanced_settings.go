@@ -2,8 +2,7 @@ package ui
 
 import (
 	"errors"
-	"grout/internal"
-	"grout/romm"
+	"grout/settings"
 	"os"
 	"time"
 
@@ -13,8 +12,8 @@ import (
 )
 
 type AdvancedSettingsInput struct {
-	Config                *internal.Config
-	Host                  romm.Host
+	Config                *settings.Config
+	Host                  settings.Host
 	LastSelectedIndex     int
 	LastVisibleStartIndex int
 }
@@ -117,7 +116,7 @@ func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (AdvancedSett
 
 	s.applySettings(config, result.Items)
 
-	err = internal.SaveConfig(config)
+	err = settings.SaveConfig(config)
 	if err != nil {
 		gaba.GetLogger().Error("Error saving advanced settings", "error", err)
 		return output, err
@@ -127,7 +126,7 @@ func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (AdvancedSett
 	return output, nil
 }
 
-func (s *AdvancedSettingsScreen) buildMenuItems(config *internal.Config) []gaba.ItemWithOptions {
+func (s *AdvancedSettingsScreen) buildMenuItems(config *settings.Config) []gaba.ItemWithOptions {
 	items := []gaba.ItemWithOptions{
 		{
 			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_sync_artwork", Other: "Preload Artwork"}, nil)},
@@ -174,18 +173,18 @@ func (s *AdvancedSettingsScreen) buildMenuItems(config *internal.Config) []gaba.
 		{
 			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_release_channel", Other: "Release Channel"}, nil)},
 			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "release_match_romm", Other: "Match RomM"}, nil), Value: internal.ReleaseChannelMatchRomM},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "release_stable", Other: "Stable"}, nil), Value: internal.ReleaseChannelStable},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "release_beta", Other: "Beta"}, nil), Value: internal.ReleaseChannelBeta},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "release_match_romm", Other: "Match RomM"}, nil), Value: settings.ReleaseChannelMatchRomM},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "release_stable", Other: "Stable"}, nil), Value: settings.ReleaseChannelStable},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "release_beta", Other: "Beta"}, nil), Value: settings.ReleaseChannelBeta},
 			},
 			SelectedOption: releaseChannelToIndex(config.ReleaseChannel),
 		},
 		{
 			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_log_level", Other: "Log Level"}, nil)},
 			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "log_level_debug", Other: "Debug"}, nil), Value: internal.LogLevelDebug},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "log_level_info", Other: "Info"}, nil), Value: internal.LogLevelInfo},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "log_level_error", Other: "Error"}, nil), Value: internal.LogLevelError},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "log_level_debug", Other: "Debug"}, nil), Value: settings.LogLevelDebug},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "log_level_info", Other: "Info"}, nil), Value: settings.LogLevelInfo},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "log_level_error", Other: "Error"}, nil), Value: settings.LogLevelError},
 			},
 			SelectedOption: logLevelToIndex(config.LogLevel),
 		},
@@ -205,28 +204,28 @@ func (s *AdvancedSettingsScreen) buildMenuItems(config *internal.Config) []gaba.
 	return items
 }
 
-func (s *AdvancedSettingsScreen) applySettings(config *internal.Config, items []gaba.ItemWithOptions) {
+func (s *AdvancedSettingsScreen) applySettings(config *settings.Config, items []gaba.ItemWithOptions) {
 	for _, item := range items {
 		selectedText := item.Item.Text
 
 		switch selectedText {
 		case i18n.Localize(&goi18n.Message{ID: "settings_download_timeout", Other: "Download Timeout"}, nil):
 			if val, ok := item.Options[item.SelectedOption].Value.(time.Duration); ok {
-				config.DownloadTimeout = internal.DurationSeconds(val)
+				config.DownloadTimeout = settings.DurationSeconds(val)
 			}
 
 		case i18n.Localize(&goi18n.Message{ID: "settings_api_timeout", Other: "API Timeout"}, nil):
 			if val, ok := item.Options[item.SelectedOption].Value.(time.Duration); ok {
-				config.ApiTimeout = internal.DurationSeconds(val)
+				config.ApiTimeout = settings.DurationSeconds(val)
 			}
 
 		case i18n.Localize(&goi18n.Message{ID: "settings_log_level", Other: "Log Level"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(internal.LogLevel); ok {
+			if val, ok := item.Options[item.SelectedOption].Value.(settings.LogLevel); ok {
 				config.LogLevel = val
 			}
 
 		case i18n.Localize(&goi18n.Message{ID: "settings_release_channel", Other: "Release Channel"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(internal.ReleaseChannel); ok {
+			if val, ok := item.Options[item.SelectedOption].Value.(settings.ReleaseChannel); ok {
 				config.ReleaseChannel = val
 			}
 

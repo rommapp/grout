@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"grout/cache"
 	"grout/cfw"
-	"grout/internal"
 	"grout/internal/fileutil"
 	"grout/internal/stringutil"
+	"grout/settings"
 	"os"
 	"path/filepath"
 	"slices"
@@ -22,19 +22,19 @@ import (
 )
 
 type PlatformMappingInput struct {
-	Host             romm.Host
+	Host             settings.Host
 	ApiTimeout       time.Duration
 	CFW              cfw.CFW
 	RomDirectory     string
 	AutoSelect       bool
 	HideBackButton   bool
-	ExistingMappings map[string]internal.DirectoryMapping // For return visits, use existing config
+	ExistingMappings map[string]settings.DirectoryMapping // For return visits, use existing config
 	PlatformsBinding map[string]string                    // fs_slug -> bound slug for CFW lookups
 }
 
 type PlatformMappingOutput struct {
 	Action   PlatformMappingAction
-	Mappings map[string]internal.DirectoryMapping
+	Mappings map[string]settings.DirectoryMapping
 }
 
 type PlatformMappingScreen struct{}
@@ -63,7 +63,7 @@ func distinctPlatformValues(platforms []romm.Platform, get func(romm.Platform) s
 
 func (s *PlatformMappingScreen) Draw(input PlatformMappingInput) (PlatformMappingOutput, error) {
 	logger := gaba.GetLogger()
-	output := PlatformMappingOutput{Action: PlatformMappingActionBack, Mappings: make(map[string]internal.DirectoryMapping)}
+	output := PlatformMappingOutput{Action: PlatformMappingActionBack, Mappings: make(map[string]settings.DirectoryMapping)}
 
 	rommPlatforms, err := s.fetchPlatforms(input)
 	if err != nil {
@@ -86,7 +86,7 @@ func (s *PlatformMappingScreen) Draw(input PlatformMappingInput) (PlatformMappin
 	visibleStartIndex := 0
 
 	// We copy the existing mappings so we can update/accumulate them as the user interacts.
-	currentMappings := make(map[string]internal.DirectoryMapping)
+	currentMappings := make(map[string]settings.DirectoryMapping)
 	for k, v := range input.ExistingMappings {
 		currentMappings[k] = v
 	}
@@ -99,7 +99,7 @@ func (s *PlatformMappingScreen) Draw(input PlatformMappingInput) (PlatformMappin
 			rommSlug := item.Item.Metadata.(string)
 			relativePath := item.Options[item.SelectedOption].Value.(string)
 			if relativePath != "" {
-				currentMappings[rommSlug] = internal.DirectoryMapping{
+				currentMappings[rommSlug] = settings.DirectoryMapping{
 					RomMSlug:     rommSlug,
 					RelativePath: relativePath,
 				}
@@ -192,7 +192,7 @@ func (s *PlatformMappingScreen) Draw(input PlatformMappingInput) (PlatformMappin
 		for _, item := range result.Items {
 			rommSlug := item.Item.Metadata.(string)
 			relativePath := item.Options[item.SelectedOption].Value.(string)
-			currentMappings[rommSlug] = internal.DirectoryMapping{
+			currentMappings[rommSlug] = settings.DirectoryMapping{
 				RomMSlug:     rommSlug,
 				RelativePath: relativePath,
 			}
@@ -434,7 +434,7 @@ func (s *PlatformMappingScreen) Draw(input PlatformMappingInput) (PlatformMappin
 		}
 
 		// Compile final mappings from currentMappings
-		finalMappings := make(map[string]internal.DirectoryMapping)
+		finalMappings := make(map[string]settings.DirectoryMapping)
 		for slug, mapping := range currentMappings {
 			if mapping.RelativePath != "" && slug != "dummy_no_results" {
 				finalMappings[slug] = mapping
@@ -659,7 +659,7 @@ func (s *PlatformMappingScreen) isValidDirectoryForPlatform(dirName string, c cf
 }
 
 func (s *PlatformMappingScreen) createDirectories(
-	mappings map[string]internal.DirectoryMapping,
+	mappings map[string]settings.DirectoryMapping,
 	romDirectory string,
 	existingDirs []os.DirEntry,
 ) error {

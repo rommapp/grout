@@ -2,8 +2,7 @@ package ui
 
 import (
 	"errors"
-	"grout/internal"
-	"grout/romm"
+	"grout/settings"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
@@ -11,16 +10,16 @@ import (
 )
 
 type SyncMenuInput struct {
-	Config                *internal.Config
-	Host                  romm.Host
+	Config                *settings.Config
+	Host                  settings.Host
 	LastSelectedIndex     int
 	LastVisibleStartIndex int
 }
 
 type SyncMenuOutput struct {
 	Action                SyncMenuAction
-	Config                *internal.Config
-	Host                  romm.Host
+	Config                *settings.Config
+	Host                  settings.Host
 	LastSelectedIndex     int
 	LastVisibleStartIndex int
 }

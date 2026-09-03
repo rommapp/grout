@@ -2,6 +2,7 @@ package romm
 
 import (
 	"crypto/tls"
+	"grout/settings"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -27,7 +28,7 @@ func selfSignedServer(t *testing.T) *httptest.Server {
 func TestNewHTTPClient_HonoursInsecureSkipVerify(t *testing.T) {
 	srv := selfSignedServer(t)
 
-	host := Host{InsecureSkipVerify: true}
+	host := settings.Host{InsecureSkipVerify: true}
 	client := NewHTTPClient(host, DefaultClientTimeout)
 
 	resp, err := client.Get(srv.URL)
@@ -46,7 +47,7 @@ func TestNewHTTPClient_HonoursInsecureSkipVerify(t *testing.T) {
 func TestNewHTTPClient_VerifiesByDefault(t *testing.T) {
 	srv := selfSignedServer(t)
 
-	client := NewHTTPClient(Host{}, DefaultClientTimeout)
+	client := NewHTTPClient(settings.Host{}, DefaultClientTimeout)
 
 	resp, err := client.Get(srv.URL)
 	if err == nil {
@@ -56,14 +57,14 @@ func TestNewHTTPClient_VerifiesByDefault(t *testing.T) {
 }
 
 func TestNewHTTPClient_AppliesTimeout(t *testing.T) {
-	client := NewHTTPClient(Host{}, 5*time.Second)
+	client := NewHTTPClient(settings.Host{}, 5*time.Second)
 	if client.Timeout != 5*time.Second {
 		t.Errorf("Timeout = %v, want %v", client.Timeout, 5*time.Second)
 	}
 
 	// A zero timeout means the caller did not ask for one; fall back to the
 	// package default rather than blocking forever.
-	client = NewHTTPClient(Host{}, 0)
+	client = NewHTTPClient(settings.Host{}, 0)
 	if client.Timeout != DefaultClientTimeout {
 		t.Errorf("Timeout = %v, want the default %v", client.Timeout, DefaultClientTimeout)
 	}
@@ -72,8 +73,8 @@ func TestNewHTTPClient_AppliesTimeout(t *testing.T) {
 // Each call must return an independent client so that callers changing a
 // timeout or transport cannot affect anyone else.
 func TestNewHTTPClient_ReturnsIndependentClients(t *testing.T) {
-	a := NewHTTPClient(Host{InsecureSkipVerify: true}, time.Second)
-	b := NewHTTPClient(Host{}, time.Minute)
+	a := NewHTTPClient(settings.Host{InsecureSkipVerify: true}, time.Second)
+	b := NewHTTPClient(settings.Host{}, time.Minute)
 
 	if a == b {
 		t.Fatal("expected distinct client instances")

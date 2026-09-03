@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"grout/cache"
-	"grout/internal"
 	"grout/internal/environment"
 	"grout/romm"
+	"grout/settings"
 	"slices"
 	"strings"
 	"sync"
@@ -35,8 +35,8 @@ const (
 )
 
 type GameListInput struct {
-	Config               *internal.Config
-	Host                 romm.Host
+	Config               *settings.Config
+	Host                 settings.Host
 	Platform             romm.Platform
 	Collection           romm.Collection
 	Games                []romm.Rom
@@ -130,10 +130,10 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 		}
 	}
 
-	if input.Config.DownloadedGames == internal.DownloadedGamesModeFilter {
+	if input.Config.DownloadedGames == settings.DownloadedGamesModeFilter {
 		filteredGames := make([]romm.Rom, 0, len(displayGames))
 		for _, game := range displayGames {
-			if !isRomDownloaded(input.Config, game) {
+			if !isRomDownloaded(*input.Config, game) {
 				filteredGames = append(filteredGames, game)
 			}
 		}
@@ -158,16 +158,16 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 		if input.Platform.ID == 0 {
 			for i := range displayGames {
 				prefix := ""
-				if input.Config.DownloadedGames == internal.DownloadedGamesModeMark && isRomDownloaded(input.Config, displayGames[i]) {
+				if input.Config.DownloadedGames == settings.DownloadedGamesModeMark && isRomDownloaded(*input.Config, displayGames[i]) {
 					prefix = gabaconst.Download + " "
 				}
 				displayGames[i].DisplayName = fmt.Sprintf("%s[%s] %s", prefix, displayGames[i].PlatformFSSlug, displayGames[i].DisplayName)
 			}
 		} else {
 			displayName = fmt.Sprintf("%s - %s", input.Collection.Name, input.Platform.Name)
-			if input.Config.DownloadedGames == internal.DownloadedGamesModeMark {
+			if input.Config.DownloadedGames == settings.DownloadedGamesModeMark {
 				for i := range displayGames {
-					if isRomDownloaded(input.Config, displayGames[i]) {
+					if isRomDownloaded(*input.Config, displayGames[i]) {
 						displayGames[i].DisplayName = fmt.Sprintf("%s %s", gabaconst.Download, displayGames[i].DisplayName)
 					}
 				}
@@ -183,23 +183,23 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 				allDownloaded := len(game.Files) > 0
 				anyDownloaded := false
 				for _, file := range game.Files {
-					if isRomFileDownloaded(input.Config, *game, file.FileName) {
+					if isRomFileDownloaded(*input.Config, *game, file.FileName) {
 						anyDownloaded = true
 					} else {
 						allDownloaded = false
 					}
 				}
 
-				if input.Config.DownloadedGames == internal.DownloadedGamesModeMark {
+				if input.Config.DownloadedGames == settings.DownloadedGamesModeMark {
 					if allDownloaded {
-						prefix = internal.MultipleDownloadedIcon + " "
+						prefix = settings.MultipleDownloadedIcon + " "
 					} else if anyDownloaded {
 						prefix = gabaconst.Download + " "
 					}
 				}
-				prefix += internal.MultipleFilesIcon + " "
+				prefix += settings.MultipleFilesIcon + " "
 			} else {
-				if input.Config.DownloadedGames == internal.DownloadedGamesModeMark && isRomDownloaded(input.Config, *game) {
+				if input.Config.DownloadedGames == settings.DownloadedGamesModeMark && isRomDownloaded(*input.Config, *game) {
 					prefix = gabaconst.Download + " "
 				}
 			}
@@ -302,7 +302,7 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 		return selectedIndex
 	}
 
-	if hasBIOS && !internal.IsKidModeEnabled() {
+	if hasBIOS && !settings.IsKidModeEnabled() {
 		options.TertiaryActionButton = gabaconst.VirtualButtonMenu
 	}
 
@@ -310,7 +310,7 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 
 	footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_back", Other: "Back"}, nil)})
 
-	if hasBIOS && !internal.IsKidModeEnabled() {
+	if hasBIOS && !settings.IsKidModeEnabled() {
 		menuButtonName := i18n.Localize(&goi18n.Message{ID: "button_menu", Other: "Menu"}, nil)
 		if environment.IsMiyoo() {
 			menuButtonName = "L2"

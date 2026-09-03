@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"grout/cache"
 	"grout/cfw"
-	"grout/internal"
 	"grout/internal/fileutil"
 	"grout/internal/pspdb"
 	"grout/romm"
+	"grout/settings"
 	"grout/version"
 	"os"
 	"path/filepath"
@@ -29,7 +29,7 @@ import (
 // timeouts or rate limits.
 const maxConcurrentRequests = 4
 
-func ResolveSaveSync(client *romm.Client, config *internal.Config, deviceID string) (SyncResult, error) {
+func ResolveSaveSync(client *romm.Client, config *settings.Config, deviceID string) (SyncResult, error) {
 	logger := gaba.GetLogger()
 	logger.Debug("Starting save sync resolve (negotiate)", "deviceID", deviceID)
 
@@ -77,7 +77,7 @@ func ResolveSaveSync(client *romm.Client, config *internal.Config, deviceID stri
 			"file", op.FileName, "slot", slot, "reason", op.Reason)
 	}
 
-	scan := cfw.ScanRoms(config)
+	scan := cfw.ScanRoms(*config)
 	resolvedRoms := ResolveLocalRoms(scan)
 	cm := cache.GetCacheManager()
 
@@ -108,7 +108,7 @@ func ResolveSaveSync(client *romm.Client, config *internal.Config, deviceID stri
 // deletion-propagation model would otherwise suppress. Null-slot ("archival" /
 // web-UI) saves are included, since negotiate never surfaces them. Pure function:
 // the caller supplies the fetched saves keyed by ROM ID.
-func buildDiscoveryItems(uncovered map[int]cfw.LocalRomFile, savesByRom map[int][]romm.Save, config *internal.Config) []SyncItem {
+func buildDiscoveryItems(uncovered map[int]cfw.LocalRomFile, savesByRom map[int][]romm.Save, config *settings.Config) []SyncItem {
 	logger := gaba.GetLogger()
 	var items []SyncItem
 
@@ -214,7 +214,7 @@ func opStubsToSaves(ops []romm.SyncOperationSchema) []romm.Save {
 // discoverRemoteOnlySaves finds locally-present ROMs that have no local save and were
 // not covered by a negotiate operation, fetches their server saves, and builds download
 // items for any save this device has never synced.
-func discoverRemoteOnlySaves(client *romm.Client, config *internal.Config, deviceID string, localSaves []LocalSave, items []SyncItem, resolvedRoms map[int]cfw.LocalRomFile) []SyncItem {
+func discoverRemoteOnlySaves(client *romm.Client, config *settings.Config, deviceID string, localSaves []LocalSave, items []SyncItem, resolvedRoms map[int]cfw.LocalRomFile) []SyncItem {
 	logger := gaba.GetLogger()
 
 	covered := make(map[int]bool, len(localSaves)+len(items))
@@ -294,7 +294,7 @@ func mapOperationsToItems(
 	localSaves []LocalSave,
 	resolvedRoms map[int]cfw.LocalRomFile,
 	cm *cache.Manager,
-	config *internal.Config,
+	config *settings.Config,
 	recordedSlots map[saveKey]string,
 	recordedHashes map[saveKey]string,
 ) []SyncItem {
@@ -545,7 +545,7 @@ func resolveLocalSaveForDownload(op romm.SyncOperationSchema, resolvedRoms map[i
 	return ls
 }
 
-func ExecuteSaveSync(client *romm.Client, config *internal.Config, deviceID string, items []SyncItem, sessionID int, progressFn func(current, total int)) SyncReport {
+func ExecuteSaveSync(client *romm.Client, config *settings.Config, deviceID string, items []SyncItem, sessionID int, progressFn func(current, total int)) SyncReport {
 	report := ExecuteActions(client, config, deviceID, items, progressFn)
 
 	cm := cache.GetCacheManager()
@@ -712,7 +712,7 @@ func detectSaveNameStyle(saveDir string) bool {
 	return keep
 }
 
-func ScanSaves(config *internal.Config) []LocalSave {
+func ScanSaves(config *settings.Config) []LocalSave {
 	logger := gaba.GetLogger()
 	currentCFW := cfw.GetCFW()
 
@@ -961,7 +961,7 @@ func recordedDownloadFileName(item SyncItem, savePath string) string {
 // negotiate. Precedence: explicit user preference > recorded last-synced slot >
 // "autosave" default. This gives downloaded saves a stable slot identity so they are
 // not spuriously re-uploaded to a different slot on the next sync.
-func resolveReportedSlot(ls LocalSave, config *internal.Config, recordedSlots map[saveKey]string) string {
+func resolveReportedSlot(ls LocalSave, config *settings.Config, recordedSlots map[saveKey]string) string {
 	slot := "autosave"
 	if rec, ok := recordedSlots[saveKey{ls.RomID, ls.FileName}]; ok && rec != "" {
 		slot = rec
@@ -974,7 +974,7 @@ func resolveReportedSlot(ls LocalSave, config *internal.Config, recordedSlots ma
 	return slot
 }
 
-func buildClientSaveStates(localSaves []LocalSave, config *internal.Config, recordedSlots map[saveKey]string) []romm.ClientSaveState {
+func buildClientSaveStates(localSaves []LocalSave, config *settings.Config, recordedSlots map[saveKey]string) []romm.ClientSaveState {
 	logger := gaba.GetLogger()
 	states := make([]romm.ClientSaveState, 0, len(localSaves))
 
@@ -1077,7 +1077,7 @@ func SelectSaveForSlot(saves []romm.Save, preferredSlot string) *romm.Save {
 	return best
 }
 
-func ExecuteActions(client *romm.Client, config *internal.Config, deviceID string, items []SyncItem, progressFn func(current, total int)) SyncReport {
+func ExecuteActions(client *romm.Client, config *settings.Config, deviceID string, items []SyncItem, progressFn func(current, total int)) SyncReport {
 	logger := gaba.GetLogger()
 	report := SyncReport{}
 
@@ -1308,7 +1308,7 @@ func upload(client *romm.Client, deviceID string, item *SyncItem) uploadOutcome 
 	return uploadOK
 }
 
-func download(client *romm.Client, config *internal.Config, deviceID string, item *SyncItem) bool {
+func download(client *romm.Client, config *settings.Config, deviceID string, item *SyncItem) bool {
 	logger := gaba.GetLogger()
 
 	if item.RemoteSave == nil {
@@ -1548,7 +1548,7 @@ func extractPSPGameID(dirName string) string {
 	return dirName
 }
 
-func ResolveSaveDirectory(fsSlug string, config *internal.Config) string {
+func ResolveSaveDirectory(fsSlug string, config *settings.Config) string {
 	if config != nil && config.SaveDirectoryMappings != nil {
 		if mapped, ok := config.SaveDirectoryMappings[fsSlug]; ok && mapped != "" {
 			baseSavePath := cfw.BaseSavePath()
@@ -1566,7 +1566,7 @@ func ResolveSaveDirectory(fsSlug string, config *internal.Config) string {
 	return cfw.GetSaveDirectory(effectiveFSSlug)
 }
 
-func resolveDiscoveredSaveDirectory(rom cfw.LocalRomFile, config *internal.Config) string {
+func resolveDiscoveredSaveDirectory(rom cfw.LocalRomFile, config *settings.Config) string {
 	if rom.FilePath == "" {
 		return ""
 	}

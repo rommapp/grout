@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"grout/internal/fileutil"
 	"grout/romm"
+	"grout/settings"
 	"os"
 	"path/filepath"
 	"sync"
@@ -18,8 +19,8 @@ type Manager struct {
 	db          *sql.DB
 	dbPath      string
 	mu          sync.RWMutex
-	host        romm.Host
-	config      Config
+	host        settings.Host
+	config      settings.Config
 	initialized bool
 
 	stats *Stats
@@ -63,7 +64,7 @@ func GetCacheManager() *Manager {
 	return cacheManager
 }
 
-func InitCacheManager(host romm.Host, config Config) error {
+func InitCacheManager(host settings.Host, config settings.Config) error {
 	cacheManagerMu.Lock()
 	defer cacheManagerMu.Unlock()
 
@@ -81,7 +82,7 @@ func InitCacheManager(host romm.Host, config Config) error {
 	return cacheManagerErr
 }
 
-func newCacheManager(host romm.Host, config Config) (*Manager, error) {
+func newCacheManager(host settings.Host, config settings.Config) (*Manager, error) {
 	logger := gaba.GetLogger()
 
 	dbPath := getCacheDBPath()

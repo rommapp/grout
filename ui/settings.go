@@ -3,9 +3,8 @@ package ui
 import (
 	"errors"
 	"grout/cfw"
-	"grout/internal"
 	"grout/library"
-	"grout/romm"
+	"grout/settings"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
@@ -13,16 +12,16 @@ import (
 )
 
 type SettingsInput struct {
-	Config                *internal.Config
+	Config                *settings.Config
 	CFW                   cfw.CFW
-	Host                  romm.Host
+	Host                  settings.Host
 	LastSelectedIndex     int
 	LastVisibleStartIndex int
 }
 
 type SettingsOutput struct {
 	Action                     SettingsAction
-	Config                     *internal.Config
+	Config                     *settings.Config
 	GeneralSettingsClicked     bool
 	InfoClicked                bool
 	CollectionsSettingsClicked bool
@@ -216,7 +215,7 @@ func (s *SettingsScreen) buildMenuItem(settingType SettingType) gaba.ItemWithOpt
 	}
 }
 
-func (s *SettingsScreen) applySettings(_ *internal.Config, _ []gaba.ItemWithOptions) {
+func (s *SettingsScreen) applySettings(_ *settings.Config, _ []gaba.ItemWithOptions) {
 	// No toggle settings remain on the settings screen
 }
 
@@ -227,26 +226,26 @@ func boolToIndex(b bool) int {
 	return 0
 }
 
-func logLevelToIndex(level internal.LogLevel) int {
+func logLevelToIndex(level settings.LogLevel) int {
 	switch level {
-	case internal.LogLevelDebug:
+	case settings.LogLevelDebug:
 		return 0
-	case internal.LogLevelInfo:
+	case settings.LogLevelInfo:
 		return 1
-	case internal.LogLevelError:
+	case settings.LogLevelError:
 		return 2
 	default:
 		return 1
 	}
 }
 
-func releaseChannelToIndex(releaseChannel internal.ReleaseChannel) int {
+func releaseChannelToIndex(releaseChannel settings.ReleaseChannel) int {
 	switch releaseChannel {
-	case internal.ReleaseChannelMatchRomM:
+	case settings.ReleaseChannelMatchRomM:
 		return 0
-	case internal.ReleaseChannelStable:
+	case settings.ReleaseChannelStable:
 		return 1
-	case internal.ReleaseChannelBeta:
+	case settings.ReleaseChannelBeta:
 		return 2
 	default:
 		return 0
@@ -304,11 +303,11 @@ func languageToIndex(lang string) int {
 	}
 }
 
-func collectionViewToIndex(view internal.CollectionView) int {
+func collectionViewToIndex(view settings.CollectionView) int {
 	switch view {
-	case internal.CollectionViewPlatform:
+	case settings.CollectionViewPlatform:
 		return 0
-	case internal.CollectionViewUnified:
+	case settings.CollectionViewUnified:
 		return 1
 	default:
 		return 0

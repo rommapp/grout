@@ -2,9 +2,9 @@ package ui
 
 import (
 	"grout/cache"
-	"grout/internal"
 	"grout/romm"
 	"grout/service/catalog"
+	"grout/settings"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
@@ -13,8 +13,8 @@ import (
 )
 
 type RebuildCacheInput struct {
-	Host      romm.Host
-	Config    *internal.Config
+	Host      settings.Host
+	Config    *settings.Config
 	CacheSync *cache.BackgroundSync
 }
 
@@ -72,7 +72,7 @@ func (s *RebuildCacheScreen) Draw(input RebuildCacheInput) (RebuildCacheOutput, 
 
 	cm := cache.GetCacheManager()
 	if cm == nil {
-		if err := cache.InitCacheManager(input.Host, input.Config); err != nil {
+		if err := cache.InitCacheManager(input.Host, *input.Config); err != nil {
 			logger.Error("Failed to reinitialize cache manager", "error", err)
 			return RebuildCacheOutput{Action: RebuildCacheActionError}, err
 		}

@@ -1,4 +1,4 @@
-package internal
+package settings
 
 import "time"
 

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"grout/internal/imageutil"
 	"grout/romm"
+	"grout/settings"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
@@ -12,7 +13,7 @@ import (
 )
 
 type GameQRInput struct {
-	Host romm.Host
+	Host settings.Host
 	Game romm.Rom
 }
 

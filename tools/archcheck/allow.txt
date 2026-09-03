@@ -8,8 +8,6 @@
 # Do not add entries by hand without a reason; each line is a known defect.
 
 # An import that goes against the layer matrix in layers.go.
-layer grout/internal -> grout/cfw
-layer grout/internal -> grout/romm
 layer grout/ui -> grout/cache
 layer grout/ui -> grout/cfw
 layer grout/ui -> grout/cfw/muos
@@ -23,7 +21,7 @@ toolkit grout/cfw/minui
 toolkit grout/cfw/muos
 toolkit grout/cfw/nextui
 toolkit grout/cfw/spruce
-toolkit grout/internal
+toolkit grout/settings
 toolkit grout/internal/gamelist
 toolkit grout/internal/imageutil
 toolkit grout/resources
@@ -34,5 +32,5 @@ toolkit grout/update
 global grout/cache.cacheManager
 global grout/cache.cacheManagerErr
 global grout/cfw/minui.cachedBasePath
-global grout/internal.kidModeEnabled
+global grout/settings.kidModeEnabled
 global grout/ui.defaultStatusBar

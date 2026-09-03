@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"grout/cache"
-	"grout/internal"
 	"grout/romm"
+	"grout/settings"
 	"slices"
 	"strings"
 	"time"
@@ -16,8 +16,8 @@ import (
 )
 
 type CollectionPlatformSelectionInput struct {
-	Config               *internal.Config
-	Host                 romm.Host
+	Config               *settings.Config
+	Host                 settings.Host
 	Collection           romm.Collection
 	CachedGames          []romm.Rom
 	LastSelectedIndex    int
@@ -83,7 +83,7 @@ func (s *CollectionPlatformSelectionScreen) Draw(input CollectionPlatformSelecti
 	}
 
 	// Handle unified mode - skip platform selection and return all games
-	if input.Config.CollectionView == internal.CollectionViewUnified {
+	if input.Config.CollectionView == settings.CollectionViewUnified {
 		// Filter games to only include those with mapped platforms
 		filteredGames := make([]romm.Rom, 0)
 		for _, game := range allGames {

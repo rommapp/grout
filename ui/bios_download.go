@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"grout/bios"
 	"grout/cfw"
-	"grout/internal"
 	"grout/internal/fileutil"
 	"grout/romm"
+	"grout/settings"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,8 +18,8 @@ import (
 )
 
 type BIOSDownloadInput struct {
-	Config   internal.Config
-	Host     romm.Host
+	Config   settings.Config
+	Host     settings.Host
 	Platform romm.Platform
 }
 
@@ -33,7 +33,7 @@ func NewBIOSDownloadScreen() *BIOSDownloadScreen {
 	return &BIOSDownloadScreen{}
 }
 
-func (s *BIOSDownloadScreen) Execute(config internal.Config, host romm.Host, platform romm.Platform) BIOSDownloadOutput {
+func (s *BIOSDownloadScreen) Execute(config settings.Config, host settings.Host, platform romm.Platform) BIOSDownloadOutput {
 	result, err := s.draw(BIOSDownloadInput{
 		Config:   config,
 		Host:     host,

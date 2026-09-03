@@ -3,6 +3,7 @@ package romm
 import (
 	"fmt"
 	"grout/library"
+	"grout/settings"
 	"log/slog"
 	"net/url"
 	"path/filepath"
@@ -185,7 +186,7 @@ func joinPathWithQuery(base string, elem ...string) (string, error) {
 // resolveAssetURL resolves a RomM asset path or fallback URL into a full URL.
 // If path is set, it joins it with the host URL (prepending the asset prefix if needed).
 // If path is empty, it falls back to fallbackURL.
-func resolveAssetURL(host Host, path, fallbackURL string) string {
+func resolveAssetURL(host settings.Host, path, fallbackURL string) string {
 	if path != "" {
 		var result string
 		var err error
@@ -206,7 +207,7 @@ func resolveAssetURL(host Host, path, fallbackURL string) string {
 	return ""
 }
 
-func (r *Rom) GetGamePage(host Host) string {
+func (r *Rom) GetGamePage(host settings.Host) string {
 	u, _ := url.JoinPath(host.URL(), "rom", strconv.Itoa(r.ID))
 	return u
 }
@@ -270,7 +271,7 @@ func (r *Rom) MaxPlayerCount() int {
 	return maxPlayers
 }
 
-func (r *Rom) GetArtworkURL(kind library.ArtKind, host Host) string {
+func (r *Rom) GetArtworkURL(kind library.ArtKind, host settings.Host) string {
 	var (
 		coverURL string
 		boxPath  string
@@ -331,7 +332,7 @@ func (r *Rom) GetArtworkURL(kind library.ArtKind, host Host) string {
 	return strings.ReplaceAll(coverURL, " ", "%20")
 }
 
-func (r *Rom) GetScreenshotURL(host Host) string {
+func (r *Rom) GetScreenshotURL(host settings.Host) string {
 	var screenshotURL string
 	var err error
 	logger := slog.Default()
@@ -350,7 +351,7 @@ func (r *Rom) GetScreenshotURL(host Host) string {
 	return strings.ReplaceAll(screenshotURL, " ", "%20")
 }
 
-func (r *Rom) GetSplashArtURL(kind library.ArtKind, host Host) string {
+func (r *Rom) GetSplashArtURL(kind library.ArtKind, host settings.Host) string {
 	switch kind {
 	case library.ArtKindMarquee:
 		return resolveAssetURL(host, r.ScreenScraperMetadata.MarqueePath, r.ScreenScraperMetadata.MarqueeURL)
@@ -361,23 +362,23 @@ func (r *Rom) GetSplashArtURL(kind library.ArtKind, host Host) string {
 	}
 }
 
-func (r *Rom) GetMarqueeURL(host Host) string {
+func (r *Rom) GetMarqueeURL(host settings.Host) string {
 	return resolveAssetURL(host, r.ScreenScraperMetadata.MarqueePath, r.ScreenScraperMetadata.MarqueeURL)
 }
 
-func (r *Rom) GetLogoURL(host Host) string {
+func (r *Rom) GetLogoURL(host settings.Host) string {
 	return resolveAssetURL(host, r.ScreenScraperMetadata.LogoPath, r.ScreenScraperMetadata.LogoURL)
 }
 
-func (r *Rom) GetVideoURL(host Host) string {
+func (r *Rom) GetVideoURL(host settings.Host) string {
 	return resolveAssetURL(host, r.ScreenScraperMetadata.VideoPath, r.ScreenScraperMetadata.VideoURL)
 }
 
-func (r *Rom) GetBezelURL(host Host) string {
+func (r *Rom) GetBezelURL(host settings.Host) string {
 	return resolveAssetURL(host, r.ScreenScraperMetadata.BezelPath, r.ScreenScraperMetadata.BezelURL)
 }
 
-func (r *Rom) GetManualURL(host Host) string {
+func (r *Rom) GetManualURL(host settings.Host) string {
 	if r.HasManual {
 		if result := resolveAssetURL(host, r.PathManual, r.URLManual); result != "" {
 			return result
@@ -386,10 +387,10 @@ func (r *Rom) GetManualURL(host Host) string {
 	return resolveAssetURL(host, "", r.ScreenScraperMetadata.ManualURL)
 }
 
-func (r *Rom) GetBoxbackURL(host Host) string {
+func (r *Rom) GetBoxbackURL(host settings.Host) string {
 	return resolveAssetURL(host, r.ScreenScraperMetadata.Box2DBackPath, r.ScreenScraperMetadata.Box2DBackURL)
 }
 
-func (r *Rom) GetFanartURL(host Host) string {
+func (r *Rom) GetFanartURL(host settings.Host) string {
 	return resolveAssetURL(host, r.ScreenScraperMetadata.FanartPath, r.ScreenScraperMetadata.FanartURL)
 }

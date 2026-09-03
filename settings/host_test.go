@@ -1,4 +1,4 @@
-package romm
+package settings
 
 import (
 	"encoding/json"

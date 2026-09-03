@@ -3,8 +3,8 @@ package main
 import (
 	"grout/cache"
 	"grout/cfw"
-	"grout/internal"
 	"grout/romm"
+	"grout/settings"
 	"grout/ui"
 	"grout/update"
 
@@ -15,7 +15,7 @@ import (
 	uatomic "go.uber.org/atomic"
 )
 
-func runWithRouter(config *internal.Config, currentCFW cfw.CFW, platforms []romm.Platform, quitOnBack bool, showCollections bool) error {
+func runWithRouter(config *settings.Config, currentCFW cfw.CFW, platforms []romm.Platform, quitOnBack bool, showCollections bool) error {
 	state := &AppState{
 		Config:    config,
 		Host:      config.Hosts[0],

@@ -4,8 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"grout/cache"
-	"grout/internal"
 	"grout/romm"
+	"grout/settings"
 	"grout/sync"
 	"os"
 	"strings"
@@ -27,7 +27,7 @@ func main() {
 		return
 	}
 
-	config, err := internal.LoadConfig()
+	config, err := settings.LoadConfig()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to load config: %v\n", err)
 		os.Exit(1)
@@ -44,7 +44,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := cache.InitCacheManager(host, config); err != nil {
+	if err := cache.InitCacheManager(host, *config); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to init cache: %v\n", err)
 		os.Exit(1)
 	}

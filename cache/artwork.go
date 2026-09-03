@@ -6,6 +6,7 @@ import (
 	"grout/internal/imageutil"
 	"grout/library"
 	"grout/romm"
+	"grout/settings"
 	"image/png"
 	"os"
 	"path/filepath"
@@ -114,11 +115,11 @@ func HasArtworkURL(rom romm.Rom) bool {
 	return rom.PathCoverSmall != "" || rom.PathCoverLarge != "" || rom.URLCover != ""
 }
 
-func GetArtworkCoverPath(rom romm.Rom, artkind library.ArtKind, host romm.Host) string {
+func GetArtworkCoverPath(rom romm.Rom, artkind library.ArtKind, host settings.Host) string {
 	return rom.GetArtworkURL(artkind, host)
 }
 
-func DownloadAndCacheArtwork(rom romm.Rom, kind library.ArtKind, host romm.Host) error {
+func DownloadAndCacheArtwork(rom romm.Rom, kind library.ArtKind, host settings.Host) error {
 	artURL := GetArtworkCoverPath(rom, kind, host)
 	if artURL == "" {
 		return nil // No artwork available
@@ -133,7 +134,7 @@ func DownloadAndCacheArtwork(rom romm.Rom, kind library.ArtKind, host romm.Host)
 	return fetcher.Save(artURL, GetArtworkCachePath(rom.PlatformFSSlug, rom.ID))
 }
 
-func SyncArtworkInBackground(artkind library.ArtKind, host romm.Host, games []romm.Rom) {
+func SyncArtworkInBackground(artkind library.ArtKind, host settings.Host, games []romm.Rom) {
 	logger := gaba.GetLogger()
 
 	missing := GetMissingArtwork(games)

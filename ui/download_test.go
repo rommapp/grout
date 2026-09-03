@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"grout/internal"
 	"grout/romm"
+	"grout/settings"
 )
 
 func TestMain(m *testing.M) {
@@ -24,8 +24,8 @@ func TestMain(m *testing.M) {
 // must not panic. The entry should be skipped instead.
 func TestBuildDownloads_EmptyFiles(t *testing.T) {
 	s := NewDownloadScreen()
-	config := internal.Config{}
-	host := romm.Host{RootURI: "http://example.invalid"}
+	config := settings.Config{}
+	host := settings.Host{RootURI: "http://example.invalid"}
 	platform := romm.Platform{ID: 1, FSSlug: "nds", Name: "Nintendo DS"}
 
 	games := []romm.Rom{
@@ -62,8 +62,8 @@ func TestBuildDownloads_EmptyFiles(t *testing.T) {
 // single-file ROM still produces a download URL after the empty-Files guard.
 func TestBuildDownloads_SingleFile_HappyPath(t *testing.T) {
 	s := NewDownloadScreen()
-	config := internal.Config{}
-	host := romm.Host{RootURI: "http://example.invalid"}
+	config := settings.Config{}
+	host := settings.Host{RootURI: "http://example.invalid"}
 	platform := romm.Platform{ID: 1, FSSlug: "nds", Name: "Nintendo DS"}
 
 	games := []romm.Rom{

@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"grout/internal"
+	"grout/settings"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
@@ -23,7 +23,7 @@ type SlotOptionsResult struct {
 // It includes all existing slot names (shown by their real names, including the
 // canonical "autosave" slot) and a "New Slot..." keyboard option for creating new slots.
 // The selected index is set to the current slot preference.
-func BuildSlotOptions(config *internal.Config, romID int, slotNames []string) SlotOptionsResult {
+func BuildSlotOptions(config *settings.Config, romID int, slotNames []string) SlotOptionsResult {
 	newSlotLabel := i18n.Localize(&goi18n.Message{ID: "game_options_new_slot", Other: "New Slot..."}, nil)
 
 	options := make([]gaba.Option, 0, len(slotNames)+2)

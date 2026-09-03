@@ -4,9 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"grout/cfw"
-	"grout/internal"
 	"grout/internal/stringutil"
-	"grout/romm"
+	"grout/settings"
 	"grout/update"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -18,8 +17,8 @@ import (
 
 type UpdateInput struct {
 	CFW            cfw.CFW
-	ReleaseChannel internal.ReleaseChannel
-	Host           *romm.Host
+	ReleaseChannel settings.ReleaseChannel
+	Host           *settings.Host
 }
 
 type UpdateOutput struct {

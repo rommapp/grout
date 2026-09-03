@@ -2,8 +2,7 @@ package ui
 
 import (
 	"errors"
-	"grout/internal"
-	"grout/romm"
+	"grout/settings"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
@@ -11,8 +10,8 @@ import (
 )
 
 type ToolsSettingsInput struct {
-	Config                *internal.Config
-	Host                  romm.Host
+	Config                *settings.Config
+	Host                  settings.Host
 	LastSelectedIndex     int
 	LastVisibleStartIndex int
 }
@@ -77,7 +76,7 @@ func (s *ToolsSettingsScreen) Draw(input ToolsSettingsInput) (ToolsSettingsOutpu
 
 	s.applySettings(config, result.Items)
 
-	err = internal.SaveConfig(config)
+	err = settings.SaveConfig(config)
 	if err != nil {
 		gaba.GetLogger().Error("Error saving tools settings", "error", err)
 		return output, err
@@ -87,7 +86,7 @@ func (s *ToolsSettingsScreen) Draw(input ToolsSettingsInput) (ToolsSettingsOutpu
 	return output, nil
 }
 
-func (s *ToolsSettingsScreen) buildMenuItems(config *internal.Config) []gaba.ItemWithOptions {
+func (s *ToolsSettingsScreen) buildMenuItems(config *settings.Config) []gaba.ItemWithOptions {
 	return []gaba.ItemWithOptions{
 		{
 			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_sync_local_artwork", Other: "Download Missing Art"}, nil)},
@@ -104,7 +103,7 @@ func (s *ToolsSettingsScreen) buildMenuItems(config *internal.Config) []gaba.Ite
 	}
 }
 
-func (s *ToolsSettingsScreen) applySettings(config *internal.Config, items []gaba.ItemWithOptions) {
+func (s *ToolsSettingsScreen) applySettings(config *settings.Config, items []gaba.ItemWithOptions) {
 	for _, item := range items {
 		selectedText := item.Item.Text
 
@@ -112,7 +111,7 @@ func (s *ToolsSettingsScreen) applySettings(config *internal.Config, items []gab
 		case i18n.Localize(&goi18n.Message{ID: "settings_kid_mode", Other: "Kid Mode"}, nil):
 			if val, ok := item.Options[item.SelectedOption].Value.(bool); ok {
 				config.KidMode = val
-				internal.SetKidMode(val)
+				settings.SetKidMode(val)
 			}
 		}
 	}

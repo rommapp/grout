@@ -2,6 +2,7 @@ package romm
 
 import (
 	"fmt"
+	"grout/settings"
 	"io"
 	"net/http"
 	"os"
@@ -16,7 +17,7 @@ type processFunc func(path string) error
 // ArtFetcher downloads artwork from one RomM host.
 type ArtFetcher struct {
 	client *http.Client
-	host   Host
+	host   settings.Host
 
 	// Process normalises a saved image in place; Save removes the file if it
 	// errors, so a non-image response never survives. A field rather than a
@@ -27,7 +28,7 @@ type ArtFetcher struct {
 
 // NewArtFetcher returns an ArtFetcher for host. A zero timeout uses the
 // client default.
-func NewArtFetcher(host Host, timeout time.Duration) *ArtFetcher {
+func NewArtFetcher(host settings.Host, timeout time.Duration) *ArtFetcher {
 	return &ArtFetcher{client: NewHTTPClient(host, timeout), host: host}
 }
 

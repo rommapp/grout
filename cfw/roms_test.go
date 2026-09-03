@@ -4,24 +4,9 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"grout/settings"
 )
-
-type romScanConfigStub struct {
-	directoryMappings map[string]string
-	rommSlugs         map[string]string
-}
-
-func (c romScanConfigStub) GetDirectoryMapping(fsSlug string) (string, bool) {
-	path, ok := c.directoryMappings[fsSlug]
-	return path, ok
-}
-
-func (c romScanConfigStub) ResolveRommFSSlug(cfwKey string) string {
-	if slug, ok := c.rommSlugs[cfwKey]; ok {
-		return slug
-	}
-	return cfwKey
-}
 
 func TestScanRomsByPlatform_NextUIUsesRommFSSlug(t *testing.T) {
 	romRoot := t.TempDir()
@@ -34,9 +19,13 @@ func TestScanRomsByPlatform_NextUIUsesRommFSSlug(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	config := romScanConfigStub{
-		directoryMappings: map[string]string{"GBA": "Game Boy Advance (MGBA)"},
-		rommSlugs:         map[string]string{"gba": "GBA"},
+	// PlatformsBinding maps a RomM slug to a CFW key, so this binding makes
+	// ResolveRommFSSlug("gba") answer "GBA".
+	config := settings.Config{
+		DirectoryMappings: map[string]settings.DirectoryMapping{
+			"GBA": {RelativePath: "Game Boy Advance (MGBA)"},
+		},
+		PlatformsBinding: map[string]string{"GBA": "gba"},
 	}
 	platforms := map[string][]string{
 		"gba": {"Game Boy Advance (GBA)", "Game Boy Advance (MGBA)"},

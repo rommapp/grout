@@ -2,6 +2,7 @@ package romm
 
 import (
 	"errors"
+	"grout/settings"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -12,7 +13,7 @@ import (
 // newTestArtFetcher returns a Fetcher pointed at srv with image processing
 // stubbed, since the real one needs an SDL window.
 func newTestArtFetcher(srv *httptest.Server, process processFunc) *ArtFetcher {
-	f := NewArtFetcher(Host{}, 0)
+	f := NewArtFetcher(settings.Host{}, 0)
 	f.client = srv.Client()
 	if process != nil {
 		f.Process = process
@@ -45,7 +46,7 @@ func TestFetch_SendsAuthorizationHeader(t *testing.T) {
 	defer srv.Close()
 
 	f := newTestArtFetcher(srv, nil)
-	f.host = Host{Token: "test-token"}
+	f.host = settings.Host{Token: "test-token"}
 	if _, err := f.Fetch(srv.URL); err != nil {
 		t.Fatalf("Fetch: %v", err)
 	}

@@ -1,12 +1,10 @@
-package internal
+package settings
 
 import (
 	"encoding/json"
 	"fmt"
-	"grout/cfw"
 	"grout/internal/fileutil"
 	"grout/library"
-	"grout/romm"
 	"os"
 	"path/filepath"
 	"sync/atomic"
@@ -60,7 +58,7 @@ func (d DurationSeconds) Duration() time.Duration {
 }
 
 type Config struct {
-	Hosts                        []romm.Host                 `json:"hosts,omitempty"`
+	Hosts                        []Host                      `json:"hosts,omitempty"`
 	DirectoryMappings            map[string]DirectoryMapping `json:"directory_mappings,omitempty"`
 	DownloadArt                  bool                        `json:"download_art,omitempty"`
 	ShowBoxArt                   bool                        `json:"show_box_art,omitempty"`
@@ -368,20 +366,4 @@ func (c Config) ResolveRommFSSlug(cfwKey string) string {
 		}
 	}
 	return cfwKey
-}
-
-func (c Config) GetPlatformRomDirectory(platform romm.Platform) string {
-	rp := platform.FSSlug
-	if mapping, ok := c.DirectoryMappings[platform.FSSlug]; ok && mapping.RelativePath != "" {
-		rp = mapping.RelativePath
-	}
-	effectiveFSSlug := c.ResolveFSSlug(platform.FSSlug)
-	return cfw.GetPlatformRomDirectory(rp, effectiveFSSlug)
-}
-
-// ArtDirectory returns where this device keeps a given kind of artwork for a
-// platform, or "" when the firmware keeps none. Callers must treat "" as
-// "skip this kind" rather than as an error.
-func (c Config) ArtDirectory(platform romm.Platform, slot cfw.ArtSlot) string {
-	return cfw.ArtDirectory(cfw.GetCFW(), slot, c.GetPlatformRomDirectory(platform), platform.FSSlug, platform.Name)
 }

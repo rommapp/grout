@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"grout/cfw"
-	"grout/internal"
+	"grout/settings"
 )
 
 // RunScenario executes an offline, self-contained demonstration of a save-sync fix using
@@ -78,12 +78,12 @@ func scenarioSlotSwitch(w io.Writer) error {
 	fmt.Fprintf(w, "  ROM %d (%s), recorded slot on this device: %q\n\n", romID, fileName, "default")
 
 	// No explicit preference yet: the sticky recorded slot is reported.
-	before := buildClientSaveStates(local, &internal.Config{}, recorded)
+	before := buildClientSaveStates(local, &settings.Config{}, recorded)
 	fmt.Fprintf(w, "  no explicit preference        -> reports slot %q  (recorded slot)\n", before[0].Slot)
 
 	// User picks "autosave" in the UI. Pre-fix this was discarded (SlotPreferenceExplicit
 	// stayed false) and the recorded "default" kept winning; now it persists and overrides.
-	cfg := &internal.Config{}
+	cfg := &settings.Config{}
 	cfg.SetSlotPreference(romID, "autosave")
 	_, explicit := cfg.SlotPreferenceExplicit(romID)
 	after := buildClientSaveStates(local, cfg, recorded)

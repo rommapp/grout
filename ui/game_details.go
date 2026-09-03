@@ -4,10 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"grout/cache"
-	"grout/internal"
+	"grout/cfw"
 	"grout/internal/fileutil"
 	"grout/internal/imageutil"
 	"grout/internal/stringutil"
+	"grout/settings"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -24,8 +25,8 @@ import (
 )
 
 type GameDetailsInput struct {
-	Config   *internal.Config
-	Host     romm.Host
+	Config   *settings.Config
+	Host     settings.Host
 	Platform romm.Platform
 	Game     romm.Rom
 }
@@ -58,7 +59,7 @@ func (s *GameDetailsScreen) Draw(input GameDetailsInput) (GameDetailsOutput, err
 
 	// Determine initial download text based on first file
 	initialDownloadText := downloadText
-	if isRomDownloaded(input.Config, input.Game) {
+	if isRomDownloaded(*input.Config, input.Game) {
 		initialDownloadText = redownloadText
 	}
 
@@ -72,7 +73,7 @@ func (s *GameDetailsScreen) Draw(input GameDetailsInput) (GameDetailsOutput, err
 
 	// Set OnChange callback for the file version dropdown to update footer dynamically
 	if hasMultipleFiles && dynamicDownloadText != nil {
-		romDirectory := input.Config.GetPlatformRomDirectory(input.Platform)
+		romDirectory := cfw.PlatformRomDirectory(*input.Config, input.Platform.FSSlug)
 		for i := range sections {
 			if sections[i].DropdownID == "file_version" {
 				sections[i].OnChange = func(option gaba.DropdownOption) {
@@ -102,7 +103,7 @@ func (s *GameDetailsScreen) Draw(input GameDetailsInput) (GameDetailsOutput, err
 	if hasMultipleFiles {
 		options.ConfirmButton = constants.VirtualButtonX
 	}
-	if !internal.IsKidModeEnabled() {
+	if !settings.IsKidModeEnabled() {
 		options.ActionButton = constants.VirtualButtonY
 		options.AllowAction = true
 	}
@@ -116,7 +117,7 @@ func (s *GameDetailsScreen) Draw(input GameDetailsInput) (GameDetailsOutput, err
 	footerItems := []gaba.FooterHelpItem{
 		{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_back", Other: "Back"}, nil)},
 	}
-	if !internal.IsKidModeEnabled() {
+	if !settings.IsKidModeEnabled() {
 		footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: "Y", HelpText: i18n.Localize(&goi18n.Message{ID: "button_options", Other: "Options"}, nil)})
 	}
 	footerItems = append(footerItems, gaba.FooterHelpItem{
@@ -173,7 +174,7 @@ func (s *GameDetailsScreen) buildSections(input GameDetailsInput) []gaba.Section
 	// Show file selection dropdown for games with nested single file (multiple versions)
 	if game.HasNestedSingleFile && len(game.Files) > 1 {
 		fileOptions := make([]gaba.DropdownOption, len(game.Files))
-		romDirectory := input.Config.GetPlatformRomDirectory(input.Platform)
+		romDirectory := cfw.PlatformRomDirectory(*input.Config, input.Platform.FSSlug)
 		for i, file := range game.Files {
 			label := file.FileName
 			filePath := filepath.Join(romDirectory, file.FileName)
@@ -279,7 +280,7 @@ func (s *GameDetailsScreen) buildSections(input GameDetailsInput) []gaba.Section
 }
 
 // getCoverImagePath returns the path to the cover image, using cache if available
-func (s *GameDetailsScreen) getCoverImagePath(config *internal.Config, host romm.Host, game romm.Rom) string {
+func (s *GameDetailsScreen) getCoverImagePath(config *settings.Config, host settings.Host, game romm.Rom) string {
 	logger := gaba.GetLogger()
 
 	// First, check if artwork is in the cache
@@ -306,8 +307,8 @@ func (s *GameDetailsScreen) getCoverImagePath(config *internal.Config, host romm
 	return ""
 }
 
-func (s *GameDetailsScreen) fetchImageFromURL(host romm.Host, imageURL string) []byte {
-	data, err := romm.NewArtFetcher(host, internal.DefaultHTTPTimeout).Fetch(imageURL)
+func (s *GameDetailsScreen) fetchImageFromURL(host settings.Host, imageURL string) []byte {
+	data, err := romm.NewArtFetcher(host, settings.DefaultHTTPTimeout).Fetch(imageURL)
 	if err != nil {
 		gaba.GetLogger().Warn("Failed to fetch image", "url", imageURL, "error", err)
 		return nil

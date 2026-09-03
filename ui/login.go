@@ -3,8 +3,8 @@ package ui
 import (
 	"errors"
 	"fmt"
-	"grout/internal"
 	"grout/service/catalog"
+	"grout/settings"
 	"os"
 	"strconv"
 	"strings"
@@ -20,8 +20,8 @@ import (
 )
 
 type loginOutput struct {
-	Host      romm.Host
-	Config    *internal.Config
+	Host      settings.Host
+	Config    *settings.Config
 	Cancelled bool
 }
 
@@ -38,7 +38,7 @@ func newLoginScreen() *LoginScreen {
 }
 
 // drawServerInfo collects server connection details (protocol, hostname, port, SSL).
-func (s *LoginScreen) drawServerInfo(host romm.Host) (romm.Host, bool, error) {
+func (s *LoginScreen) drawServerInfo(host settings.Host) (settings.Host, bool, error) {
 	sslVisible := &atomic.Bool{}
 	sslVisible.Store(strings.Contains(host.RootURI, "https"))
 
@@ -151,17 +151,17 @@ func (s *LoginScreen) drawServerInfo(host romm.Host) (romm.Host, bool, error) {
 		return host, true, nil
 	}
 
-	settings := res.Items
+	fields := res.Items
 
-	newHost := romm.Host{
-		RootURI: fmt.Sprintf("%s%s", settings[0].Value(), settings[1].Value()),
+	newHost := settings.Host{
+		RootURI: fmt.Sprintf("%s%s", fields[0].Value(), fields[1].Value()),
 		Port: func(s string) int {
 			if n, err := strconv.Atoi(s); err == nil {
 				return n
 			}
 			return 0
-		}(settings[2].Value().(string)),
-		InsecureSkipVerify: settings[3].Options[settings[3].SelectedOption].Value.(bool),
+		}(fields[2].Value().(string)),
+		InsecureSkipVerify: fields[3].Options[fields[3].SelectedOption].Value.(bool),
 		ClientDeviceID:     host.ClientDeviceID,
 		DeviceID:           host.DeviceID,
 		DeviceName:         host.DeviceName,
@@ -177,7 +177,7 @@ const (
 
 // authSelection is what the auth screen hands back to the login flow.
 type authSelection struct {
-	Host       romm.Host
+	Host       settings.Host
 	Mode       string
 	DeviceName string
 	Cancelled  bool
@@ -186,7 +186,7 @@ type authSelection struct {
 // drawAuth collects the auth method and its inputs. On RomM 5.0+ the user
 // picks Device Pairing (default) or Pairing Code; older servers only support
 // the pairing code, so the picker is hidden.
-func (s *LoginScreen) drawAuth(host romm.Host, supportsDeviceAuth bool) (authSelection, error) {
+func (s *LoginScreen) drawAuth(host settings.Host, supportsDeviceAuth bool) (authSelection, error) {
 	pickerVisible := &atomic.Bool{}
 	pickerVisible.Store(supportsDeviceAuth)
 
@@ -276,18 +276,18 @@ func (s *LoginScreen) drawAuth(host romm.Host, supportsDeviceAuth bool) (authSel
 		return authSelection{Host: host, Cancelled: true}, nil
 	}
 
-	settings := res.Items
+	fields := res.Items
 
 	sel := authSelection{Host: host, Mode: authModePairingCode}
 	if supportsDeviceAuth {
-		sel.Mode = settings[0].Options[settings[0].SelectedOption].Value.(string)
+		sel.Mode = fields[0].Options[fields[0].SelectedOption].Value.(string)
 	}
 
 	newHost := host
 	newHost.Username = ""
 
 	if sel.Mode == authModeDevicePairing {
-		sel.DeviceName = settings[1].Options[0].Value.(string)
+		sel.DeviceName = fields[1].Options[0].Value.(string)
 		if sel.DeviceName == "" {
 			sel.DeviceName = defaultDeviceName
 		}
@@ -295,14 +295,14 @@ func (s *LoginScreen) drawAuth(host romm.Host, supportsDeviceAuth bool) (authSel
 	} else {
 		// The pairing code is stashed in Token and exchanged for a real token
 		// during the login attempt (same convention as before).
-		newHost.Token = settings[2].Options[0].Value.(string)
+		newHost.Token = fields[2].Options[0].Value.(string)
 	}
 
 	sel.Host = newHost
 	return sel, nil
 }
 
-func LoginFlow(existingHost romm.Host) (*internal.Config, error) {
+func LoginFlow(existingHost settings.Host) (*settings.Config, error) {
 	screen := newLoginScreen()
 
 	for {
@@ -347,8 +347,8 @@ func LoginFlow(existingHost romm.Host) (*internal.Config, error) {
 			loginOutput := attemptLogin(sel)
 
 			if loginOutput.Result.Success {
-				config := &internal.Config{
-					Hosts: []romm.Host{loginOutput.Host},
+				config := &settings.Config{
+					Hosts: []settings.Host{loginOutput.Host},
 				}
 				_ = catalog.LoadPlatformsBinding(config, loginOutput.Host)
 				return config, nil
@@ -374,8 +374,8 @@ type connectionValidation struct {
 	SupportsDeviceAuth bool
 }
 
-func validateConnection(host romm.Host) connectionValidation {
-	validationClient := romm.NewClient(host.URL(), romm.WithInsecureSkipVerify(host.InsecureSkipVerify), romm.WithTimeout(internal.ValidationTimeout))
+func validateConnection(host settings.Host) connectionValidation {
+	validationClient := romm.NewClient(host.URL(), romm.WithInsecureSkipVerify(host.InsecureSkipVerify), romm.WithTimeout(settings.ValidationTimeout))
 
 	result, _ := gabagool.ProcessMessage(
 		i18n.Localize(&goi18n.Message{ID: "login_validating_connection", Other: "Validating connection..."}, nil),
@@ -400,7 +400,7 @@ func validateConnection(host romm.Host) connectionValidation {
 
 type loginAttemptOutput struct {
 	Result loginAttemptResult
-	Host   romm.Host
+	Host   settings.Host
 }
 
 func attemptLogin(sel authSelection) loginAttemptOutput {
@@ -453,7 +453,7 @@ func attemptDevicePairing(sel authSelection) loginAttemptOutput {
 
 // attemptPairingCode exchanges a typed pairing code for a token (pre-5.0 flow,
 // still supported on 5.0+).
-func attemptPairingCode(host romm.Host) loginAttemptOutput {
+func attemptPairingCode(host settings.Host) loginAttemptOutput {
 	if host.Token == "" {
 		return loginAttemptOutput{
 			Result: loginAttemptResult{
@@ -483,7 +483,7 @@ func attemptPairingCode(host romm.Host) loginAttemptOutput {
 			}
 
 			// Validate the token works
-			client := romm.NewClientFromHost(host, internal.LoginTimeout)
+			client := romm.NewClientFromHost(host, settings.LoginTimeout)
 			if err := client.ValidateToken(); err != nil {
 				return loginAttemptOutput{Result: classifyLoginError(err), Host: host}, nil
 			}
