@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"grout/domain/library"
 	"grout/internal/fileutil"
+	"grout/library"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )

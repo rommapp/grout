@@ -107,7 +107,7 @@ jobs:
       - name: Vet arm64 packages
         run: |
           go vet \
-            ./domain/... \
+            ./library \
             ./romm \
             ./version \
             ./resources \

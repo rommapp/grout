@@ -17,7 +17,7 @@ func TestLayerOf(t *testing.T) {
 		want Layer
 		ok   bool
 	}{
-		{"grout/domain/library", Domain, true},
+		{"grout/library", Domain, true},
 		{"grout/cfw", Platform, true},
 		{"grout/cfw/muos", Platform, true},
 		{"grout/romm", Infra, true},
@@ -305,7 +305,7 @@ func TestCheckImports_ReportsToolkitAndLayerTogether(t *testing.T) {
 func TestCheckImports_AllowsPermittedEdges(t *testing.T) {
 	p := pkg{
 		ImportPath: "grout/sync",
-		Imports:    []string{"grout/cache", "grout/domain/library", "grout/cfw", "net/http"},
+		Imports:    []string{"grout/cache", "grout/library", "grout/cfw", "net/http"},
 	}
 	if got := checkImports(p, Service); len(got) != 0 {
 		t.Errorf("expected no violations for a service importing infra, got %v", got)

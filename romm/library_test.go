@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"grout/domain/library"
+	"grout/library"
 )
 
 func TestToGame_MapsFields(t *testing.T) {

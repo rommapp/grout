@@ -1,4 +1,4 @@
-package library
+package catalog
 
 import (
 	"slices"

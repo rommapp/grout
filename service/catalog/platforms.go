@@ -1,6 +1,6 @@
 // Package library answers questions about the game library that need both the
 // local cache and the RomM server, and so belong above either.
-package library
+package catalog
 
 import (
 	"fmt"

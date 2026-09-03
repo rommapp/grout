@@ -3,8 +3,8 @@ package ui
 import (
 	"errors"
 	"grout/cfw"
-	"grout/domain/library"
 	"grout/internal"
+	"grout/library"
 	"grout/romm"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"

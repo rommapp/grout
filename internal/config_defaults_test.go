@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"grout/domain/library"
+	"grout/library"
 )
 
 func writeConfig(t *testing.T, dir, contents string) string {

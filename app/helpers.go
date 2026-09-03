@@ -5,7 +5,7 @@ import (
 	"grout/cfw"
 	"grout/internal"
 	"grout/romm"
-	"grout/service/library"
+	"grout/service/catalog"
 	"grout/ui"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -57,10 +57,10 @@ func executeMultiDownloadUI(state *AppState, r ui.GameListOutput) {
 
 func handlePlatformMappingUpdateUI(state *AppState, r ui.PlatformMappingOutput) {
 	state.Config.DirectoryMappings = r.Mappings
-	state.Config.PlatformOrder = library.PruneOrder(state.Config.PlatformOrder, r.Mappings)
+	state.Config.PlatformOrder = catalog.PruneOrder(state.Config.PlatformOrder, r.Mappings)
 	internal.SaveConfig(state.Config)
 
-	platforms, err := library.MappedPlatforms(state.Host, r.Mappings, state.Config.ApiTimeout.Duration())
+	platforms, err := catalog.MappedPlatforms(state.Host, r.Mappings, state.Config.ApiTimeout.Duration())
 	if err != nil {
 		gaba.GetLogger().Error("Failed to refresh platforms after mapping update", "error", err)
 		return
@@ -139,7 +139,7 @@ func handleLogout(state *AppState) {
 		logger.Error("Failed to re-initialize cache manager", "error", err)
 	}
 
-	platforms, err := library.MappedPlatforms(state.Config.Hosts[0], state.Config.DirectoryMappings, state.Config.ApiTimeout.Duration())
+	platforms, err := catalog.MappedPlatforms(state.Config.Hosts[0], state.Config.DirectoryMappings, state.Config.ApiTimeout.Duration())
 	if err != nil {
 		logger.Error("Failed to load platforms after re-login", "error", err)
 		return

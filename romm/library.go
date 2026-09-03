@@ -3,7 +3,7 @@ package romm
 import (
 	"time"
 
-	"grout/domain/library"
+	"grout/library"
 )
 
 // ToGame converts a rom into the domain type. The caller supplies what RomM

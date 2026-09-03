@@ -43,14 +43,17 @@ var allowedImports = map[Layer]map[Layer]bool{
 }
 
 // layerRules maps an import path to its layer; the longest matching prefix
-// wins. Some packages are classified by where they are going, not where they
-// are: grout/internal is headed for the domain, so its imports of cache and cfw
-// show up as violations until the split lands.
+// wins. Domain packages are listed individually rather than sharing a prefix,
+// so adding one is a deliberate act.
+//
+// Some packages are classified by where they are going, not where they are:
+// grout/internal is headed for the domain, so its imports of cache and cfw show
+// up as violations until the split lands.
 var layerRules = []struct {
 	prefix string
 	layer  Layer
 }{
-	{"grout/domain", Domain},
+	{"grout/library", Domain},
 
 	{"grout/cfw", Platform},
 	{"grout/internal/gamelist", Platform},

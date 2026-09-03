@@ -2,7 +2,7 @@ package main
 
 import (
 	"grout/cfw"
-	"grout/service/library"
+	"grout/service/catalog"
 	"grout/update"
 	"os"
 
@@ -22,7 +22,7 @@ func main() {
 
 	currentCFW := cfw.GetCFW()
 	quitOnBack := len(config.Hosts) == 1
-	showCollections := library.ShowCollections(*config, config.Hosts[0])
+	showCollections := catalog.ShowCollections(*config, config.Hosts[0])
 
 	if err := runWithRouter(config, currentCFW, platforms, quitOnBack, showCollections); err != nil {
 		logger.Error("Router error", "error", err)

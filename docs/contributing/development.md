@@ -48,8 +48,8 @@ The codebase is laid out fairly well. It attempts to keep everything grouped by 
 - `cache` contains the logic for the SQLite database that powers the local cache
 - `cfw` contains all the logic for adapting Grout to the various CFWs that are supported
 - `docs` for the user guide and other repo housekeeping, including this document!
-- `domain` holds the types grout works in once data has left the RomM client. These have no I/O and no
-  device knowledge, so identity and display can be kept apart -- see `domain/library`.
+- `library` holds the game and platform types grout works in once data has left the RomM client. No I/O and no
+  device knowledge, so identity and display stay apart.
 - `internal` the college educated utils package. App-wide / stateless utilities live here
 - `resources` the splash screen image and localization files live here, along with the go file that embeds them
 - `romm` a client library for the RomM API.
@@ -215,7 +215,7 @@ The layers, each of which may only import the ones below it:
 | Layer      | What lives there                                    |
 |------------|-----------------------------------------------------|
 | `pkg`      | standalone utilities with no grout dependencies      |
-| `domain`   | types and rules; no I/O, no device, no network       |
+| `domain`   | types and rules; no I/O, no device, no network. `library`, and `settings` to come |
 | `platform` | firmware knowledge: paths, gamelists, save layouts   |
 | `infra`    | the RomM API, the SQLite store, the settings file    |
 | `service`  | orchestration of a use case                          |

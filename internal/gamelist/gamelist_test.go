@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"grout/domain/library"
 	"grout/internal/stringutil"
+	"grout/library"
 )
 
 // rom builds a game the way a caller would: the display name is already

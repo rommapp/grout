@@ -5,7 +5,7 @@ import (
 	"grout/cfw"
 	"grout/internal"
 	"grout/romm"
-	"grout/service/library"
+	"grout/service/catalog"
 	"grout/sync"
 	"grout/ui"
 	"os"
@@ -665,7 +665,7 @@ func transitionSettings(ctx *transitionContext, result any) (router.Screen, any)
 		}
 
 	case ui.SettingsActionSaved, ui.SettingsActionBack:
-		ctx.showCollections = library.ShowCollections(*ctx.state.Config, ctx.state.Host)
+		ctx.showCollections = catalog.ShowCollections(*ctx.state.Config, ctx.state.Host)
 		return popOrExitWithCollections(ctx.stack, ctx.showCollections, ctx.state.Host.DeviceID != "")
 	}
 
@@ -698,7 +698,7 @@ func transitionCollectionsSettings(ctx *transitionContext, result any) (router.S
 		}
 		ctx.showCollections = true
 	} else {
-		ctx.showCollections = library.ShowCollections(*ctx.state.Config, ctx.state.Host)
+		ctx.showCollections = catalog.ShowCollections(*ctx.state.Config, ctx.state.Host)
 	}
 	return popOrExit(ctx.stack)
 }
@@ -815,7 +815,7 @@ func transitionLogoutConfirmation(ctx *transitionContext, result any) (router.Sc
 		return ScreenPlatformSelection, ui.PlatformSelectionInput{
 			Platforms:       &ctx.state.Platforms,
 			QuitOnBack:      ctx.quitOnBack,
-			ShowCollections: library.ShowCollections(*ctx.state.Config, ctx.state.Host),
+			ShowCollections: catalog.ShowCollections(*ctx.state.Config, ctx.state.Host),
 			ShowSaveSync:    ctx.state.Host.DeviceID != "",
 		}
 	}
