@@ -2,11 +2,10 @@ package ui
 
 import (
 	"errors"
+
 	"grout/settings"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type CollectionsSettingsInput struct {
@@ -14,7 +13,9 @@ type CollectionsSettingsInput struct {
 }
 
 type CollectionsSettingsOutput struct {
-	Action     CollectionsSettingsAction
+	Action CollectionsSettingsAction
+	// SyncNeeded means a kind of collection was switched on that was off
+	// before, so the cache has none of them and has to fetch them.
 	SyncNeeded bool
 }
 
@@ -28,27 +29,18 @@ func (s *CollectionsSettingsScreen) Draw(input CollectionsSettingsInput) (Collec
 	config := input.Config
 	output := CollectionsSettingsOutput{Action: CollectionsSettingsActionBack}
 
-	prevRegular := config.ShowRegularCollections
-	prevSmart := config.ShowSmartCollections
-	prevVirtual := config.ShowVirtualCollections
-
-	items := s.buildMenuItems(config)
+	before := *config
+	rows := collectionsRows()
 
 	result, err := gaba.OptionsList(
-		i18n.Localize(&goi18n.Message{ID: "settings_collections", Other: "Collections Settings"}, nil),
+		localize("settings_collections", "Collections Settings"),
 		gaba.OptionListSettings{
-			FooterHelpItems: []gaba.FooterHelpItem{
-				FooterBack(),
-				FooterCycle(),
-				FooterSave(),
-			},
-			InitialSelectedIndex: 0,
-			StatusBar:            StatusBar(),
-			UseSmallTitle:        true,
+			FooterHelpItems: []gaba.FooterHelpItem{FooterBack(), FooterCycle(), FooterSave()},
+			StatusBar:       StatusBar(),
+			UseSmallTitle:   true,
 		},
-		items,
+		settingItems(rows, *config),
 	)
-
 	if err != nil {
 		if errors.Is(err, gaba.ErrCancelled) {
 			return output, nil
@@ -57,16 +49,10 @@ func (s *CollectionsSettingsScreen) Draw(input CollectionsSettingsInput) (Collec
 		return output, err
 	}
 
-	s.applySettings(config, result.Items)
-
-	if (!prevRegular && config.ShowRegularCollections) ||
-		(!prevSmart && config.ShowSmartCollections) ||
-		(!prevVirtual && config.ShowVirtualCollections) {
-		output.SyncNeeded = true
-	}
+	applySettingRows(rows, config, result.Items)
+	output.SyncNeeded = newlyShownCollections(before, *config)
 
 	err = settings.SaveConfig(config)
-
 	ApplyRuntimeSettings(config)
 	if err != nil {
 		gaba.GetLogger().Error("Error saving collections settings", "error", err)
@@ -77,65 +63,47 @@ func (s *CollectionsSettingsScreen) Draw(input CollectionsSettingsInput) (Collec
 	return output, nil
 }
 
-func (s *CollectionsSettingsScreen) buildMenuItems(config *settings.Config) []gaba.ItemWithOptions {
-	return []gaba.ItemWithOptions{
-		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_show_collections", Other: "Collections"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_show", Other: "Show"}, nil), Value: true},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_hide", Other: "Hide"}, nil), Value: false},
-			},
-			SelectedOption: boolToIndex(!config.ShowRegularCollections),
-		},
-		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_show_smart_collections", Other: "Smart Collections"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_show", Other: "Show"}, nil), Value: true},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_hide", Other: "Hide"}, nil), Value: false},
-			},
-			SelectedOption: boolToIndex(!config.ShowSmartCollections),
-		},
-		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_show_virtual_collections", Other: "Virtual Collections"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_show", Other: "Show"}, nil), Value: true},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_hide", Other: "Hide"}, nil), Value: false},
-			},
-			SelectedOption: boolToIndex(!config.ShowVirtualCollections),
-		},
-		{
-			Item:           gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_collection_view", Other: "Collection View"}, nil)},
-			Options:        collectionViewOptions(),
-			SelectedOption: optionIndexOr(collectionViewOptions(), config.CollectionView, settings.CollectionViewPlatform),
-		},
-	}
+// newlyShownCollections reports whether a kind of collection was switched on
+// that was off before.
+//
+// Switching one off needs nothing: the cache keeps what it has and the screen
+// stops showing it. Switching one on means the cache has never fetched that
+// kind, so there is nothing to show until it does.
+func newlyShownCollections(before, after settings.Config) bool {
+	turnedOn := func(was, now bool) bool { return !was && now }
+
+	return turnedOn(before.ShowRegularCollections, after.ShowRegularCollections) ||
+		turnedOn(before.ShowSmartCollections, after.ShowSmartCollections) ||
+		turnedOn(before.ShowVirtualCollections, after.ShowVirtualCollections)
 }
 
-func (s *CollectionsSettingsScreen) applySettings(config *settings.Config, items []gaba.ItemWithOptions) {
-	for _, item := range items {
-		selectedText := item.Item.Text
-
-		switch selectedText {
-		case i18n.Localize(&goi18n.Message{ID: "settings_show_collections", Other: "Collections"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(bool); ok {
-				config.ShowRegularCollections = val
-			}
-
-		case i18n.Localize(&goi18n.Message{ID: "settings_show_smart_collections", Other: "Smart Collections"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(bool); ok {
-				config.ShowSmartCollections = val
-			}
-
-		case i18n.Localize(&goi18n.Message{ID: "settings_show_virtual_collections", Other: "Virtual Collections"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(bool); ok {
-				config.ShowVirtualCollections = val
-			}
-
-		case i18n.Localize(&goi18n.Message{ID: "settings_collection_view", Other: "Collection View"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(settings.CollectionView); ok {
-				config.CollectionView = val
-			}
-		}
+func collectionsRows() []settingRow {
+	return []settingRow{
+		{
+			key: "regular", label: localize("settings_show_collections", "Collections"),
+			options: showHide(),
+			get:     func(c settings.Config) any { return c.ShowRegularCollections },
+			set:     assign(func(c *settings.Config, v bool) { c.ShowRegularCollections = v }),
+		},
+		{
+			key: "smart", label: localize("settings_show_smart_collections", "Smart Collections"),
+			options: showHide(),
+			get:     func(c settings.Config) any { return c.ShowSmartCollections },
+			set:     assign(func(c *settings.Config, v bool) { c.ShowSmartCollections = v }),
+		},
+		{
+			key: "virtual", label: localize("settings_show_virtual_collections", "Virtual Collections"),
+			options: showHide(),
+			get:     func(c settings.Config) any { return c.ShowVirtualCollections },
+			set:     assign(func(c *settings.Config, v bool) { c.ShowVirtualCollections = v }),
+		},
+		{
+			key: "view", label: localize("settings_collection_view", "Collection View"),
+			options: collectionViewOptions(),
+			get:     func(c settings.Config) any { return c.CollectionView },
+			set:     assign(func(c *settings.Config, v settings.CollectionView) { c.CollectionView = v }),
+			def:     settings.CollectionViewPlatform,
+		},
 	}
 }
 

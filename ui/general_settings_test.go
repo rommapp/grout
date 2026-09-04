@@ -80,7 +80,7 @@ func TestGeneralSettings_RoundTripsEverySetting(t *testing.T) {
 	after := before
 
 	rows := generalSettings(before)
-	applySettings(rows, &after, menuItems(rows, before))
+	applySettingRows(rows, &after, settingItems(rows, before))
 
 	if diff := settingsDiff(before, after); diff != "" {
 		t.Errorf("opening and saving the screen changed settings: %s", diff)
@@ -96,7 +96,7 @@ func TestGeneralSettings_RoundTripsOnEmulationStation(t *testing.T) {
 	after := before
 
 	rows := generalSettings(before)
-	applySettings(rows, &after, menuItems(rows, before))
+	applySettingRows(rows, &after, settingItems(rows, before))
 
 	if diff := settingsDiff(before, after); diff != "" {
 		t.Errorf("opening and saving the screen changed settings: %s", diff)
@@ -111,7 +111,7 @@ func TestGeneralSettings_BlanksTakeTheSettingsDefaults(t *testing.T) {
 
 	var config settings.Config
 	rows := generalSettings(config)
-	applySettings(rows, &config, menuItems(rows, config))
+	applySettingRows(rows, &config, settingItems(rows, config))
 
 	if config.DownloadedGames != settings.DownloadedGamesModeDoNothing {
 		t.Errorf("DownloadedGames = %q, want the package default", config.DownloadedGames)
@@ -150,7 +150,7 @@ func TestGeneralSettings_OptionsCoverTheStoredValue(t *testing.T) {
 
 	config := fullConfig()
 	for _, row := range generalSettings(config) {
-		want := row.value(config)
+		want := row.get(config)
 
 		found := false
 		for _, option := range row.options {
@@ -161,6 +161,55 @@ func TestGeneralSettings_OptionsCoverTheStoredValue(t *testing.T) {
 		}
 		if !found {
 			t.Errorf("%s: no option carries the stored value %v", row.key, want)
+		}
+	}
+}
+
+// A row that names a default has to name the one the settings package
+// applies, or a config the defaults have not reached opens on a different
+// value than the rest of the app is using.
+func TestGeneralSettings_DefaultsMatchTheSettingsPackage(t *testing.T) {
+	t.Setenv(cfw.EnvVar, string(cfw.MuOS))
+	fresh := freshConfig(t)
+
+	want := map[string]any{
+		"downloaded_games": fresh.DownloadedGames,
+		"art_kind":         fresh.ArtKind,
+		"thumbnail":        fresh.AdditionalDownloads.Thumbnail,
+		"marquee":          fresh.AdditionalDownloads.Marquee,
+		"language":         fresh.Language,
+	}
+
+	for _, row := range generalSettings(*fresh) {
+		expected, checked := want[row.key]
+		if !checked {
+			continue
+		}
+		if row.def != expected {
+			t.Errorf("%q defaults to %v, settings defaults to %v", row.key, row.def, expected)
+		}
+	}
+}
+
+// Naming a default that none of a row's own options offers would fall through
+// to the first entry, which is the thing the default is there to avoid.
+func TestGeneralSettings_DefaultsAreOfferable(t *testing.T) {
+	t.Setenv(cfw.EnvVar, string(cfw.MuOS))
+
+	for _, row := range generalSettings(fullConfig()) {
+		if row.def == nil {
+			continue
+		}
+
+		found := false
+		for _, option := range row.options {
+			if option.Value == row.def {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("%q defaults to %v, which none of its options offers", row.key, row.def)
 		}
 	}
 }

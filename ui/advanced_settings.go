@@ -30,35 +30,12 @@ func NewAdvancedSettingsScreen() *AdvancedSettingsScreen {
 	return &AdvancedSettingsScreen{}
 }
 
-// advancedEntry is one row of the screen. A row either holds a value the user
-// can change or leads somewhere; never both.
-type advancedEntry struct {
-	// key identifies the row when the screen is read back, since a label
-	// changes with the language.
-	key      string
-	labelID  string
-	fallback string
-	// action is where a row that leads somewhere goes.
-	action AdvancedSettingsAction
-	// options, get and set belong to a row holding a value. def is what the
-	// settings package would fill in, so a config it has not reached opens on
-	// the same answer the rest of the app uses.
-	options []gaba.Option
-	get     func(settings.Config) any
-	set     func(*settings.Config, any)
-	def     any
-}
-
-// leadsSomewhere reports whether choosing this row navigates rather than
-// changing a value.
-func (e advancedEntry) leadsSomewhere() bool { return e.options == nil }
-
 func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (AdvancedSettingsOutput, error) {
 	config := input.Config
 	output := AdvancedSettingsOutput{Action: AdvancedSettingsActionBack}
 
 	rows := advancedRows()
-	items := advancedItems(rows, *config)
+	items := settingItems(rows, *config)
 
 	result, err := gaba.OptionsList(
 		localize("settings_advanced", "Advanced"),
@@ -84,17 +61,16 @@ func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (AdvancedSett
 	}
 
 	if result.Action == gaba.ListActionSelected && result.Selected < len(rows) {
-		row := rows[result.Selected]
-		if row.leadsSomewhere() {
-			if row.action == AdvancedSettingsActionResetInputMapping {
+		if action, leads := advancedDestinations[rows[result.Selected].key]; leads {
+			if action == AdvancedSettingsActionResetInputMapping {
 				return s.resetInputMapping(output)
 			}
-			output.Action = row.action
+			output.Action = action
 			return output, nil
 		}
 	}
 
-	applyAdvanced(rows, config, result.Items)
+	applySettingRows(rows, config, result.Items)
 
 	err = settings.SaveConfig(config)
 	ApplyRuntimeSettings(config)
@@ -136,107 +112,62 @@ func (s *AdvancedSettingsScreen) resetInputMapping(output AdvancedSettingsOutput
 	return output, nil
 }
 
-func advancedItems(rows []advancedEntry, config settings.Config) []gaba.ItemWithOptions {
-	items := make([]gaba.ItemWithOptions, 0, len(rows))
-
-	for _, row := range rows {
-		item := gaba.ItemWithOptions{
-			Item: gaba.MenuItem{Text: localize(row.labelID, row.fallback), Metadata: row.key},
-		}
-		if row.leadsSomewhere() {
-			item.Options = []gaba.Option{{Type: gaba.OptionTypeClickable}}
-		} else {
-			item.Options = row.options
-			item.SelectedOption = optionIndexOr(row.options, row.get(config), row.def)
-		}
-		items = append(items, item)
-	}
-
-	return items
+// advancedDestinations is where each row that navigates goes. Rows that only
+// hold a value are absent.
+var advancedDestinations = map[string]AdvancedSettingsAction{
+	"sync_artwork":        AdvancedSettingsActionSyncArtwork,
+	"rebuild_cache":       AdvancedSettingsActionRebuildCache,
+	"server_address":      AdvancedSettingsActionServerAddress,
+	"input_mapping":       AdvancedSettingsActionInputMapping,
+	"reset_input_mapping": AdvancedSettingsActionResetInputMapping,
 }
 
-func applyAdvanced(rows []advancedEntry, config *settings.Config, items []gaba.ItemWithOptions) {
-	byKey := make(map[string]advancedEntry, len(rows))
-	for _, row := range rows {
-		byKey[row.key] = row
-	}
-
-	for _, item := range items {
-		key, _ := item.Item.Metadata.(string)
-		row, ok := byKey[key]
-		if !ok || row.set == nil {
-			continue
-		}
-		if item.SelectedOption < 0 || item.SelectedOption >= len(item.Options) {
-			continue
-		}
-		row.set(config, item.Options[item.SelectedOption].Value)
-	}
-}
-
-func advancedRows() []advancedEntry {
-	rows := []advancedEntry{
-		{key: "sync_artwork", labelID: "settings_sync_artwork", fallback: "Preload Artwork",
-			action: AdvancedSettingsActionSyncArtwork},
-		{key: "rebuild_cache", labelID: "settings_rebuild_cache", fallback: "Rebuild Cache",
-			action: AdvancedSettingsActionRebuildCache},
+func advancedRows() []settingRow {
+	rows := []settingRow{
+		clickableRow("sync_artwork", "settings_sync_artwork", "Preload Artwork"),
+		clickableRow("rebuild_cache", "settings_rebuild_cache", "Rebuild Cache"),
 		{
-			key: "download_timeout", labelID: "settings_download_timeout", fallback: "Download Timeout",
+			key: "download_timeout", label: localize("settings_download_timeout", "Download Timeout"),
 			options: downloadTimeoutOptions(),
 			get:     func(c settings.Config) any { return c.DownloadTimeout.Duration() },
-			set: assignAdvanced(func(c *settings.Config, v time.Duration) {
+			set: assign(func(c *settings.Config, v time.Duration) {
 				c.DownloadTimeout = settings.DurationSeconds(v)
 			}),
 			def: 60 * time.Minute,
 		},
 		{
-			key: "api_timeout", labelID: "settings_api_timeout", fallback: "API Timeout",
+			key: "api_timeout", label: localize("settings_api_timeout", "API Timeout"),
 			options: apiTimeoutOptions(),
 			get:     func(c settings.Config) any { return c.ApiTimeout.Duration() },
-			set: assignAdvanced(func(c *settings.Config, v time.Duration) {
+			set: assign(func(c *settings.Config, v time.Duration) {
 				c.ApiTimeout = settings.DurationSeconds(v)
 			}),
 			def: 30 * time.Second,
 		},
-		{key: "server_address", labelID: "settings_server_address", fallback: "Server Address",
-			action: AdvancedSettingsActionServerAddress},
+		clickableRow("server_address", "settings_server_address", "Server Address"),
 		{
-			key: "release_channel", labelID: "settings_release_channel", fallback: "Release Channel",
+			key: "release_channel", label: localize("settings_release_channel", "Release Channel"),
 			options: releaseChannelOptions(),
 			get:     func(c settings.Config) any { return c.ReleaseChannel },
-			set:     assignAdvanced(func(c *settings.Config, v settings.ReleaseChannel) { c.ReleaseChannel = v }),
+			set:     assign(func(c *settings.Config, v settings.ReleaseChannel) { c.ReleaseChannel = v }),
 			def:     settings.ReleaseChannelMatchRomM,
 		},
 		{
-			key: "log_level", labelID: "settings_log_level", fallback: "Log Level",
+			key: "log_level", label: localize("settings_log_level", "Log Level"),
 			options: logLevelOptions(),
 			get:     func(c settings.Config) any { return c.LogLevel },
-			set:     assignAdvanced(func(c *settings.Config, v settings.LogLevel) { c.LogLevel = v }),
+			set:     assign(func(c *settings.Config, v settings.LogLevel) { c.LogLevel = v }),
 			def:     settings.LogLevelError,
 		},
-		{key: "input_mapping", labelID: "settings_input_mapping", fallback: "Input Mapping",
-			action: AdvancedSettingsActionInputMapping},
+		clickableRow("input_mapping", "settings_input_mapping", "Input Mapping"),
 	}
 
 	// Only worth offering when there is a saved mapping to undo.
 	if _, err := os.Stat(settings.InputMappingFileName); err == nil {
-		rows = append(rows, advancedEntry{
-			key: "reset_input_mapping", labelID: "settings_reset_input_mapping", fallback: "Reset Input Mapping",
-			action: AdvancedSettingsActionResetInputMapping,
-		})
+		rows = append(rows, clickableRow("reset_input_mapping", "settings_reset_input_mapping", "Reset Input Mapping"))
 	}
 
 	return rows
-}
-
-// assignAdvanced stores a value of the type a row deals in, ignoring anything
-// else, so a mistyped option cannot write nonsense into the config.
-func assignAdvanced[T any](set func(*settings.Config, T)) func(*settings.Config, any) {
-	return func(config *settings.Config, value any) {
-		if typed, ok := value.(T); ok {
-			set(config, typed)
-		}
-	}
 }
 
 func downloadTimeoutOptions() []gaba.Option {

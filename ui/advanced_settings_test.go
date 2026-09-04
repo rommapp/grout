@@ -7,7 +7,7 @@ import (
 	"grout/settings"
 )
 
-func advancedRow(t *testing.T, key string) advancedEntry {
+func advancedRow(t *testing.T, key string) settingRow {
 	t.Helper()
 	for _, row := range advancedRows() {
 		if row.key == key {
@@ -15,7 +15,7 @@ func advancedRow(t *testing.T, key string) advancedEntry {
 		}
 	}
 	t.Fatalf("no advanced settings row %q", key)
-	return advancedEntry{}
+	return settingRow{}
 }
 
 // A row either changes a value or leads somewhere. One that did both would
@@ -26,10 +26,16 @@ func TestAdvancedRows_AreEitherValueOrNavigation(t *testing.T) {
 			if row.get != nil || row.set != nil {
 				t.Errorf("%q navigates but also carries a value", row.key)
 			}
+			if _, leads := advancedDestinations[row.key]; !leads {
+				t.Errorf("%q navigates but has no destination, so pressing it does nothing", row.key)
+			}
 			continue
 		}
 		if row.get == nil || row.set == nil {
 			t.Errorf("%q holds a value but cannot read or write it", row.key)
+		}
+		if _, leads := advancedDestinations[row.key]; leads {
+			t.Errorf("%q holds a value but is also listed as going somewhere", row.key)
 		}
 	}
 }
@@ -38,7 +44,7 @@ func TestAdvancedRows_KeysAreUnique(t *testing.T) {
 	seen := make(map[string]bool)
 	for _, row := range advancedRows() {
 		if row.key == "" {
-			t.Errorf("%q has no key", row.fallback)
+			t.Errorf("%q has no key", row.label)
 		}
 		if seen[row.key] {
 			t.Errorf("two rows share the key %q", row.key)
@@ -59,7 +65,7 @@ func TestAdvancedSettings_RoundTrips(t *testing.T) {
 	after := before
 
 	rows := advancedRows()
-	applyAdvanced(rows, &after, advancedItems(rows, before))
+	applySettingRows(rows, &after, settingItems(rows, before))
 
 	if after.ApiTimeout != before.ApiTimeout {
 		t.Errorf("ApiTimeout %v -> %v", before.ApiTimeout, after.ApiTimeout)
