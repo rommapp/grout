@@ -2,19 +2,16 @@ package ui
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"grout/bios"
-	"grout/cfw"
 	"grout/files"
 	"grout/romm"
 	"grout/settings"
-	"os"
-	"path/filepath"
-	"strings"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	icons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type BIOSDownloadInput struct {
@@ -34,259 +31,169 @@ func NewBIOSDownloadScreen() *BIOSDownloadScreen {
 }
 
 func (s *BIOSDownloadScreen) Execute(config settings.Config, host settings.Host, platform romm.Platform) BIOSDownloadOutput {
-	result, err := s.draw(BIOSDownloadInput{
-		Config:   config,
-		Host:     host,
-		Platform: platform,
-	})
-
+	result, err := s.draw(BIOSDownloadInput{Config: config, Host: host, Platform: platform})
 	if err != nil {
 		gaba.GetLogger().Error("BIOS download failed", "error", err)
 		return BIOSDownloadOutput{Platform: platform}
 	}
-
 	return result
 }
 
 func (s *BIOSDownloadScreen) draw(input BIOSDownloadInput) (BIOSDownloadOutput, error) {
 	logger := gaba.GetLogger()
+	output := BIOSDownloadOutput{Platform: input.Platform}
 
-	output := BIOSDownloadOutput{
-		Platform: input.Platform,
-	}
-
-	// Fetch firmware list from RomM first
 	client := romm.NewClientFromHost(input.Host, input.Config.ApiTimeout.Duration())
-	firmwareList, err := client.GetFirmware(input.Platform.ID)
+	firmware, err := client.GetFirmware(input.Platform.ID)
 	if err != nil {
 		logger.Error("Failed to fetch firmware from RomM", "error", err, "platform_id", input.Platform.ID)
-		gaba.ConfirmationMessage(
-			fmt.Sprintf("Failed to fetch BIOS files from RomM: %v", err),
-			ContinueFooter(),
-			gaba.MessageOptions{},
-		)
+		s.tell(fmt.Sprintf("Failed to fetch BIOS files from RomM: %v", err))
 		return output, nil
 	}
 
-	if len(firmwareList) == 0 {
+	if len(firmware) == 0 {
 		logger.Info("No BIOS files available in RomM for platform", "platform", input.Platform.Name)
-		gaba.ConfirmationMessage(
-			i18n.Localize(&goi18n.Message{ID: "bios_no_files_required", Other: "This platform doesn't require any BIOS files."}, nil),
-			ContinueFooter(),
-			gaba.MessageOptions{},
-		)
+		s.tell(localize("bios_no_files_required", "This platform doesn't require any BIOS files."))
 		return output, nil
 	}
 
-	logger.Debug("Fetched firmware from RomM", "count", len(firmwareList), "platform_id", input.Platform.ID)
+	requirements := bios.Match(input.Platform.FSSlug, firmware)
+	logger.Debug("Matched RomM firmware against known BIOS files",
+		"platform", input.Platform.Name, "count", len(requirements))
 
-	// Try to get BIOS metadata to enrich the firmware list (optional)
-	biosFiles := bios.GetFilesForPlatform(input.Platform.FSSlug)
-
-	// Build metadata lookup by filename for enrichment (case-insensitive)
-	biosMetadataByFileName := make(map[string]bios.File)
-	biosMetadataByRelPath := make(map[string]bios.File)
-	for _, biosFile := range biosFiles {
-		biosMetadataByFileName[strings.ToLower(biosFile.FileName)] = biosFile
-		biosMetadataByRelPath[strings.ToLower(biosFile.RelativePath)] = biosFile
-		baseName := filepath.Base(biosFile.RelativePath)
-		if baseName != biosFile.RelativePath {
-			biosMetadataByFileName[strings.ToLower(baseName)] = biosFile
-		}
+	chosen, ok := s.choose(input.Platform, requirements)
+	if !ok {
+		return output, nil
 	}
 
-	// Create a BIOSFile entry for each firmware, enriching with metadata if available
-	type firmwareWithMetadata struct {
-		firmware romm.Firmware
-		metadata *bios.File
+	installed, failed := s.fetch(input, chosen)
+
+	switch {
+	case installed > 0:
+		logger.Info("BIOS download complete", "installed", installed, "failed", failed)
+		s.tell(fmt.Sprintf(localize("bios_download_complete", "Successfully downloaded %d BIOS file(s)."), installed))
+	case failed > 0:
+		logger.Error("BIOS download failed", "failed", failed)
+		s.tell(fmt.Sprintf(localize("bios_download_failed", "Failed to download %d BIOS file(s)."), failed))
 	}
 
-	var firmwareItems []firmwareWithMetadata
-	for _, fw := range firmwareList {
-		item := firmwareWithMetadata{firmware: fw}
+	return output, nil
+}
 
-		// Try to find matching metadata (case-insensitive)
-		baseName := filepath.Base(fw.FilePath)
-		if metadata, found := biosMetadataByFileName[strings.ToLower(fw.FileName)]; found {
-			item.metadata = &metadata
-		} else if metadata, found := biosMetadataByRelPath[strings.ToLower(fw.FilePath)]; found {
-			item.metadata = &metadata
-		} else if metadata, found := biosMetadataByFileName[strings.ToLower(baseName)]; found {
-			item.metadata = &metadata
-		}
-
-		firmwareItems = append(firmwareItems, item)
-
-		logger.Debug("RomM firmware entry",
-			"filename", fw.FileName,
-			"filepath", fw.FilePath,
-			"size", fw.FileSizeBytes,
-			"hasMetadata", item.metadata != nil)
-	}
-
-	var menuItems []gaba.MenuItem
-
-	for _, item := range firmwareItems {
-		fw := item.firmware
-		var displayText string
-		var shouldSelect bool
-
-		var fileExists bool
-		if item.metadata != nil {
-			fileExists = bios.FileExists(*item.metadata, input.Platform.FSSlug)
-		} else {
-			relativePath := fw.FileName
-			for _, p := range cfw.GetBIOSFilePaths(relativePath, input.Platform.FSSlug) {
-				if files.FileExists(p) {
-					fileExists = true
-					break
-				}
-			}
-		}
-
-		var statusText string
-		if fileExists {
-			statusText = i18n.Localize(&goi18n.Message{ID: "bios_status_ready", Other: "Ready"}, nil)
-		} else {
-			statusText = i18n.Localize(&goi18n.Message{ID: "bios_status_not_installed", Other: "Missing"}, nil)
-			shouldSelect = true
-		}
-
-		optionalText := ""
-		if item.metadata != nil && item.metadata.Optional {
-			optionalText = " (Optional)"
-		}
-
-		displayText = fmt.Sprintf("%s%s - %s", fw.FileName, optionalText, statusText)
-
-		menuItems = append(menuItems, gaba.MenuItem{
-			Text:     displayText,
-			Selected: shouldSelect,
-			Focused:  false,
-			Metadata: item,
+// choose lists what the platform needs and lets the user pick. Anything
+// missing starts selected, since that is what opening this screen asks for.
+func (s *BIOSDownloadScreen) choose(platform romm.Platform, requirements []bios.Requirement) ([]bios.Requirement, bool) {
+	items := make([]gaba.MenuItem, 0, len(requirements))
+	for _, requirement := range requirements {
+		missing := !requirement.Installed(platform.FSSlug)
+		items = append(items, gaba.MenuItem{
+			Text:     biosLabel(requirement, missing),
+			Selected: missing,
+			Metadata: requirement,
 		})
 	}
 
-	options := gaba.DefaultListOptions(fmt.Sprintf("%s - BIOS", input.Platform.Name), menuItems)
+	options := gaba.DefaultListOptions(fmt.Sprintf("%s - BIOS", platform.Name), items)
 	options.UseSmallTitle = true
 	options.InitialMultiSelectMode = true
+	options.StatusBar = StatusBar()
 	options.FooterHelpItems = []gaba.FooterHelpItem{
 		FooterBack(),
-		{ButtonName: icons.Start, HelpText: i18n.Localize(&goi18n.Message{ID: "button_download", Other: "Download"}, nil), IsConfirmButton: true},
-	}
-	options.StatusBar = StatusBar()
-
-	sel, err := gaba.List(options)
-	if err != nil {
-		logger.Error("BIOS selection failed", "error", err)
-		return output, err
+		{ButtonName: icons.Start, HelpText: localize("button_download", "Download"), IsConfirmButton: true},
 	}
 
-	if sel.Action != gaba.ListActionSelected || len(sel.Selected) == 0 {
-		return output, nil
+	result, err := gaba.List(options)
+	if err != nil || result.Action != gaba.ListActionSelected || len(result.Selected) == 0 {
+		return nil, false
 	}
 
-	var selectedItems []firmwareWithMetadata
-	for _, idx := range sel.Selected {
-		item := sel.Items[idx].Metadata.(firmwareWithMetadata)
-		selectedItems = append(selectedItems, item)
+	chosen := make([]bios.Requirement, 0, len(result.Selected))
+	for _, index := range result.Selected {
+		chosen = append(chosen, result.Items[index].Metadata.(bios.Requirement))
+	}
+	return chosen, true
+}
+
+func biosLabel(requirement bios.Requirement, missing bool) string {
+	status := localize("bios_status_ready", "Ready")
+	if missing {
+		status = localize("bios_status_not_installed", "Missing")
 	}
 
-	logger.Debug("Selected BIOS files for download", "count", len(selectedItems))
+	optional := ""
+	// Only say a file is optional when the tables actually say so. An
+	// unmatched entry is not a claim that the emulator runs without it.
+	if requirement.Known && requirement.File.Optional {
+		optional = " " + localize("bios_optional", "(Optional)")
+	}
 
-	// Build downloads from selected items
-	var downloads []gaba.Download
-	locationToInfoMap := make(map[string]firmwareWithMetadata)
+	return fmt.Sprintf("%s%s - %s", requirement.Firmware.FileName, optional, status)
+}
 
-	baseURL := input.Host.URL()
-	for _, item := range selectedItems {
-		downloadURL := baseURL + item.firmware.DownloadURL
-		tempPath := filepath.Join(files.TempDir(), fmt.Sprintf("bios_%s", item.firmware.FileName))
+// fetch downloads the chosen files and installs each one everywhere the
+// firmware expects it.
+//
+// They land in a temp directory first because one BIOS file can belong in
+// several places, and the download widget writes to a single location.
+func (s *BIOSDownloadScreen) fetch(input BIOSDownloadInput, chosen []bios.Requirement) (installed, failed int) {
+	logger := gaba.GetLogger()
 
+	downloads := make([]gaba.Download, 0, len(chosen))
+	staged := make(map[string]bios.Requirement, len(chosen))
+	for _, requirement := range chosen {
+		location := filepath.Join(files.TempDir(), "bios_"+requirement.Firmware.FileName)
 		downloads = append(downloads, gaba.Download{
-			URL:         downloadURL,
-			Location:    tempPath,
-			DisplayName: item.firmware.FileName,
+			URL:         input.Host.URL() + requirement.Firmware.DownloadURL,
+			Location:    location,
+			DisplayName: requirement.Firmware.FileName,
 		})
-
-		locationToInfoMap[tempPath] = item
-
-		logger.Debug("Added BIOS file to download queue",
-			"file", item.firmware.FileName,
-			"url", downloadURL,
-			"size", item.firmware.FileSizeBytes)
+		staged[location] = requirement
 	}
 
-	headers := make(map[string]string)
-	headers["Authorization"] = input.Host.AuthHeader()
+	// Nothing here should outlive the run: an install copies the file where it
+	// belongs, and a failure leaves a partial one worth removing.
+	defer func() {
+		for location := range staged {
+			files.DeleteFile(location)
+		}
+	}()
 
-	res, err := gaba.DownloadManager(downloads, headers, gaba.DownloadManagerOptions{
+	result, err := gaba.DownloadManager(downloads, map[string]string{
+		"Authorization": input.Host.AuthHeader(),
+	}, gaba.DownloadManagerOptions{
 		AutoContinueOnComplete: true,
 		SkipSSLVerification:    input.Host.InsecureSkipVerify,
 	})
 	if err != nil {
 		logger.Error("BIOS download failed", "error", err)
-		return output, err
+		return 0, len(downloads)
 	}
 
-	logger.Debug("Download results", "completed", len(res.Completed), "failed", len(res.Failed))
+	logger.Debug("Download results", "completed", len(result.Completed), "failed", len(result.Failed))
+	failed = len(result.Failed)
 
-	successCount := 0
-	for _, download := range res.Completed {
-		info := locationToInfoMap[download.Location]
+	for _, download := range result.Completed {
+		requirement := staged[download.Location]
 
 		data, err := os.ReadFile(download.Location)
 		if err != nil {
-			logger.Error("Failed to read downloaded BIOS file", "file", info.firmware.FileName, "error", err)
+			logger.Error("Failed to read downloaded BIOS file", "file", requirement.Firmware.FileName, "error", err)
+			failed++
 			continue
 		}
 
-		// Save the file
-		if info.metadata != nil {
-			if err := bios.SaveFile(*info.metadata, input.Platform.FSSlug, data); err != nil {
-				logger.Error("Failed to save BIOS file", "file", info.metadata.FileName, "error", err)
-				continue
-			}
-		} else {
-			relativePath := info.firmware.FileName
-
-			filePaths := cfw.GetBIOSFilePaths(relativePath, input.Platform.FSSlug)
-			var saveErr error
-			for _, filePath := range filePaths {
-				if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
-					saveErr = err
-					break
-				}
-				if err := os.WriteFile(filePath, data, 0644); err != nil {
-					saveErr = err
-					break
-				}
-			}
-			if saveErr != nil {
-				logger.Error("Failed to save BIOS file", "file", info.firmware.FileName, "error", saveErr)
-				continue
-			}
+		if err := requirement.Save(input.Platform.FSSlug, data); err != nil {
+			logger.Error("Failed to save BIOS file", "file", requirement.Firmware.FileName, "error", err)
+			failed++
+			continue
 		}
 
-		os.Remove(download.Location)
-		successCount++
+		installed++
 	}
 
-	if successCount > 0 {
-		logger.Info("BIOS download complete", "success", successCount)
-		gaba.ConfirmationMessage(
-			fmt.Sprintf(i18n.Localize(&goi18n.Message{ID: "bios_download_complete", Other: "Successfully downloaded %d BIOS file(s)."}, nil), successCount),
-			ContinueFooter(),
-			gaba.MessageOptions{},
-		)
-	} else if len(res.Failed) > 0 {
-		logger.Error("BIOS download failed", "failed", len(res.Failed))
-		gaba.ConfirmationMessage(
-			fmt.Sprintf(i18n.Localize(&goi18n.Message{ID: "bios_download_failed", Other: "Failed to download %d BIOS file(s)."}, nil), len(res.Failed)),
-			ContinueFooter(),
-			gaba.MessageOptions{},
-		)
-	}
+	return installed, failed
+}
 
-	return output, nil
+func (s *BIOSDownloadScreen) tell(message string) {
+	gaba.ConfirmationMessage(message, ContinueFooter(), gaba.MessageOptions{})
 }
