@@ -26,6 +26,9 @@ type settingRow struct {
 	// reached opens on the same answer the rest of the app uses rather than on
 	// whatever is listed first.
 	def any
+	// display is what a row that leads somewhere shows alongside its label,
+	// such as the value waiting behind it.
+	display string
 	// visible, when set, hides the row while it holds no meaning.
 	visible *atomic.Bool
 }
@@ -49,7 +52,7 @@ func settingItems(rows []settingRow, config settings.Config) []gaba.ItemWithOpti
 			VisibleWhen: row.visible,
 		}
 		if row.leadsSomewhere() {
-			item.Options = []gaba.Option{{Type: gaba.OptionTypeClickable}}
+			item.Options = []gaba.Option{{Type: gaba.OptionTypeClickable, DisplayName: row.display}}
 		} else {
 			item.Options = row.options
 			item.SelectedOption = optionIndexOr(row.options, row.get(config), row.def)

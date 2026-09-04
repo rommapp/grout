@@ -243,11 +243,9 @@ func transitionSaveSyncSettings(ctx *transitionContext, result any) (router.Scre
 		ctx.state.Host.DeviceName = r.Host.DeviceName
 		needsSave = true
 	}
-	if r.Config.SaveBackupLimit != ctx.state.Config.SaveBackupLimit {
-		ctx.state.Config.SaveBackupLimit = r.Config.SaveBackupLimit
-		needsSave = true
-	}
-
+	// The screen saves its own config. It cannot be checked here: it was
+	// handed the very config it edits, so there is nothing left to compare
+	// against. Only the host, which travels by value, is settled here.
 	if needsSave {
 		if len(ctx.state.Config.Hosts) > 0 {
 			ctx.state.Config.Hosts[0] = ctx.state.Host

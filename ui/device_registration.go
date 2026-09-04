@@ -3,15 +3,14 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"os"
+
 	"grout/romm"
 	"grout/saves"
 	"grout/settings"
 	"grout/version"
-	"os"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type SaveSyncSettingsInput struct {
@@ -31,6 +30,12 @@ func NewSaveSyncSettingsScreen() *SaveSyncSettingsScreen {
 	return &SaveSyncSettingsScreen{}
 }
 
+// saveSyncDestinations is where each row that navigates goes. Rows that only
+// hold a value are absent.
+var saveSyncDestinations = map[string]SaveSyncSettingsAction{
+	"save_mapping": SaveSyncSettingsActionSaveMapping,
+}
+
 func (s *SaveSyncSettingsScreen) Draw(input SaveSyncSettingsInput) (SaveSyncSettingsOutput, error) {
 	if input.Host.DeviceID == "" {
 		return s.drawUnregistered(input)
@@ -38,35 +43,28 @@ func (s *SaveSyncSettingsScreen) Draw(input SaveSyncSettingsInput) (SaveSyncSett
 	return s.drawRegistered(input)
 }
 
+// drawUnregistered offers the one thing a device with no registration can do.
 func (s *SaveSyncSettingsScreen) drawUnregistered(input SaveSyncSettingsInput) (SaveSyncSettingsOutput, error) {
 	output := SaveSyncSettingsOutput{Config: input.Config, Host: input.Host}
 
-	items := []gaba.ItemWithOptions{
-		{
-			Item: gaba.MenuItem{
-				Text: i18n.Localize(&goi18n.Message{ID: "save_sync_register_device", Other: "Register Device"}, nil),
-			},
-			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
-		},
-	}
-
 	result, err := gaba.OptionsList(
-		i18n.Localize(&goi18n.Message{ID: "settings_save_sync", Other: "Save Sync"}, nil),
+		localize("settings_save_sync", "Save Sync"),
 		gaba.OptionListSettings{
 			FooterHelpItems: []gaba.FooterHelpItem{FooterBack(), FooterSelect()},
 			StatusBar:       StatusBar(),
 			UseSmallTitle:   true,
 		},
-		items,
+		[]gaba.ItemWithOptions{{
+			Item:    gaba.MenuItem{Text: localize("save_sync_register_device", "Register Device")},
+			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
+		}},
 	)
-
 	if err != nil {
 		if errors.Is(err, gaba.ErrCancelled) {
 			return output, nil
 		}
 		return output, err
 	}
-
 	if result.Action != gaba.ListActionSelected {
 		return output, nil
 	}
@@ -76,46 +74,17 @@ func (s *SaveSyncSettingsScreen) drawUnregistered(input SaveSyncSettingsInput) (
 
 func (s *SaveSyncSettingsScreen) drawRegistered(input SaveSyncSettingsInput) (SaveSyncSettingsOutput, error) {
 	output := SaveSyncSettingsOutput{Config: input.Config, Host: input.Host}
-	logger := gaba.GetLogger()
-
-	const (
-		menuDeviceName = iota
-		menuBackupLimit
-		menuSaveMapping
-	)
-
-	items := []gaba.ItemWithOptions{
-		{
-			Item: gaba.MenuItem{
-				Text: i18n.Localize(&goi18n.Message{ID: "save_sync_device_name", Other: "Device Name"}, nil),
-			},
-			Options: []gaba.Option{{Type: gaba.OptionTypeClickable, DisplayName: input.Host.DeviceName}},
-		},
-		{
-			Item: gaba.MenuItem{
-				Text: i18n.Localize(&goi18n.Message{ID: "save_sync_backup_limit", Other: "Save Backups"}, nil),
-			},
-			Options:        backupLimitOptions(),
-			SelectedOption: optionIndexOr(backupLimitOptions(), input.Config.SaveBackupLimit, 0),
-		},
-		{
-			Item: gaba.MenuItem{
-				Text: i18n.Localize(&goi18n.Message{ID: "sync_menu_save_mapping", Other: "Save Mapping"}, nil),
-			},
-			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
-		},
-	}
+	rows := saveSyncRows(input.Host)
 
 	result, err := gaba.OptionsList(
-		i18n.Localize(&goi18n.Message{ID: "settings_save_sync", Other: "Save Sync"}, nil),
+		localize("settings_save_sync", "Save Sync"),
 		gaba.OptionListSettings{
 			FooterHelpItems: OptionsListFooter(),
 			StatusBar:       StatusBar(),
 			UseSmallTitle:   true,
 		},
-		items,
+		settingItems(rows, *input.Config),
 	)
-
 	if err != nil {
 		if errors.Is(err, gaba.ErrCancelled) {
 			return output, nil
@@ -123,42 +92,56 @@ func (s *SaveSyncSettingsScreen) drawRegistered(input SaveSyncSettingsInput) (Sa
 		return output, err
 	}
 
-	// Apply backup limit setting
-	if val, ok := result.Items[menuBackupLimit].Options[result.Items[menuBackupLimit].SelectedOption].Value.(int); ok {
-		output.Config.SaveBackupLimit = val
+	applySettingRows(rows, input.Config, result.Items)
+
+	// This screen writes its own config, the way the other settings screens
+	// do. Leaving it to the caller does not work: the caller handed over the
+	// very config being edited, so it has nothing to compare against.
+	if err := settings.SaveConfig(input.Config); err != nil {
+		gaba.GetLogger().Error("Error saving save sync settings", "error", err)
 	}
 
-	if result.Action != gaba.ListActionSelected {
+	if result.Action != gaba.ListActionSelected || result.Selected >= len(rows) {
 		return output, nil
 	}
 
-	switch result.Selected {
-	case menuSaveMapping:
-		output.Action = SaveSyncSettingsActionSaveMapping
-		return output, nil
-	case menuDeviceName:
-		// fall through to device name editing below
+	switch key := rows[result.Selected].key; key {
+	case "device_name":
+		return s.renameDevice(input, output)
 	default:
+		if action, leads := saveSyncDestinations[key]; leads {
+			output.Action = action
+		}
 		return output, nil
 	}
+}
 
-	defaultName := input.Host.DeviceName
-	if defaultName == "" {
-		if hostname, err := os.Hostname(); err == nil {
-			defaultName = hostname
-		}
+func saveSyncRows(host settings.Host) []settingRow {
+	// The name sits on the row rather than behind it, since it is the thing
+	// the row changes.
+	deviceName := clickableRow("device_name", "save_sync_device_name", "Device Name")
+	deviceName.display = host.DeviceName
+
+	return []settingRow{
+		deviceName,
+		{
+			key: "backup_limit", label: localize("save_sync_backup_limit", "Save Backups"),
+			options: backupLimitOptions(),
+			get:     func(c settings.Config) any { return c.SaveBackupLimit },
+			set:     assign(func(c *settings.Config, v int) { c.SaveBackupLimit = v }),
+			def:     0,
+		},
+		clickableRow("save_mapping", "sync_menu_save_mapping", "Save Mapping"),
 	}
+}
 
-	res, err := gaba.Keyboard(defaultName, i18n.Localize(&goi18n.Message{ID: "device_registration_prompt", Other: "Enter a name for this device"}, nil))
+// renameDevice changes what the server calls this device.
+func (s *SaveSyncSettingsScreen) renameDevice(input SaveSyncSettingsInput, output SaveSyncSettingsOutput) (SaveSyncSettingsOutput, error) {
+	name, err := askDeviceName(input.Host.DeviceName)
 	if err != nil {
-		if errors.Is(err, gaba.ErrCancelled) {
-			return output, nil
-		}
 		return output, err
 	}
-
-	deviceName := res.Text
-	if deviceName == "" {
+	if name == "" {
 		return output, nil
 	}
 
@@ -166,42 +149,35 @@ func (s *SaveSyncSettingsScreen) drawRegistered(input SaveSyncSettingsInput) (Sa
 
 	var updateErr error
 	gaba.ProcessMessage(
-		i18n.Localize(&goi18n.Message{ID: "device_registration_updating", Other: "Updating device..."}, nil),
+		localize("device_registration_updating", "Updating device..."),
 		gaba.ProcessMessageOptions{ShowThemeBackground: true},
 		func() (any, error) {
-			_, updateErr = client.UpdateDevice(input.Host.DeviceID, romm.UpdateDeviceRequest{Name: deviceName})
+			_, updateErr = client.UpdateDevice(input.Host.DeviceID, romm.UpdateDeviceRequest{Name: name})
 			return nil, nil
 		},
 	)
 	if updateErr != nil {
-		logger.Error("Failed to update device", "error", updateErr)
+		gaba.GetLogger().Error("Failed to update device", "error", updateErr)
 		gaba.ConfirmationMessage(
 			fmt.Sprintf("Failed to update device: %v", updateErr),
 			ContinueFooter(),
 			gaba.MessageOptions{},
 		)
-	} else {
-		output.Host.DeviceName = deviceName
+		return output, nil
 	}
+
+	output.Host.DeviceName = name
 	return output, nil
 }
 
+// registerDevice tells the server about this device so saves can be synced to
+// it.
 func (s *SaveSyncSettingsScreen) registerDevice(output SaveSyncSettingsOutput) (SaveSyncSettingsOutput, error) {
-	defaultName := ""
-	if hostname, err := os.Hostname(); err == nil {
-		defaultName = hostname
-	}
-
-	res, err := gaba.Keyboard(defaultName, i18n.Localize(&goi18n.Message{ID: "device_registration_prompt", Other: "Enter a name for this device"}, nil))
+	name, err := askDeviceName("")
 	if err != nil {
-		if errors.Is(err, gaba.ErrCancelled) {
-			return output, nil
-		}
 		return output, err
 	}
-
-	deviceName := res.Text
-	if deviceName == "" {
+	if name == "" {
 		return output, nil
 	}
 
@@ -210,14 +186,13 @@ func (s *SaveSyncSettingsScreen) registerDevice(output SaveSyncSettingsOutput) (
 	var device romm.Device
 	var regErr error
 	gaba.ProcessMessage(
-		i18n.Localize(&goi18n.Message{ID: "device_registration_registering", Other: "Registering device..."}, nil),
+		localize("device_registration_registering", "Registering device..."),
 		gaba.ProcessMessageOptions{ShowThemeBackground: true},
 		func() (any, error) {
-			device, regErr = saves.RegisterDevice(client, deviceName)
+			device, regErr = saves.RegisterDevice(client, name)
 			return nil, nil
 		},
 	)
-
 	if regErr != nil {
 		gaba.ConfirmationMessage(
 			fmt.Sprintf("Failed to register device: %v", regErr),
@@ -228,11 +203,31 @@ func (s *SaveSyncSettingsScreen) registerDevice(output SaveSyncSettingsOutput) (
 	}
 
 	output.Host.DeviceID = device.ID
-	output.Host.DeviceName = deviceName
+	output.Host.DeviceName = name
 	// RegisterDevice already pushed the current client_version; record it so the startup
 	// refresh only fires on a later upgrade.
 	output.Host.DeviceClientVersion = version.Get().Version
 	return output, nil
+}
+
+// askDeviceName prompts for a name, offering the one already set or failing
+// that the machine's own. An empty answer means the user backed out.
+func askDeviceName(current string) (string, error) {
+	suggestion := current
+	if suggestion == "" {
+		if hostname, err := os.Hostname(); err == nil {
+			suggestion = hostname
+		}
+	}
+
+	result, err := gaba.Keyboard(suggestion, localize("device_registration_prompt", "Enter a name for this device"))
+	if err != nil {
+		if errors.Is(err, gaba.ErrCancelled) {
+			return "", nil
+		}
+		return "", err
+	}
+	return result.Text, nil
 }
 
 // backupLimitOptions offers how many old copies of a save to keep. Zero is no
