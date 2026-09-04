@@ -140,6 +140,41 @@ var artSpecs = []artSpec{
 	},
 }
 
+// MultiFileArchivePath is where a game that ships as several files is written
+// while it downloads.
+//
+// It lands in a temp directory rather than the rom directory so a run that
+// fails part way leaves no archive where the frontend would try to launch it.
+// Planning and unpacking both need this path, so it is derived in one place.
+func MultiFileArchivePath(game romm.Rom) string {
+	return filepath.Join(files.TempDir(), fmt.Sprintf("grout_multirom_%d.zip", game.ID))
+}
+
+// RomLocation is where a game's rom file was written, or "" when the game was
+// not part of the plan.
+//
+// A game shipping several versions is downloaded under the name of whichever
+// one was chosen, so this is the only reliable way to find it afterwards.
+func (p Plan) RomLocation(gameName string) string {
+	for _, item := range p.Roms {
+		if item.GameName == gameName {
+			return item.Location
+		}
+	}
+	return ""
+}
+
+// SetGamePath points a game's metadata entry at where its file actually ended
+// up. Unpacking an archive moves it, and the entry is written afterwards.
+func (p Plan) SetGamePath(fileName, path string) {
+	for i := range p.Entries {
+		if p.Entries[i].Game.FileName == fileName {
+			p.Entries[i].Game.Path = path
+			return
+		}
+	}
+}
+
 // SkipReason says why a game was left out of a plan.
 type SkipReason struct {
 	Game   romm.Rom
@@ -213,9 +248,8 @@ func hasCoverArt(g romm.Rom) bool {
 // afterwards; everything else is written straight into the rom directory.
 func romItem(config settings.Config, host settings.Host, game romm.Rom, romDirectory string, selectedFileID int) (Item, error) {
 	if game.HasMultipleFiles {
-		location := filepath.Join(files.TempDir(), fmt.Sprintf("grout_multirom_%d.zip", game.ID))
 		source, _ := url.JoinPath(host.URL(), "/api/roms/", strconv.Itoa(game.ID), "content", game.FsName)
-		return Item{URL: source, Location: location, GameName: game.Name}, nil
+		return Item{URL: source, Location: MultiFileArchivePath(game), GameName: game.Name}, nil
 	}
 
 	// A cached row written without a files array would panic on Files[0].

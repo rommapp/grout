@@ -81,6 +81,9 @@ type Firmware struct {
 	// is running on.
 	display func() DisplayQuirks
 
+	// organizeExtracted rearranges a multi-file game after it is unpacked, for
+	// firmwares that want a layout the archive does not already have.
+	organizeExtracted func(extractDir, romDir, baseName string) error
 	// keepsRomExtInSaves names saves after the whole rom file rather than
 	// stripping the extension as RetroArch does. Fallback only, when the
 	// convention cannot be read off saves already on the device (issue #245).
@@ -92,6 +95,15 @@ func (f *Firmware) IsBasedOnEmulationStation() bool {
 }
 
 func (f *Firmware) KeepsRomExtInSaves() bool { return f != nil && f.keepsRomExtInSaves }
+
+// OrganizeExtracted rearranges a multi-file game after unpacking. Firmwares
+// that take the archive's own layout do nothing.
+func (f *Firmware) OrganizeExtracted(extractDir, romDir, baseName string) error {
+	if f == nil || f.organizeExtracted == nil {
+		return nil
+	}
+	return f.organizeExtracted(extractDir, romDir, baseName)
+}
 
 // DisplayQuirks describes handling a particular device needs. Rotation is in
 // degrees rather than a toolkit enum so this package stays free of the UI.
@@ -215,18 +227,19 @@ func esSidecars(video, manual, bezel func(string) string) func(string) (string, 
 // registration: written once, never mutated, no ordering rules.
 var firmwares = map[CFW]*Firmware{
 	MuOS: {
-		id:               MuOS,
-		romDirectory:     muos.GetRomDirectory,
-		biosDirectory:    muos.GetBIOSDirectory,
-		baseSavePath:     muos.GetBaseSavePath,
-		coverDirectory:   inCatalogue(muos.GetArtDirectory),
-		previewDirectory: muos.GetPreviewDirectory,
-		splashDirectory:  muos.GetSplashDirectory,
-		platforms:        muos.Platforms,
-		saveDirectories:  muos.SaveDirectories,
-		gamelist:         GamelistMuOSText,
-		inputMapping:     muos.GetInputMappingBytes,
-		packaging:        Packaging{Asset: "Grout.muxapp", LaunchScript: "Grout/mux_launch.sh", InstallDepth: 2},
+		id:                MuOS,
+		romDirectory:      muos.GetRomDirectory,
+		organizeExtracted: muos.OrganizeMultiFileRom,
+		biosDirectory:     muos.GetBIOSDirectory,
+		baseSavePath:      muos.GetBaseSavePath,
+		coverDirectory:    inCatalogue(muos.GetArtDirectory),
+		previewDirectory:  muos.GetPreviewDirectory,
+		splashDirectory:   muos.GetSplashDirectory,
+		platforms:         muos.Platforms,
+		saveDirectories:   muos.SaveDirectories,
+		gamelist:          GamelistMuOSText,
+		inputMapping:      muos.GetInputMappingBytes,
+		packaging:         Packaging{Asset: "Grout.muxapp", LaunchScript: "Grout/mux_launch.sh", InstallDepth: 2},
 	},
 	NextUI: {
 		id:                 NextUI,

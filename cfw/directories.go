@@ -53,3 +53,9 @@ func joinPath(base, rel string) string {
 	}
 	return filepath.Join(base, rel)
 }
+
+// OrganizeExtractedRom rearranges a multi-file game after it is unpacked, for
+// firmwares that want a layout the archive does not already have.
+func OrganizeExtractedRom(extractDir, romDir, baseName string) error {
+	return ActiveFirmware().OrganizeExtracted(extractDir, romDir, baseName)
+}
