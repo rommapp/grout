@@ -63,8 +63,10 @@ func Browse(request BrowseRequest) GameList {
 	}
 
 	if request.Config.DownloadedGames == settings.DownloadedGamesModeFilter {
+		// Only a game that is entirely on the card is hidden. Hiding one whose
+		// later discs are still missing would leave no way to finish it.
 		games = slices.DeleteFunc(games, func(game romm.Rom) bool {
-			return IsDownloaded(request.Config, game)
+			return DownloadStateOf(request.Config, game) == FullyDownloaded
 		})
 	}
 
