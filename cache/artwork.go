@@ -148,3 +148,23 @@ func SyncArtworkInBackground(artkind library.ArtKind, host settings.Host, games 
 		}
 	}
 }
+
+// ArtworkPath is a local file holding a rom's cover, fetching and caching it
+// on first sight. An empty result means there is none to show.
+//
+// Going through DownloadAndCacheArtwork matters: it saves through the art
+// fetcher, which deletes the file when it turns out not to be an image. A
+// server returning an error page would otherwise leave that page in the cache,
+// where every later look finds it and never tries again.
+func ArtworkPath(rom romm.Rom, kind library.ArtKind, host settings.Host) string {
+	if !ArtworkExists(rom.PlatformFSSlug, rom.ID) {
+		if err := DownloadAndCacheArtwork(rom, kind, host); err != nil {
+			gaba.GetLogger().Warn("Failed to fetch cover art", "game", rom.Name, "error", err)
+			return ""
+		}
+		if !ArtworkExists(rom.PlatformFSSlug, rom.ID) {
+			return ""
+		}
+	}
+	return GetArtworkCachePath(rom.PlatformFSSlug, rom.ID)
+}
