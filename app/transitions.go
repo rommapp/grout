@@ -756,6 +756,9 @@ func transitionAdvancedSettings(ctx *transitionContext, result any) (router.Scre
 		return ScreenInputMapping, nil
 
 	case ui.AdvancedSettingsActionResetInputMapping:
+		// The toolkit reads the mapping once at startup, so the reset only
+		// takes effect on the next run. The screen has already said so.
+		os.Exit(0)
 		return popOrExit(ctx.stack)
 
 	default:

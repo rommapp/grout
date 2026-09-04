@@ -118,6 +118,10 @@ func (c Config) ToLoggable() any {
 // launch script starts grout in.
 const ConfigFileName = "config.json"
 
+// InputMappingFileName holds a device's button layout when the built-in one is
+// wrong for it. Its absence means the defaults are in use.
+const InputMappingFileName = "input_mapping.json"
+
 // applyDefaults fills in every unset field.
 //
 // Load and save both call this. When they each had their own list they

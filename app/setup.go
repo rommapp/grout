@@ -68,7 +68,7 @@ func setupInputMapping(currentCFW cfw.CFW) {
 		return
 	}
 
-	cwdMappingPath := filepath.Join(cwd, "input_mapping.json")
+	cwdMappingPath := filepath.Join(cwd, settings.InputMappingFileName)
 	if files.FileExists(cwdMappingPath) {
 		os.Setenv("INPUT_MAPPING_PATH", cwdMappingPath)
 		return

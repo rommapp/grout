@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"grout/settings"
+
 	"os"
 	"time"
 
@@ -33,7 +35,7 @@ func (s *InputMappingScreen) Execute() {
 		return
 	}
 
-	if err := mapping.SaveToJSON("input_mapping.json"); err != nil {
+	if err := mapping.SaveToJSON(settings.InputMappingFileName); err != nil {
 		gaba.GetLogger().Error("Failed to save input mapping", "error", err)
 		return
 	}
