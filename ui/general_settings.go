@@ -2,14 +2,13 @@ package ui
 
 import (
 	"errors"
+	"sync/atomic"
+
 	"grout/cfw"
 	"grout/library"
 	"grout/settings"
-	"sync/atomic"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type GeneralSettingsInput struct {
@@ -27,22 +26,36 @@ func NewGeneralSettingsScreen() *GeneralSettingsScreen {
 	return &GeneralSettingsScreen{}
 }
 
+// setting is one row of the screen: what it is called, what it offers, where
+// its value lives, and when it is worth showing.
+type setting struct {
+	// key identifies the row when the screen is read back. Matching on the
+	// label instead would break the day two settings read alike in some
+	// language, silently and with nothing to catch it.
+	key     string
+	label   string
+	options []gaba.Option
+	value   func(settings.Config) any
+	apply   func(*settings.Config, any)
+	// visible, when set, hides the row while it holds no meaning.
+	visible *atomic.Bool
+}
+
 func (s *GeneralSettingsScreen) Draw(input GeneralSettingsInput) (GeneralSettingsOutput, error) {
 	config := input.Config
 	output := GeneralSettingsOutput{Action: GeneralSettingsActionBack, Config: config}
 
-	items := s.buildMenuItems(config)
+	rows := generalSettings(*config)
 
 	result, err := gaba.OptionsList(
-		i18n.Localize(&goi18n.Message{ID: "settings_general", Other: "General"}, nil),
+		localize("settings_general", "General"),
 		gaba.OptionListSettings{
 			FooterHelpItems: OptionsListFooter(),
 			StatusBar:       StatusBar(),
 			UseSmallTitle:   true,
 		},
-		items,
+		menuItems(rows, *config),
 	)
-
 	if err != nil {
 		if errors.Is(err, gaba.ErrCancelled) {
 			return output, nil
@@ -51,10 +64,9 @@ func (s *GeneralSettingsScreen) Draw(input GeneralSettingsInput) (GeneralSetting
 		return output, err
 	}
 
-	s.applySettings(config, result.Items)
+	applySettings(rows, config, result.Items)
 
 	err = settings.SaveConfig(config)
-
 	ApplyRuntimeSettings(config)
 	if err != nil {
 		gaba.GetLogger().Error("Error saving general settings", "error", err)
@@ -65,270 +77,240 @@ func (s *GeneralSettingsScreen) Draw(input GeneralSettingsInput) (GeneralSetting
 	return output, nil
 }
 
-func (s *GeneralSettingsScreen) buildMenuItems(config *settings.Config) []gaba.ItemWithOptions {
-	c := cfw.GetCFW()
-	isMuOS := c == cfw.MuOS
-	isESBasedOS := c.IsBasedOnEmulationStation()
-	showArtKind := atomic.Bool{}
-	showArtKind.Store(config.DownloadArt)
-	displayDownloadArtPreview := atomic.Bool{}
-	displayDownloadArtPreview.Store(showArtKind.Load() && isMuOS)
-	displayEmulationStationOptions := atomic.Bool{}
-	displayEmulationStationOptions.Store(showArtKind.Load() && isESBasedOS)
+// menuItems renders the rows, each opened on the value the config holds.
+func menuItems(rows []setting, config settings.Config) []gaba.ItemWithOptions {
+	items := make([]gaba.ItemWithOptions, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, gaba.ItemWithOptions{
+			Item:           gaba.MenuItem{Text: row.label, Metadata: row.key},
+			Options:        row.options,
+			SelectedOption: optionIndex(row.options, row.value(config)),
+			VisibleWhen:    row.visible,
+		})
+	}
+	return items
+}
 
-	downloadArtUpdateFunc := func(val interface{}) {
-		showArtKind.Store(val.(bool))
-		displayDownloadArtPreview.Store(showArtKind.Load() && isMuOS)
-		displayEmulationStationOptions.Store(showArtKind.Load() && isESBasedOS)
+// applySettings writes back what the user chose. Rows are found by key, so a
+// row the screen did not show keeps whatever the config already had.
+func applySettings(rows []setting, config *settings.Config, items []gaba.ItemWithOptions) {
+	byKey := make(map[string]setting, len(rows))
+	for _, row := range rows {
+		byKey[row.key] = row
 	}
 
-	return []gaba.ItemWithOptions{
-		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_box_art", Other: "Box Art"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_show", Other: "Show"}, nil), Value: true},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_hide", Other: "Hide"}, nil), Value: false},
-			},
-			SelectedOption: boolToIndex(!config.ShowBoxArt),
-		},
-		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_downloaded_games", Other: "Downloaded Games"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "downloaded_games_do_nothing", Other: "Do Nothing"}, nil), Value: settings.DownloadedGamesModeDoNothing},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "downloaded_games_mark", Other: "Mark"}, nil), Value: settings.DownloadedGamesModeMark},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "downloaded_games_filter", Other: "Filter"}, nil), Value: settings.DownloadedGamesModeFilter},
-			},
-			SelectedOption: downloadedGamesActionToIndex(config.DownloadedGames),
-		},
-		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_compressed_downloads", Other: "Archived Downloads"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_compressed_downloads_uncompress", Other: "Uncompress"}, nil), Value: true},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_compressed_downloads_do_nothing", Other: "Do Nothing"}, nil), Value: false},
-			},
-			SelectedOption: boolToIndex(!config.UnzipDownloads),
-		},
-		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_art", Other: "Download Art"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_true", Other: "True"}, nil), Value: true, OnUpdate: downloadArtUpdateFunc},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_false", Other: "False"}, nil), Value: false, OnUpdate: downloadArtUpdateFunc},
-			},
-			SelectedOption: boolToIndex(!config.DownloadArt),
-		},
-		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind", Other: "Download Art Kind"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_default", Other: "Default"}, nil), Value: library.ArtKindDefault},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_box2d", Other: "Box2D"}, nil), Value: library.ArtKindBox2D},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_box3d", Other: "Box3D"}, nil), Value: library.ArtKindBox3D},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_miximage", Other: "MixImage"}, nil), Value: library.ArtKindMixImage},
-			},
-			SelectedOption: boxArtToIndex(config.ArtKind),
-			VisibleWhen:    &showArtKind,
-		},
-		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_art_preview", Other: "Download Screenshot Preview"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_true", Other: "True"}, nil), Value: true},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_false", Other: "False"}, nil), Value: false},
-			},
-			SelectedOption: boolToIndex(!config.DownloadArtScreenshotPreview),
-			VisibleWhen:    &displayDownloadArtPreview,
-		},
-		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_art_splash", Other: "Download Splash Art"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_none", Other: "None"}, nil), Value: library.ArtKindNone},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_marquee", Other: "Marquee"}, nil), Value: library.ArtKindMarquee},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_title", Other: "Title"}, nil), Value: library.ArtKindTitle},
-			},
-			SelectedOption: boxArtToIndex(config.DownloadSplashArt),
-			VisibleWhen:    &displayDownloadArtPreview,
-		},
-		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_thumbnail", Other: "Download Game Thumbnail"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_none", Other: "None"}, nil), Value: library.ArtKindNone},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_box2d", Other: "Box2D"}, nil), Value: library.ArtKindBox2D},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_box3d", Other: "Box3D"}, nil), Value: library.ArtKindBox3D},
-			},
-			SelectedOption: boxArtToIndex(config.AdditionalDownloads.Thumbnail),
-			VisibleWhen:    &displayEmulationStationOptions,
-		},
-		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_marquee", Other: "Download Marquee Image"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_none", Other: "None"}, nil), Value: library.ArtKindNone},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_marquee", Other: "Marquee"}, nil), Value: library.ArtKindMarquee},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind_logo", Other: "Logo"}, nil), Value: library.ArtKindLogo},
-			},
-			SelectedOption: marqueeArtToIndex(config.AdditionalDownloads.Marquee),
-			VisibleWhen:    &displayEmulationStationOptions,
-		},
-		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_video", Other: "Download Game Video"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_true", Other: "True"}, nil), Value: true},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_false", Other: "False"}, nil), Value: false},
-			},
-			SelectedOption: boolToIndex(!config.AdditionalDownloads.Video),
-			VisibleWhen:    &displayEmulationStationOptions,
-		},
-		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_bezel", Other: "Download Game Bezel"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_true", Other: "True"}, nil), Value: true},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_false", Other: "False"}, nil), Value: false},
-			},
-			SelectedOption: boolToIndex(!config.AdditionalDownloads.Bezel),
-			VisibleWhen:    &displayEmulationStationOptions,
-		},
-		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_manual", Other: "Download Game Manual"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_true", Other: "True"}, nil), Value: true},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_false", Other: "False"}, nil), Value: false},
-			},
-			SelectedOption: boolToIndex(!config.AdditionalDownloads.Manual),
-			VisibleWhen:    &displayEmulationStationOptions,
-		},
-		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_boxback", Other: "Download Game Box back"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_true", Other: "True"}, nil), Value: true},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_false", Other: "False"}, nil), Value: false},
-			},
-			SelectedOption: boolToIndex(!config.AdditionalDownloads.BoxBack),
-			VisibleWhen:    &displayEmulationStationOptions,
-		},
-		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_fanart", Other: "Download Game Fan Art"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_true", Other: "True"}, nil), Value: true},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_false", Other: "False"}, nil), Value: false},
-			},
-			SelectedOption: boolToIndex(!config.AdditionalDownloads.Fanart),
-			VisibleWhen:    &displayEmulationStationOptions,
-		},
-		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_language", Other: "Language"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_language_english", Other: "English"}, nil), Value: "en"},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_language_german", Other: "Deutsch"}, nil), Value: "de"},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_language_spanish", Other: "Español"}, nil), Value: "es"},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_language_french", Other: "Français"}, nil), Value: "fr"},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_language_italian", Other: "Italiano"}, nil), Value: "it"},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_language_portuguese", Other: "Português"}, nil), Value: "pt"},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_language_russian", Other: "Русский"}, nil), Value: "ru"},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "settings_language_japanese", Other: "日本語"}, nil), Value: "ja"},
-			},
-			SelectedOption: languageToIndex(config.Language),
-		},
-		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_swap_face_buttons", Other: "Swap Face Buttons"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_false", Other: "False"}, nil), Value: false},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_true", Other: "True"}, nil), Value: true},
-			},
-			SelectedOption: boolToIndex(config.SwapFaceButtons),
-		},
+	for _, item := range items {
+		key, _ := item.Item.Metadata.(string)
+		row, ok := byKey[key]
+		if !ok {
+			continue
+		}
+		row.apply(config, item.Options[item.SelectedOption].Value)
 	}
 }
 
-func (s *GeneralSettingsScreen) applySettings(config *settings.Config, items []gaba.ItemWithOptions) {
-	for _, item := range items {
-		selectedText := item.Item.Text
-
-		switch selectedText {
-		case i18n.Localize(&goi18n.Message{ID: "settings_box_art", Other: "Box Art"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(bool); ok {
-				config.ShowBoxArt = val
-			}
-
-		case i18n.Localize(&goi18n.Message{ID: "settings_downloaded_games", Other: "Downloaded Games"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(settings.DownloadedGamesMode); ok {
-				config.DownloadedGames = val
-			}
-
-		case i18n.Localize(&goi18n.Message{ID: "settings_download_art", Other: "Download Art"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(bool); ok {
-				config.DownloadArt = val
-			}
-		case i18n.Localize(&goi18n.Message{ID: "settings_download_art_kind", Other: "Download Art Kind"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(library.ArtKind); ok {
-				config.ArtKind = val
-			}
-		case i18n.Localize(&goi18n.Message{ID: "settings_download_art_preview", Other: "Download Screenshot Preview"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(bool); ok {
-				config.DownloadArtScreenshotPreview = val
-			}
-		case i18n.Localize(&goi18n.Message{ID: "settings_download_art_splash", Other: "Download Splash Art"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(library.ArtKind); ok {
-				config.DownloadSplashArt = val
-			}
-
-		case i18n.Localize(&goi18n.Message{ID: "settings_compressed_downloads", Other: "Archived Downloads"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(bool); ok {
-				config.UnzipDownloads = val
-			}
-
-		case i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_marquee", Other: "Download Marquee Image"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(library.ArtKind); ok {
-				config.AdditionalDownloads.Marquee = val
-			}
-
-		case i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_video", Other: "Download Game Video"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(bool); ok {
-				config.AdditionalDownloads.Video = val
-			}
-
-		case i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_thumbnail", Other: "Download Game Thumbnail"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(library.ArtKind); ok {
-				config.AdditionalDownloads.Thumbnail = val
-			}
-
-		case i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_bezel", Other: "Download Game Bezel"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(bool); ok {
-				config.AdditionalDownloads.Bezel = val
-			}
-
-		case i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_manual", Other: "Download Game Manual"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(bool); ok {
-				config.AdditionalDownloads.Manual = val
-			}
-		case i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_boxback", Other: "Download Game Box back"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(bool); ok {
-				config.AdditionalDownloads.BoxBack = val
-			}
-		case i18n.Localize(&goi18n.Message{ID: "settings_download_emulationstation_art_fanart", Other: "Download Game Fan Art"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(bool); ok {
-				config.AdditionalDownloads.Fanart = val
-			}
-
-		case i18n.Localize(&goi18n.Message{ID: "settings_language", Other: "Language"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(string); ok {
-				config.Language = val
-			}
-
-		case i18n.Localize(&goi18n.Message{ID: "settings_swap_face_buttons", Other: "Swap Face Buttons"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(bool); ok {
-				config.SwapFaceButtons = val
-				gaba.SetFlipFaceButtons(val)
-			}
+// assign stores a value of the type a row deals in, ignoring anything else, so
+// a mistyped option cannot write nonsense into the config.
+func assign[T any](set func(*settings.Config, T)) func(*settings.Config, any) {
+	return func(config *settings.Config, value any) {
+		if typed, ok := value.(T); ok {
+			set(config, typed)
 		}
 	}
 }
 
-func downloadedGamesActionToIndex(action settings.DownloadedGamesMode) int {
-	switch action {
-	case settings.DownloadedGamesModeDoNothing:
-		return 0
-	case settings.DownloadedGamesModeMark:
-		return 1
-	case settings.DownloadedGamesModeFilter:
-		return 2
-	default:
-		return 0
+// trueFalse is the option pair most of this screen uses.
+func trueFalse() []gaba.Option {
+	return []gaba.Option{
+		{DisplayName: localize("common_true", "True"), Value: true},
+		{DisplayName: localize("common_false", "False"), Value: false},
 	}
+}
+
+func artKindOption(id, fallback string, kind library.ArtKind) gaba.Option {
+	return gaba.Option{DisplayName: localize(id, fallback), Value: kind}
+}
+
+func generalSettings(config settings.Config) []setting {
+	activeCFW := cfw.GetCFW()
+
+	// Art options only mean something while art is being downloaded at all,
+	// and each firmware family keeps a different set of it.
+	downloadingArt := &atomic.Bool{}
+	previewArt := &atomic.Bool{}
+	emulationStationArt := &atomic.Bool{}
+
+	refresh := func(wanted bool) {
+		downloadingArt.Store(wanted)
+		previewArt.Store(wanted && activeCFW == cfw.MuOS)
+		emulationStationArt.Store(wanted && activeCFW.IsBasedOnEmulationStation())
+	}
+	refresh(config.DownloadArt)
+
+	downloadArtOptions := trueFalse()
+	for i := range downloadArtOptions {
+		wanted := downloadArtOptions[i].Value.(bool)
+		downloadArtOptions[i].OnUpdate = func(any) { refresh(wanted) }
+	}
+
+	return []setting{
+		{
+			key: "box_art", label: localize("settings_box_art", "Box Art"),
+			options: []gaba.Option{
+				{DisplayName: localize("common_show", "Show"), Value: true},
+				{DisplayName: localize("common_hide", "Hide"), Value: false},
+			},
+			value: func(c settings.Config) any { return c.ShowBoxArt },
+			apply: assign(func(c *settings.Config, v bool) { c.ShowBoxArt = v }),
+		},
+		{
+			key: "downloaded_games", label: localize("settings_downloaded_games", "Downloaded Games"),
+			options: []gaba.Option{
+				{DisplayName: localize("downloaded_games_do_nothing", "Do Nothing"), Value: settings.DownloadedGamesModeDoNothing},
+				{DisplayName: localize("downloaded_games_mark", "Mark"), Value: settings.DownloadedGamesModeMark},
+				{DisplayName: localize("downloaded_games_filter", "Filter"), Value: settings.DownloadedGamesModeFilter},
+			},
+			value: func(c settings.Config) any { return c.DownloadedGames },
+			apply: assign(func(c *settings.Config, v settings.DownloadedGamesMode) { c.DownloadedGames = v }),
+		},
+		{
+			key: "archived_downloads", label: localize("settings_compressed_downloads", "Archived Downloads"),
+			options: []gaba.Option{
+				{DisplayName: localize("settings_compressed_downloads_uncompress", "Uncompress"), Value: true},
+				{DisplayName: localize("settings_compressed_downloads_do_nothing", "Do Nothing"), Value: false},
+			},
+			value: func(c settings.Config) any { return c.UnzipDownloads },
+			apply: assign(func(c *settings.Config, v bool) { c.UnzipDownloads = v }),
+		},
+		{
+			key: "download_art", label: localize("settings_download_art", "Download Art"),
+			options: downloadArtOptions,
+			value:   func(c settings.Config) any { return c.DownloadArt },
+			apply:   assign(func(c *settings.Config, v bool) { c.DownloadArt = v }),
+		},
+		{
+			key: "art_kind", label: localize("settings_download_art_kind", "Download Art Kind"),
+			options: []gaba.Option{
+				artKindOption("settings_download_art_kind_default", "Default", library.ArtKindDefault),
+				artKindOption("settings_download_art_kind_box2d", "Box2D", library.ArtKindBox2D),
+				artKindOption("settings_download_art_kind_box3d", "Box3D", library.ArtKindBox3D),
+				artKindOption("settings_download_art_kind_miximage", "MixImage", library.ArtKindMixImage),
+			},
+			value:   func(c settings.Config) any { return c.ArtKind },
+			apply:   assign(func(c *settings.Config, v library.ArtKind) { c.ArtKind = v }),
+			visible: downloadingArt,
+		},
+		{
+			key: "screenshot_preview", label: localize("settings_download_art_preview", "Download Screenshot Preview"),
+			options: trueFalse(),
+			value:   func(c settings.Config) any { return c.DownloadArtScreenshotPreview },
+			apply:   assign(func(c *settings.Config, v bool) { c.DownloadArtScreenshotPreview = v }),
+			visible: previewArt,
+		},
+		{
+			key: "splash_art", label: localize("settings_download_art_splash", "Download Splash Art"),
+			options: []gaba.Option{
+				artKindOption("settings_download_art_kind_none", "None", library.ArtKindNone),
+				artKindOption("settings_download_art_kind_marquee", "Marquee", library.ArtKindMarquee),
+				artKindOption("settings_download_art_kind_title", "Title", library.ArtKindTitle),
+			},
+			value:   func(c settings.Config) any { return c.DownloadSplashArt },
+			apply:   assign(func(c *settings.Config, v library.ArtKind) { c.DownloadSplashArt = v }),
+			visible: previewArt,
+		},
+		{
+			key: "thumbnail", label: localize("settings_download_emulationstation_art_thumbnail", "Download Game Thumbnail"),
+			options: []gaba.Option{
+				artKindOption("settings_download_art_kind_none", "None", library.ArtKindNone),
+				artKindOption("settings_download_art_kind_box2d", "Box2D", library.ArtKindBox2D),
+				artKindOption("settings_download_art_kind_box3d", "Box3D", library.ArtKindBox3D),
+			},
+			value:   func(c settings.Config) any { return c.AdditionalDownloads.Thumbnail },
+			apply:   assign(func(c *settings.Config, v library.ArtKind) { c.AdditionalDownloads.Thumbnail = v }),
+			visible: emulationStationArt,
+		},
+		{
+			key: "marquee", label: localize("settings_download_emulationstation_art_marquee", "Download Marquee Image"),
+			options: []gaba.Option{
+				artKindOption("settings_download_art_kind_none", "None", library.ArtKindNone),
+				artKindOption("settings_download_art_kind_marquee", "Marquee", library.ArtKindMarquee),
+				artKindOption("settings_download_art_kind_logo", "Logo", library.ArtKindLogo),
+			},
+			value:   func(c settings.Config) any { return c.AdditionalDownloads.Marquee },
+			apply:   assign(func(c *settings.Config, v library.ArtKind) { c.AdditionalDownloads.Marquee = v }),
+			visible: emulationStationArt,
+		},
+		{
+			key: "video", label: localize("settings_download_emulationstation_art_video", "Download Game Video"),
+			options: trueFalse(),
+			value:   func(c settings.Config) any { return c.AdditionalDownloads.Video },
+			apply:   assign(func(c *settings.Config, v bool) { c.AdditionalDownloads.Video = v }),
+			visible: emulationStationArt,
+		},
+		{
+			key: "bezel", label: localize("settings_download_emulationstation_art_bezel", "Download Game Bezel"),
+			options: trueFalse(),
+			value:   func(c settings.Config) any { return c.AdditionalDownloads.Bezel },
+			apply:   assign(func(c *settings.Config, v bool) { c.AdditionalDownloads.Bezel = v }),
+			visible: emulationStationArt,
+		},
+		{
+			key: "manual", label: localize("settings_download_emulationstation_art_manual", "Download Game Manual"),
+			options: trueFalse(),
+			value:   func(c settings.Config) any { return c.AdditionalDownloads.Manual },
+			apply:   assign(func(c *settings.Config, v bool) { c.AdditionalDownloads.Manual = v }),
+			visible: emulationStationArt,
+		},
+		{
+			key: "boxback", label: localize("settings_download_emulationstation_art_boxback", "Download Game Box back"),
+			options: trueFalse(),
+			value:   func(c settings.Config) any { return c.AdditionalDownloads.BoxBack },
+			apply:   assign(func(c *settings.Config, v bool) { c.AdditionalDownloads.BoxBack = v }),
+			visible: emulationStationArt,
+		},
+		{
+			key: "fanart", label: localize("settings_download_emulationstation_art_fanart", "Download Game Fan Art"),
+			options: trueFalse(),
+			value:   func(c settings.Config) any { return c.AdditionalDownloads.Fanart },
+			apply:   assign(func(c *settings.Config, v bool) { c.AdditionalDownloads.Fanart = v }),
+			visible: emulationStationArt,
+		},
+		{
+			key: "language", label: localize("settings_language", "Language"),
+			options: languageOptions(),
+			value:   func(c settings.Config) any { return c.Language },
+			apply:   assign(func(c *settings.Config, v string) { c.Language = v }),
+		},
+		{
+			key: "swap_face_buttons", label: localize("settings_swap_face_buttons", "Swap Face Buttons"),
+			options: []gaba.Option{
+				{DisplayName: localize("common_false", "False"), Value: false},
+				{DisplayName: localize("common_true", "True"), Value: true},
+			},
+			value: func(c settings.Config) any { return c.SwapFaceButtons },
+			apply: assign(func(c *settings.Config, v bool) {
+				c.SwapFaceButtons = v
+				gaba.SetFlipFaceButtons(v)
+			}),
+		},
+	}
+}
+
+func languageOptions() []gaba.Option {
+	languages := []struct{ id, name, code string }{
+		{"settings_language_english", "English", "en"},
+		{"settings_language_german", "Deutsch", "de"},
+		{"settings_language_spanish", "Español", "es"},
+		{"settings_language_french", "Français", "fr"},
+		{"settings_language_italian", "Italiano", "it"},
+		{"settings_language_portuguese", "Português", "pt"},
+		{"settings_language_russian", "Русский", "ru"},
+		{"settings_language_japanese", "日本語", "ja"},
+	}
+
+	options := make([]gaba.Option, 0, len(languages))
+	for _, language := range languages {
+		options = append(options, gaba.Option{DisplayName: localize(language.id, language.name), Value: language.code})
+	}
+	return options
 }

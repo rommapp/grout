@@ -3,7 +3,6 @@ package ui
 import (
 	"errors"
 	"grout/cfw"
-	"grout/library"
 	"grout/settings"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -247,57 +246,6 @@ func releaseChannelToIndex(releaseChannel settings.ReleaseChannel) int {
 		return 1
 	case settings.ReleaseChannelBeta:
 		return 2
-	default:
-		return 0
-	}
-}
-
-func boxArtToIndex(boxArt library.ArtKind) int {
-	switch boxArt {
-	case library.ArtKindDefault:
-		return 0
-	case library.ArtKindBox2D:
-		return 1
-	case library.ArtKindBox3D:
-		return 2
-	case library.ArtKindMixImage:
-		return 3
-	default:
-		return 0
-	}
-}
-
-func marqueeArtToIndex(boxArt library.ArtKind) int {
-	switch boxArt {
-	case library.ArtKindNone:
-		return 0
-	case library.ArtKindMarquee:
-		return 1
-	case library.ArtKindLogo:
-		return 2
-	default:
-		return 0
-	}
-}
-
-func languageToIndex(lang string) int {
-	switch lang {
-	case "en":
-		return 0
-	case "de":
-		return 1
-	case "es":
-		return 2
-	case "fr":
-		return 3
-	case "it":
-		return 4
-	case "pt":
-		return 5
-	case "ru":
-		return 6
-	case "ja":
-		return 7
 	default:
 		return 0
 	}
