@@ -1,4 +1,4 @@
-// Package library answers questions about the game library that need both the
+// Package catalog answers questions about the game library that need both the
 // local cache and the RomM server, and so belong above either.
 package catalog
 
@@ -13,23 +13,32 @@ import (
 	"grout/settings"
 )
 
-// MappedPlatforms returns the platforms that have a directory mapping and at
-// least one rom, preferring the cache and falling back to the server.
-func MappedPlatforms(host settings.Host, mappings map[string]settings.DirectoryMapping, timeout ...time.Duration) ([]romm.Platform, error) {
-	var platforms []romm.Platform
-	var err error
-
+// AllPlatforms returns every platform the server knows about, preferring the
+// cache so a device that is offline still has something to show.
+func AllPlatforms(host settings.Host, timeout ...time.Duration) ([]romm.Platform, error) {
 	if cm := cache.GetCacheManager(); cm != nil {
-		platforms, err = cm.GetPlatforms()
-	}
-	if len(platforms) == 0 {
-		platforms, err = romm.NewClientFromHost(host, timeout...).GetPlatforms()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get platforms from RomM: %w", err)
+		if platforms, err := cm.GetPlatforms(); err == nil && len(platforms) > 0 {
+			romm.DisambiguatePlatformNames(platforms)
+			return platforms, nil
 		}
 	}
 
+	platforms, err := romm.NewClientFromHost(host, timeout...).GetPlatforms()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get platforms from RomM: %w", err)
+	}
+
 	romm.DisambiguatePlatformNames(platforms)
+	return platforms, nil
+}
+
+// MappedPlatforms returns the platforms that have a directory mapping and at
+// least one rom.
+func MappedPlatforms(host settings.Host, mappings map[string]settings.DirectoryMapping, timeout ...time.Duration) ([]romm.Platform, error) {
+	platforms, err := AllPlatforms(host, timeout...)
+	if err != nil {
+		return nil, err
+	}
 
 	var mapped []romm.Platform
 	for _, platform := range platforms {

@@ -107,3 +107,18 @@ func WriteFileAtomic(path string, data []byte, perm os.FileMode) error {
 	}
 	return nil
 }
+
+// SubdirectoryNames lists the visible folders directly under path.
+func SubdirectoryNames(path string) ([]string, error) {
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		return nil, err
+	}
+
+	dirs := FilterHiddenDirectories(entries)
+	names := make([]string, 0, len(dirs))
+	for _, dir := range dirs {
+		names = append(names, dir.Name())
+	}
+	return names, nil
+}
