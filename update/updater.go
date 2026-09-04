@@ -120,6 +120,12 @@ func CheckForUpdate(c cfw.CFW, releaseChannel settings.ReleaseChannel, host *set
 		}
 	}
 
+	return checkRelease(c, release, currentVersion)
+}
+
+// checkRelease works out whether a release is worth offering and where to get
+// it, given the version already installed.
+func checkRelease(c cfw.CFW, release *ChannelRelease, currentVersion string) (*Info, error) {
 	info := &Info{
 		CurrentVersion: currentVersion,
 		LatestVersion:  release.Version,
@@ -141,6 +147,14 @@ func CheckForUpdate(c cfw.CFW, releaseChannel settings.ReleaseChannel, host *set
 		return nil, fmt.Errorf("update not found for platform: %s", assetName)
 	}
 
+	// The checksum is what pins the download, and it arrives in the same
+	// document that says where to download from. Treating a missing one as
+	// nothing to check would let that document waive its own verification, so
+	// an asset without one is not offered at all.
+	if asset.SHA256 == "" {
+		return nil, fmt.Errorf("no checksum published for %s", assetName)
+	}
+
 	info.UpdateAvailable = true
 	info.DownloadURL = asset.URL
 	info.AssetSize = asset.Size
@@ -150,6 +164,14 @@ func CheckForUpdate(c cfw.CFW, releaseChannel settings.ReleaseChannel, host *set
 }
 
 func PerformUpdate(c cfw.CFW, downloadURL string, expectedSize int64, expectedSHA256 string, progress *atomic.Float64) error {
+	// Nothing else checks the download: the expected size only drives the
+	// progress bar. Without a checksum the zip would be unpacked over the
+	// install on trust alone, so this is settled before spending a download on
+	// it.
+	if expectedSHA256 == "" {
+		return fmt.Errorf("refusing to install an update with no checksum")
+	}
+
 	installRoot, err := getInstallRoot(c)
 	if err != nil {
 		return err
@@ -162,10 +184,8 @@ func PerformUpdate(c cfw.CFW, downloadURL string, expectedSize int64, expectedSH
 		return fmt.Errorf("failed to download update: %w", err)
 	}
 
-	if expectedSHA256 != "" {
-		if err := verifySHA256(tmpZip, expectedSHA256); err != nil {
-			return err
-		}
+	if err := verifySHA256(tmpZip, expectedSHA256); err != nil {
+		return err
 	}
 
 	// Extract the full zip to a staging directory at the install root.

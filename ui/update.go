@@ -3,6 +3,7 @@ package ui
 import (
 	"errors"
 	"fmt"
+
 	"grout/cfw"
 	"grout/settings"
 	"grout/textmatch"
@@ -10,8 +11,6 @@ import (
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	buttons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 	"go.uber.org/atomic"
 )
 
@@ -22,7 +21,9 @@ type UpdateInput struct {
 }
 
 type UpdateOutput struct {
-	Action          UpdateCheckAction
+	Action UpdateCheckAction
+	// UpdatePerformed means the new version is staged and the caller should
+	// end the app, since the launcher swaps it in on the next run.
 	UpdatePerformed bool
 }
 
@@ -33,118 +34,94 @@ func NewUpdateScreen() *UpdateScreen {
 }
 
 func (s *UpdateScreen) Draw(input UpdateInput) (UpdateOutput, error) {
-	logger := gaba.GetLogger()
 	output := UpdateOutput{Action: UpdateCheckActionComplete}
 
-	var updateInfo *update.Info
-	var checkErr error
-
-	_, err := gaba.ProcessMessage(
-		i18n.Localize(&goi18n.Message{ID: "update_checking", Other: "Checking for updates..."}, nil),
-		gaba.ProcessMessageOptions{
-			ShowThemeBackground: true,
-		},
-		func() (interface{}, error) {
-			updateInfo, checkErr = update.CheckForUpdate(input.CFW, input.ReleaseChannel, input.Host)
-			return nil, checkErr
+	info, err := gaba.ProcessMessage(
+		localize("update_checking", "Checking for updates..."),
+		gaba.ProcessMessageOptions{ShowThemeBackground: true},
+		func() (*update.Info, error) {
+			return update.CheckForUpdate(input.CFW, input.ReleaseChannel, input.Host)
 		},
 	)
-
-	if err != nil || checkErr != nil {
-		actualErr := checkErr
-		if err != nil {
-			actualErr = err
-		}
-		logger.Debug("Failed to check for updates", "error", actualErr)
-
-		msg := i18n.Localize(&goi18n.Message{ID: "update_check_error", Other: "{{.Error}}"}, map[string]interface{}{"Error": actualErr.Error()})
-		gaba.ConfirmationMessage(
-			msg,
-			[]gaba.FooterHelpItem{
-				{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_back", Other: "Back"}, nil)},
-			},
-			gaba.MessageOptions{},
-		)
-		return output, nil
-	}
-
-	if !updateInfo.UpdateAvailable {
-		gaba.ConfirmationMessage(
-			i18n.Localize(&goi18n.Message{ID: "update_up_to_date", Other: "You have the latest version ({{.Version}})"}, map[string]interface{}{"Version": updateInfo.CurrentVersion}),
-			[]gaba.FooterHelpItem{
-				{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_back", Other: "Back"}, nil)},
-			},
-			gaba.MessageOptions{},
-		)
-		return output, nil
-	}
-
-	updateMessage := fmt.Sprintf(
-		"%s\n%s\n%s",
-		i18n.Localize(&goi18n.Message{ID: "update_available", Other: "Update available: {{.Version}}"}, map[string]interface{}{"Version": updateInfo.LatestVersion}),
-		i18n.Localize(&goi18n.Message{ID: "update_current_version", Other: "Current: {{.Version}}"}, map[string]interface{}{"Version": updateInfo.CurrentVersion}),
-		i18n.Localize(&goi18n.Message{ID: "update_size", Other: "Size: {{.Size}}"}, map[string]interface{}{"Size": textmatch.FormatBytes(updateInfo.AssetSize)}),
-	)
-
-	_, err = gaba.ConfirmationMessage(
-		updateMessage,
-		[]gaba.FooterHelpItem{
-			{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_cancel", Other: "Cancel"}, nil)},
-			{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "update_download", Other: "Download & Update"}, nil)},
-		},
-		gaba.MessageOptions{
-			ConfirmButton: buttons.VirtualButtonA,
-		},
-	)
-
 	if err != nil {
-		if errors.Is(err, gaba.ErrCancelled) {
-			return output, nil
-		}
+		gaba.GetLogger().Debug("Failed to check for updates", "error", err)
+		s.tell(localizeWith("update_check_error", "{{.Error}}", map[string]any{"Error": err.Error()}))
+		return output, nil
+	}
+
+	if !info.UpdateAvailable {
+		s.tell(localizeWith("update_up_to_date", "You have the latest version ({{.Version}})",
+			map[string]any{"Version": info.CurrentVersion}))
+		return output, nil
+	}
+
+	wanted, err := s.offer(info)
+	if err != nil {
 		return output, err
 	}
+	if !wanted {
+		return output, nil
+	}
 
-	progress := &atomic.Float64{}
-	var updateErr error
-
-	_, err = gaba.ProcessMessage(
-		i18n.Localize(&goi18n.Message{ID: "update_downloading", Other: "Downloading update..."}, nil),
-		gaba.ProcessMessageOptions{
-			ShowThemeBackground: true,
-			ShowProgressBar:     true,
-			Progress:            progress,
-		},
-		func() (interface{}, error) {
-			updateErr = update.PerformUpdate(input.CFW, updateInfo.DownloadURL, updateInfo.AssetSize, updateInfo.AssetSHA256, progress)
-			return nil, updateErr
-		},
-	)
-
-	if err != nil || updateErr != nil {
-		actualErr := updateErr
-		if err != nil {
-			actualErr = err
-		}
-		logger.Error("Failed to perform update", "error", actualErr)
-
-		gaba.ConfirmationMessage(
-			i18n.Localize(&goi18n.Message{ID: "update_failed", Other: "Update failed: {{.Error}}"}, map[string]interface{}{"Error": actualErr.Error()}),
-			[]gaba.FooterHelpItem{
-				{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_back", Other: "Back"}, nil)},
-			},
-			gaba.MessageOptions{},
-		)
+	if err := s.install(input.CFW, info); err != nil {
+		gaba.GetLogger().Error("Failed to perform update", "error", err)
+		s.tell(localizeWith("update_failed", "Update failed: {{.Error}}", map[string]any{"Error": err.Error()}))
 		return output, nil
 	}
 
 	gaba.ConfirmationMessage(
-		i18n.Localize(&goi18n.Message{ID: "update_complete", Other: "Update complete! Grout will now exit."}, nil),
-		[]gaba.FooterHelpItem{
-			{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_exit", Other: "Exit"}, nil)},
-		},
+		localize("update_complete", "Update complete! Grout will now exit."),
+		[]gaba.FooterHelpItem{{ButtonName: "A", HelpText: localize("button_exit", "Exit")}},
 		gaba.MessageOptions{},
 	)
 
 	output.UpdatePerformed = true
 	return output, nil
+}
+
+// offer shows what is available and asks whether to take it.
+func (s *UpdateScreen) offer(info *update.Info) (bool, error) {
+	message := fmt.Sprintf("%s\n%s\n%s",
+		localizeWith("update_available", "Update available: {{.Version}}", map[string]any{"Version": info.LatestVersion}),
+		localizeWith("update_current_version", "Current: {{.Version}}", map[string]any{"Version": info.CurrentVersion}),
+		localizeWith("update_size", "Size: {{.Size}}", map[string]any{"Size": textmatch.FormatBytes(info.AssetSize)}),
+	)
+
+	_, err := gaba.ConfirmationMessage(
+		message,
+		[]gaba.FooterHelpItem{
+			FooterCancel(),
+			{ButtonName: "A", HelpText: localize("update_download", "Download & Update")},
+		},
+		gaba.MessageOptions{ConfirmButton: buttons.VirtualButtonA},
+	)
+	if err != nil {
+		if errors.Is(err, gaba.ErrCancelled) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+func (s *UpdateScreen) install(activeCFW cfw.CFW, info *update.Info) error {
+	progress := &atomic.Float64{}
+
+	_, err := gaba.ProcessMessage(
+		localize("update_downloading", "Downloading update..."),
+		gaba.ProcessMessageOptions{
+			ShowThemeBackground: true,
+			ShowProgressBar:     true,
+			Progress:            progress,
+		},
+		func() (any, error) {
+			return nil, update.PerformUpdate(activeCFW, info.DownloadURL, info.AssetSize, info.AssetSHA256, progress)
+		},
+	)
+	return err
+}
+
+// tell shows a message the user acknowledges and returns from.
+func (s *UpdateScreen) tell(message string) {
+	gaba.ConfirmationMessage(message, []gaba.FooterHelpItem{FooterBack()}, gaba.MessageOptions{})
 }
