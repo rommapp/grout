@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"grout/catalog"
 	"testing"
 
 	"grout/romm"
@@ -26,8 +27,8 @@ func TestHasFilterableMetadata(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := hasFilterableMetadata(tt.games); got != tt.want {
-				t.Errorf("hasFilterableMetadata() = %v, want %v", got, tt.want)
+			if got := catalog.HasFilterableMetadata(tt.games); got != tt.want {
+				t.Errorf("catalog.HasFilterableMetadata() = %v, want %v", got, tt.want)
 			}
 		})
 	}

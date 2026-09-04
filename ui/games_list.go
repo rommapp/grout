@@ -4,12 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"grout/cache"
+	"grout/catalog"
 	"grout/environment"
 	"grout/romm"
 	"grout/settings"
-	"slices"
 	"strings"
-	"sync"
 	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -17,13 +16,6 @@ import (
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
 	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 	uatomic "go.uber.org/atomic"
-)
-
-type fetchType int
-
-const (
-	ftPlatform fetchType = iota
-	ftCollection
 )
 
 type GameListApplied int
@@ -218,7 +210,7 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 	if input.SearchFilter != "" {
 		message := i18n.Localize(&goi18n.Message{ID: "games_list_search_prefix", Other: "[Search: \"{{.Query}}\"]"}, map[string]interface{}{"Query": input.SearchFilter})
 		title = fmt.Sprintf("%s %s", message, displayName)
-		displayGames = filterList(displayGames, input.SearchFilter)
+		displayGames = catalog.FilterByName(displayGames, input.SearchFilter)
 	}
 
 	if len(displayGames) == 0 {
@@ -253,7 +245,7 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 	// carries filterable metadata, or this is a unified collection (which offers a Platform
 	// picker regardless). Otherwise the Filters screen would open empty and instantly close,
 	// so we hide both the Y hint and the Y action rather than show a dead button.
-	showFilters := hasFilterableMetadata(games) || (isCollectionSet(input.Collection) && input.Platform.ID == 0)
+	showFilters := catalog.HasFilterableMetadata(games) || (isCollectionSet(input.Collection) && input.Platform.ID == 0)
 
 	options := gaba.DefaultListOptions(title, menuItems)
 	options.UseSmallTitle = true
@@ -378,144 +370,36 @@ type loadGamesResult struct {
 	hasBIOS bool
 }
 
+// loadGames reads the list, showing a progress dialog only when the cache
+// misses and the server has to be asked.
 func (s *GameListScreen) loadGames(input GameListInput) (loadGamesResult, error) {
-	platform := input.Platform
-	collection := input.Collection
+	source := catalog.GameSource{Platform: input.Platform, Collection: input.Collection}
 
-	id := platform.ID
-	ft := ftPlatform
-	displayName := platform.Name
-
-	if isCollectionSet(collection) {
-		id = collection.ID
-		ft = ftCollection
-		displayName = collection.Name
+	if games, ok := catalog.CachedGames(source); ok {
+		return loadGamesResult{games: games, hasBIOS: source.HasBIOS()}, nil
 	}
 
-	logger := gaba.GetLogger()
-	cm := cache.GetCacheManager()
-
-	var result loadGamesResult
-
-	// Check if we can use cached games (skip loading screen if so)
-	if cm != nil {
-		var cached []romm.Rom
-		var err error
-
-		if ft == ftPlatform {
-			cached, err = cm.GetPlatformGames(id)
-		} else {
-			cached, err = cm.GetCollectionGames(collection)
-		}
-
-		if err == nil && len(cached) > 0 {
-			logger.Debug("Loaded games from cache (no loading screen)", "type", ft, "id", id, "count", len(cached))
-			result.games = cached
-
-			// Check BIOS availability from platform firmware_count
-			if platform.ID != 0 && !isCollectionSet(collection) {
-				result.hasBIOS = platform.FirmwareCount > 0
-			}
-
-			return result, nil
-		}
-	}
-
-	// Cache miss or stale - show loading screen and fetch
-	var loadErr error
-
-	// For platforms, use progress bar since they can have many games
-	if ft == ftPlatform && cm != nil {
-		progress := uatomic.NewFloat64(0)
-		_, err := gaba.ProcessMessage(
-			i18n.Localize(&goi18n.Message{ID: "games_list_loading", Other: "Loading {{.Name}}..."}, map[string]interface{}{"Name": displayName}),
-			gaba.ProcessMessageOptions{
-				ShowThemeBackground: true,
-				ShowProgressBar:     true,
-				Progress:            progress,
-			},
-			func() (interface{}, error) {
-				// Fetch games with progress and BIOS info in parallel
-				var wg sync.WaitGroup
-				var gamesFetchErr error
-
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					if err := cm.RefreshPlatformGamesWithProgress(platform, progress); err != nil {
-						logger.Error("Failed to refresh platform games", "error", err)
-						gamesFetchErr = err
-						return
-					}
-					// Load from cache after refresh
-					if games, err := cm.GetPlatformGames(id); err == nil {
-						result.games = games
-					} else {
-						gamesFetchErr = err
-					}
-				}()
-
-				// Check BIOS availability from platform firmware_count
-				result.hasBIOS = platform.FirmwareCount > 0
-
-				wg.Wait()
-
-				if gamesFetchErr != nil {
-					loadErr = gamesFetchErr
-					return nil, gamesFetchErr
-				}
-				return nil, nil
-			},
-		)
-
-		if err != nil || loadErr != nil {
-			return loadGamesResult{}, fmt.Errorf("failed to load games: %w", err)
-		}
-
-		return result, nil
-	}
-
-	// For collections or when cache manager is unavailable, use simple loading screen
+	progress := uatomic.NewFloat64(0)
+	var games []romm.Rom
 	_, err := gaba.ProcessMessage(
-		i18n.Localize(&goi18n.Message{ID: "games_list_loading", Other: "Loading {{.Name}}..."}, map[string]interface{}{"Name": displayName}),
-		gaba.ProcessMessageOptions{ShowThemeBackground: true},
+		i18n.Localize(&goi18n.Message{ID: "games_list_loading", Other: "Loading {{.Name}}..."},
+			map[string]interface{}{"Name": source.Name()}),
+		gaba.ProcessMessageOptions{
+			ShowThemeBackground: true,
+			ShowProgressBar:     !source.IsCollection(),
+			Progress:            progress,
+		},
 		func() (interface{}, error) {
-			// Fetch games and BIOS info in parallel
-			var wg sync.WaitGroup
-			var gamesFetchErr error
-
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				roms, err := fetchList(id, ft)
-				if err != nil {
-					logger.Error("Error downloading game list", "error", err)
-					gamesFetchErr = err
-					return
-				}
-				result.games = roms
-			}()
-
-			// Check BIOS availability from platform firmware_count
-			if platform.ID != 0 && !isCollectionSet(collection) {
-				result.hasBIOS = platform.FirmwareCount > 0
-			}
-
-			wg.Wait()
-
-			if gamesFetchErr != nil {
-				loadErr = gamesFetchErr
-				return nil, gamesFetchErr
-			}
-			return nil, nil
+			var err error
+			games, err = catalog.RefreshGames(source, progress)
+			return nil, err
 		},
 	)
-
-	if err != nil || loadErr != nil {
+	if err != nil {
 		return loadGamesResult{}, fmt.Errorf("failed to load games: %w", err)
 	}
 
-	return result, nil
+	return loadGamesResult{games: games, hasBIOS: source.HasBIOS()}, nil
 }
 
 func (s *GameListScreen) showEmptyMessage(platformName, searchFilter string) {
@@ -569,47 +453,6 @@ func (s *GameListScreen) showErrorMessage(err error) {
 	)
 }
 
-func fetchList(queryID int, fetchType fetchType) ([]romm.Rom, error) {
-	logger := gaba.GetLogger()
-	cm := cache.GetCacheManager()
-
-	switch fetchType {
-	case ftPlatform:
-		// Check cache first
-		if cm != nil {
-			if games, err := cm.GetPlatformGames(queryID); err == nil && len(games) > 0 {
-				logger.Debug("Loaded platform games from cache", "platformID", queryID, "count", len(games))
-				return games, nil
-			}
-		}
-
-		// Cache miss - use efficient paginated fetch
-		if cm != nil {
-			platform := romm.Platform{ID: queryID}
-			if err := cm.RefreshPlatformGames(platform); err != nil {
-				logger.Error("Failed to refresh platform games", "error", err)
-				return nil, err
-			}
-			// Load from cache after refresh
-			if games, err := cm.GetPlatformGames(queryID); err == nil {
-				logger.Debug("Loaded platform games after refresh", "platformID", queryID, "count", len(games))
-				return games, nil
-			}
-		}
-
-		// Cache manager should always be available - return error if not
-		return nil, fmt.Errorf("cache manager not available")
-
-	case ftCollection:
-		// Collections should already be cached from initial population
-		// This path shouldn't normally be hit since collection games are loaded via GetCollectionGames
-		// with the full collection object. Return error if we get here without cache.
-		return nil, fmt.Errorf("collection fetch requires cache manager")
-	}
-
-	return nil, fmt.Errorf("unsupported fetch type")
-}
-
 func clearLastFilter(output *GameListOutput, lastApplied GameListApplied) bool {
 	hasFilters := output.GameFilter.HasActiveFilters()
 	hasSearch := output.SearchFilter != ""
@@ -652,39 +495,6 @@ func clearLastFilter(output *GameListOutput, lastApplied GameListApplied) bool {
 		return true
 	}
 
-	return false
-}
-
-func filterList(itemList []romm.Rom, filter string) []romm.Rom {
-	var result []romm.Rom
-
-	for _, item := range itemList {
-		if strings.Contains(strings.ToLower(item.Name), strings.ToLower(filter)) {
-			result = append(result, item)
-		}
-	}
-
-	slices.SortFunc(result, func(a, b romm.Rom) int {
-		return strings.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
-	})
-
-	return result
-}
-
-// hasFilterableMetadata reports whether any game carries metadata that maps to a filter
-// category (genre, franchise, company, game mode, age rating, region, language, tag). It
-// mirrors the fields GameFiltersScreen.buildMenuItems draws from, so the Filters button is
-// shown exactly when that screen would have at least one category to offer.
-func hasFilterableMetadata(games []romm.Rom) bool {
-	for i := range games {
-		g := &games[i]
-		if len(g.Metadatum.Genres) > 0 || len(g.Metadatum.Franchises) > 0 ||
-			len(g.Metadatum.Companies) > 0 || len(g.Metadatum.GameModes) > 0 ||
-			len(g.Metadatum.AgeRatings) > 0 || len(g.Regions) > 0 ||
-			len(g.Languages) > 0 || len(g.Tags) > 0 {
-			return true
-		}
-	}
 	return false
 }
 
