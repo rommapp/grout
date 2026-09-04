@@ -169,3 +169,54 @@ func entriesFor(request BrowseRequest, games []romm.Rom) []GameEntry {
 
 	return entries
 }
+
+// PlatformGroup is a platform and the games of it in some list.
+type PlatformGroup struct {
+	Name   string
+	FSSlug string
+	Games  []romm.Rom
+}
+
+// GroupByPlatform gathers games under their platform, keeping only platforms
+// the user has a folder mapped for, and orders both the groups and the games
+// within them by name.
+//
+// A platform with no mapping is left out rather than shown empty: there is
+// nowhere on the device for its games to be.
+func GroupByPlatform(games []romm.Rom, platforms []romm.Platform) []PlatformGroup {
+	mapped := make(map[string]bool, len(platforms))
+	for _, platform := range platforms {
+		mapped[platform.FSSlug] = true
+	}
+
+	byslug := make(map[string]*PlatformGroup)
+	for _, game := range games {
+		if !mapped[game.PlatformFSSlug] {
+			continue
+		}
+
+		group, ok := byslug[game.PlatformFSSlug]
+		if !ok {
+			name := game.PlatformDisplayName
+			if name == "" {
+				name = game.PlatformFSSlug
+			}
+			group = &PlatformGroup{Name: name, FSSlug: game.PlatformFSSlug}
+			byslug[game.PlatformFSSlug] = group
+		}
+		group.Games = append(group.Games, game)
+	}
+
+	groups := make([]PlatformGroup, 0, len(byslug))
+	for _, group := range byslug {
+		slices.SortFunc(group.Games, func(a, b romm.Rom) int {
+			return strings.Compare(a.Name, b.Name)
+		})
+		groups = append(groups, *group)
+	}
+	slices.SortFunc(groups, func(a, b PlatformGroup) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+
+	return groups
+}

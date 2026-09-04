@@ -119,7 +119,7 @@ func buildDiscoveryItems(uncovered map[int]cfw.LocalRomFile, savesByRom map[int]
 			continue
 		}
 
-		preferredSlot := "autosave"
+		preferredSlot := settings.DefaultSaveSlot
 		if config != nil {
 			preferredSlot = config.GetSlotPreference(romID)
 		}
@@ -167,11 +167,7 @@ func buildDiscoveryItems(uncovered map[int]cfw.LocalRomFile, savesByRom map[int]
 func distinctSaveSlots(saves []romm.Save) []string {
 	set := make(map[string]bool)
 	for _, s := range saves {
-		slot := "autosave"
-		if s.Slot != nil && *s.Slot != "" {
-			slot = *s.Slot
-		}
-		set[slot] = true
+		set[SlotName(s.Slot)] = true
 	}
 	out := make([]string, 0, len(set))
 	for s := range set {
@@ -186,11 +182,7 @@ func distinctSaveSlots(saves []romm.Save) []string {
 func distinctOpSlots(ops []romm.SyncOperationSchema) []string {
 	set := make(map[string]bool)
 	for _, op := range ops {
-		slot := "autosave"
-		if op.Slot != nil && *op.Slot != "" {
-			slot = *op.Slot
-		}
-		set[slot] = true
+		set[SlotName(op.Slot)] = true
 	}
 	out := make([]string, 0, len(set))
 	for s := range set {
@@ -427,7 +419,7 @@ func mapOperationsToItems(
 	// Resolve each installed ROM's download ops to a single item, preferring the slot
 	// the ROM is reported under (explicit pref / autosave), else the latest save.
 	for romID, dops := range downloadOps {
-		preferred := "autosave"
+		preferred := settings.DefaultSaveSlot
 		if config != nil {
 			preferred = config.GetSlotPreference(romID)
 		}
@@ -468,10 +460,7 @@ func mapOperationsToItems(
 // reportedOpSlot returns the slot a negotiate op is paired on, treating a nil/empty slot
 // as the canonical "autosave" default (the same slot grout reports its saves under).
 func reportedOpSlot(op romm.SyncOperationSchema) string {
-	if op.Slot != nil && *op.Slot != "" {
-		return *op.Slot
-	}
-	return "autosave"
+	return SlotName(op.Slot)
 }
 
 // pickDownloadOp chooses one download op for a ROM that has saves in possibly
@@ -479,11 +468,7 @@ func reportedOpSlot(op romm.SyncOperationSchema) string {
 // the latest server_updated_at.
 func pickDownloadOp(ops []romm.SyncOperationSchema, preferredSlot string) romm.SyncOperationSchema {
 	for _, op := range ops {
-		slot := "autosave"
-		if op.Slot != nil && *op.Slot != "" {
-			slot = *op.Slot
-		}
-		if slot == preferredSlot {
+		if SlotName(op.Slot) == preferredSlot {
 			return op
 		}
 	}
@@ -963,7 +948,7 @@ func recordedDownloadFileName(item SyncItem, savePath string) string {
 // "autosave" default. This gives downloaded saves a stable slot identity so they are
 // not spuriously re-uploaded to a different slot on the next sync.
 func resolveReportedSlot(ls LocalSave, config *settings.Config, recordedSlots map[saveKey]string) string {
-	slot := "autosave"
+	slot := settings.DefaultSaveSlot
 	if rec, ok := recordedSlots[saveKey{ls.RomID, ls.FileName}]; ok && rec != "" {
 		slot = rec
 	}
@@ -1055,11 +1040,7 @@ func SelectSaveForSlot(saves []romm.Save, preferredSlot string) *romm.Save {
 	}
 	var best *romm.Save
 	for i := range saves {
-		slot := "autosave"
-		if saves[i].Slot != nil {
-			slot = *saves[i].Slot
-		}
-		if slot != preferredSlot {
+		if SlotName(saves[i].Slot) != preferredSlot {
 			continue
 		}
 		if best == nil || saves[i].UpdatedAt.After(best.UpdatedAt) {
@@ -1197,11 +1178,11 @@ func resolveUpload409(serverSaves []romm.Save, slot, localHash, recordedHash str
 // Argosy and the server's intent; forcing on every upload would clobber a concurrent
 // write from another device.
 func buildUploadQuery(deviceID string, item *SyncItem) romm.UploadSaveQuery {
-	slot := "autosave"
+	slot := settings.DefaultSaveSlot
 	if item.TargetSlot != "" {
 		slot = item.TargetSlot
-	} else if item.RemoteSave != nil && item.RemoteSave.Slot != nil {
-		slot = *item.RemoteSave.Slot
+	} else if item.RemoteSave != nil {
+		slot = SlotName(item.RemoteSave.Slot)
 	}
 
 	emulator := filepath.Base(item.LocalSave.EmulatorDir)
@@ -1219,7 +1200,7 @@ func buildUploadQuery(deviceID string, item *SyncItem) romm.UploadSaveQuery {
 		Slot:      slot,
 		Overwrite: item.ForceOverwrite,
 	}
-	if slot == "autosave" {
+	if slot == settings.DefaultSaveSlot {
 		query.Autocleanup = true
 		query.AutocleanupLimit = 10
 	}
@@ -1464,7 +1445,7 @@ func download(client *romm.Client, config *settings.Config, deviceID string, ite
 	// save keeps its slot so it isn't re-uploaded elsewhere. The record is keyed on the
 	// on-disk basename (NOT the server's datetime-tagged op.FileName) so the next
 	// ScanSaves looks it up correctly and keeps its slot identity.
-	recordSlot := "autosave"
+	recordSlot := settings.DefaultSaveSlot
 	if item.RemoteSave.Slot != nil && *item.RemoteSave.Slot != "" {
 		recordSlot = *item.RemoteSave.Slot
 	}

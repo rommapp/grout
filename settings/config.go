@@ -274,13 +274,17 @@ func SaveSlotPreferencesTo(config *Config, path string) error {
 	return files.WriteFileAtomic(path, pretty, 0644)
 }
 
+// DefaultSaveSlot is what grout calls the slot a server names nothing for.
+// RomM leaves the field unset, or occasionally empty, for a game's only slot.
+const DefaultSaveSlot = "autosave"
+
 func (c Config) GetSlotPreference(romID int) string {
 	if c.SlotPreferences != nil {
 		if slot, ok := c.SlotPreferences[fmt.Sprintf("%d", romID)]; ok {
 			return slot
 		}
 	}
-	return "autosave"
+	return DefaultSaveSlot
 }
 
 // SlotPreferenceExplicit returns the user-set slot preference for a ROM and whether

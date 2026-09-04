@@ -11,7 +11,7 @@ import (
 // autosaveSlot is grout's canonical default slot. It's shown by its real name in slot
 // pickers (not relabeled "Default") so it can't be confused with a server slot literally
 // named "default"/"Default".
-const autosaveSlot = "autosave"
+const autosaveSlot = settings.DefaultSaveSlot
 
 // SlotOptionsResult holds the built slot options and the pre-selected index.
 type SlotOptionsResult struct {

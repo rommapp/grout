@@ -3,6 +3,7 @@ package ui
 import (
 	"errors"
 	"grout/romm"
+	"grout/saves"
 	"grout/settings"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -44,13 +45,7 @@ func (s *GameOptionsScreen) Draw(input GameOptionsInput) (GameOptionsOutput, err
 			func() (any, error) {
 				summary, err := client.GetSaveSummary(input.Game.ID)
 				if err == nil {
-					for _, slot := range summary.Slots {
-						name := "autosave"
-						if slot.Slot != nil {
-							name = *slot.Slot
-						}
-						slotNames = append(slotNames, name)
-					}
+					slotNames = saves.SlotNames(summary)
 				}
 				return nil, nil
 			},

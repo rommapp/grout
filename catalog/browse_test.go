@@ -240,3 +240,60 @@ func TestIsCollection(t *testing.T) {
 		})
 	}
 }
+
+func TestGroupByPlatform(t *testing.T) {
+	games := []romm.Rom{
+		{ID: 1, Name: "Zelda", PlatformFSSlug: "snes", PlatformDisplayName: "Super Nintendo"},
+		{ID: 2, Name: "Sonic", PlatformFSSlug: "genesis", PlatformDisplayName: "Mega Drive"},
+		{ID: 3, Name: "Mario", PlatformFSSlug: "snes", PlatformDisplayName: "Super Nintendo"},
+	}
+	platforms := []romm.Platform{{FSSlug: "snes"}, {FSSlug: "genesis"}}
+
+	groups := GroupByPlatform(games, platforms)
+
+	if len(groups) != 2 {
+		t.Fatalf("got %d groups, want one per platform", len(groups))
+	}
+	// Platforms read in name order, not the order games happened to arrive.
+	if groups[0].Name != "Mega Drive" || groups[1].Name != "Super Nintendo" {
+		t.Errorf("groups = %v, %v, want them alphabetical", groups[0].Name, groups[1].Name)
+	}
+	if len(groups[1].Games) != 2 || groups[1].Games[0].Name != "Mario" {
+		t.Errorf("SNES games = %v, want them sorted with Mario first", groups[1].Games)
+	}
+}
+
+// A platform the user has unmapped has nowhere on the device for its games, so
+// listing it would offer something that cannot be acted on.
+func TestGroupByPlatform_DropsUnmappedPlatforms(t *testing.T) {
+	games := []romm.Rom{
+		{ID: 1, Name: "Mario", PlatformFSSlug: "snes"},
+		{ID: 2, Name: "Sonic", PlatformFSSlug: "genesis"},
+	}
+
+	groups := GroupByPlatform(games, []romm.Platform{{FSSlug: "snes"}})
+
+	if len(groups) != 1 || groups[0].FSSlug != "snes" {
+		t.Errorf("groups = %v, want only the mapped platform", groups)
+	}
+}
+
+// RomM does not always send a display name, and a blank heading tells the user
+// nothing about which games are under it.
+func TestGroupByPlatform_FallsBackToTheSlug(t *testing.T) {
+	games := []romm.Rom{{ID: 1, Name: "Mario", PlatformFSSlug: "snes"}}
+
+	groups := GroupByPlatform(games, []romm.Platform{{FSSlug: "snes"}})
+
+	if len(groups) != 1 || groups[0].Name != "snes" {
+		t.Errorf("group name = %q, want the slug when there is no display name", groups[0].Name)
+	}
+}
+
+func TestGroupByPlatform_NoPlatformsMapped(t *testing.T) {
+	games := []romm.Rom{{ID: 1, Name: "Mario", PlatformFSSlug: "snes"}}
+
+	if groups := GroupByPlatform(games, nil); len(groups) != 0 {
+		t.Errorf("groups = %v, want none when nothing is mapped", groups)
+	}
+}
