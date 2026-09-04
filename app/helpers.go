@@ -109,6 +109,7 @@ func handleLogout(state *AppState) {
 
 	loginConfig, err := ui.LoginFlow(settings.Host{})
 	if err != nil {
+		// A cancelled login leaves the app running and logged out.
 		logger.Error("Login flow failed after logout", "error", err)
 		return
 	}

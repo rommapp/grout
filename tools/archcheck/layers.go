@@ -58,6 +58,7 @@ var layerRules = []struct {
 	{"grout/romm", Infra},
 	{"grout/cache", Infra},
 
+	{"grout/auth", Service},
 	{"grout/catalog", Service},
 	{"grout/download", Service},
 	{"grout/saves", Service},

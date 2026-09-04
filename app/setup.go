@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"grout/auth"
 	"grout/cache"
 	"grout/catalog"
 	"grout/cfw"
@@ -186,6 +187,12 @@ func handleFirstLaunch(config *settings.Config, isFirstLaunch bool, logger *slog
 
 	logger.Debug("No RomM Host Configured, starting login flow")
 	loginConfig, loginErr := ui.LoginFlow(settings.Host{})
+	if errors.Is(loginErr, ui.ErrLoginCancelled) {
+		// Nothing to go back to on first launch, so backing out leaves grout.
+		logger.Debug("Login cancelled, exiting")
+		gaba.Close()
+		os.Exit(0)
+	}
 	if loginErr != nil {
 		logger.Error("Login flow failed", "error", loginErr)
 		gaba.Close()
@@ -371,6 +378,12 @@ func handleAuthFailure(config *settings.Config, logger *slog.Logger) *settings.C
 	}, gaba.MessageOptions{})
 
 	loginConfig, loginErr := ui.LoginFlow(config.Hosts[0])
+	if errors.Is(loginErr, ui.ErrLoginCancelled) {
+		// The stored token is known bad, so there is nothing to go back to.
+		logger.Debug("Re-login cancelled, exiting")
+		gaba.Close()
+		os.Exit(0)
+	}
 	if loginErr != nil {
 		logger.Error("Re-login failed", "error", loginErr)
 		gaba.Close()
@@ -394,22 +407,22 @@ func classifyStartupError(err error) *goi18n.Message {
 		return nil
 	}
 
-	switch {
-	case errors.Is(err, romm.ErrInvalidHostname):
+	switch auth.Classify(err) {
+	case auth.FailureHostname:
 		return &goi18n.Message{ID: "startup_error_invalid_hostname", Other: "Could not resolve hostname!\nPlease check your server configuration."}
-	case errors.Is(err, romm.ErrConnectionRefused):
+	case auth.FailureConnection:
 		return &goi18n.Message{ID: "startup_error_connection_refused", Other: "Could not connect to RomM!\nPlease check the server is running."}
-	case errors.Is(err, romm.ErrTimeout):
+	case auth.FailureTimeout:
 		return &goi18n.Message{ID: "startup_error_timeout", Other: "Connection timed out!\nPlease check your network connection."}
-	case errors.Is(err, romm.ErrUnauthorized):
+	case auth.FailureCredentials:
 		return &goi18n.Message{ID: "startup_error_credentials", Other: "Authentication failed!\nYour RomM login may need to be re-paired."}
-	case errors.Is(err, romm.ErrForbidden):
+	case auth.FailureForbidden:
 		return &goi18n.Message{ID: "startup_error_forbidden", Other: "Access forbidden!\nCheck your server permissions."}
-	case errors.Is(err, romm.ErrServerError):
+	case auth.FailureServer:
 		return &goi18n.Message{ID: "startup_error_server", Other: "RomM server error!\nPlease check the RomM server logs."}
-	default:
-		return &goi18n.Message{ID: "error_loading_platforms", Other: "Error loading platforms!\nPlease check the logs for more info."}
 	}
+
+	return &goi18n.Message{ID: "error_loading_platforms", Other: "Error loading platforms!\nPlease check the logs for more info."}
 }
 
 func showStartupError(errorMsg string) bool {

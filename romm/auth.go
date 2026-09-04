@@ -57,20 +57,14 @@ func (c *Client) ValidateConnection() error {
 	}
 	defer resp.Body.Close()
 
-	switch {
-	case resp.StatusCode >= 200 && resp.StatusCode < 300:
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		return nil
-	case resp.StatusCode >= 500:
-		logResponseDebug("ValidateConnection: server error", resp)
-		return &AuthError{
-			StatusCode: resp.StatusCode,
-			Message:    "Server error",
-			Err:        ErrServerError,
-		}
-	default:
-		logResponseDebug("ValidateConnection: unexpected status", resp)
-		return fmt.Errorf("heartbeat check failed with status: %d", resp.StatusCode)
 	}
+
+	// logResponseDebug consumes the body, so it is in the log rather than on
+	// the error. The status is what callers act on.
+	logResponseDebug("ValidateConnection: unexpected status", resp)
+	return statusError(resp.StatusCode, nil)
 }
 
 func ExchangeToken(baseURL string, code string, insecureSkipVerify bool) (*TokenExchangeResponse, error) {

@@ -3,15 +3,12 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"os"
+	"sync/atomic"
+
+	"grout/auth"
 	"grout/catalog"
 	"grout/settings"
-	"os"
-	"strconv"
-	"strings"
-	"sync/atomic"
-	"time"
-
-	"grout/romm"
 
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	icons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
@@ -19,17 +16,15 @@ import (
 	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-type loginOutput struct {
-	Host      settings.Host
-	Config    *settings.Config
-	Cancelled bool
-}
+// ErrLoginCancelled means the user backed out of the first login screen. There
+// is nothing behind it, so the caller decides what that means: on first launch
+// it ends the app.
+var ErrLoginCancelled = errors.New("login cancelled")
 
-type loginAttemptResult struct {
-	ErrorType string
-	ErrorMsg  *goi18n.Message
-	Success   bool
-}
+const (
+	authModeDevicePairing = "device_pairing"
+	authModePairingCode   = "pairing_code"
+)
 
 type LoginScreen struct{}
 
@@ -37,164 +32,49 @@ func newLoginScreen() *LoginScreen {
 	return &LoginScreen{}
 }
 
-// drawServerInfo collects server connection details (protocol, hostname, port, SSL).
-func (s *LoginScreen) drawServerInfo(host settings.Host) (settings.Host, bool, error) {
-	sslVisible := &atomic.Bool{}
-	sslVisible.Store(strings.Contains(host.RootURI, "https"))
-
-	items := []gabagool.ItemWithOptions{
-		{
-			Item: gabagool.MenuItem{
-				Text: i18n.Localize(&goi18n.Message{ID: "login_protocol", Other: "Protocol"}, nil),
-			},
-			Options: []gabagool.Option{
-				{
-					DisplayName: i18n.Localize(&goi18n.Message{ID: "login_protocol_http", Other: "HTTP"}, nil),
-					Value:       "http://",
-					OnUpdate:    func(v interface{}) { sslVisible.Store(false) },
-				},
-				{
-					DisplayName: i18n.Localize(&goi18n.Message{ID: "login_protocol_https", Other: "HTTPS"}, nil),
-					Value:       "https://",
-					OnUpdate:    func(v interface{}) { sslVisible.Store(true) },
-				},
-			},
-			SelectedOption: func() int {
-				if strings.Contains(host.RootURI, "https") {
-					return 1
-				}
-				return 0
-			}(),
-		},
-		{
-			Item: gabagool.MenuItem{
-				Text: i18n.Localize(&goi18n.Message{ID: "login_hostname", Other: "Hostname"}, nil),
-			},
-			Options: []gabagool.Option{
-				{
-					Type:           gabagool.OptionTypeKeyboard,
-					KeyboardLayout: gabagool.KeyboardLayoutURL,
-					URLShortcuts: []gabagool.URLShortcut{
-						{Value: "romm.", SymbolValue: "romm."},
-						{Value: ".com", SymbolValue: ".com"},
-						{Value: ".org", SymbolValue: ".org"},
-						{Value: ".net", SymbolValue: ".net"},
-						{Value: ".local", SymbolValue: ".ts.net"},
-					},
-					DisplayName:    removeScheme(host.RootURI),
-					KeyboardPrompt: removeScheme(host.RootURI),
-					Value:          removeScheme(host.RootURI),
-				},
-			},
-		},
-		{
-			Item: gabagool.MenuItem{
-				Text: i18n.Localize(&goi18n.Message{ID: "login_port", Other: "Port (optional)"}, nil),
-			},
-			Options: []gabagool.Option{
-				{
-					Type:           gabagool.OptionTypeKeyboard,
-					KeyboardLayout: gabagool.KeyboardLayoutNumeric,
-					KeyboardPrompt: func() string {
-						if host.Port == 0 {
-							return ""
-						}
-						return strconv.Itoa(host.Port)
-					}(),
-					DisplayName: func() string {
-						if host.Port == 0 {
-							return ""
-						}
-						return strconv.Itoa(host.Port)
-					}(),
-					Value: func() string {
-						if host.Port == 0 {
-							return ""
-						}
-						return strconv.Itoa(host.Port)
-					}(),
-				},
-			},
-		},
-		{
-			Item: gabagool.MenuItem{
-				Text: i18n.Localize(&goi18n.Message{ID: "login_ssl_certificates", Other: "SSL Certificates"}, nil),
-			},
-			Options: []gabagool.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "login_ssl_verify", Other: "Verify"}, nil), Value: false},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "login_ssl_skip", Other: "Skip Verification"}, nil), Value: true},
-			},
-			SelectedOption: func() int {
-				if host.InsecureSkipVerify {
-					return 1
-				}
-				return 0
-			}(),
-			VisibleWhen: sslVisible,
-		},
-	}
-
-	res, err := gabagool.OptionsList(
-		i18n.Localize(&goi18n.Message{ID: "login_server_title", Other: "Server"}, nil),
-		gabagool.OptionListSettings{
-			DisableBackButton: false,
-			FooterHelpItems: []gabagool.FooterHelpItem{
-				{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_quit", Other: "Quit"}, nil)},
-				{ButtonName: icons.LeftRight, HelpText: i18n.Localize(&goi18n.Message{ID: "button_cycle", Other: "Cycle"}, nil)},
-				{ButtonName: icons.Start, HelpText: i18n.Localize(&goi18n.Message{ID: "button_continue", Other: "Continue"}, nil)},
-			},
-		},
-		items,
-	)
-
-	if err != nil {
-		return host, true, nil
-	}
-
-	fields := res.Items
-
-	newHost := settings.Host{
-		RootURI: fmt.Sprintf("%s%s", fields[0].Value(), fields[1].Value()),
-		Port: func(s string) int {
-			if n, err := strconv.Atoi(s); err == nil {
-				return n
-			}
-			return 0
-		}(fields[2].Value().(string)),
-		InsecureSkipVerify: fields[3].Options[fields[3].SelectedOption].Value.(bool),
-		ClientDeviceID:     host.ClientDeviceID,
-		DeviceID:           host.DeviceID,
-		DeviceName:         host.DeviceName,
-	}
-
-	return newHost, false, nil
+// attempt is the outcome of one try at logging in.
+type attempt struct {
+	Host settings.Host
+	OK   bool
+	// Message is what to show, or nil when there is nothing worth saying: a
+	// success, or a pairing the user cancelled themselves.
+	Message *goi18n.Message
 }
 
-const (
-	authModeDevicePairing = "device_pairing"
-	authModePairingCode   = "pairing_code"
-)
+func (s *LoginScreen) drawServer(host settings.Host) (settings.Host, bool, error) {
+	return serverForm{
+		Title: localize("login_server_title", "Server"),
+		Footer: []gabagool.FooterHelpItem{
+			FooterQuit(),
+			FooterCycle(),
+			{ButtonName: icons.Start, HelpText: localize("button_continue", "Continue")},
+		},
+	}.draw(host)
+}
 
 // authSelection is what the auth screen hands back to the login flow.
 type authSelection struct {
 	Host       settings.Host
 	Mode       string
 	DeviceName string
+	Code       string
 	Cancelled  bool
 }
 
-// drawAuth collects the auth method and its inputs. On RomM 5.0+ the user
-// picks Device Pairing (default) or Pairing Code; older servers only support
-// the pairing code, so the picker is hidden.
-func (s *LoginScreen) drawAuth(host settings.Host, supportsDeviceAuth bool) (authSelection, error) {
+// drawAuth collects the auth method and its inputs. On RomM 5.0 and later the
+// user picks device pairing or a pairing code; older servers only support the
+// code, so the picker is hidden.
+func (s *LoginScreen) drawAuth(host settings.Host, supportsDevicePairing bool) (authSelection, error) {
+	// The picker chooses which of the two input rows is on screen. Without a
+	// picker there is only the pairing code.
 	pickerVisible := &atomic.Bool{}
-	pickerVisible.Store(supportsDeviceAuth)
+	pickerVisible.Store(supportsDevicePairing)
 
 	deviceVisible := &atomic.Bool{}
-	deviceVisible.Store(supportsDeviceAuth)
+	deviceVisible.Store(supportsDevicePairing)
 
 	pairingVisible := &atomic.Bool{}
-	pairingVisible.Store(!supportsDeviceAuth)
+	pairingVisible.Store(!supportsDevicePairing)
 
 	defaultDeviceName := host.DeviceName
 	if defaultDeviceName == "" {
@@ -205,34 +85,29 @@ func (s *LoginScreen) drawAuth(host settings.Host, supportsDeviceAuth bool) (aut
 
 	items := []gabagool.ItemWithOptions{
 		{
-			Item: gabagool.MenuItem{
-				Text: i18n.Localize(&goi18n.Message{ID: "login_auth_method", Other: "Auth Method"}, nil),
-			},
+			Item: gabagool.MenuItem{Text: localize("login_auth_method", "Auth Method")},
 			Options: []gabagool.Option{
 				{
-					DisplayName: i18n.Localize(&goi18n.Message{ID: "login_auth_device_pairing", Other: "Pair with Another Device"}, nil),
+					DisplayName: localize("login_auth_device_pairing", "Pair with Another Device"),
 					Value:       authModeDevicePairing,
-					OnUpdate: func(v interface{}) {
+					OnUpdate: func(any) {
 						deviceVisible.Store(true)
 						pairingVisible.Store(false)
 					},
 				},
 				{
-					DisplayName: i18n.Localize(&goi18n.Message{ID: "login_auth_pairing_code", Other: "Pairing Code"}, nil),
+					DisplayName: localize("login_auth_pairing_code", "Pairing Code"),
 					Value:       authModePairingCode,
-					OnUpdate: func(v interface{}) {
+					OnUpdate: func(any) {
 						deviceVisible.Store(false)
 						pairingVisible.Store(true)
 					},
 				},
 			},
-			SelectedOption: 0,
-			VisibleWhen:    pickerVisible,
+			VisibleWhen: pickerVisible,
 		},
 		{
-			Item: gabagool.MenuItem{
-				Text: i18n.Localize(&goi18n.Message{ID: "login_device_name", Other: "Device Name"}, nil),
-			},
+			Item: gabagool.MenuItem{Text: localize("login_device_name", "Device Name")},
 			Options: []gabagool.Option{
 				{
 					Type:           gabagool.OptionTypeKeyboard,
@@ -244,324 +119,215 @@ func (s *LoginScreen) drawAuth(host settings.Host, supportsDeviceAuth bool) (aut
 			VisibleWhen: deviceVisible,
 		},
 		{
-			Item: gabagool.MenuItem{
-				Text: i18n.Localize(&goi18n.Message{ID: "login_pairing_code", Other: "Pairing Code"}, nil),
-			},
+			Item: gabagool.MenuItem{Text: localize("login_pairing_code", "Pairing Code")},
 			Options: []gabagool.Option{
-				{
-					Type:           gabagool.OptionTypeKeyboard,
-					DisplayName:    "",
-					KeyboardPrompt: "",
-					Value:          "",
-				},
+				{Type: gabagool.OptionTypeKeyboard, Value: ""},
 			},
 			VisibleWhen: pairingVisible,
 		},
 	}
 
-	res, err := gabagool.OptionsList(
-		i18n.Localize(&goi18n.Message{ID: "login_auth_title", Other: "Authentication"}, nil),
+	result, err := gabagool.OptionsList(
+		localize("login_auth_title", "Authentication"),
 		gabagool.OptionListSettings{
-			DisableBackButton: false,
 			FooterHelpItems: []gabagool.FooterHelpItem{
 				FooterBack(),
-				{ButtonName: icons.LeftRight, HelpText: i18n.Localize(&goi18n.Message{ID: "button_cycle", Other: "Cycle"}, nil)},
-				{ButtonName: icons.Start, HelpText: i18n.Localize(&goi18n.Message{ID: "button_login", Other: "Login"}, nil)},
+				FooterCycle(),
+				{ButtonName: icons.Start, HelpText: localize("button_login", "Login")},
 			},
 		},
 		items,
 	)
-
 	if err != nil {
-		return authSelection{Host: host, Cancelled: true}, nil
-	}
-
-	fields := res.Items
-
-	sel := authSelection{Host: host, Mode: authModePairingCode}
-	if supportsDeviceAuth {
-		sel.Mode = fields[0].Options[fields[0].SelectedOption].Value.(string)
-	}
-
-	newHost := host
-	newHost.Username = ""
-
-	if sel.Mode == authModeDevicePairing {
-		sel.DeviceName = fields[1].Options[0].Value.(string)
-		if sel.DeviceName == "" {
-			sel.DeviceName = defaultDeviceName
+		if errors.Is(err, gabagool.ErrCancelled) {
+			return authSelection{Host: host, Cancelled: true}, nil
 		}
-		newHost.Token = ""
-	} else {
-		// The pairing code is stashed in Token and exchanged for a real token
-		// during the login attempt (same convention as before).
-		newHost.Token = fields[2].Options[0].Value.(string)
+		return authSelection{Host: host, Cancelled: true}, err
 	}
 
-	sel.Host = newHost
-	return sel, nil
+	fields := result.Items
+
+	selection := authSelection{Host: host, Mode: authModePairingCode}
+	if supportsDevicePairing {
+		selection.Mode = fields[0].Options[fields[0].SelectedOption].Value.(string)
+	}
+
+	// Whatever the last login left behind is no longer the token being used.
+	selection.Host.Username = ""
+	selection.Host.Token = ""
+	selection.Host.TokenName = ""
+	selection.Host.TokenExpiresAt = ""
+
+	if selection.Mode == authModeDevicePairing {
+		selection.DeviceName, _ = fields[1].Options[0].Value.(string)
+		if selection.DeviceName == "" {
+			selection.DeviceName = defaultDeviceName
+		}
+	} else {
+		selection.Code, _ = fields[2].Options[0].Value.(string)
+	}
+
+	return selection, nil
 }
 
+// LoginFlow walks the user from a server address to a working token. It returns
+// ErrLoginCancelled if they back out of the first screen.
 func LoginFlow(existingHost settings.Host) (*settings.Config, error) {
 	screen := newLoginScreen()
+	host := existingHost
 
 	for {
-		// Step 1: Server info
-		host, cancelled, err := screen.drawServerInfo(existingHost)
+		updated, ok, err := screen.drawServer(host)
 		if err != nil {
-			gabagool.ProcessMessage(i18n.Localize(&goi18n.Message{ID: "login_error_unexpected", Other: "Something unexpected happened!\nCheck the logs for more info."}, nil), gabagool.ProcessMessageOptions{}, func() (interface{}, error) {
-				time.Sleep(3 * time.Second)
-				return nil, nil
-			})
-			return nil, fmt.Errorf("unable to get server information: %w", err)
+			// The caller ends the app on this, so say so while there is still
+			// a screen to say it on.
+			showLoginError(failureMessage(err))
+			return nil, fmt.Errorf("collecting server details: %w", err)
 		}
-		if cancelled {
-			gabagool.Close()
-			os.Exit(0)
+		if !ok {
+			return nil, ErrLoginCancelled
 		}
+		host = updated
 
-		// Validate connection before asking for auth
-		connResult := validateConnection(host)
-		if !connResult.Result.Success {
-			gabagool.ConfirmationMessage(
-				i18n.Localize(connResult.Result.ErrorMsg, nil),
-				ContinueFooter(),
-				gabagool.MessageOptions{},
-			)
-			existingHost = host
+		capabilities, err := connect(host)
+		if err != nil {
+			showLoginError(failureMessage(err))
 			continue
 		}
 
-		// Step 2: Auth (loop until success or back)
 		for {
-			sel, authErr := screen.drawAuth(host, connResult.SupportsDeviceAuth)
-			if authErr != nil {
-				break
+			selection, err := screen.drawAuth(host, capabilities.SupportsDevicePairing)
+			if err != nil {
+				showLoginError(failureMessage(err))
+				return nil, fmt.Errorf("collecting credentials: %w", err)
 			}
-			if sel.Cancelled {
-				// Go back to server info
-				existingHost = host
+			if selection.Cancelled {
+				// Back to the server screen with the address they typed.
 				break
 			}
 
-			loginOutput := attemptLogin(sel)
-
-			if loginOutput.Result.Success {
-				config := &settings.Config{
-					Hosts: []settings.Host{loginOutput.Host},
-				}
-				_ = catalog.LoadPlatformsBinding(config, loginOutput.Host)
+			result := attemptLogin(selection)
+			if result.OK {
+				config := &settings.Config{Hosts: []settings.Host{result.Host}}
+				// An older server has no binding to load, which is not a reason
+				// to fail a working login.
+				_ = catalog.LoadPlatformsBinding(config, result.Host)
 				return config, nil
 			}
 
-			// A cancelled device pairing has no message, so loop back silently.
-			if loginOutput.Result.ErrorMsg != nil {
-				gabagool.ConfirmationMessage(
-					i18n.Localize(loginOutput.Result.ErrorMsg, nil),
-					ContinueFooter(),
-					gabagool.MessageOptions{},
-				)
+			if result.Message != nil {
+				showLoginError(result.Message)
 			}
-			host = loginOutput.Host
+			host = result.Host
 		}
 	}
 }
 
-// connectionValidation reports server reachability plus whether the server is
-// new enough (RomM 5.0+) to offer device-auth pairing.
-type connectionValidation struct {
-	Result             loginAttemptResult
-	SupportsDeviceAuth bool
+func showLoginError(message *goi18n.Message) {
+	gabagool.ConfirmationMessage(i18n.Localize(message, nil), ContinueFooter(), gabagool.MessageOptions{})
 }
 
-func validateConnection(host settings.Host) connectionValidation {
-	validationClient := romm.NewClient(host.URL(), romm.WithInsecureSkipVerify(host.InsecureSkipVerify), romm.WithTimeout(settings.ValidationTimeout))
+// connect checks the server is reachable while showing a spinner.
+func connect(host settings.Host) (auth.Capabilities, error) {
+	type outcome struct {
+		Capabilities auth.Capabilities
+		Err          error
+	}
 
 	result, _ := gabagool.ProcessMessage(
-		i18n.Localize(&goi18n.Message{ID: "login_validating_connection", Other: "Validating connection..."}, nil),
+		localize("login_validating_connection", "Validating connection..."),
 		gabagool.ProcessMessageOptions{},
-		func() (connectionValidation, error) {
-			if err := validationClient.ValidateConnection(); err != nil {
-				return connectionValidation{Result: classifyLoginError(err)}, nil
-			}
-			supports := false
-			if hb, err := validationClient.GetHeartbeat(); err == nil {
-				supports = hb.SupportsDeviceAuth()
-			}
-			return connectionValidation{
-				Result:             loginAttemptResult{Success: true},
-				SupportsDeviceAuth: supports,
-			}, nil
+		func() (outcome, error) {
+			capabilities, err := auth.Connect(host)
+			return outcome{Capabilities: capabilities, Err: err}, nil
 		},
 	)
 
-	return result
+	return result.Capabilities, result.Err
 }
 
-type loginAttemptOutput struct {
-	Result loginAttemptResult
-	Host   settings.Host
-}
-
-func attemptLogin(sel authSelection) loginAttemptOutput {
-	if sel.Mode == authModeDevicePairing {
-		return attemptDevicePairing(sel)
+func attemptLogin(selection authSelection) attempt {
+	if selection.Mode == authModeDevicePairing {
+		return attemptDevicePairing(selection)
 	}
-	return attemptPairingCode(sel.Host)
+	return attemptPairingCode(selection.Host, selection.Code)
 }
 
-// attemptDevicePairing runs the RomM 5.0+ device-auth pairing screen. A
-// cancelled pairing returns no ErrorMsg so the flow loops back silently.
-func attemptDevicePairing(sel authSelection) loginAttemptOutput {
-	screen := NewDevicePairingScreen()
-	result := screen.Execute(DevicePairingInput{Host: sel.Host, DeviceName: sel.DeviceName})
+// attemptDevicePairing runs the RomM 5.0 pairing screen, where the user
+// approves the device from a browser.
+func attemptDevicePairing(selection authSelection) attempt {
+	result := NewDevicePairingScreen().Execute(DevicePairingInput{
+		Host:       selection.Host,
+		DeviceName: selection.DeviceName,
+	})
 
 	switch result.Outcome {
 	case DevicePairingSuccess:
-		return loginAttemptOutput{Result: loginAttemptResult{Success: true}, Host: result.Host}
+		return attempt{Host: result.Host, OK: true}
 	case DevicePairingCancelled:
-		return loginAttemptOutput{Result: loginAttemptResult{ErrorType: "cancelled"}, Host: result.Host}
+		// They backed out, so they already know why nothing happened.
+		return attempt{Host: result.Host}
 	case DevicePairingDenied:
-		return loginAttemptOutput{
-			Result: loginAttemptResult{
-				ErrorType: "denied",
-				ErrorMsg:  &goi18n.Message{ID: "login_error_pairing_denied", Other: "Pairing was denied on the server."},
-			},
-			Host: result.Host,
-		}
+		return attempt{Host: result.Host, Message: &goi18n.Message{
+			ID: "login_error_pairing_denied", Other: "Pairing was denied on the server."}}
 	case DevicePairingExpired:
-		return loginAttemptOutput{
-			Result: loginAttemptResult{
-				ErrorType: "expired",
-				ErrorMsg:  &goi18n.Message{ID: "login_error_pairing_expired", Other: "The pairing request expired.\nPlease try again."},
-			},
-			Host: result.Host,
-		}
+		return attempt{Host: result.Host, Message: &goi18n.Message{
+			ID: "login_error_pairing_expired", Other: "The pairing request expired.\nPlease try again."}}
 	default:
-		if result.Err != nil {
-			return loginAttemptOutput{Result: classifyLoginError(result.Err), Host: result.Host}
-		}
-		return loginAttemptOutput{
-			Result: loginAttemptResult{
-				ErrorType: "unknown",
-				ErrorMsg:  &goi18n.Message{ID: "login_error_unexpected", Other: "Something unexpected happened!\nCheck the logs for more info."},
-			},
-			Host: result.Host,
-		}
+		return attempt{Host: result.Host, Message: failureMessage(result.Err)}
 	}
 }
 
-// attemptPairingCode exchanges a typed pairing code for a token (pre-5.0 flow,
-// still supported on 5.0+).
-func attemptPairingCode(host settings.Host) loginAttemptOutput {
-	if host.Token == "" {
-		return loginAttemptOutput{
-			Result: loginAttemptResult{
-				ErrorType: "pairing",
-				ErrorMsg:  &goi18n.Message{ID: "login_error_invalid_code", Other: "Invalid or expired pairing code.\nPlease try again."},
-			},
-			Host: host,
-		}
+// attemptPairingCode exchanges a typed code for a token. This is the only
+// option before RomM 5.0 and still offered after it.
+func attemptPairingCode(host settings.Host, code string) attempt {
+	if code == "" {
+		return attempt{Host: host, Message: failureMessage(auth.ErrNoCode)}
 	}
 
 	result, _ := gabagool.ProcessMessage(
-		i18n.Localize(&goi18n.Message{ID: "login_validating", Other: "Logging in..."}, nil),
+		localize("login_validating", "Logging in..."),
 		gabagool.ProcessMessageOptions{},
-		func() (loginAttemptOutput, error) {
-			// Token field contains a pairing code, so exchange it for a real token
-			tokenResp, err := romm.ExchangeToken(host.URL(), host.Token, host.InsecureSkipVerify)
+		func() (attempt, error) {
+			paired, err := auth.ExchangeCode(host, code)
 			if err != nil {
-				return loginAttemptOutput{Result: classifyLoginError(err), Host: host}, nil
+				return attempt{Host: host, Message: failureMessage(err)}, nil
 			}
-			host.Token = tokenResp.RawToken
-			host.TokenName = tokenResp.Name
-			host.TokenExpiresAt = tokenResp.ExpiresAt
-
-			if missing := romm.MissingSyncScopes(tokenResp.Scopes); len(missing) > 0 {
-				gabagool.GetLogger().Warn("Paired token is missing scopes needed for save sync",
-					"missing", missing, "granted", tokenResp.Scopes)
-			}
-
-			// Validate the token works
-			client := romm.NewClientFromHost(host, settings.LoginTimeout)
-			if err := client.ValidateToken(); err != nil {
-				return loginAttemptOutput{Result: classifyLoginError(err), Host: host}, nil
-			}
-
-			// Fetch username for display purposes if not already known
-			if host.Username == "" {
-				if user, err := client.GetCurrentUser(); err == nil {
-					host.Username = user.Username
-				}
-			}
-
-			return loginAttemptOutput{Result: loginAttemptResult{Success: true}, Host: host}, nil
+			return attempt{Host: paired, OK: true}, nil
 		},
 	)
 
 	return result
 }
 
-func classifyLoginError(err error) loginAttemptResult {
-	if err == nil {
-		return loginAttemptResult{Success: true}
+// failureMessage is what to tell the user about a login that did not work.
+func failureMessage(err error) *goi18n.Message {
+	switch auth.Classify(err) {
+	case auth.FailureHostname:
+		return &goi18n.Message{ID: "login_error_invalid_hostname",
+			Other: "Could not resolve hostname!\nPlease check the hostname is correct."}
+	case auth.FailureConnection:
+		return &goi18n.Message{ID: "login_error_connection_refused",
+			Other: "Could not connect to host!\nPlease check the hostname and port are correct."}
+	case auth.FailureTimeout:
+		return &goi18n.Message{ID: "login_error_timeout",
+			Other: "Connection timed out!\nPlease check your network connection and that the host is reachable."}
+	case auth.FailureCredentials:
+		return &goi18n.Message{ID: "login_error_credentials", Other: "Invalid credentials."}
+	case auth.FailureForbidden:
+		return &goi18n.Message{ID: "login_error_forbidden",
+			Other: "Access Forbidden!\nCheck your credentials and try switching between http and https."}
+	case auth.FailureServer:
+		return &goi18n.Message{ID: "login_error_server",
+			Other: "RomM server error!\nPlease check the RomM server logs."}
+	case auth.FailureNoCode:
+		return &goi18n.Message{ID: "login_error_no_code",
+			Other: "Enter the pairing code from your RomM profile."}
+	case auth.FailureInvalidCode:
+		return &goi18n.Message{ID: "login_error_invalid_code",
+			Other: "Invalid or expired pairing code.\nPlease try again."}
 	}
 
-	switch {
-	case errors.Is(err, romm.ErrInvalidHostname):
-		return loginAttemptResult{
-			ErrorType: "dns",
-			ErrorMsg:  &goi18n.Message{ID: "login_error_invalid_hostname", Other: "Could not resolve hostname!\nPlease check the hostname is correct."},
-		}
-	case errors.Is(err, romm.ErrConnectionRefused):
-		return loginAttemptResult{
-			ErrorType: "connection",
-			ErrorMsg:  &goi18n.Message{ID: "login_error_connection_refused", Other: "Could not connect to host!\nPlease check the hostname and port are correct."},
-		}
-	case errors.Is(err, romm.ErrTimeout):
-		return loginAttemptResult{
-			ErrorType: "timeout",
-			ErrorMsg:  &goi18n.Message{ID: "login_error_timeout", Other: "Connection timed out!\nPlease check your network connection and that the host is reachable."},
-		}
-	case errors.Is(err, romm.ErrUnauthorized):
-		return loginAttemptResult{
-			ErrorType: "credentials",
-			ErrorMsg:  &goi18n.Message{ID: "login_error_credentials", Other: "Invalid credentials."},
-		}
-	case errors.Is(err, romm.ErrForbidden):
-		return loginAttemptResult{
-			ErrorType: "forbidden",
-			ErrorMsg:  &goi18n.Message{ID: "login_error_forbidden", Other: "Access Forbidden!\nCheck your credentials and try switching between http and https."},
-		}
-	case errors.Is(err, romm.ErrServerError):
-		return loginAttemptResult{
-			ErrorType: "server",
-			ErrorMsg:  &goi18n.Message{ID: "login_error_server", Other: "RomM server error!\nPlease check the RomM server logs."},
-		}
-	default:
-		// Check if this is a token exchange error (API error with status code)
-		errMsg := err.Error()
-		if strings.Contains(errMsg, "status 404") || strings.Contains(errMsg, "status 429") {
-			return loginAttemptResult{
-				ErrorType: "pairing",
-				ErrorMsg:  &goi18n.Message{ID: "login_error_invalid_code", Other: "Invalid or expired pairing code.\nPlease try again."},
-			}
-		}
-
-		gabagool.GetLogger().Warn("Unclassified login error", "error", err)
-		return loginAttemptResult{
-			ErrorType: "unknown",
-			ErrorMsg:  &goi18n.Message{ID: "login_error_unexpected", Other: "Something unexpected happened!\nCheck the logs for more info."},
-		}
-	}
-}
-
-func removeScheme(rawURL string) string {
-	if strings.HasPrefix(rawURL, "https://") {
-		return strings.TrimPrefix(rawURL, "https://")
-	}
-	if strings.HasPrefix(rawURL, "http://") {
-		return strings.TrimPrefix(rawURL, "http://")
-	}
-	return rawURL
+	return &goi18n.Message{ID: "login_error_unexpected",
+		Other: "Something unexpected happened!\nCheck the logs for more info."}
 }

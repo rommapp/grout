@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"net/http"
 	"net/url"
 	"strings"
 	"syscall"
@@ -19,7 +20,49 @@ var (
 	ErrForbidden         = errors.New("access forbidden")
 	ErrServerError       = errors.New("server error")
 	ErrConflict          = errors.New("conflict")
+	ErrNotFound          = errors.New("not found")
+	ErrRateLimited       = errors.New("rate limited")
 )
+
+// APIError is a non-2xx response from RomM. It unwraps to the sentinel for its
+// status, so callers can ask errors.Is what went wrong rather than reading the
+// message.
+type APIError struct {
+	StatusCode int
+	Body       string
+	sentinel   error
+}
+
+func (e *APIError) Error() string {
+	return fmt.Sprintf("API error: status %d, body: %s", e.StatusCode, e.Body)
+}
+
+func (e *APIError) Unwrap() error { return e.sentinel }
+
+// statusError describes a non-2xx response.
+func statusError(statusCode int, body []byte) error {
+	return &APIError{StatusCode: statusCode, Body: string(body), sentinel: sentinelFor(statusCode)}
+}
+
+// sentinelFor is the error a status maps to, or nil when it has no more
+// specific meaning than "the request failed".
+func sentinelFor(statusCode int) error {
+	switch {
+	case statusCode == http.StatusUnauthorized:
+		return ErrUnauthorized
+	case statusCode == http.StatusForbidden:
+		return ErrForbidden
+	case statusCode == http.StatusNotFound:
+		return ErrNotFound
+	case statusCode == http.StatusConflict:
+		return ErrConflict
+	case statusCode == http.StatusTooManyRequests:
+		return ErrRateLimited
+	case statusCode >= 500:
+		return ErrServerError
+	}
+	return nil
+}
 
 // ConflictError represents a 409 Conflict response from the server,
 // typically when uploading a save that conflicts with the current state.
@@ -37,20 +80,6 @@ func (e *ConflictError) Error() string {
 
 func (e *ConflictError) Unwrap() error {
 	return ErrConflict
-}
-
-type AuthError struct {
-	StatusCode int
-	Message    string
-	Err        error
-}
-
-func (e *AuthError) Error() string {
-	return fmt.Sprintf("authentication error (status %d): %s", e.StatusCode, e.Message)
-}
-
-func (e *AuthError) Unwrap() error {
-	return e.Err
 }
 
 func ClassifyError(err error) error {
