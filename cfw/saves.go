@@ -90,3 +90,8 @@ func GetSaveDirectoryForRomPath(fsSlug, romPath string) string {
 
 	return filepath.Join(baseSavePath, emulatorDirs[0])
 }
+
+// EmulatorLabel is what to call a save folder on screen for firmware c.
+func EmulatorLabel(c CFW, dir string) string {
+	return Lookup(c).EmulatorLabel(dir)
+}

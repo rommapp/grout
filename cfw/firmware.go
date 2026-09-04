@@ -13,6 +13,7 @@ import (
 	"grout/cfw/rocknix"
 	"grout/cfw/spruce"
 	"grout/cfw/trimui"
+	"path/filepath"
 )
 
 // Firmware describes one custom firmware: where it keeps things, and which of
@@ -50,6 +51,9 @@ type Firmware struct {
 	// accepts.
 	platforms map[string][]string
 
+	// emulatorLabel shortens a save folder into something worth showing, for
+	// firmwares whose paths carry more than the emulator's name.
+	emulatorLabel func(dir string) string
 	// saveDirectories maps a slug to emulator save folders, most preferred
 	// first, and is nil when savesBesideRoms is set.
 	saveDirectories map[string][]string
@@ -95,6 +99,15 @@ func (f *Firmware) IsBasedOnEmulationStation() bool {
 }
 
 func (f *Firmware) KeepsRomExtInSaves() bool { return f != nil && f.keepsRomExtInSaves }
+
+// EmulatorLabel is what to call a save folder on screen. Firmwares that keep
+// the emulator's name as the last path segment need nothing done to it.
+func (f *Firmware) EmulatorLabel(dir string) string {
+	if f != nil && f.emulatorLabel != nil {
+		return f.emulatorLabel(dir)
+	}
+	return filepath.Base(dir)
+}
 
 // OrganizeExtracted rearranges a multi-file game after unpacking. Firmwares
 // that take the archive's own layout do nothing.
@@ -237,6 +250,7 @@ var firmwares = map[CFW]*Firmware{
 		splashDirectory:   muos.GetSplashDirectory,
 		platforms:         muos.Platforms,
 		saveDirectories:   muos.SaveDirectories,
+		emulatorLabel:     muos.EmulatorLabel,
 		gamelist:          GamelistMuOSText,
 		inputMapping:      muos.GetInputMappingBytes,
 		packaging:         Packaging{Asset: "Grout.muxapp", LaunchScript: "Grout/mux_launch.sh", InstallDepth: 2},

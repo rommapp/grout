@@ -5,6 +5,7 @@ import (
 	"grout/tables"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 //go:embed data/*.json
@@ -77,4 +78,15 @@ func GetSplashDirectory(platformFSSlug, platformName string) string {
 		systemName = platformName
 	}
 	return filepath.Join(GetInfoDirectory(), "catalogue", systemName, "splash")
+}
+
+// EmulatorLabel is what to call a save folder on screen.
+//
+// muOS stores saves under paths like "file/PPSSPP/backup", where the parts
+// around the emulator's name are storage layout rather than anything the user
+// chose between.
+func EmulatorLabel(dir string) string {
+	trimmed := strings.ReplaceAll(dir, "file/", "")
+	trimmed = strings.ReplaceAll(trimmed, "/backup", "")
+	return filepath.Base(trimmed)
 }
