@@ -359,8 +359,7 @@ func filterRow(key, label string, options []gaba.Option, current any) gaba.ItemW
 	}
 }
 
-// optionIndex finds the option holding value, falling back to the first, which
-// is always All.
+// optionIndex finds the option holding value, falling back to the first.
 func optionIndex(options []gaba.Option, value any) int {
 	for i, option := range options {
 		if option.Value == value {
@@ -368,6 +367,21 @@ func optionIndex(options []gaba.Option, value any) int {
 		}
 	}
 	return 0
+}
+
+// optionIndexOr finds the option holding value, falling back to the one
+// holding fallback.
+//
+// Screens pass the settings package's own default, so a config the defaults
+// have not reached opens on what the rest of the app will use rather than on
+// whatever happens to be listed first.
+func optionIndexOr(options []gaba.Option, value, fallback any) int {
+	for i, option := range options {
+		if option.Value == value {
+			return i
+		}
+	}
+	return optionIndex(options, fallback)
 }
 
 func filterFrom(items []gaba.ItemWithOptions, base catalog.PlatformFilter) catalog.PlatformFilter {

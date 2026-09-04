@@ -95,13 +95,8 @@ func (s *SaveSyncSettingsScreen) drawRegistered(input SaveSyncSettingsInput) (Sa
 			Item: gaba.MenuItem{
 				Text: i18n.Localize(&goi18n.Message{ID: "save_sync_backup_limit", Other: "Save Backups"}, nil),
 			},
-			Options: []gaba.Option{
-				{DisplayName: "5", Value: 5},
-				{DisplayName: "10", Value: 10},
-				{DisplayName: "15", Value: 15},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "save_sync_backup_no_limit", Other: "No Limit"}, nil), Value: 0},
-			},
-			SelectedOption: backupLimitToIndex(input.Config.SaveBackupLimit),
+			Options:        backupLimitOptions(),
+			SelectedOption: optionIndexOr(backupLimitOptions(), input.Config.SaveBackupLimit, 0),
 		},
 		{
 			Item: gaba.MenuItem{
@@ -238,4 +233,15 @@ func (s *SaveSyncSettingsScreen) registerDevice(output SaveSyncSettingsOutput) (
 	// refresh only fires on a later upgrade.
 	output.Host.DeviceClientVersion = version.Get().Version
 	return output, nil
+}
+
+// backupLimitOptions offers how many old copies of a save to keep. Zero is no
+// limit, which is what an unset config means.
+func backupLimitOptions() []gaba.Option {
+	return []gaba.Option{
+		{DisplayName: "5", Value: 5},
+		{DisplayName: "10", Value: 10},
+		{DisplayName: "15", Value: 15},
+		{DisplayName: localize("save_sync_backup_no_limit", "No Limit"), Value: 0},
+	}
 }

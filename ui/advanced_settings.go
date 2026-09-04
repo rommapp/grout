@@ -20,9 +20,6 @@ type AdvancedSettingsInput struct {
 
 type AdvancedSettingsOutput struct {
 	Action                AdvancedSettingsAction
-	RebuildCacheClicked   bool
-	SyncArtworkClicked    bool
-	ServerAddressClicked  bool
 	LastSelectedIndex     int
 	LastVisibleStartIndex int
 }
@@ -72,19 +69,16 @@ func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (AdvancedSett
 		selectedText := items[result.Selected].Item.Text
 
 		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_rebuild_cache", Other: "Rebuild Cache"}, nil) {
-			output.RebuildCacheClicked = true
 			output.Action = AdvancedSettingsActionRebuildCache
 			return output, nil
 		}
 
 		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_sync_artwork", Other: "Preload Artwork"}, nil) {
-			output.SyncArtworkClicked = true
 			output.Action = AdvancedSettingsActionSyncArtwork
 			return output, nil
 		}
 
 		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_server_address", Other: "Server Address"}, nil) {
-			output.ServerAddressClicked = true
 			output.Action = AdvancedSettingsActionServerAddress
 			return output, nil
 		}
@@ -173,22 +167,14 @@ func (s *AdvancedSettingsScreen) buildMenuItems(config *settings.Config) []gaba.
 			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
 		},
 		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_release_channel", Other: "Release Channel"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "release_match_romm", Other: "Match RomM"}, nil), Value: settings.ReleaseChannelMatchRomM},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "release_stable", Other: "Stable"}, nil), Value: settings.ReleaseChannelStable},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "release_beta", Other: "Beta"}, nil), Value: settings.ReleaseChannelBeta},
-			},
-			SelectedOption: releaseChannelToIndex(config.ReleaseChannel),
+			Item:           gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_release_channel", Other: "Release Channel"}, nil)},
+			Options:        releaseChannelOptions(),
+			SelectedOption: optionIndexOr(releaseChannelOptions(), config.ReleaseChannel, settings.ReleaseChannelMatchRomM),
 		},
 		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_log_level", Other: "Log Level"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "log_level_debug", Other: "Debug"}, nil), Value: settings.LogLevelDebug},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "log_level_info", Other: "Info"}, nil), Value: settings.LogLevelInfo},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "log_level_error", Other: "Error"}, nil), Value: settings.LogLevelError},
-			},
-			SelectedOption: logLevelToIndex(config.LogLevel),
+			Item:           gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_log_level", Other: "Log Level"}, nil)},
+			Options:        logLevelOptions(),
+			SelectedOption: optionIndexOr(logLevelOptions(), config.LogLevel, settings.LogLevelError),
 		},
 		{
 			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_input_mapping", Other: "Input Mapping"}, nil)},
@@ -273,4 +259,20 @@ func (s *AdvancedSettingsScreen) findApiTimeoutIndex(timeout time.Duration) int 
 		}
 	}
 	return 0 // Default to 15 seconds
+}
+
+func releaseChannelOptions() []gaba.Option {
+	return []gaba.Option{
+		{DisplayName: localize("release_match_romm", "Match RomM"), Value: settings.ReleaseChannelMatchRomM},
+		{DisplayName: localize("release_stable", "Stable"), Value: settings.ReleaseChannelStable},
+		{DisplayName: localize("release_beta", "Beta"), Value: settings.ReleaseChannelBeta},
+	}
+}
+
+func logLevelOptions() []gaba.Option {
+	return []gaba.Option{
+		{DisplayName: localize("log_level_debug", "Debug"), Value: settings.LogLevelDebug},
+		{DisplayName: localize("log_level_info", "Info"), Value: settings.LogLevelInfo},
+		{DisplayName: localize("log_level_error", "Error"), Value: settings.LogLevelError},
+	}
 }

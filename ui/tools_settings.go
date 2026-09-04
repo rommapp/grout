@@ -17,10 +17,9 @@ type ToolsSettingsInput struct {
 }
 
 type ToolsSettingsOutput struct {
-	Action                  ToolsSettingsAction
-	SyncLocalArtworkClicked bool
-	LastSelectedIndex       int
-	LastVisibleStartIndex   int
+	Action                ToolsSettingsAction
+	LastSelectedIndex     int
+	LastVisibleStartIndex int
 }
 
 type ToolsSettingsScreen struct{}
@@ -68,7 +67,6 @@ func (s *ToolsSettingsScreen) Draw(input ToolsSettingsInput) (ToolsSettingsOutpu
 		selectedText := items[result.Selected].Item.Text
 
 		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_sync_local_artwork", Other: "Download Missing Art"}, nil) {
-			output.SyncLocalArtworkClicked = true
 			output.Action = ToolsSettingsActionSyncLocalArtwork
 			return output, nil
 		}

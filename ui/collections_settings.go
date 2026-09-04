@@ -104,12 +104,9 @@ func (s *CollectionsSettingsScreen) buildMenuItems(config *settings.Config) []ga
 			SelectedOption: boolToIndex(!config.ShowVirtualCollections),
 		},
 		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_collection_view", Other: "Collection View"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "collection_view_platform", Other: "Platform"}, nil), Value: settings.CollectionViewPlatform},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "collection_view_unified", Other: "Unified"}, nil), Value: settings.CollectionViewUnified},
-			},
-			SelectedOption: collectionViewToIndex(config.CollectionView),
+			Item:           gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_collection_view", Other: "Collection View"}, nil)},
+			Options:        collectionViewOptions(),
+			SelectedOption: optionIndexOr(collectionViewOptions(), config.CollectionView, settings.CollectionViewPlatform),
 		},
 	}
 }
@@ -139,5 +136,12 @@ func (s *CollectionsSettingsScreen) applySettings(config *settings.Config, items
 				config.CollectionView = val
 			}
 		}
+	}
+}
+
+func collectionViewOptions() []gaba.Option {
+	return []gaba.Option{
+		{DisplayName: localize("collection_view_platform", "Platform"), Value: settings.CollectionViewPlatform},
+		{DisplayName: localize("collection_view_unified", "Unified"), Value: settings.CollectionViewUnified},
 	}
 }
