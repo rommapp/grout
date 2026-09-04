@@ -262,15 +262,15 @@ func attemptDevicePairing(selection authSelection) attempt {
 	})
 
 	switch result.Outcome {
-	case DevicePairingSuccess:
+	case auth.PairingApproved:
 		return attempt{Host: result.Host, OK: true}
-	case DevicePairingCancelled:
+	case auth.PairingCancelled:
 		// They backed out, so they already know why nothing happened.
 		return attempt{Host: result.Host}
-	case DevicePairingDenied:
+	case auth.PairingDenied:
 		return attempt{Host: result.Host, Message: &goi18n.Message{
 			ID: "login_error_pairing_denied", Other: "Pairing was denied on the server."}}
-	case DevicePairingExpired:
+	case auth.PairingExpired:
 		return attempt{Host: result.Host, Message: &goi18n.Message{
 			ID: "login_error_pairing_expired", Other: "The pairing request expired.\nPlease try again."}}
 	default:
