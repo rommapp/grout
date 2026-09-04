@@ -8,6 +8,9 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"grout/cfw"
+	"grout/library"
+
 	uatomic "go.uber.org/atomic"
 
 	"grout/romm"
@@ -87,5 +90,94 @@ func TestFetchArt_ContinuesPastAFailure(t *testing.T) {
 
 	if got := served.Load(); got != 1 {
 		t.Errorf("served %d, want the second cover fetched after the first failed", got)
+	}
+}
+
+// The backfill and the download must agree on what a game's art is called. If
+// one writes a name the other never looks for, every sync fetches it again.
+func TestArtFor_AgreesWithThePlan(t *testing.T) {
+	t.Setenv("BASE_PATH", t.TempDir())
+	t.Setenv(cfw.EnvVar, string(cfw.MuOS))
+
+	config := settings.Config{
+		DownloadArt:                  true,
+		DownloadArtScreenshotPreview: true,
+		DownloadSplashArt:            library.ArtKindScreenshot,
+	}
+	host := settings.Host{RootURI: "http://romm.local"}
+	platform := romm.Platform{ID: 3, FSSlug: "snes", Name: "SNES"}
+	game := romm.Rom{
+		ID: 1, Name: "Mario", FsNameNoExt: "Mario",
+		PathCoverLarge:    "/covers/1.png",
+		MergedScreenshots: []string{"/screens/1.png"},
+		Files:             []romm.RomFile{{ID: 1, FileName: "Mario.sfc"}},
+	}
+
+	plan, _ := BuildPlan(config, host, platform, []romm.Rom{game}, 0)
+	direct := ArtFor(config, host, game, platform)
+
+	planned := make(map[string]bool, len(plan.Art))
+	for _, item := range plan.Art {
+		planned[item.Location] = true
+	}
+
+	// More than one kind, or the comparison proves nothing.
+	if len(direct) < 2 {
+		t.Fatalf("ArtFor returned %d files, too few for this to be a real comparison", len(direct))
+	}
+	for _, item := range direct {
+		if !planned[item.Location] {
+			t.Errorf("ArtFor writes %q, which a download run never creates", item.Location)
+		}
+	}
+	if len(direct) != len(plan.Art) {
+		t.Errorf("ArtFor lists %d files, the plan %d: the two have drifted apart", len(direct), len(plan.Art))
+	}
+}
+
+// A game the server has no cover for has no artwork to chase.
+func TestArtFor_NoCover(t *testing.T) {
+	t.Setenv(cfw.EnvVar, string(cfw.MuOS))
+
+	got := ArtFor(settings.Config{}, settings.Host{}, romm.Rom{Name: "Homebrew"}, romm.Platform{FSSlug: "snes"})
+	if got != nil {
+		t.Errorf("ArtFor = %v, want nothing for a game with no cover", got)
+	}
+}
+
+func TestMissing(t *testing.T) {
+	dir := t.TempDir()
+	here := filepath.Join(dir, "here.png")
+	if err := os.WriteFile(here, []byte("art"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	got := Missing([]Item{
+		{Location: here},
+		{Location: filepath.Join(dir, "gone.png")},
+	})
+
+	if len(got) != 1 || filepath.Base(got[0].Location) != "gone.png" {
+		t.Errorf("Missing = %v, want only the absent file", got)
+	}
+}
+
+// A backfill of artwork should not pull down a video per game across a whole
+// library. Those arrive with a game instead.
+func TestImages_DropsVideosAndManuals(t *testing.T) {
+	got := Images([]Item{
+		{Location: "cover.png", IsImage: true},
+		{Location: "trailer.mp4"},
+		{Location: "manual.pdf"},
+		{Location: "marquee.png", IsImage: true},
+	})
+
+	if len(got) != 2 {
+		t.Fatalf("Images kept %d items, want the 2 images", len(got))
+	}
+	for _, item := range got {
+		if !item.IsImage {
+			t.Errorf("%q is not an image", item.Location)
+		}
 	}
 }

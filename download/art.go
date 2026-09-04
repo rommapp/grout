@@ -5,7 +5,11 @@ import (
 
 	"go.uber.org/atomic"
 
+	"grout/cfw"
+	"grout/files"
+	"grout/library"
 	"grout/romm"
+	"grout/settings"
 )
 
 // FetchArt downloads the artwork belonging to the games whose rom actually
@@ -55,4 +59,45 @@ func FetchArt(fetcher *romm.ArtFetcher, items []Item, games []romm.Rom, progress
 	}
 
 	slog.Default().Debug("Art download complete", "succeeded", succeeded, "failed", failed)
+}
+
+// ArtFor lists the artwork a game should have on the device, given what the
+// config asks to be downloaded.
+//
+// This is the same list a download run fetches, so a screen that backfills
+// missing art and a screen that downloads a game agree on which files should
+// exist and what each one is called. Deciding that separately is how art comes
+// to be fetched again on every sync forever: one side writes a name the other
+// never looks for.
+func ArtFor(config settings.Config, host settings.Host, game romm.Rom, platform romm.Platform) []Item {
+	if !hasCoverArt(game) {
+		return nil
+	}
+
+	activeCFW := cfw.GetCFW()
+	return artItems(config, host, game, platform, activeCFW, activeCFW.IsBasedOnEmulationStation(), &library.ArtPaths{})
+}
+
+// Missing keeps the items whose file is not on the device yet.
+func Missing(items []Item) []Item {
+	absent := make([]Item, 0, len(items))
+	for _, item := range items {
+		if !files.FileExists(item.Location) {
+			absent = append(absent, item)
+		}
+	}
+	return absent
+}
+
+// Images keeps the artwork and drops the videos and manuals. They arrive with
+// a game, but fetching one per game across a whole library is not what a
+// backfill of artwork offers.
+func Images(items []Item) []Item {
+	images := make([]Item, 0, len(items))
+	for _, item := range items {
+		if item.IsImage {
+			images = append(images, item)
+		}
+	}
+	return images
 }

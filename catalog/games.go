@@ -124,3 +124,12 @@ func HasFilterableMetadata(games []romm.Rom) bool {
 	}
 	return false
 }
+
+// Games returns a source's games, asking the server only when the cache has
+// none.
+func Games(source GameSource) ([]romm.Rom, error) {
+	if games, ok := CachedGames(source); ok {
+		return games, nil
+	}
+	return RefreshGames(source, atomic.NewFloat64(0))
+}

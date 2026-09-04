@@ -2,23 +2,19 @@ package ui
 
 import (
 	"fmt"
-	"grout/cache"
-	"grout/catalog"
-	"grout/cfw"
-	"grout/files"
-	"grout/imaging"
-	"grout/library"
-	"grout/romm"
-	"grout/settings"
 	"net/url"
-	"path/filepath"
 	"sync"
 	"sync/atomic"
 
+	"grout/cache"
+	"grout/catalog"
+	"grout/download"
+	"grout/imaging"
+	"grout/romm"
+	"grout/settings"
+
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	icons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 const (
@@ -27,8 +23,11 @@ const (
 )
 
 type ArtworkSyncInput struct {
-	Config         settings.Config
-	Host           settings.Host
+	Config settings.Config
+	Host   settings.Host
+	// DownloadedOnly fills the firmware's own art directories for games already
+	// on the card. Without it the run prefetches the covers grout shows in its
+	// own lists.
 	DownloadedOnly bool
 }
 
@@ -40,382 +39,275 @@ func NewArtworkSyncScreen() *ArtworkSyncScreen {
 	return &ArtworkSyncScreen{}
 }
 
+// platformRoms is a platform and the games of it that need artwork.
+type platformRoms struct {
+	platform romm.Platform
+	roms     []romm.Rom
+}
+
 func (s *ArtworkSyncScreen) Execute(input ArtworkSyncInput) ArtworkSyncOutput {
 	s.draw(input)
 	return ArtworkSyncOutput{}
 }
 
 func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
-	logger := gaba.GetLogger()
-
-	var platforms []romm.Platform
-	var err error
-
-	if cm := cache.GetCacheManager(); cm != nil {
-		platforms, err = cm.GetPlatforms()
+	platforms, err := catalog.MappedPlatforms(input.Host, input.Config.DirectoryMappings, input.Config.ApiTimeout.Duration())
+	if err != nil {
+		gaba.GetLogger().Error("Failed to fetch platforms", "error", err)
+		s.tell(fmt.Sprintf("Failed to fetch platforms: %v", err))
+		return
 	}
 	if len(platforms) == 0 {
-		client := romm.NewClientFromHost(input.Host, input.Config.ApiTimeout.Duration())
-		platforms, err = client.GetPlatforms()
-		if err != nil {
-			logger.Error("Failed to fetch platforms", "error", err)
-			gaba.ConfirmationMessage(
-				fmt.Sprintf("Failed to fetch platforms: %v", err),
-				ContinueFooter(),
-				gaba.MessageOptions{},
-			)
-			return
-		}
-	}
-	romm.DisambiguatePlatformNames(platforms)
-
-	var mappedPlatforms []romm.Platform
-	for _, p := range platforms {
-		if _, exists := input.Config.DirectoryMappings[p.FSSlug]; exists {
-			mappedPlatforms = append(mappedPlatforms, p)
-		}
-	}
-
-	if len(mappedPlatforms) == 0 {
-		gaba.ConfirmationMessage(
-			i18n.Localize(&goi18n.Message{ID: "artwork_sync_no_platforms", Other: "No platforms with directory mappings found."}, nil),
-			ContinueFooter(),
-			gaba.MessageOptions{},
-		)
+		s.tell(localize("artwork_sync_no_platforms", "No platforms with directory mappings found."))
 		return
 	}
 
-	artForceRes, err := gaba.SelectionMessage(
-		i18n.Localize(&goi18n.Message{ID: "artwork_sync_preload_choice", Other: "Do you want to preload all or missing artwork ?"}, nil),
+	missingOnly, ok := s.askScope()
+	if !ok {
+		return
+	}
+
+	found := s.scan(input, platforms, missingOnly)
+	if len(found) == 0 {
+		s.tell(localize("artwork_sync_up_to_date", "All artwork is already cached!"))
+		return
+	}
+
+	chosen, ok := s.choosePlatforms(found)
+	if !ok {
+		return
+	}
+
+	downloads := s.downloadsFor(input, chosen)
+	if len(downloads) == 0 {
+		s.tell(localize("artwork_sync_up_to_date", "All artwork is already cached!"))
+		return
+	}
+
+	s.fetch(input, downloads)
+}
+
+// askScope asks whether to fetch everything or only what is missing. The
+// second result is false when the user backs out.
+func (s *ArtworkSyncScreen) askScope() (missingOnly bool, ok bool) {
+	result, err := gaba.SelectionMessage(
+		localize("artwork_sync_preload_choice", "Do you want to preload all or missing artwork ?"),
 		[]gaba.SelectionOption{
-			{DisplayName: i18n.Localize(&goi18n.Message{ID: "artwork_sync_preload_missing", Other: "Missing Only"}, nil), Value: SyncMissingOnlyOption},
-			{DisplayName: i18n.Localize(&goi18n.Message{ID: "artwork_sync_preload_all", Other: "All"}, nil), Value: SyncAllOption},
+			{DisplayName: localize("artwork_sync_preload_missing", "Missing Only"), Value: SyncMissingOnlyOption},
+			{DisplayName: localize("artwork_sync_preload_all", "All"), Value: SyncAllOption},
 		},
-		[]gaba.FooterHelpItem{
-			FooterContinue(),
-			FooterCancel(),
-		},
+		[]gaba.FooterHelpItem{FooterContinue(), FooterCancel()},
 		gaba.SelectionMessageSettings{},
 	)
-
 	if err != nil {
-		return
+		return false, false
 	}
+	return result.SelectedValue == SyncMissingOnlyOption, true
+}
 
-	// Scan all platforms and collect artwork per platform
-	type platformArtwork struct {
-		platform romm.Platform
-		roms     []romm.Rom
-	}
+// scan works out which games of each platform still want artwork, showing
+// progress since it reads every platform's library and, for a device sync,
+// stats every art file.
+func (s *ArtworkSyncScreen) scan(input ArtworkSyncInput, platforms []romm.Platform, missingOnly bool) []platformRoms {
+	logger := gaba.GetLogger()
 
-	var platformResults []platformArtwork
-	platformCount := len(mappedPlatforms)
-	cm := cache.GetCacheManager()
-
-	// ProcessMessage runs the closure synchronously on the calling goroutine,
-	// so mutating platformResults from within the closure is safe.
-	for i, platform := range mappedPlatforms {
-		p := platform
+	var found []platformRoms
+	for i, platform := range platforms {
+		// ProcessMessage runs the closure on the calling goroutine, so
+		// appending from inside it is safe.
 		gaba.ProcessMessage(
-			fmt.Sprintf(i18n.Localize(&goi18n.Message{ID: "artwork_sync_scanning", Other: "Scanning platform %d/%d: %s..."}, nil), i+1, platformCount, p.Name),
+			fmt.Sprintf(localize("artwork_sync_scanning", "Scanning platform %d/%d: %s..."), i+1, len(platforms), platform.Name),
 			gaba.ProcessMessageOptions{ShowThemeBackground: true},
-			func() (interface{}, error) {
-				var roms []romm.Rom
-				var err error
-
-				if cm != nil {
-					roms, err = cm.GetPlatformGames(p.ID)
-					if err != nil || len(roms) == 0 {
-						if err := cm.RefreshPlatformGames(p); err != nil {
-							logger.Error("Failed to refresh platform games", "platform", p.Name, "error", err)
-							return nil, nil
-						}
-						roms, err = cm.GetPlatformGames(p.ID)
-						if err != nil {
-							logger.Error("Failed to get platform games from cache", "platform", p.Name, "error", err)
-							return nil, nil
-						}
-					}
-				} else {
-					logger.Error("Cache manager not available", "platform", p.Name)
+			func() (any, error) {
+				games, err := catalog.Games(catalog.GameSource{Platform: platform})
+				if err != nil {
+					logger.Error("Failed to read platform games", "platform", platform.Name, "error", err)
 					return nil, nil
 				}
 
-				if input.DownloadedOnly {
-					var downloaded []romm.Rom
-					for _, r := range roms {
-						if catalog.IsDownloaded(input.Config, r) {
-							downloaded = append(downloaded, r)
-						}
-					}
-					roms = downloaded
-
-					if artForceRes.SelectedValue == SyncMissingOnlyOption {
-						roms = filterMissingCFWArt(roms, p, input.Config, input.Host)
-					}
-				} else if artForceRes.SelectedValue == SyncMissingOnlyOption {
-					roms = cache.GetMissingArtwork(roms)
-				}
-
-				if len(roms) > 0 {
-					platformResults = append(platformResults, platformArtwork{platform: p, roms: roms})
+				if wanting := s.wantingArt(input, platform, games, missingOnly); len(wanting) > 0 {
+					found = append(found, platformRoms{platform: platform, roms: wanting})
 				}
 				return nil, nil
 			},
 		)
 	}
+	return found
+}
 
-	if len(platformResults) == 0 {
-		gaba.ConfirmationMessage(
-			i18n.Localize(&goi18n.Message{ID: "artwork_sync_up_to_date", Other: "All artwork is already cached!"}, nil),
-			ContinueFooter(),
-			gaba.MessageOptions{},
-		)
-		return
+// wantingArt narrows a platform's games to those a run should fetch art for.
+func (s *ArtworkSyncScreen) wantingArt(input ArtworkSyncInput, platform romm.Platform, games []romm.Rom, missingOnly bool) []romm.Rom {
+	if !input.DownloadedOnly {
+		if missingOnly {
+			return cache.GetMissingArtwork(games)
+		}
+		return games
 	}
 
-	// Show platform list in multi-select mode for user to pick which to download
-	var menuItems []gaba.MenuItem
-	for _, pr := range platformResults {
-		menuItems = append(menuItems, gaba.MenuItem{
-			Text:     fmt.Sprintf("%s (%d)", pr.platform.Name, len(pr.roms)),
+	// Only games actually on the card have anywhere for the firmware to look.
+	wanting := make([]romm.Rom, 0, len(games))
+	for _, game := range games {
+		if !catalog.IsDownloaded(input.Config, game) {
+			continue
+		}
+		if missingOnly && len(download.Missing(s.artFor(input, game, platform))) == 0 {
+			continue
+		}
+		wanting = append(wanting, game)
+	}
+	return wanting
+}
+
+// artFor is the artwork a game should have in the firmware's directories.
+//
+// The same list decides what is missing and what gets fetched, so the two can
+// never disagree about a file's name.
+func (s *ArtworkSyncScreen) artFor(input ArtworkSyncInput, game romm.Rom, platform romm.Platform) []download.Item {
+	return download.Images(download.ArtFor(input.Config, input.Host, game, platform))
+}
+
+// choosePlatforms lets the user drop platforms from the run. Everything starts
+// selected, since asking for a sync means wanting all of it by default.
+func (s *ArtworkSyncScreen) choosePlatforms(found []platformRoms) ([]platformRoms, bool) {
+	items := make([]gaba.MenuItem, 0, len(found))
+	for _, entry := range found {
+		items = append(items, gaba.MenuItem{
+			Text:     fmt.Sprintf("%s (%d)", entry.platform.Name, len(entry.roms)),
 			Selected: true,
-			Metadata: pr,
+			Metadata: entry,
 		})
 	}
 
-	options := gaba.DefaultListOptions(
-		i18n.Localize(&goi18n.Message{ID: "artwork_sync_select_platforms", Other: "Select Platforms"}, nil),
-		menuItems,
-	)
+	options := gaba.DefaultListOptions(localize("artwork_sync_select_platforms", "Select Platforms"), items)
 	options.UseSmallTitle = true
 	options.InitialMultiSelectMode = true
+	options.StatusBar = StatusBar()
 	options.FooterHelpItems = []gaba.FooterHelpItem{
 		FooterBack(),
-		{ButtonName: icons.Start, HelpText: i18n.Localize(&goi18n.Message{ID: "button_download", Other: "Download"}, nil), IsConfirmButton: true},
-	}
-	options.StatusBar = StatusBar()
-
-	sel, err := gaba.List(options)
-	if err != nil || sel.Action != gaba.ListActionSelected || len(sel.Selected) == 0 {
-		return
+		{ButtonName: icons.Start, HelpText: localize("button_download", "Download"), IsConfirmButton: true},
 	}
 
-	// Collect artwork from selected platforms
-	var selectedResults []platformRoms
-	for _, idx := range sel.Selected {
-		pr := sel.Items[idx].Metadata.(platformArtwork)
-		selectedResults = append(selectedResults, platformRoms{platform: pr.platform, roms: pr.roms})
+	result, err := gaba.List(options)
+	if err != nil || result.Action != gaba.ListActionSelected || len(result.Selected) == 0 {
+		return nil, false
 	}
 
+	chosen := make([]platformRoms, 0, len(result.Selected))
+	for _, index := range result.Selected {
+		chosen = append(chosen, result.Items[index].Metadata.(platformRoms))
+	}
+	return chosen, true
+}
+
+func (s *ArtworkSyncScreen) downloadsFor(input ArtworkSyncInput, chosen []platformRoms) []gaba.Download {
 	var downloads []gaba.Download
 
-	if input.DownloadedOnly {
-		downloads = buildCFWArtDownloads(selectedResults, input.Config, input.Host)
-	} else {
-		for _, sr := range selectedResults {
-			for _, rom := range sr.roms {
-				downloadURL := cache.GetArtworkCoverPath(rom, input.Config.ArtKind, input.Host)
-				if downloadURL == "" {
-					continue
+	for _, entry := range chosen {
+		for _, game := range entry.roms {
+			if input.DownloadedOnly {
+				for _, item := range s.artFor(input, game, entry.platform) {
+					downloads = append(downloads, gaba.Download{
+						URL: item.URL, Location: item.Location, DisplayName: game.Name,
+					})
 				}
-
-				cachePath := cache.GetArtworkCachePath(rom.PlatformFSSlug, rom.ID)
-				cache.EnsureArtworkCacheDir(rom.PlatformFSSlug)
-
-				downloads = append(downloads, gaba.Download{
-					URL:         downloadURL,
-					Location:    cachePath,
-					DisplayName: rom.Name,
-				})
+				continue
 			}
+
+			source := cache.GetArtworkCoverPath(game, input.Config.ArtKind, input.Host)
+			if source == "" {
+				continue
+			}
+			cache.EnsureArtworkCacheDir(game.PlatformFSSlug)
+			downloads = append(downloads, gaba.Download{
+				URL:         source,
+				Location:    cache.GetArtworkCachePath(game.PlatformFSSlug, game.ID),
+				DisplayName: game.Name,
+			})
 		}
 	}
 
-	if len(downloads) == 0 {
-		gaba.ConfirmationMessage(
-			i18n.Localize(&goi18n.Message{ID: "artwork_sync_up_to_date", Other: "All artwork is already cached!"}, nil),
-			ContinueFooter(),
-			gaba.MessageOptions{},
-		)
-		return
-	}
+	return downloads
+}
 
-	headers := make(map[string]string)
-	headers["Authorization"] = input.Host.AuthHeader()
+func (s *ArtworkSyncScreen) fetch(input ArtworkSyncInput, downloads []gaba.Download) {
+	logger := gaba.GetLogger()
 
-	res, err := gaba.DownloadManager(downloads, headers, gaba.DownloadManagerOptions{
+	result, err := gaba.DownloadManager(downloads, map[string]string{
+		"Authorization": input.Host.AuthHeader(),
+	}, gaba.DownloadManagerOptions{
 		AutoContinueOnComplete: true,
 		SkipSSLVerification:    input.Host.InsecureSkipVerify,
 	})
 	if err != nil {
 		logger.Error("Artwork download failed", "error", err)
-		gaba.ConfirmationMessage(
-			fmt.Sprintf("Download failed: %v", err),
-			ContinueFooter(),
-			gaba.MessageOptions{},
-		)
+		s.tell(fmt.Sprintf("Download failed: %v", err))
 		return
 	}
 
-	var successCount int32
-	var wg sync.WaitGroup
-	semaphore := make(chan struct{}, 4)
+	for _, failure := range result.Failed {
+		path := failure.Download.URL
+		if parsed, err := url.Parse(failure.Download.URL); err == nil {
+			path = parsed.Path
+		}
+		logger.Error("Failed to download artwork", "path", path, "name", failure.Download.DisplayName,
+			"timeout", failure.Download.Timeout, "error", failure.Error)
+	}
 
-	for _, download := range res.Completed {
-		wg.Add(1)
-		go func(dl gaba.Download) {
-			defer wg.Done()
-			semaphore <- struct{}{}
-			defer func() { <-semaphore }()
+	processed := s.process(result.Completed)
+	logger.Info("Artwork sync complete", "success", processed, "failed", len(result.Failed))
 
-			if err := imaging.ProcessArtImage(dl.Location); err != nil {
-				logger.Warn("Failed to process artwork", "path", dl.Location, "error", err)
+	switch {
+	case processed > 0:
+		s.tell(fmt.Sprintf(localize("artwork_sync_complete", "Successfully downloaded %d artwork images."), processed))
+	case len(result.Failed) > 0:
+		s.tell(fmt.Sprintf(localize("artwork_sync_failed", "Failed to download %d artwork images."), len(result.Failed)))
+	}
+}
+
+// process normalises the downloaded images and returns how many survived.
+//
+// Resizing is CPU bound and these devices have few cores, so a handful run at
+// once rather than one per image.
+func (s *ArtworkSyncScreen) process(downloaded []gaba.Download) int {
+	const workers = 4
+
+	var succeeded int32
+	var group sync.WaitGroup
+	slots := make(chan struct{}, workers)
+
+	for _, item := range downloaded {
+		group.Add(1)
+		go func(path string) {
+			defer group.Done()
+			slots <- struct{}{}
+			defer func() { <-slots }()
+
+			if err := imaging.ProcessArtImage(path); err != nil {
+				gaba.GetLogger().Warn("Failed to process artwork", "path", path, "error", err)
 				return
 			}
-			atomic.AddInt32(&successCount, 1)
-		}(download)
+			atomic.AddInt32(&succeeded, 1)
+		}(item.Location)
 	}
 
 	done := make(chan struct{})
 	go func() {
-		wg.Wait()
+		group.Wait()
 		close(done)
 	}()
 
 	gaba.ProcessMessage(
-		i18n.Localize(&goi18n.Message{ID: "artwork_sync_processing", Other: "Processing artwork..."}, nil),
+		localize("artwork_sync_processing", "Processing artwork..."),
 		gaba.ProcessMessageOptions{ShowThemeBackground: true},
-		func() (interface{}, error) {
+		func() (any, error) {
 			<-done
 			return nil, nil
 		},
 	)
 
-	finalCount := int(atomic.LoadInt32(&successCount))
-	logger.Info("Artwork sync complete", "success", finalCount, "failed", len(res.Failed))
-
-	for _, failed := range res.Failed {
-		path := failed.Download.URL
-		if u, err := url.Parse(failed.Download.URL); err == nil {
-			path = u.Path
-		}
-		logger.Error("Failed to download artwork",
-			"path", path,
-			"name", failed.Download.DisplayName,
-			"timeout", failed.Download.Timeout,
-			"error", failed.Error,
-		)
-	}
-
-	if finalCount > 0 {
-		gaba.ConfirmationMessage(
-			fmt.Sprintf(i18n.Localize(&goi18n.Message{ID: "artwork_sync_complete", Other: "Successfully downloaded %d artwork images."}, nil), finalCount),
-			ContinueFooter(),
-			gaba.MessageOptions{},
-		)
-	} else if len(res.Failed) > 0 {
-		gaba.ConfirmationMessage(
-			fmt.Sprintf(i18n.Localize(&goi18n.Message{ID: "artwork_sync_failed", Other: "Failed to download %d artwork images."}, nil), len(res.Failed)),
-			ContinueFooter(),
-			gaba.MessageOptions{},
-		)
-	}
+	return int(atomic.LoadInt32(&succeeded))
 }
 
-// filterMissingCFWArt returns only roms that are missing art in the CFW art directory.
-func filterMissingCFWArt(roms []romm.Rom, platform romm.Platform, config settings.Config, host settings.Host) []romm.Rom {
-	activeCFW := cfw.GetCFW()
-
-	var missing []romm.Rom
-	for _, rom := range roms {
-		if !cache.HasArtworkURL(rom) {
-			continue
-		}
-		artDir := cfw.PlatformArtDirectory(config, cfw.ArtCover, platform.FSSlug, platform.Name)
-		artPath := filepath.Join(artDir, cfw.ArtFileName(activeCFW, cfw.ArtCover, romArtFileName(rom), rom.FsNameNoExt))
-		if !files.FileExists(artPath) {
-			missing = append(missing, rom)
-			continue
-		}
-		// Also check preview and splash if configured
-		if config.DownloadArtScreenshotPreview {
-			previewDir := cfw.PlatformArtDirectory(config, cfw.ArtScreenshotPreview, platform.FSSlug, platform.Name)
-			if previewDir != "" && rom.GetScreenshotURL(host) != "" {
-				if !files.FileExists(filepath.Join(previewDir, cfw.ArtFileName(activeCFW, cfw.ArtScreenshotPreview, romArtFileName(rom), rom.FsNameNoExt))) {
-					missing = append(missing, rom)
-					continue
-				}
-			}
-		}
-		if config.DownloadSplashArt != library.ArtKindNone {
-			splashDir := cfw.PlatformArtDirectory(config, cfw.ArtThumbnail, platform.FSSlug, platform.Name)
-			if splashDir != "" && rom.GetSplashArtURL(config.DownloadSplashArt, host) != "" {
-				if !files.FileExists(filepath.Join(splashDir, cfw.ArtFileName(activeCFW, cfw.ArtThumbnail, romArtFileName(rom), rom.FsNameNoExt))) {
-					missing = append(missing, rom)
-					continue
-				}
-			}
-		}
-	}
-	return missing
-}
-
-type platformRoms struct {
-	platform romm.Platform
-	roms     []romm.Rom
-}
-
-// buildCFWArtDownloads builds download entries targeting CFW art directories.
-func buildCFWArtDownloads(results []platformRoms, config settings.Config, host settings.Host) []gaba.Download {
-	var downloads []gaba.Download
-	activeCFW := cfw.GetCFW()
-
-	for _, sr := range results {
-		for _, rom := range sr.roms {
-			artFileName := cfw.ArtFileName(activeCFW, cfw.ArtCover, romArtFileName(rom), rom.FsNameNoExt)
-
-			// Cover art
-			coverURL := rom.GetArtworkURL(config.ArtKind, host)
-			if coverURL != "" {
-				artDir := cfw.PlatformArtDirectory(config, cfw.ArtCover, sr.platform.FSSlug, sr.platform.Name)
-				artLocation := filepath.Join(artDir, artFileName)
-				downloads = append(downloads, gaba.Download{
-					URL:         coverURL,
-					Location:    artLocation,
-					DisplayName: rom.Name,
-				})
-			}
-
-			// Screenshot preview
-			if config.DownloadArtScreenshotPreview {
-				previewDir := cfw.PlatformArtDirectory(config, cfw.ArtScreenshotPreview, sr.platform.FSSlug, sr.platform.Name)
-				if previewDir != "" {
-					if screenshotURL := rom.GetScreenshotURL(host); screenshotURL != "" {
-						downloads = append(downloads, gaba.Download{
-							URL:         screenshotURL,
-							Location:    filepath.Join(previewDir, artFileName),
-							DisplayName: rom.Name,
-						})
-					}
-				}
-			}
-
-			// Splash art
-			if config.DownloadSplashArt != library.ArtKindNone {
-				splashDir := cfw.PlatformArtDirectory(config, cfw.ArtThumbnail, sr.platform.FSSlug, sr.platform.Name)
-				if splashDir != "" {
-					if splashURL := rom.GetSplashArtURL(config.DownloadSplashArt, host); splashURL != "" {
-						downloads = append(downloads, gaba.Download{
-							URL:         splashURL,
-							Location:    filepath.Join(splashDir, cfw.ArtFileName(activeCFW, cfw.ArtThumbnail, romArtFileName(rom), rom.FsNameNoExt)),
-							DisplayName: rom.Name,
-						})
-					}
-				}
-			}
-		}
-	}
-
-	return downloads
+func (s *ArtworkSyncScreen) tell(message string) {
+	gaba.ConfirmationMessage(message, ContinueFooter(), gaba.MessageOptions{})
 }
