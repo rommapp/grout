@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"grout/cache"
+	"grout/catalog"
 	"grout/cfw"
 	"grout/files"
 	"grout/imaging"
@@ -143,7 +144,7 @@ func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 				if input.DownloadedOnly {
 					var downloaded []romm.Rom
 					for _, r := range roms {
-						if isRomDownloaded(input.Config, r) {
+						if catalog.IsDownloaded(input.Config, r) {
 							downloaded = append(downloaded, r)
 						}
 					}

@@ -60,10 +60,6 @@ func NewGameListScreen() *GameListScreen {
 	return &GameListScreen{}
 }
 
-func isCollectionSet(c romm.Collection) bool {
-	return c.ID != 0 || c.VirtualID != ""
-}
-
 func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 	games := input.Games
 	hasBIOS := input.HasBIOS
@@ -95,129 +91,20 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 		LastSelectedPosition: input.LastSelectedPosition,
 	}
 
-	displayGames := prepareRomNames(games)
+	list := catalog.Browse(catalog.BrowseRequest{
+		Config:     *input.Config,
+		Games:      games,
+		Platform:   input.Platform,
+		Collection: input.Collection,
+		Filter:     input.GameFilter,
+		Search:     input.SearchFilter,
+	})
 
-	if input.GameFilter.HasActiveFilters() {
-		if cm := cache.GetCacheManager(); cm != nil {
-			filter := input.GameFilter
-			filter.PlatformID = input.Platform.ID
-			if filtered, err := cm.GetFilteredGames(filter); err == nil {
-				if isCollectionSet(input.Collection) {
-					// Intersect: keep only collection games that match the filter
-					allowed := make(map[int]struct{}, len(filtered))
-					for _, g := range filtered {
-						allowed[g.ID] = struct{}{}
-					}
-					kept := make([]romm.Rom, 0, len(displayGames))
-					for _, g := range displayGames {
-						if _, ok := allowed[g.ID]; ok {
-							kept = append(kept, g)
-						}
-					}
-					displayGames = kept
-				} else {
-					displayGames = prepareRomNames(filtered)
-				}
-			}
-		}
-	}
-
-	if input.Config.DownloadedGames == settings.DownloadedGamesModeFilter {
-		filteredGames := make([]romm.Rom, 0, len(displayGames))
-		for _, game := range displayGames {
-			if !isRomDownloaded(*input.Config, game) {
-				filteredGames = append(filteredGames, game)
-			}
-		}
-		displayGames = filteredGames
-	}
-
-	displayName := input.Platform.Name
-	allGamesFilteredOut := false
-	if isCollectionSet(input.Collection) {
-		displayName = input.Collection.Name
-		originalCount := len(displayGames)
-		filteredGames := make([]romm.Rom, 0, len(displayGames))
-		for _, game := range displayGames {
-			if _, hasMapping := input.Config.DirectoryMappings[game.PlatformFSSlug]; hasMapping {
-				filteredGames = append(filteredGames, game)
-			}
-		}
-		displayGames = filteredGames
-
-		allGamesFilteredOut = originalCount > 0 && len(displayGames) == 0
-
-		if input.Platform.ID == 0 {
-			for i := range displayGames {
-				prefix := ""
-				if input.Config.DownloadedGames == settings.DownloadedGamesModeMark && isRomDownloaded(*input.Config, displayGames[i]) {
-					prefix = gabaconst.Download + " "
-				}
-				displayGames[i].DisplayName = fmt.Sprintf("%s[%s] %s", prefix, displayGames[i].PlatformFSSlug, displayGames[i].DisplayName)
-			}
+	if len(list.Entries) == 0 {
+		if list.AllMappedOut {
+			s.showFilteredOutMessage(list.Title)
 		} else {
-			displayName = fmt.Sprintf("%s - %s", input.Collection.Name, input.Platform.Name)
-			if input.Config.DownloadedGames == settings.DownloadedGamesModeMark {
-				for i := range displayGames {
-					if isRomDownloaded(*input.Config, displayGames[i]) {
-						displayGames[i].DisplayName = fmt.Sprintf("%s %s", gabaconst.Download, displayGames[i].DisplayName)
-					}
-				}
-			}
-		}
-	} else {
-		for i := range displayGames {
-			prefix := ""
-			game := &displayGames[i]
-
-			if game.HasNestedSingleFile {
-				// For multi-file games, check if all files are downloaded
-				allDownloaded := len(game.Files) > 0
-				anyDownloaded := false
-				for _, file := range game.Files {
-					if isRomFileDownloaded(*input.Config, *game, file.FileName) {
-						anyDownloaded = true
-					} else {
-						allDownloaded = false
-					}
-				}
-
-				if input.Config.DownloadedGames == settings.DownloadedGamesModeMark {
-					if allDownloaded {
-						prefix = settings.MultipleDownloadedIcon + " "
-					} else if anyDownloaded {
-						prefix = gabaconst.Download + " "
-					}
-				}
-				prefix += settings.MultipleFilesIcon + " "
-			} else {
-				if input.Config.DownloadedGames == settings.DownloadedGamesModeMark && isRomDownloaded(*input.Config, *game) {
-					prefix = gabaconst.Download + " "
-				}
-			}
-
-			if prefix != "" {
-				game.DisplayName = prefix + game.DisplayName
-			}
-		}
-	}
-
-	title := displayName
-	if input.GameFilter.HasActiveFilters() {
-		filterLabel := i18n.Localize(&goi18n.Message{ID: "games_list_filtered", Other: "[Filtered]"}, nil)
-		title = fmt.Sprintf("%s %s", filterLabel, title)
-	}
-	if input.SearchFilter != "" {
-		message := i18n.Localize(&goi18n.Message{ID: "games_list_search_prefix", Other: "[Search: \"{{.Query}}\"]"}, map[string]interface{}{"Query": input.SearchFilter})
-		title = fmt.Sprintf("%s %s", message, displayName)
-		displayGames = catalog.FilterByName(displayGames, input.SearchFilter)
-	}
-
-	if len(displayGames) == 0 {
-		if allGamesFilteredOut {
-			s.showFilteredOutMessage(displayName)
-		} else {
-			s.showEmptyMessage(displayName, input.SearchFilter)
+			s.showEmptyMessage(list.Title, input.SearchFilter)
 		}
 		if clearLastFilter(&output, input.LastApplied) {
 			return output, nil
@@ -226,101 +113,21 @@ func (s *GameListScreen) Draw(input GameListInput) (GameListOutput, error) {
 		return output, nil
 	}
 
-	menuItems := make([]gaba.MenuItem, len(displayGames))
-	for i, game := range displayGames {
-		imageFilename := ""
-		if input.Config.ShowBoxArt {
-			imageFilename = cache.GetArtworkCachePath(game.PlatformFSSlug, game.ID)
-		}
-		menuItems[i] = gaba.MenuItem{
-			Text:          game.DisplayName,
-			Selected:      false,
-			Focused:       false,
-			Metadata:      game,
-			ImageFilename: imageFilename,
-		}
-	}
+	title := listTitle(list.Title, input.GameFilter, input.SearchFilter)
+	menuItems := menuItemsFor(list.Entries, *input.Config)
 
-	// Only offer Filters when there's actually something to filter on: any loaded game
-	// carries filterable metadata, or this is a unified collection (which offers a Platform
-	// picker regardless). Otherwise the Filters screen would open empty and instantly close,
-	// so we hide both the Y hint and the Y action rather than show a dead button.
-	showFilters := catalog.HasFilterableMetadata(games) || (isCollectionSet(input.Collection) && input.Platform.ID == 0)
+	// With nothing to filter on the Filters screen would open empty and close
+	// again, so the Y hint and the Y action are hidden together. A unified
+	// collection always has its platform picker to offer.
+	showFilters := catalog.HasFilterableMetadata(games) || (catalog.IsCollection(input.Collection) && input.Platform.ID == 0)
 
-	options := gaba.DefaultListOptions(title, menuItems)
-	options.UseSmallTitle = true
-	options.ShowImages = input.Config.ShowBoxArt
-	options.ActionButton = gabaconst.VirtualButtonX
-	options.MultiSelectButton = gabaconst.VirtualButtonSelect
-	options.DeselectAllButton = gabaconst.VirtualButtonL1
-	options.SelectAllButton = gabaconst.VirtualButtonR1
-	if showFilters {
-		options.SecondaryActionButton = gabaconst.VirtualButtonY
-	}
-
-	options.OnL1 = func(selectedIndex int) int {
-		if len(menuItems) == 0 {
-			return selectedIndex
-		}
-		currentLetter := getLetter(menuItems[selectedIndex])
-		firstIndexOfCurrent := selectedIndex
-		for firstIndexOfCurrent > 0 && getLetter(menuItems[firstIndexOfCurrent-1]) == currentLetter {
-			firstIndexOfCurrent--
-		}
-		if selectedIndex > firstIndexOfCurrent {
-			return firstIndexOfCurrent
-		}
-		if firstIndexOfCurrent == 0 {
-			return 0
-		}
-		prevLetter := getLetter(menuItems[firstIndexOfCurrent-1])
-		prevIndex := firstIndexOfCurrent - 1
-		for prevIndex > 0 && getLetter(menuItems[prevIndex-1]) == prevLetter {
-			prevIndex--
-		}
-		return prevIndex
-	}
-
-	options.OnR1 = func(selectedIndex int) int {
-		if len(menuItems) == 0 {
-			return selectedIndex
-		}
-		currentLetter := getLetter(menuItems[selectedIndex])
-		for i := selectedIndex + 1; i < len(menuItems); i++ {
-			if getLetter(menuItems[i]) != currentLetter {
-				return i
-			}
-		}
-		return selectedIndex
-	}
-
-	if hasBIOS && !settings.IsKidModeEnabled() {
-		options.TertiaryActionButton = gabaconst.VirtualButtonMenu
-	}
-
-	var footerItems []gaba.FooterHelpItem
-
-	footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_back", Other: "Back"}, nil)})
-
-	if hasBIOS && !settings.IsKidModeEnabled() {
-		menuButtonName := i18n.Localize(&goi18n.Message{ID: "button_menu", Other: "Menu"}, nil)
-		if environment.IsMiyoo() {
-			menuButtonName = "L2"
-		}
-		footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: menuButtonName, HelpText: i18n.Localize(&goi18n.Message{ID: "button_bios", Other: "BIOS"}, nil)})
-	}
-
-	if showFilters {
-		footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: "Y", HelpText: i18n.Localize(&goi18n.Message{ID: "button_filters", Other: "Filters"}, nil), Group: gaba.FooterGroupRight})
-	}
-
-	footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: "X", HelpText: i18n.Localize(&goi18n.Message{ID: "button_search", Other: "Search"}, nil), Group: gaba.FooterGroupRight})
-
-	options.FooterHelpItems = footerItems
-
-	options.SelectedIndex = input.LastSelectedIndex
-	options.VisibleStartIndex = max(0, input.LastSelectedIndex-input.LastSelectedPosition)
-	options.StatusBar = StatusBar()
+	options := s.listOptions(title, menuItems, listChrome{
+		Config:           *input.Config,
+		ShowFilters:      showFilters,
+		ShowBIOS:         hasBIOS && !settings.IsKidModeEnabled(),
+		SelectedIndex:    input.LastSelectedIndex,
+		SelectedPosition: input.LastSelectedPosition,
+	})
 
 	res, err := gaba.List(options)
 	if err != nil {
@@ -507,4 +314,152 @@ func getLetter(item gaba.MenuItem) rune {
 		return []rune(strings.ToUpper(name))[0]
 	}
 	return '?'
+}
+
+// listTitle names what is on screen, saying up front when a search or a filter
+// is the reason the list is short.
+func listTitle(name string, filter cache.GameFilter, search string) string {
+	if search != "" {
+		prefix := localizeWith("games_list_search_prefix", `[Search: "{{.Query}}"]`, map[string]any{"Query": search})
+		return prefix + " " + name
+	}
+	if filter.HasActiveFilters() {
+		return localize("games_list_filtered", "[Filtered]") + " " + name
+	}
+	return name
+}
+
+func menuItemsFor(entries []catalog.GameEntry, config settings.Config) []gaba.MenuItem {
+	items := make([]gaba.MenuItem, len(entries))
+	for i, entry := range entries {
+		image := ""
+		if config.ShowBoxArt {
+			image = cache.GetArtworkCachePath(entry.Game.PlatformFSSlug, entry.Game.ID)
+		}
+		items[i] = gaba.MenuItem{
+			Text:          entryText(entry),
+			Metadata:      entry.Game,
+			ImageFilename: image,
+		}
+	}
+	return items
+}
+
+// entryText puts the markers in front of a game's name: what is on the device
+// already, and whether it holds more than one file.
+func entryText(entry catalog.GameEntry) string {
+	prefix := ""
+	switch entry.Downloaded {
+	case catalog.FullyDownloaded:
+		if entry.MultipleFiles {
+			prefix = settings.MultipleDownloadedIcon + " "
+		} else {
+			prefix = gabaconst.Download + " "
+		}
+	case catalog.PartlyDownloaded:
+		prefix = gabaconst.Download + " "
+	}
+
+	if entry.MultipleFiles {
+		prefix += settings.MultipleFilesIcon + " "
+	}
+
+	return prefix + entry.Name
+}
+
+// listChrome is what the games list offers beyond the games themselves.
+type listChrome struct {
+	Config      settings.Config
+	ShowFilters bool
+	// ShowBIOS gates the BIOS shortcut, which kid mode hides.
+	ShowBIOS         bool
+	SelectedIndex    int
+	SelectedPosition int
+}
+
+func (s *GameListScreen) listOptions(title string, items []gaba.MenuItem, chrome listChrome) gaba.ListOptions {
+	options := gaba.DefaultListOptions(title, items)
+	options.UseSmallTitle = true
+	options.ShowImages = chrome.Config.ShowBoxArt
+	options.ActionButton = gabaconst.VirtualButtonX
+	options.MultiSelectButton = gabaconst.VirtualButtonSelect
+	options.DeselectAllButton = gabaconst.VirtualButtonL1
+	options.SelectAllButton = gabaconst.VirtualButtonR1
+	options.OnL1 = func(from int) int { return previousLetter(items, from) }
+	options.OnR1 = func(from int) int { return nextLetter(items, from) }
+	options.SelectedIndex = chrome.SelectedIndex
+	options.VisibleStartIndex = max(0, chrome.SelectedIndex-chrome.SelectedPosition)
+	options.StatusBar = StatusBar()
+
+	if chrome.ShowFilters {
+		options.SecondaryActionButton = gabaconst.VirtualButtonY
+	}
+	if chrome.ShowBIOS {
+		options.TertiaryActionButton = gabaconst.VirtualButtonMenu
+	}
+
+	options.FooterHelpItems = gameListFooter(chrome)
+	return options
+}
+
+func gameListFooter(chrome listChrome) []gaba.FooterHelpItem {
+	items := []gaba.FooterHelpItem{FooterBack()}
+
+	if chrome.ShowBIOS {
+		// The Miyoo handhelds have no Menu button, so the shortcut sits on L2.
+		name := localize("button_menu", "Menu")
+		if environment.IsMiyoo() {
+			name = "L2"
+		}
+		items = append(items, gaba.FooterHelpItem{ButtonName: name, HelpText: localize("button_bios", "BIOS")})
+	}
+
+	if chrome.ShowFilters {
+		items = append(items, gaba.FooterHelpItem{
+			ButtonName: "Y", HelpText: localize("button_filters", "Filters"), Group: gaba.FooterGroupRight,
+		})
+	}
+
+	return append(items, gaba.FooterHelpItem{
+		ButtonName: "X", HelpText: localize("button_search", "Search"), Group: gaba.FooterGroupRight,
+	})
+}
+
+// previousLetter jumps to the start of the current initial, then to the start
+// of the one before it, so holding L1 walks back through the alphabet.
+func previousLetter(items []gaba.MenuItem, from int) int {
+	if len(items) == 0 {
+		return from
+	}
+
+	start := startOfLetter(items, from)
+	if from > start || start == 0 {
+		return start
+	}
+	return startOfLetter(items, start-1)
+}
+
+// nextLetter jumps to the first game filed under the next initial.
+func nextLetter(items []gaba.MenuItem, from int) int {
+	if len(items) == 0 {
+		return from
+	}
+
+	letter := getLetter(items[from])
+	for i := from + 1; i < len(items); i++ {
+		if getLetter(items[i]) != letter {
+			return i
+		}
+	}
+	return from
+}
+
+// startOfLetter is the index of the first game sharing an initial with the one
+// at index.
+func startOfLetter(items []gaba.MenuItem, index int) int {
+	letter := getLetter(items[index])
+	for index > 0 && getLetter(items[index-1]) == letter {
+		index--
+	}
+	return index
 }

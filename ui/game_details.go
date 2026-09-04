@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"grout/cache"
+	"grout/catalog"
 	"grout/cfw"
 	"grout/files"
 	"grout/imaging"
@@ -59,7 +60,7 @@ func (s *GameDetailsScreen) Draw(input GameDetailsInput) (GameDetailsOutput, err
 
 	// Determine initial download text based on first file
 	initialDownloadText := downloadText
-	if isRomDownloaded(*input.Config, input.Game) {
+	if catalog.IsDownloaded(*input.Config, input.Game) {
 		initialDownloadText = redownloadText
 	}
 
