@@ -184,14 +184,19 @@ type PlatformGroup struct {
 // A platform with no mapping is left out rather than shown empty: there is
 // nowhere on the device for its games to be.
 func GroupByPlatform(games []romm.Rom, platforms []romm.Platform) []PlatformGroup {
-	mapped := make(map[string]bool, len(platforms))
+	known := make(map[string]bool, len(platforms))
 	for _, platform := range platforms {
-		mapped[platform.FSSlug] = true
+		known[platform.FSSlug] = true
 	}
+	return groupByPlatform(games, func(fsSlug string) bool { return known[fsSlug] })
+}
 
+// groupByPlatform is the grouping itself, with what counts as a platform worth
+// keeping left to the caller.
+func groupByPlatform(games []romm.Rom, keep func(fsSlug string) bool) []PlatformGroup {
 	byslug := make(map[string]*PlatformGroup)
 	for _, game := range games {
-		if !mapped[game.PlatformFSSlug] {
+		if !keep(game.PlatformFSSlug) {
 			continue
 		}
 
@@ -210,13 +215,37 @@ func GroupByPlatform(games []romm.Rom, platforms []romm.Platform) []PlatformGrou
 	groups := make([]PlatformGroup, 0, len(byslug))
 	for _, group := range byslug {
 		slices.SortFunc(group.Games, func(a, b romm.Rom) int {
-			return strings.Compare(a.Name, b.Name)
+			return strings.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
 		})
 		groups = append(groups, *group)
 	}
 	slices.SortFunc(groups, func(a, b PlatformGroup) int {
-		return strings.Compare(a.Name, b.Name)
+		return strings.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
 	})
 
 	return groups
+}
+
+// Reordered returns the platforms in the order they now appear, or nil when
+// nothing moved.
+//
+// The list the user dragged is compared against the one they started with, so
+// a run that changed nothing does not rewrite the saved order.
+func Reordered(original, shown []romm.Platform) []romm.Platform {
+	if len(shown) != len(original) {
+		return nil
+	}
+
+	moved := false
+	for i := range original {
+		if original[i].FSSlug != shown[i].FSSlug {
+			moved = true
+			break
+		}
+	}
+	if !moved {
+		return nil
+	}
+
+	return slices.Clone(shown)
 }

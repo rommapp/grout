@@ -2,6 +2,7 @@ package ui
 
 import (
 	"errors"
+	"grout/catalog"
 	"grout/romm"
 	"grout/settings"
 
@@ -48,23 +49,19 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (PlatformSe
 
 	var menuItems []gaba.MenuItem
 
+	// Collections sit above the platforms and stay there, so the row is not
+	// draggable and carries a marker of its own rather than a platform with a
+	// reserved slug that a real one could take.
 	if input.ShowCollections {
 		menuItems = append(menuItems, gaba.MenuItem{
-			Text:           i18n.Localize(&goi18n.Message{ID: "platform_selection_collections", Other: "Collections"}, nil),
-			Selected:       false,
-			Focused:        false,
-			Metadata:       romm.Platform{FSSlug: "collections"},
+			Text:           localize("platform_selection_collections", "Collections"),
+			Metadata:       collectionsRow{},
 			NotReorderable: true,
 		})
 	}
 
 	for _, platform := range platforms {
-		menuItems = append(menuItems, gaba.MenuItem{
-			Text:     platform.Name,
-			Selected: false,
-			Focused:  false,
-			Metadata: platform,
-		})
+		menuItems = append(menuItems, gaba.MenuItem{Text: platform.Name, Metadata: platform})
 	}
 
 	var footerItems []gaba.FooterHelpItem
@@ -112,34 +109,10 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (PlatformSe
 
 	sel, err := gaba.List(options)
 
-	// Check for reordering before handling errors
-	// This ensures we save the order even when user presses B (cancel)
-	platformsReordered := false
-	startIndex := 0
-	if input.ShowCollections {
-		startIndex = 1
-	}
-
-	if sel != nil && len(sel.Items) > 0 {
-		if len(sel.Items)-startIndex == len(platforms) {
-			for i := 0; i < len(platforms); i++ {
-				originalPlatform := platforms[i]
-				returnedPlatform := sel.Items[i+startIndex].Metadata.(romm.Platform)
-				if originalPlatform.FSSlug != returnedPlatform.FSSlug {
-					platformsReordered = true
-					break
-				}
-			}
-		}
-
-		if platformsReordered {
-			var reorderedPlatforms []romm.Platform
-			for i := startIndex; i < len(sel.Items); i++ {
-				platform := sel.Items[i].Metadata.(romm.Platform)
-				reorderedPlatforms = append(reorderedPlatforms, platform)
-			}
-			output.ReorderedPlatforms = reorderedPlatforms
-		}
+	// Read the order back before handling the error, so dragging the list and
+	// then pressing B still saves what was dragged.
+	if sel != nil {
+		output.ReorderedPlatforms = catalog.Reordered(platforms, shownPlatforms(sel.Items))
 	}
 
 	if err != nil {
@@ -152,17 +125,16 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (PlatformSe
 
 	switch sel.Action {
 	case gaba.ListActionSelected:
-		platform := sel.Items[sel.Selected[0]].Metadata.(romm.Platform)
-
-		output.SelectedPlatform = platform
 		output.LastSelectedIndex = sel.Selected[0]
 		output.LastSelectedPosition = sel.VisiblePosition
 
-		if platform.FSSlug == "collections" {
+		platform, isPlatform := sel.Items[sel.Selected[0]].Metadata.(romm.Platform)
+		if !isPlatform {
 			output.Action = PlatformSelectionActionCollections
 			return output, nil
 		}
 
+		output.SelectedPlatform = platform
 		output.Action = PlatformSelectionActionSelected
 		return output, nil
 
@@ -181,4 +153,19 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (PlatformSe
 
 	output.Action = PlatformSelectionActionQuit
 	return output, nil
+}
+
+// collectionsRow marks the Collections entry, which is not a platform.
+type collectionsRow struct{}
+
+// shownPlatforms is the platforms in the order the list now holds them,
+// skipping anything that is not one.
+func shownPlatforms(items []gaba.MenuItem) []romm.Platform {
+	platforms := make([]romm.Platform, 0, len(items))
+	for _, item := range items {
+		if platform, ok := item.Metadata.(romm.Platform); ok {
+			platforms = append(platforms, platform)
+		}
+	}
+	return platforms
 }

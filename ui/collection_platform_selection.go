@@ -3,16 +3,12 @@ package ui
 import (
 	"errors"
 	"fmt"
-	"grout/cache"
+	"grout/catalog"
 	"grout/romm"
 	"grout/settings"
-	"slices"
-	"strings"
 	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type CollectionPlatformSelectionInput struct {
@@ -48,115 +44,44 @@ func (s *CollectionPlatformSelectionScreen) Draw(input CollectionPlatformSelecti
 		LastSelectedPosition: input.LastSelectedPosition,
 	}
 
-	var allGames []romm.Rom
-	if len(input.CachedGames) > 0 {
-		allGames = input.CachedGames
-	} else {
-		cm := cache.GetCacheManager()
-		if cm != nil {
-			// Try to load from cache via game_collections join
-			if cached, err := cm.GetCollectionGames(input.Collection); err == nil && len(cached) > 0 {
-				logger.Debug("Loaded collection games from cache", "collection", input.Collection.Name, "count", len(cached))
-				allGames = cached
-			} else if len(input.Collection.ROMIDs) > 0 {
-				// Fallback: collection has ROM IDs, fetch games directly by ID from cache
-				logger.Debug("Cache join miss, trying direct ID lookup", "collection", input.Collection.Name, "romIDs", len(input.Collection.ROMIDs))
-				if games, err := cm.GetGamesByIDs(input.Collection.ROMIDs); err == nil && len(games) > 0 {
-					logger.Debug("Loaded collection games by ID from cache", "collection", input.Collection.Name, "count", len(games))
-					allGames = games
-				}
-			}
-		}
-
-		// If still no games, show error - cache should be populated
-		if len(allGames) == 0 {
-			gaba.ProcessMessage(
-				i18n.Localize(&goi18n.Message{ID: "collection_cache_missing", Other: "Collection not cached.\nPlease refresh the cache."}, nil),
-				gaba.ProcessMessageOptions{ShowThemeBackground: true},
-				func() (interface{}, error) {
-					time.Sleep(time.Second * 2)
-					return nil, nil
-				},
-			)
+	allGames := input.CachedGames
+	if len(allGames) == 0 {
+		games, err := catalog.CollectionGames(input.Collection)
+		if err != nil {
+			logger.Debug("Cannot read a collection's games", "collection", input.Collection.Name, "error", err)
+			s.tell(localize("collection_cache_missing", "Collection not cached.\nPlease refresh the cache."))
 			return output, nil
 		}
+		allGames = games
 	}
 
-	// Handle unified mode - skip platform selection and return all games
+	// Unified mode skips this screen: every platform's games are shown at once
+	// and the caller reads the empty platform as meaning all of them.
 	if input.Config.CollectionView == settings.CollectionViewUnified {
-		// Filter games to only include those with mapped platforms
-		filteredGames := make([]romm.Rom, 0)
-		for _, game := range allGames {
-			if _, hasMapping := input.Config.DirectoryMappings[game.PlatformFSSlug]; hasMapping {
-				filteredGames = append(filteredGames, game)
-			}
-		}
-
-		output.AllGames = filteredGames
-		output.SelectedPlatform = romm.Platform{ID: 0} // ID=0 signals unified mode
+		output.AllGames = catalog.GamesOnMappedPlatforms(*input.Config, allGames)
+		output.SelectedPlatform = romm.Platform{}
 		output.Action = CollectionPlatformSelectionActionSelected
 		return output, nil
 	}
 
-	platformMap := make(map[int]romm.Platform)
-	for _, game := range allGames {
-		if _, exists := platformMap[game.PlatformID]; !exists {
-			if _, hasMapping := input.Config.DirectoryMappings[game.PlatformFSSlug]; hasMapping {
-				platformMap[game.PlatformID] = romm.Platform{
-					ID:     game.PlatformID,
-					FSSlug: game.PlatformFSSlug,
-					Name:   game.PlatformDisplayName,
-				}
-			}
-		}
-	}
-
-	if len(platformMap) == 0 {
-		gaba.ProcessMessage(
-			i18n.Localize(&goi18n.Message{ID: "collection_platform_no_mapped", Other: "No platforms with mapped games in\n{{.Name}}"}, map[string]interface{}{"Name": input.Collection.Name}),
-			gaba.ProcessMessageOptions{ShowThemeBackground: true},
-			func() (interface{}, error) {
-				time.Sleep(time.Second * 2)
-				return nil, nil
-			},
-		)
+	groups := catalog.PlatformsIn(*input.Config, allGames)
+	if len(groups) == 0 {
+		s.tell(localizeWith("collection_platform_no_mapped",
+			"No platforms with mapped games in\n{{.Name}}", map[string]any{"Name": input.Collection.Name}))
 		return output, nil
 	}
 
-	platforms := make([]romm.Platform, 0, len(platformMap))
-	for _, platform := range platformMap {
-		platforms = append(platforms, platform)
-	}
-
-	slices.SortFunc(platforms, func(a, b romm.Platform) int {
-		return strings.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
-	})
-
-	gameCounts := make(map[int]int)
-	for _, game := range allGames {
-		if _, hasMapping := input.Config.DirectoryMappings[game.PlatformFSSlug]; hasMapping {
-			gameCounts[game.PlatformID]++
-		}
-	}
-
-	menuItems := make([]gaba.MenuItem, len(platforms))
-	for i, platform := range platforms {
-		gameCount := gameCounts[platform.ID]
-		displayName := fmt.Sprintf("%s (%d)", platform.Name, gameCount)
+	menuItems := make([]gaba.MenuItem, len(groups))
+	for i, group := range groups {
 		menuItems[i] = gaba.MenuItem{
-			Text:     displayName,
-			Selected: false,
-			Focused:  false,
-			Metadata: platform,
+			Text:     fmt.Sprintf("%s (%d)", group.Name, len(group.Games)),
+			Metadata: i,
 		}
 	}
 
-	footerItems := []gaba.FooterHelpItem{
-		{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_back", Other: "Back"}, nil)},
-		{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_select", Other: "Select"}, nil)},
-	}
+	footerItems := []gaba.FooterHelpItem{FooterBack(), FooterSelect()}
 
-	title := i18n.Localize(&goi18n.Message{ID: "collection_platform_title", Other: "{{.Name}} - Platforms"}, map[string]interface{}{"Name": input.Collection.Name})
+	title := localizeWith("collection_platform_title", "{{.Name}} - Platforms", map[string]any{"Name": input.Collection.Name})
 	options := gaba.DefaultListOptions(title, menuItems)
 	options.UseSmallTitle = true
 	options.FooterHelpItems = footerItems
@@ -174,9 +99,10 @@ func (s *CollectionPlatformSelectionScreen) Draw(input CollectionPlatformSelecti
 
 	switch sel.Action {
 	case gaba.ListActionSelected:
-		platform := sel.Items[sel.Selected[0]].Metadata.(romm.Platform)
+		index, _ := sel.Items[sel.Selected[0]].Metadata.(int)
+		group := groups[index]
 
-		output.SelectedPlatform = platform
+		output.SelectedPlatform = romm.Platform{ID: group.Games[0].PlatformID, FSSlug: group.FSSlug, Name: group.Name}
 		output.AllGames = allGames
 		output.LastSelectedIndex = sel.Selected[0]
 		output.LastSelectedPosition = sel.VisiblePosition
@@ -186,4 +112,15 @@ func (s *CollectionPlatformSelectionScreen) Draw(input CollectionPlatformSelecti
 	default:
 		return output, nil
 	}
+}
+
+// tell shows a message that closes itself, for a dead end the user cannot act
+// on from here.
+func (s *CollectionPlatformSelectionScreen) tell(message string) {
+	gaba.ProcessMessage(message, gaba.ProcessMessageOptions{ShowThemeBackground: true},
+		func() (any, error) {
+			time.Sleep(2 * time.Second)
+			return nil, nil
+		},
+	)
 }
