@@ -4,6 +4,7 @@ import (
 	"image"
 	_ "image/png" // register PNG decoder for image.Decode
 	"os"
+	"strings"
 	"testing"
 
 	goqr "github.com/piglig/go-qr"
@@ -47,4 +48,39 @@ func TestCreateTempQRCode(t *testing.T) {
 	if decoded != content {
 		t.Errorf("decoded QR = %q, want %q", decoded, content)
 	}
+}
+
+// The caller is handed a path to clean up, so a failure that returns no path
+// must not leave a file nobody knows about.
+func TestCreateTempQRCode_LeavesNothingBehindOnFailure(t *testing.T) {
+	before := qrFilesInTemp(t)
+
+	// A zero size is rejected while writing the image, which is after the
+	// temp file has already been made. Content too large to encode fails
+	// earlier than that and never reaches this path.
+	if _, err := CreateTempQRCode("https://example.com", 0); err == nil {
+		t.Fatal("a zero size was accepted, so this no longer reaches the failure being guarded")
+	}
+
+	if after := qrFilesInTemp(t); after > before {
+		t.Errorf("temp qr files went from %d to %d, so a failed encode left one behind", before, after)
+	}
+}
+
+// qrFilesInTemp counts the qr code files sitting in the temp directory.
+func qrFilesInTemp(t *testing.T) int {
+	t.Helper()
+
+	entries, err := os.ReadDir(os.TempDir())
+	if err != nil {
+		t.Skipf("cannot read the temp directory: %v", err)
+	}
+
+	count := 0
+	for _, entry := range entries {
+		if strings.HasPrefix(entry.Name(), "qrcode-") {
+			count++
+		}
+	}
+	return count
 }

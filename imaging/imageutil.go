@@ -32,6 +32,9 @@ func CreateTempQRCode(content string, size int) (string, error) {
 
 	config := goqr.NewQrCodeImgConfig(size/10, qrQuietZone)
 	if err := qr.PNG(config, tempFile.Name()); err != nil {
+		// The caller has no path to clean up after a failure, so the empty
+		// file this leaves behind would never be removed.
+		os.Remove(tempFile.Name())
 		return "", err
 	}
 

@@ -5,6 +5,7 @@ import (
 	"grout/imaging"
 	"grout/romm"
 	"grout/settings"
+	"os"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
@@ -33,6 +34,8 @@ func (s *GameQRScreen) Draw(input GameQRInput) (GameQROutput, error) {
 		logger.Error("Unable to generate QR code", "error", err)
 		return output, err
 	}
+	// It only has to last as long as the screen is drawn.
+	defer os.Remove(qrcode)
 
 	sections := []gaba.Section{
 		gaba.NewImageSection(
