@@ -1,8 +1,7 @@
 package ui
 
 import (
-	"grout/cache"
-	"sort"
+	"grout/saves"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	buttons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
@@ -25,19 +24,8 @@ func NewSyncHistoryScreen() *SyncHistoryScreen {
 func (s *SyncHistoryScreen) Draw(input SyncHistoryInput) (SyncHistoryOutput, error) {
 	output := SyncHistoryOutput{Action: SyncHistoryActionBack}
 
-	cm := cache.GetCacheManager()
-	if cm == nil {
-		gaba.ConfirmationMessage(
-			localize("sync_history_no_cache", "Cache not available."),
-			ContinueFooter(),
-			gaba.MessageOptions{},
-		)
-		return output, nil
-	}
-
-	records := cm.GetSaveSyncHistory(input.DeviceID)
-
-	if len(records) == 0 {
+	days := saves.SyncHistory(input.DeviceID)
+	if len(days) == 0 {
 		gaba.ConfirmationMessage(
 			localize("sync_history_empty", "No sync history found."),
 			ContinueFooter(),
@@ -46,10 +34,8 @@ func (s *SyncHistoryScreen) Draw(input SyncHistoryInput) (SyncHistoryOutput, err
 		return output, nil
 	}
 
-	sections := s.buildSections(records, cm)
-
 	options := gaba.DefaultInfoScreenOptions()
-	options.Sections = sections
+	options.Sections = historySections(days)
 	options.ShowThemeBackground = false
 	options.ShowScrollbar = true
 	options.ConfirmButton = buttons.VirtualButtonUnassigned
@@ -63,12 +49,17 @@ func (s *SyncHistoryScreen) Draw(input SyncHistoryInput) (SyncHistoryOutput, err
 	return output, nil
 }
 
+// The icons are Material Design codepoints in the toolkit's font. The plain
+// cloud heads the column that says which way each save went.
 const (
 	cloudOutline         = "\U000F0163"
 	cloudDownloadOutline = "\U000F0B7D"
 	cloudUploadOutline   = "\U000F0B7E"
 )
 
+// actionIcon shows which way a save went. An action grout does not recognise
+// is written out rather than dropped, so a new one shows up as itself instead
+// of as a blank cell.
 func actionIcon(action string) string {
 	switch action {
 	case "upload":
@@ -80,61 +71,7 @@ func actionIcon(action string) string {
 	}
 }
 
-func (s *SyncHistoryScreen) buildSections(records []cache.SaveSyncRecord, cm *cache.Manager) []gaba.Section {
-	// Build ROM ID → platform slug lookup
-	romIDs := make([]int, 0, len(records))
-	seen := make(map[int]bool)
-	for _, r := range records {
-		if !seen[r.RomID] {
-			seen[r.RomID] = true
-			romIDs = append(romIDs, r.RomID)
-		}
-	}
-
-	platformByRomID := make(map[int]string)
-	if games, err := cm.GetGamesByIDs(romIDs); err == nil {
-		for _, g := range games {
-			platformByRomID[g.ID] = g.PlatformFSSlug
-		}
-	}
-
-	type rowEntry struct {
-		action   string
-		romName  string
-		platform string
-		time     string
-	}
-
-	type dateGroup struct {
-		date    string
-		entries []rowEntry
-	}
-
-	groups := make([]dateGroup, 0)
-	groupIndex := make(map[string]int)
-
-	for _, r := range records {
-		local := r.SyncedAt.Local()
-		dateKey := local.Format("January 2, 2006")
-		timeStr := local.Format("15:04")
-		platform := platformByRomID[r.RomID]
-
-		entry := rowEntry{
-			action:   r.Action,
-			romName:  r.RomName,
-			platform: platform,
-			time:     timeStr,
-		}
-
-		idx, ok := groupIndex[dateKey]
-		if !ok {
-			idx = len(groups)
-			groupIndex[dateKey] = idx
-			groups = append(groups, dateGroup{date: dateKey})
-		}
-		groups[idx].entries = append(groups[idx].entries, entry)
-	}
-
+func historySections(days []saves.SyncDay) []gaba.Section {
 	headers := []string{
 		cloudOutline,
 		localize("sync_history_col_game", "Game"),
@@ -142,22 +79,20 @@ func (s *SyncHistoryScreen) buildSections(records []cache.SaveSyncRecord, cm *ca
 		localize("sync_history_col_time", "Time"),
 	}
 
-	var sections []gaba.Section
-	for _, g := range groups {
-		// Sort by time descending, then title ascending
-		sort.Slice(g.entries, func(i, j int) bool {
-			if g.entries[i].time != g.entries[j].time {
-				return g.entries[i].time > g.entries[j].time
-			}
-			return g.entries[i].romName < g.entries[j].romName
-		})
-
-		rows := make([]gaba.TableRow, len(g.entries))
-		for i, e := range g.entries {
-			rows[i] = gaba.TableRow{Cells: []string{actionIcon(e.action), e.romName, e.platform, e.time}}
+	sections := make([]gaba.Section, 0, len(days))
+	for _, day := range days {
+		rows := make([]gaba.TableRow, len(day.Events))
+		for i, event := range day.Events {
+			rows[i] = gaba.TableRow{Cells: []string{
+				actionIcon(event.Action),
+				event.RomName,
+				event.Platform,
+				event.At.Format("15:04"),
+			}}
 		}
 
-		sections = append(sections, gaba.NewTableSection(g.date, headers, rows, gaba.TableGridRowDividers))
+		sections = append(sections, gaba.NewTableSection(
+			day.Date.Format("January 2, 2006"), headers, rows, gaba.TableGridRowDividers))
 	}
 
 	return sections
