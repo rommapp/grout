@@ -8,8 +8,6 @@ import (
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type GameQRInput struct {
@@ -38,7 +36,7 @@ func (s *GameQRScreen) Draw(input GameQRInput) (GameQROutput, error) {
 
 	sections := []gaba.Section{
 		gaba.NewImageSection(
-			i18n.Localize(&goi18n.Message{ID: "game_qr_title", Other: "RomM Game Page"}, nil),
+			localize("game_qr_title", "RomM Game Page"),
 			qrcode,
 			int32(256),
 			int32(256),
@@ -52,7 +50,7 @@ func (s *GameQRScreen) Draw(input GameQRInput) (GameQROutput, error) {
 	options.ConfirmButton = constants.VirtualButtonUnassigned
 
 	footerItems := []gaba.FooterHelpItem{
-		{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_back", Other: "Back"}, nil)},
+		{ButtonName: "B", HelpText: localize("button_back", "Back")},
 	}
 
 	_, err = gaba.DetailScreen(input.Game.Name, options, footerItems)

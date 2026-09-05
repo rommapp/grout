@@ -4,8 +4,6 @@ import (
 	"fmt"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 	uatomic "go.uber.org/atomic"
 
 	"grout/cache"
@@ -76,11 +74,11 @@ func (s *RebuildCacheScreen) Draw(input RebuildCacheInput) (RebuildCacheOutput, 
 // label, so translating the menu cannot change what the screen does.
 func askCacheScope() (catalog.CacheScope, bool) {
 	result, err := gaba.SelectionMessage(
-		i18n.Localize(&goi18n.Message{ID: "cache_clear_prompt", Other: "What would you like to clear?"}, nil),
+		localize("cache_clear_prompt", "What would you like to clear?"),
 		[]gaba.SelectionOption{
-			{DisplayName: i18n.Localize(&goi18n.Message{ID: "cache_clear_metadata", Other: "Metadata"}, nil), Value: catalog.ScopeMetadata},
-			{DisplayName: i18n.Localize(&goi18n.Message{ID: "cache_clear_artwork", Other: "Artwork"}, nil), Value: catalog.ScopeArtwork},
-			{DisplayName: i18n.Localize(&goi18n.Message{ID: "cache_clear_both", Other: "All"}, nil), Value: catalog.ScopeAll},
+			{DisplayName: localize("cache_clear_metadata", "Metadata"), Value: catalog.ScopeMetadata},
+			{DisplayName: localize("cache_clear_artwork", "Artwork"), Value: catalog.ScopeArtwork},
+			{DisplayName: localize("cache_clear_both", "All"), Value: catalog.ScopeAll},
 		},
 		[]gaba.FooterHelpItem{FooterContinue(), FooterCancel()},
 		gaba.SelectionMessageSettings{},
@@ -98,7 +96,7 @@ func rebuildMetadataWithProgress(input RebuildCacheInput) ([]romm.Platform, erro
 
 	var platforms []romm.Platform
 	_, err := gaba.ProcessMessage(
-		i18n.Localize(&goi18n.Message{ID: "cache_building", Other: "Building cache..."}, nil),
+		localize("cache_building", "Building cache..."),
 		gaba.ProcessMessageOptions{
 			ShowThemeBackground: true,
 			ShowProgressBar:     true,
@@ -122,7 +120,7 @@ func reportRebuildFailure(err error) (RebuildCacheOutput, error) {
 	gaba.GetLogger().Error("Cache rebuild failed", "error", err)
 	gaba.ConfirmationMessage(
 		fmt.Sprintf("%s: %v",
-			i18n.Localize(&goi18n.Message{ID: "cache_rebuild_failed", Other: "Cache rebuild failed"}, nil), err),
+			localize("cache_rebuild_failed", "Cache rebuild failed"), err),
 		ContinueFooter(),
 		gaba.MessageOptions{},
 	)

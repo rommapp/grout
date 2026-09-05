@@ -5,8 +5,6 @@ import (
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	buttons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type LogoutConfirmationOutput struct {
@@ -24,10 +22,10 @@ func (s *LogoutConfirmationScreen) Draw() (LogoutConfirmationOutput, error) {
 	output := LogoutConfirmationOutput{Action: LogoutConfirmationActionCancel}
 
 	_, err := gaba.ConfirmationMessage(
-		i18n.Localize(&goi18n.Message{ID: "logout_confirm_message", Other: "Are you sure you want to logout?"}, nil),
+		localize("logout_confirm_message", "Are you sure you want to logout?"),
 		[]gaba.FooterHelpItem{
-			{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_cancel", Other: "Cancel"}, nil)},
-			{ButtonName: "X", HelpText: i18n.Localize(&goi18n.Message{ID: "button_confirm", Other: "Confirm"}, nil)},
+			{ButtonName: "B", HelpText: localize("button_cancel", "Cancel")},
+			{ButtonName: "X", HelpText: localize("button_confirm", "Confirm")},
 		},
 		gaba.MessageOptions{
 			ConfirmButton: buttons.VirtualButtonX,

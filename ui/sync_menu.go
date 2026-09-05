@@ -5,8 +5,6 @@ import (
 	"grout/settings"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type SyncMenuInput struct {
@@ -45,21 +43,21 @@ func (s *SyncMenuScreen) Draw(input SyncMenuInput) (SyncMenuOutput, error) {
 
 	items := []gaba.ItemWithOptions{
 		{
-			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "sync_menu_sync_now", Other: "Sync Now"}, nil)},
+			Item:    gaba.MenuItem{Text: localize("sync_menu_sync_now", "Sync Now")},
 			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
 		},
 		{
-			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "sync_menu_synced_games", Other: "Synced Games"}, nil)},
+			Item:    gaba.MenuItem{Text: localize("sync_menu_synced_games", "Synced Games")},
 			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
 		},
 		{
-			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "sync_menu_history", Other: "View History"}, nil)},
+			Item:    gaba.MenuItem{Text: localize("sync_menu_history", "View History")},
 			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
 		},
 	}
 
 	result, err := gaba.OptionsList(
-		i18n.Localize(&goi18n.Message{ID: "sync_menu_title", Other: "Save Sync"}, nil),
+		localize("sync_menu_title", "Save Sync"),
 		gaba.OptionListSettings{
 			FooterHelpItems:      []gaba.FooterHelpItem{FooterBack(), FooterSelect()},
 			InitialSelectedIndex: input.LastSelectedIndex,

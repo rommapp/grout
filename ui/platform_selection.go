@@ -8,8 +8,6 @@ import (
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	buttons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type PlatformSelectionInput struct {
@@ -70,26 +68,26 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (PlatformSe
 		if !settings.IsKidModeEnabled() {
 			footerItems = append(footerItems, gaba.FooterHelpItem{
 				ButtonName: "X",
-				HelpText:   i18n.Localize(&goi18n.Message{ID: "button_settings", Other: "Settings"}, nil),
+				HelpText:   localize("button_settings", "Settings"),
 			})
 
 			if input.ShowSaveSync {
 				footerItems = append(footerItems, gaba.FooterHelpItem{
 					ButtonName: "Y",
-					HelpText:   i18n.Localize(&goi18n.Message{ID: "button_sync", Other: "Sync"}, nil),
+					HelpText:   localize("button_sync", "Sync"),
 				})
 			}
 		} else {
 			footerItems = append(footerItems, gaba.FooterHelpItem{
 				ButtonName: "B",
-				HelpText:   i18n.Localize(&goi18n.Message{ID: "button_quit", Other: "Quit"}, nil),
+				HelpText:   localize("button_quit", "Quit"),
 			})
 		}
-		footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_select", Other: "Select"}, nil)})
+		footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: "A", HelpText: localize("button_select", "Select")})
 	} else {
 		footerItems = []gaba.FooterHelpItem{
-			{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_back", Other: "Back"}, nil)},
-			{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_select", Other: "Select"}, nil)},
+			{ButtonName: "B", HelpText: localize("button_back", "Back")},
+			{ButtonName: "A", HelpText: localize("button_select", "Select")},
 		}
 	}
 

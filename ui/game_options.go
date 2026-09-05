@@ -7,8 +7,6 @@ import (
 	"grout/settings"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type GameOptionsInput struct {
@@ -40,7 +38,7 @@ func (s *GameOptionsScreen) Draw(input GameOptionsInput) (GameOptionsOutput, err
 	if input.Host.DeviceID != "" {
 		client := romm.NewClientFromHost(input.Host, config.ApiTimeout.Duration())
 		gaba.ProcessMessage(
-			i18n.Localize(&goi18n.Message{ID: "synced_games_loading_detail", Other: "Loading save details..."}, nil),
+			localize("synced_games_loading_detail", "Loading save details..."),
 			gaba.ProcessMessageOptions{ShowThemeBackground: true},
 			func() (any, error) {
 				summary, err := client.GetSaveSummary(input.Game.ID)
@@ -56,14 +54,14 @@ func (s *GameOptionsScreen) Draw(input GameOptionsInput) (GameOptionsOutput, err
 
 	items := s.buildMenuItems(config, input.Game, input.Host.DeviceID != "", slotNames)
 
-	showQRText := i18n.Localize(&goi18n.Message{ID: "game_options_show_qr", Other: "Show QR Code"}, nil)
+	showQRText := localize("game_options_show_qr", "Show QR Code")
 	items = append(items, gaba.ItemWithOptions{
 		Item:           gaba.MenuItem{Text: showQRText},
 		Options:        []gaba.Option{{DisplayName: "", Value: "show_qr", Type: gaba.OptionTypeClickable}},
 		SelectedOption: 0,
 	})
 
-	title := i18n.Localize(&goi18n.Message{ID: "game_options_title", Other: "Game Options"}, nil)
+	title := localize("game_options_title", "Game Options")
 
 	result, err := gaba.OptionsList(
 		title,
@@ -125,7 +123,7 @@ func (s *GameOptionsScreen) buildMenuItems(config *settings.Config, game romm.Ro
 	items := make([]gaba.ItemWithOptions, 0)
 
 	if deviceRegistered {
-		saveSlotText := i18n.Localize(&goi18n.Message{ID: "game_options_save_slot", Other: "Save Slot"}, nil)
+		saveSlotText := localize("game_options_save_slot", "Save Slot")
 		slotOpts := BuildSlotOptions(config, game.ID, slotNames)
 
 		items = append(items, gaba.ItemWithOptions{
@@ -139,7 +137,7 @@ func (s *GameOptionsScreen) buildMenuItems(config *settings.Config, game romm.Ro
 }
 
 func (s *GameOptionsScreen) applySettings(config *settings.Config, game romm.Rom, items []gaba.ItemWithOptions) {
-	saveSlotText := i18n.Localize(&goi18n.Message{ID: "game_options_save_slot", Other: "Save Slot"}, nil)
+	saveSlotText := localize("game_options_save_slot", "Save Slot")
 
 	for _, item := range items {
 		if item.Item.Text == saveSlotText {

@@ -93,6 +93,11 @@ func buildTransitionFunc(state *AppState, quitOnBack bool, initialShowCollection
 		case ScreenServerAddress:
 			return transitionServerAddress(ctx, result)
 		case ScreenInputMapping:
+			// The toolkit reads the mapping once at startup, so a new one only
+			// takes effect on the next run. The screen has already said so.
+			if r, ok := result.(ui.InputMappingOutput); ok && r.Saved {
+				os.Exit(0)
+			}
 			return popOrExit(stack)
 		}
 

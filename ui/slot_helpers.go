@@ -4,8 +4,6 @@ import (
 	"grout/settings"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 // autosaveSlot is grout's canonical default slot. It's shown by its real name in slot
@@ -24,7 +22,7 @@ type SlotOptionsResult struct {
 // canonical "autosave" slot) and a "New Slot..." keyboard option for creating new slots.
 // The selected index is set to the current slot preference.
 func BuildSlotOptions(config *settings.Config, romID int, slotNames []string) SlotOptionsResult {
-	newSlotLabel := i18n.Localize(&goi18n.Message{ID: "game_options_new_slot", Other: "New Slot..."}, nil)
+	newSlotLabel := localize("game_options_new_slot", "New Slot...")
 
 	options := make([]gaba.Option, 0, len(slotNames)+2)
 

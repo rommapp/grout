@@ -5,8 +5,6 @@ import (
 	"grout/saves"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type SaveConflictInput struct {
@@ -41,7 +39,7 @@ func (s *SaveConflictScreen) Draw(input SaveConflictInput) (SaveConflictOutput, 
 
 	items := s.buildMenuItems(input.Items)
 
-	title := i18n.Localize(&goi18n.Message{ID: "save_conflict_title", Other: "Resolve Conflicts"}, nil)
+	title := localize("save_conflict_title", "Resolve Conflicts")
 
 	result, err := gaba.OptionsList(
 		title,
@@ -70,9 +68,9 @@ func (s *SaveConflictScreen) Draw(input SaveConflictInput) (SaveConflictOutput, 
 }
 
 func (s *SaveConflictScreen) buildMenuItems(conflicts []saves.SyncItem) []gaba.ItemWithOptions {
-	skip := i18n.Localize(&goi18n.Message{ID: "save_conflict_skip", Other: "Skip"}, nil)
-	keepLocal := i18n.Localize(&goi18n.Message{ID: "save_conflict_keep_local", Other: "Keep Local"}, nil)
-	keepRemote := i18n.Localize(&goi18n.Message{ID: "save_conflict_keep_remote", Other: "Keep Remote"}, nil)
+	skip := localize("save_conflict_skip", "Skip")
+	keepLocal := localize("save_conflict_keep_local", "Keep Local")
+	keepRemote := localize("save_conflict_keep_remote", "Keep Remote")
 
 	items := make([]gaba.ItemWithOptions, 0, len(conflicts))
 

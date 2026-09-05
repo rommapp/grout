@@ -6,8 +6,6 @@ import (
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	buttons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type SyncHistoryInput struct {
@@ -30,7 +28,7 @@ func (s *SyncHistoryScreen) Draw(input SyncHistoryInput) (SyncHistoryOutput, err
 	cm := cache.GetCacheManager()
 	if cm == nil {
 		gaba.ConfirmationMessage(
-			i18n.Localize(&goi18n.Message{ID: "sync_history_no_cache", Other: "Cache not available."}, nil),
+			localize("sync_history_no_cache", "Cache not available."),
 			ContinueFooter(),
 			gaba.MessageOptions{},
 		)
@@ -41,7 +39,7 @@ func (s *SyncHistoryScreen) Draw(input SyncHistoryInput) (SyncHistoryOutput, err
 
 	if len(records) == 0 {
 		gaba.ConfirmationMessage(
-			i18n.Localize(&goi18n.Message{ID: "sync_history_empty", Other: "No sync history found."}, nil),
+			localize("sync_history_empty", "No sync history found."),
 			ContinueFooter(),
 			gaba.MessageOptions{},
 		)
@@ -57,7 +55,7 @@ func (s *SyncHistoryScreen) Draw(input SyncHistoryInput) (SyncHistoryOutput, err
 	options.ConfirmButton = buttons.VirtualButtonUnassigned
 
 	gaba.DetailScreen(
-		i18n.Localize(&goi18n.Message{ID: "sync_history_title", Other: "Sync History"}, nil),
+		localize("sync_history_title", "Sync History"),
 		options,
 		[]gaba.FooterHelpItem{FooterBack()},
 	)
@@ -139,9 +137,9 @@ func (s *SyncHistoryScreen) buildSections(records []cache.SaveSyncRecord, cm *ca
 
 	headers := []string{
 		cloudOutline,
-		i18n.Localize(&goi18n.Message{ID: "sync_history_col_game", Other: "Game"}, nil),
-		i18n.Localize(&goi18n.Message{ID: "sync_history_col_platform", Other: "Platform"}, nil),
-		i18n.Localize(&goi18n.Message{ID: "sync_history_col_time", Other: "Time"}, nil),
+		localize("sync_history_col_game", "Game"),
+		localize("sync_history_col_platform", "Platform"),
+		localize("sync_history_col_time", "Time"),
 	}
 
 	var sections []gaba.Section

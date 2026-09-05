@@ -13,8 +13,6 @@ import (
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	gabaconst "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 	uatomic "go.uber.org/atomic"
 )
 
@@ -189,8 +187,7 @@ func (s *GameListScreen) loadGames(input GameListInput) (loadGamesResult, error)
 	progress := uatomic.NewFloat64(0)
 	var games []romm.Rom
 	_, err := gaba.ProcessMessage(
-		i18n.Localize(&goi18n.Message{ID: "games_list_loading", Other: "Loading {{.Name}}..."},
-			map[string]interface{}{"Name": source.Name()}),
+		localizeWith("games_list_loading", "Loading {{.Name}}...", map[string]any{"Name": source.Name()}),
 		gaba.ProcessMessageOptions{
 			ShowThemeBackground: true,
 			ShowProgressBar:     !source.IsCollection(),
@@ -212,9 +209,9 @@ func (s *GameListScreen) loadGames(input GameListInput) (loadGamesResult, error)
 func (s *GameListScreen) showEmptyMessage(platformName, searchFilter string) {
 	var message string
 	if searchFilter != "" {
-		message = i18n.Localize(&goi18n.Message{ID: "games_list_no_results", Other: "No results found for \"{{.Query}}\""}, map[string]interface{}{"Query": searchFilter})
+		message = localizeWith("games_list_no_results", "No results found for \"{{.Query}}\"", map[string]any{"Query": searchFilter})
 	} else {
-		message = i18n.Localize(&goi18n.Message{ID: "games_list_no_games", Other: "No games found for {{.Name}}"}, map[string]interface{}{"Name": platformName})
+		message = localizeWith("games_list_no_games", "No games found for {{.Name}}", map[string]any{"Name": platformName})
 	}
 
 	gaba.ProcessMessage(
@@ -228,7 +225,7 @@ func (s *GameListScreen) showEmptyMessage(platformName, searchFilter string) {
 }
 
 func (s *GameListScreen) showFilteredOutMessage(collectionName string) {
-	message := i18n.Localize(&goi18n.Message{ID: "games_list_filtered_out", Other: "No games in {{.Name}} match your platform mappings"}, map[string]interface{}{"Name": collectionName})
+	message := localizeWith("games_list_filtered_out", "No games in {{.Name}} match your platform mappings", map[string]any{"Name": collectionName})
 
 	gaba.ProcessMessage(
 		message,
@@ -245,9 +242,9 @@ func (s *GameListScreen) showErrorMessage(err error) {
 
 	classifiedErr := romm.ClassifyError(err)
 	if errors.Is(classifiedErr, romm.ErrTimeout) {
-		message = i18n.Localize(&goi18n.Message{ID: "games_list_load_timeout", Other: "Connection timed out!\nPlease check your network connection."}, nil)
+		message = localize("games_list_load_timeout", "Connection timed out!\nPlease check your network connection.")
 	} else {
-		message = i18n.Localize(&goi18n.Message{ID: "games_list_load_error", Other: "Failed to load games.\nPlease try again later."}, nil)
+		message = localize("games_list_load_error", "Failed to load games.\nPlease try again later.")
 	}
 
 	gaba.ProcessMessage(

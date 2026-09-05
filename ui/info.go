@@ -10,8 +10,6 @@ import (
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	buttons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type InfoInput struct {
@@ -45,8 +43,8 @@ func (s *InfoScreen) Draw(input InfoInput) (InfoOutput, error) {
 	options.ConfirmButton = buttons.VirtualButtonUnassigned
 
 	result, err := gaba.DetailScreen("", options, []gaba.FooterHelpItem{
-		{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_back", Other: "Back"}, nil)},
-		{ButtonName: "X", HelpText: i18n.Localize(&goi18n.Message{ID: "button_logout", Other: "Logout"}, nil)},
+		{ButtonName: "B", HelpText: localize("button_back", "Back")},
+		{ButtonName: "X", HelpText: localize("button_logout", "Logout")},
 	})
 
 	if err != nil {
@@ -71,25 +69,25 @@ func (s *InfoScreen) buildSections(input InfoInput) []gaba.Section {
 
 	versionInfo := version.Get()
 	versionMetadata := []gaba.MetadataItem{
-		{Label: i18n.Localize(&goi18n.Message{ID: "info_version", Other: "Version"}, nil), Value: versionInfo.Version},
-		{Label: i18n.Localize(&goi18n.Message{ID: "info_commit", Other: "Commit"}, nil), Value: versionInfo.GitCommit},
-		{Label: i18n.Localize(&goi18n.Message{ID: "info_build_date", Other: "Build Date"}, nil), Value: versionInfo.BuildDate},
-		{Label: i18n.Localize(&goi18n.Message{ID: "info_cfw", Other: "CFW"}, nil), Value: string(input.CFW)},
+		{Label: localize("info_version", "Version"), Value: versionInfo.Version},
+		{Label: localize("info_commit", "Commit"), Value: versionInfo.GitCommit},
+		{Label: localize("info_build_date", "Build Date"), Value: versionInfo.BuildDate},
+		{Label: localize("info_cfw", "CFW"), Value: string(input.CFW)},
 	}
 	sections = append(sections, gaba.NewInfoSection("Grout", versionMetadata))
 
 	rommVersion := input.RommVersion
 	if rommVersion == "" {
-		rommVersion = i18n.Localize(&goi18n.Message{ID: "info_unknown", Other: "Unknown"}, nil)
+		rommVersion = localize("info_unknown", "Unknown")
 	}
 
 	metadata := []gaba.MetadataItem{
 		{
-			Label: i18n.Localize(&goi18n.Message{ID: "info_server", Other: "Server"}, nil),
+			Label: localize("info_server", "Server"),
 			Value: input.Host.RootURI,
 		},
 		{
-			Label: i18n.Localize(&goi18n.Message{ID: "info_user", Other: "User"}, nil),
+			Label: localize("info_user", "User"),
 			Value: input.Host.Username,
 		},
 	}
@@ -97,12 +95,12 @@ func (s *InfoScreen) buildSections(input InfoInput) []gaba.Section {
 	if input.Host.HasTokenAuth() {
 		if input.Host.TokenName != "" {
 			metadata = append(metadata, gaba.MetadataItem{
-				Label: i18n.Localize(&goi18n.Message{ID: "info_token_name", Other: "Token"}, nil),
+				Label: localize("info_token_name", "Token"),
 				Value: input.Host.TokenName,
 			})
 		}
 
-		expiresValue := i18n.Localize(&goi18n.Message{ID: "info_token_never_expires", Other: "Never"}, nil)
+		expiresValue := localize("info_token_never_expires", "Never")
 		if input.Host.TokenExpiresAt != "" {
 			if t, err := time.Parse(time.RFC3339, input.Host.TokenExpiresAt); err == nil {
 				expiresValue = t.Local().Format("2006-01-02 15:04")
@@ -111,13 +109,13 @@ func (s *InfoScreen) buildSections(input InfoInput) []gaba.Section {
 			}
 		}
 		metadata = append(metadata, gaba.MetadataItem{
-			Label: i18n.Localize(&goi18n.Message{ID: "info_token_expires", Other: "Expires"}, nil),
+			Label: localize("info_token_expires", "Expires"),
 			Value: expiresValue,
 		})
 	}
 
 	metadata = append(metadata, gaba.MetadataItem{
-		Label: i18n.Localize(&goi18n.Message{ID: "info_romm_version", Other: "Version"}, nil),
+		Label: localize("info_romm_version", "Version"),
 		Value: rommVersion,
 	})
 
@@ -127,7 +125,7 @@ func (s *InfoScreen) buildSections(input InfoInput) []gaba.Section {
 	qrcode, err := imaging.CreateTempQRCode(qrText, 256)
 	if err == nil {
 		sections = append(sections, gaba.NewImageSection(
-			i18n.Localize(&goi18n.Message{ID: "info_repository", Other: "GitHub Repository"}, nil),
+			localize("info_repository", "GitHub Repository"),
 			qrcode,
 			int32(256),
 			int32(256),
