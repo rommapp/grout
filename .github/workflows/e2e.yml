@@ -1,0 +1,38 @@
+name: End to end
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  ui:
+    name: Drive the UI on every firmware
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the harness
+        run: docker build -f test/e2e/Dockerfile -t grout-e2e .
+
+      - name: Run
+        run: |
+          mkdir -p test/e2e/screenshots
+          docker run --rm \
+            -v "$PWD/test/e2e/screenshots:/screenshots" \
+            -e GROUT_E2E_SCREENSHOTS=/screenshots \
+            grout-e2e \
+            go test -tags=e2e -count=1 -v -timeout 20m ./...
+
+      # Worth keeping whether or not it passed: on a failure they show what
+      # was on screen, and on a pass they show what every firmware looks like.
+      - name: Keep the screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-screenshots
+          path: test/e2e/screenshots/
+          retention-days: 14
