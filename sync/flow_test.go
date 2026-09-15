@@ -1,11 +1,17 @@
 package sync
 
 import (
+	"encoding/json"
+	"fmt"
 	"grout/cfw"
 	"grout/internal"
 	"grout/romm"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"slices"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -105,6 +111,345 @@ func TestBuildDiscoveryItems_NullSlotIncluded(t *testing.T) {
 	}
 	if items[0].RemoteSave == nil || items[0].RemoteSave.ID != 223 {
 		t.Errorf("expected RemoteSave 223, got %+v", items[0].RemoteSave)
+	}
+}
+
+func TestFetchSavesForRomsBulkPreservesDuplicatesAndOrder(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		query := r.URL.Query()
+		if query.Get("device_id") != "device-1" || !slices.Equal(query["rom_ids"], []string{"2", "3"}) || query.Has("rom_id") || query.Has("platform_id") {
+			t.Errorf("bulk query = %q", r.URL.RawQuery)
+		}
+		_ = json.NewEncoder(w).Encode([]romm.Save{
+			{ID: 10, RomID: 2}, {ID: 12, RomID: 2}, {ID: 14, RomID: 3}, {ID: 10, RomID: 2},
+		})
+	}))
+	defer server.Close()
+
+	uncovered := map[int]cfw.LocalRomFile{2: {RomID: 2}, 3: {RomID: 3}}
+	got := fetchSavesForRoms(romm.NewClient(server.URL), "device-1", uncovered)
+	if requests.Load() != 1 {
+		t.Fatalf("requests=%d, want 1", requests.Load())
+	}
+	wantIDs := []int{10, 12, 10}
+	if len(got[2]) != len(wantIDs) {
+		t.Fatalf("ROM 2 saves = %+v", got[2])
+	}
+	for i, want := range wantIDs {
+		if got[2][i].ID != want {
+			t.Fatalf("ROM 2 order[%d] = %d, want %d", i, got[2][i].ID, want)
+		}
+	}
+	if len(got[3]) != 1 || got[3][0].ID != 14 {
+		t.Fatalf("ROM 3 saves = %+v", got[3])
+	}
+}
+
+func TestFetchSavesForRomsBulk1001RomsUsesThreeRequests(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		ids := r.URL.Query()["rom_ids"]
+		if len(ids) == 0 || len(ids) > 500 {
+			t.Errorf("rom_ids count = %d", len(ids))
+		}
+		if slices.Contains(ids, "1001") {
+			_ = json.NewEncoder(w).Encode([]romm.Save{{ID: 60, RomID: 1001}})
+			return
+		}
+		_ = json.NewEncoder(w).Encode([]romm.Save{})
+	}))
+	defer server.Close()
+	uncovered := make(map[int]cfw.LocalRomFile, 1001)
+	for romID := 1; romID <= 1001; romID++ {
+		uncovered[romID] = cfw.LocalRomFile{RomID: romID}
+	}
+	got := fetchSavesForRoms(romm.NewClient(server.URL), "device-large", uncovered)
+	if requests.Load() != 3 || len(got) != 1 {
+		t.Fatalf("requests=%d groups=%d", requests.Load(), len(got))
+	}
+}
+
+func TestFetchSavesForRomsSuccessfulEmptyBulkNeverFallsBack(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		_ = json.NewEncoder(w).Encode([]romm.Save{})
+	}))
+	defer server.Close()
+	got := fetchSavesForRoms(romm.NewClient(server.URL), "device-empty", map[int]cfw.LocalRomFile{1: {RomID: 1}, 2: {RomID: 2}})
+	if requests.Load() != 1 || len(got) != 0 {
+		t.Fatalf("requests=%d saves=%+v", requests.Load(), got)
+	}
+}
+
+func TestFetchSavesForRomsEmptyDeviceUsesPerRomFallbackOnly(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		query := r.URL.Query()
+		if query.Get("rom_id") == "" || query.Has("device_id") {
+			t.Errorf("empty-device fallback query = %q", r.URL.RawQuery)
+		}
+		var romID int
+		_, _ = fmt.Sscan(query.Get("rom_id"), &romID)
+		_ = json.NewEncoder(w).Encode([]romm.Save{{ID: romID, RomID: romID}})
+	}))
+	defer server.Close()
+	uncovered := map[int]cfw.LocalRomFile{1: {RomID: 1}, 2: {RomID: 2}, 3: {RomID: 3}}
+	got := fetchSavesForRoms(romm.NewClient(server.URL), "", uncovered)
+	if requests.Load() != 3 || len(got) != 3 {
+		t.Fatalf("requests=%d saves=%d", requests.Load(), len(got))
+	}
+}
+
+func TestFetchSavesForRomsBulkErrorsFallBackAndStayBounded(t *testing.T) {
+	for _, failure := range []string{"http", "decode", "network"} {
+		t.Run(failure, func(t *testing.T) {
+			var requests, active, peak atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requestNumber := requests.Add(1)
+				query := r.URL.Query()
+				if query.Get("device_id") != "device-fallback" {
+					t.Errorf("request %d device_id = %q", requestNumber, query.Get("device_id"))
+				}
+				if query.Get("rom_id") == "" {
+					switch failure {
+					case "http":
+						w.WriteHeader(http.StatusBadGateway)
+						_, _ = w.Write([]byte(`[{"id":999,"rom_id":1}]`))
+					case "decode":
+						_, _ = w.Write([]byte(`[{"id":999,"rom_id":1}`))
+					case "network":
+						hijacker, ok := w.(http.Hijacker)
+						if !ok {
+							t.Fatal("test server cannot hijack connection")
+						}
+						conn, _, err := hijacker.Hijack()
+						if err != nil {
+							t.Fatal(err)
+						}
+						_ = conn.Close()
+					}
+					return
+				}
+				current := active.Add(1)
+				defer active.Add(-1)
+				for {
+					old := peak.Load()
+					if current <= old || peak.CompareAndSwap(old, current) {
+						break
+					}
+				}
+				time.Sleep(5 * time.Millisecond)
+				var romID int
+				_, _ = fmt.Sscan(query.Get("rom_id"), &romID)
+				_ = json.NewEncoder(w).Encode([]romm.Save{{ID: romID, RomID: romID}})
+			}))
+			defer server.Close()
+
+			uncovered := make(map[int]cfw.LocalRomFile, 12)
+			for romID := 1; romID <= 12; romID++ {
+				uncovered[romID] = cfw.LocalRomFile{RomID: romID}
+			}
+			got := fetchSavesForRoms(romm.NewClient(server.URL), "device-fallback", uncovered)
+			if requests.Load() != 13 {
+				t.Fatalf("requests=%d, want 13", requests.Load())
+			}
+			if peak.Load() > maxConcurrentRequests {
+				t.Fatalf("peak fallback concurrency=%d, max=%d", peak.Load(), maxConcurrentRequests)
+			}
+			if len(got) != 12 || got[1][0].ID == 999 {
+				t.Fatalf("partial bulk response leaked or fallback incomplete: %+v", got)
+			}
+		})
+	}
+}
+
+func TestFetchSavesForRomsFallbackWorkerPoolBoundsConcurrency(t *testing.T) {
+	for _, uncoveredCount := range []int{0, maxConcurrentRequests - 1, maxConcurrentRequests + 1} {
+		t.Run(fmt.Sprintf("U=%d", uncoveredCount), func(t *testing.T) {
+			var requests, active, peak atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requests.Add(1)
+				current := active.Add(1)
+				defer active.Add(-1)
+				for {
+					old := peak.Load()
+					if current <= old || peak.CompareAndSwap(old, current) {
+						break
+					}
+				}
+				time.Sleep(50 * time.Microsecond)
+				var romID int
+				_, _ = fmt.Sscan(r.URL.Query().Get("rom_id"), &romID)
+				_ = json.NewEncoder(w).Encode([]romm.Save{{ID: romID, RomID: romID}})
+			}))
+			defer server.Close()
+
+			uncovered := make(map[int]cfw.LocalRomFile, uncoveredCount)
+			for romID := 1; romID <= uncoveredCount; romID++ {
+				uncovered[romID] = cfw.LocalRomFile{RomID: romID}
+			}
+			got := fetchSavesForRoms(romm.NewClient(server.URL), "", uncovered)
+			if int(requests.Load()) != uncoveredCount || len(got) != uncoveredCount {
+				t.Fatalf("requests=%d groups=%d", requests.Load(), len(got))
+			}
+			if peak.Load() > maxConcurrentRequests {
+				t.Fatalf("peak requests=%d max=%d", peak.Load(), maxConcurrentRequests)
+			}
+			if uncoveredCount == 0 && peak.Load() != 0 {
+				t.Fatalf("U=0 peak=%d", peak.Load())
+			}
+		})
+	}
+}
+
+func TestFetchSavesForRomsFallbackOmitsOnlyFailedRoms(t *testing.T) {
+	for name, failed := range map[string]map[int]bool{
+		"one":      {2: true},
+		"multiple": {2: true, 4: true, 6: true},
+	} {
+		t.Run(name, func(t *testing.T) {
+			var requests, active, peak atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requests.Add(1)
+				romIDText := r.URL.Query().Get("rom_id")
+				if romIDText == "" {
+					http.Error(w, "bulk unavailable", http.StatusBadGateway)
+					return
+				}
+				current := active.Add(1)
+				defer active.Add(-1)
+				for {
+					old := peak.Load()
+					if current <= old || peak.CompareAndSwap(old, current) {
+						break
+					}
+				}
+				var romID int
+				_, _ = fmt.Sscan(romIDText, &romID)
+				if failed[romID] {
+					http.Error(w, "per-rom unavailable", http.StatusServiceUnavailable)
+					return
+				}
+				_ = json.NewEncoder(w).Encode([]romm.Save{{ID: romID, RomID: romID}})
+			}))
+			defer server.Close()
+
+			uncovered := make(map[int]cfw.LocalRomFile, 8)
+			for romID := 1; romID <= 8; romID++ {
+				uncovered[romID] = cfw.LocalRomFile{RomID: romID}
+			}
+			got := fetchSavesForRoms(romm.NewClient(server.URL), "device-failures", uncovered)
+			if requests.Load() != 9 || len(got) != 8-len(failed) {
+				t.Fatalf("requests=%d groups=%d", requests.Load(), len(got))
+			}
+			for romID := range failed {
+				if _, ok := got[romID]; ok {
+					t.Fatalf("failed ROM %d leaked into results", romID)
+				}
+			}
+			if peak.Load() > maxConcurrentRequests {
+				t.Fatalf("peak=%d max=%d", peak.Load(), maxConcurrentRequests)
+			}
+		})
+	}
+}
+
+func TestFetchSavesForRomsFallbackRejectsMismatchedROM(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("rom_id") == "" {
+			http.Error(w, "bulk unavailable", http.StatusBadGateway)
+			return
+		}
+		_ = json.NewEncoder(w).Encode([]romm.Save{{ID: 99, RomID: 999}})
+	}))
+	defer server.Close()
+
+	uncovered := map[int]cfw.LocalRomFile{7: {RomID: 7}}
+	got := fetchSavesForRoms(romm.NewClient(server.URL), "device-1", uncovered)
+	if len(got) != 0 {
+		t.Fatalf("mismatched save leaked into ROM 7 results: %+v", got)
+	}
+}
+
+func TestFetchSavesForRomsFallbackRejectsOversizedResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("rom_id") == "" {
+			http.Error(w, "bulk unavailable", http.StatusBadGateway)
+			return
+		}
+		saves := make([]romm.Save, 10001)
+		for i := range saves {
+			saves[i] = romm.Save{ID: i + 1, RomID: 7}
+		}
+		_ = json.NewEncoder(w).Encode(saves)
+	}))
+	defer server.Close()
+
+	uncovered := map[int]cfw.LocalRomFile{7: {RomID: 7}}
+	got := fetchSavesForRoms(romm.NewClient(server.URL), "device-1", uncovered)
+	if len(got) != 0 {
+		t.Fatalf("oversized fallback response produced download candidates: %d", len(got[7]))
+	}
+}
+
+func TestFetchSavesForRomsServerIgnoresDeviceStillFiltersUncovered(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode([]romm.Save{
+			{ID: 1, RomID: 7}, {ID: 2, RomID: 999}, {ID: 3, RomID: 7}, {ID: 1, RomID: 7},
+		})
+	}))
+	defer server.Close()
+	got := fetchSavesForRoms(romm.NewClient(server.URL), "device-ignored", map[int]cfw.LocalRomFile{7: {RomID: 7}})
+	if len(got) != 1 {
+		t.Fatalf("got=%+v", got)
+	}
+	for i, want := range []int{1, 3, 1} {
+		if got[7][i].ID != want {
+			t.Fatalf("order[%d]=%d want=%d", i, got[7][i].ID, want)
+		}
+	}
+}
+
+func TestDiscoverRemoteOnlySavesCreatesIntentWithoutWriting(t *testing.T) {
+	dir := t.TempDir()
+	savePath := filepath.Join(dir, "two.srm")
+	if err := os.WriteFile(savePath, []byte("untouched"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		_ = json.NewEncoder(w).Encode([]romm.Save{{ID: 20, RomID: 2, FileName: "two.srm"}})
+	}))
+	defer server.Close()
+	resolved := map[int]cfw.LocalRomFile{
+		1: {RomID: 1, FSSlug: "gba", FileName: "one.gba"},
+		2: {RomID: 2, FSSlug: "gba", FileName: "two.gba"},
+	}
+	items := discoverRemoteOnlySaves(romm.NewClient(server.URL), nil, "device-covered", []LocalSave{{RomID: 1}}, nil, resolved)
+	if requests.Load() != 1 || len(items) != 1 || items[0].LocalSave.RomID != 2 || items[0].Action != ActionDownload {
+		t.Fatalf("requests=%d items=%+v", requests.Load(), items)
+	}
+	got, err := os.ReadFile(savePath)
+	if err != nil || string(got) != "untouched" {
+		t.Fatalf("discovery modified save: data=%q err=%v", got, err)
+	}
+}
+
+func TestDiscoverRemoteOnlySavesZeroUncoveredMakesNoRequest(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("zero-uncovered discovery made unexpected request: %s", r.URL.String())
+	}))
+	defer server.Close()
+	resolved := map[int]cfw.LocalRomFile{1: {RomID: 1}}
+	items := discoverRemoteOnlySaves(romm.NewClient(server.URL), nil, "device-zero", []LocalSave{{RomID: 1}}, nil, resolved)
+	if items != nil {
+		t.Fatalf("items=%+v, want nil", items)
 	}
 }
 
