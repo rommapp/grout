@@ -39,7 +39,7 @@ func TestDefaultKeepsRomExt(t *testing.T) {
 			t.Errorf("%s should default to keeping the ROM extension", c)
 		}
 	}
-	for _, c := range []CFW{MuOS, Knulli, Spruce, ROCKNIX, Onion, ArkOS, Batocera, Trimui, Allium, Koriki} {
+	for _, c := range []CFW{MuOS, Knulli, Spruce, ROCKNIX, Onion, ArkOS, Batocera, Trimui, Allium, Koriki, Anbernic} {
 		if DefaultKeepsRomExt(c) {
 			t.Errorf("%s should default to RetroArch-style stripping", c)
 		}
