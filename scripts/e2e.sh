@@ -1,33 +1,37 @@
 #!/usr/bin/env bash
 #
-# Run grout's UI end to end on a virtual display.
+# Run grout's UI end to end, against a real RomM.
 #
-# Everything happens inside a container, so this behaves the same on macOS and
-# on a CI runner and needs nothing installed but Docker.
+# Everything happens in containers, so this behaves the same on macOS and on a
+# CI runner and needs nothing installed but Docker.
 #
-#   scripts/e2e.sh                      every firmware
-#   scripts/e2e.sh -run TestFirstLaunch/MUOS   one of them
+#   scripts/e2e.sh                             everything
+#   scripts/e2e.sh -run TestPairedDevice       one test
+#   scripts/e2e.sh -run 'TestFirstLaunch/MUOS' one firmware
 #
-# Screenshots land in test/e2e/screenshots/ either way, and are worth looking
-# at when something fails.
+# Screenshots land in test/e2e/screenshots/ and are worth looking at when
+# something fails.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-IMAGE=grout-e2e
+COMPOSE=(docker compose -f test/e2e/compose.yml)
 SHOTS="$PWD/test/e2e/screenshots"
 
-echo "==> building the harness"
-docker build -q -f test/e2e/Dockerfile -t "$IMAGE" . >/dev/null
+cleanup() {
+  echo "==> tearing down"
+  "${COMPOSE[@]}" down -v --remove-orphans >/dev/null 2>&1 || true
+}
+trap cleanup EXIT
 
 mkdir -p "$SHOTS"
 rm -rf "${SHOTS:?}/"*
 
+echo "==> starting RomM"
+"${COMPOSE[@]}" up -d --wait db romm
+
 echo "==> running"
-docker run --rm \
-  -v "$SHOTS:/screenshots" \
-  -e GROUT_E2E_SCREENSHOTS=/screenshots \
-  "$IMAGE" \
+"${COMPOSE[@]}" run --rm --build tests \
   go test -tags=e2e -count=1 -v -timeout 20m ./... "$@"
 
 echo "==> screenshots in test/e2e/screenshots/"

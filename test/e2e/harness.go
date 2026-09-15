@@ -13,18 +13,20 @@ package e2e
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
 
 const (
-	display = ":99"
 	// waitTimeout bounds how long a step waits for grout to report something.
 	// A slow CI runner emulating another architecture needs the room.
 	waitTimeout = 30 * time.Second
@@ -32,15 +34,45 @@ const (
 	settle = 500 * time.Millisecond
 )
 
+// displays hands out a display number per session.
+//
+// Sharing one would make each test depend on the previous one's X server
+// having fully gone, lock file and all, which it has not always done by the
+// time the next starts.
+var displays atomic.Int32
+
 // session is one run of grout against a synthetic card.
 type session struct {
-	t        *testing.T
+	t *testing.T
+	// display is this session's own X server.
+	display  string
 	cardPath string
 	logPath  string
 	shotDir  string
 	// read is how far through the log this session has already looked, so a
 	// later wait cannot match a line an earlier one already consumed.
 	read int
+	// output is everything grout printed, which is the only clue when it dies
+	// before it opens its own log.
+	output syncBuffer
+}
+
+// syncBuffer collects a subprocess's output safely while a test reads it.
+type syncBuffer struct {
+	mu sync.Mutex
+	b  bytes.Buffer
+}
+
+func (w *syncBuffer) Write(p []byte) (int, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.b.Write(p)
+}
+
+func (w *syncBuffer) String() string {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.b.String()
 }
 
 // options say which device the run should look like.
@@ -49,6 +81,12 @@ type options struct {
 	CFW string
 	// Width and Height are the virtual screen, ideally the real device's.
 	Width, Height int
+	// Server, when set, is a RomM the card is already paired with, so the run
+	// starts at the library rather than at the login screen.
+	Server *server
+	// Platforms are the rom folders to map, by their RomM slug. Without a
+	// mapping a platform has nowhere to download to and is not offered.
+	Platforms []string
 }
 
 // start lays out a card, brings up a virtual display, and runs grout on it.
@@ -71,12 +109,17 @@ func start(t *testing.T, opts options) *session {
 
 	s := &session{
 		t:        t,
+		display:  fmt.Sprintf(":%d", 90+displays.Add(1)),
 		cardPath: card,
 		logPath:  filepath.Join(card, "logs", "app.log"),
 		shotDir:  screenshotDir(t),
 	}
 
-	s.startBackground("Xvfb", display, "-screen", "0",
+	if opts.Server != nil {
+		writeConfig(t, card, opts)
+	}
+
+	s.startBackground("Xvfb", s.display, "-screen", "0",
 		fmt.Sprintf("%dx%dx24", opts.Width, opts.Height))
 	s.waitForX()
 
@@ -89,8 +132,12 @@ func start(t *testing.T, opts options) *session {
 	grout.Env = append(os.Environ(),
 		"CFW="+opts.CFW,
 		"BASE_PATH="+card,
-		"DISPLAY="+display,
+		"DISPLAY="+s.display,
 	)
+	// Kept so a failure can show it. Grout writes its own log to the card, but
+	// anything that stops it before that starts only appears here.
+	grout.Stdout = &s.output
+	grout.Stderr = &s.output
 	if err := grout.Start(); err != nil {
 		t.Fatalf("starting grout: %v", err)
 	}
@@ -108,7 +155,7 @@ func (s *session) startBackground(name string, args ...string) {
 	s.t.Helper()
 
 	cmd := exec.Command(name, args...)
-	cmd.Env = append(os.Environ(), "DISPLAY="+display)
+	cmd.Env = append(os.Environ(), "DISPLAY="+s.display)
 	if err := cmd.Start(); err != nil {
 		s.t.Fatalf("starting %s: %v", name, err)
 	}
@@ -125,7 +172,7 @@ func (s *session) waitForX() {
 
 	deadline := time.Now().Add(waitTimeout)
 	for time.Now().Before(deadline) {
-		if exec.Command("xdpyinfo", "-display", display).Run() == nil {
+		if exec.Command("xdpyinfo", "-display", s.display).Run() == nil {
 			return
 		}
 		time.Sleep(100 * time.Millisecond)
@@ -197,8 +244,8 @@ func (s *session) awaitLog(msg string) logEntry {
 	}
 
 	s.screenshot("timeout")
-	s.t.Fatalf("grout never logged %q within %s\nlog so far:\n%s",
-		msg, waitTimeout, s.logTail())
+	s.t.Fatalf("grout never logged %q within %s\n\nlog so far:\n%s\noutput:\n%s",
+		msg, waitTimeout, s.logTail(), indent(s.output.String()))
 	return logEntry{}
 }
 
@@ -237,12 +284,46 @@ func (s *session) logTail() string {
 	return b.String()
 }
 
+// awaitStill waits for the screen to stop changing.
+//
+// Progress bars, transitions and the cache build all mean a screenshot taken
+// at a fixed moment catches whatever happened to be mid flight. Waiting for
+// two identical frames catches the screen a person would have waited for,
+// without having to name a log line for every one of them.
+func (s *session) awaitStill() {
+	s.t.Helper()
+
+	deadline := time.Now().Add(waitTimeout)
+	previous := ""
+
+	for time.Now().Before(deadline) {
+		current := s.frame()
+		if current != "" && current == previous {
+			return
+		}
+		previous = current
+		time.Sleep(settle)
+	}
+
+	s.t.Logf("the screen was still changing after %s", waitTimeout)
+}
+
+// frame is a fingerprint of what is on screen, used only to tell one frame
+// from the next.
+func (s *session) frame() string {
+	out, err := s.x("sh", "-c", "import -window root png:- | md5sum")
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(out)
+}
+
 // screenshot saves what is on screen, for a person to look at when a test
 // fails. CI keeps them as artifacts.
 func (s *session) screenshot(name string) {
 	s.t.Helper()
 
-	time.Sleep(settle)
+	s.awaitStill()
 	path := filepath.Join(s.shotDir, name+".png")
 	if _, err := s.x("import", "-window", "root", path); err != nil {
 		s.t.Logf("could not capture %s: %v", name, err)
@@ -259,7 +340,7 @@ func (s *session) cardHas(relative string) bool {
 
 func (s *session) x(name string, args ...string) (string, error) {
 	cmd := exec.Command(name, args...)
-	cmd.Env = append(os.Environ(), "DISPLAY="+display)
+	cmd.Env = append(os.Environ(), "DISPLAY="+s.display)
 	out, err := cmd.CombinedOutput()
 	return string(out), err
 }
@@ -281,9 +362,71 @@ func screenshotDir(t *testing.T) string {
 	return dir
 }
 
+// indent sets a subprocess's output apart from the failure around it.
+func indent(s string) string {
+	if s == "" {
+		return "  (nothing)\n"
+	}
+	var b strings.Builder
+	for _, line := range strings.Split(strings.TrimRight(s, "\n"), "\n") {
+		b.WriteString("  " + line + "\n")
+	}
+	return b.String()
+}
+
 func firstLine(s string) string {
 	if i := strings.IndexByte(s, '\n'); i >= 0 {
 		return s[:i]
 	}
 	return s
+}
+
+// writeConfig puts grout on the card already signed in.
+//
+// The login flow is worth testing on its own, but every screen behind it is
+// unreachable while each test has to walk through it first, and pairing is
+// meant to be answered by a person.
+func writeConfig(t *testing.T, card string, opts options) {
+	t.Helper()
+
+	type host struct {
+		RootURI  string `json:"root_uri"`
+		Username string `json:"username"`
+		Token    string `json:"token"`
+	}
+	type mapping struct {
+		RomMSlug     string `json:"romm_slug"`
+		RelativePath string `json:"relative_path"`
+	}
+
+	config := struct {
+		Hosts             []host             `json:"hosts"`
+		DirectoryMappings map[string]mapping `json:"directory_mappings,omitempty"`
+		LogLevel          string             `json:"log_level"`
+	}{
+		Hosts: []host{{
+			RootURI:  opts.Server.URL,
+			Username: opts.Server.Username,
+			Token:    opts.Server.Token,
+		}},
+		DirectoryMappings: map[string]mapping{},
+		// Grout defaults to logging errors only, and everything worth waiting
+		// for here is logged at debug.
+		LogLevel: "debug",
+	}
+
+	for _, slug := range opts.Platforms {
+		config.DirectoryMappings[slug] = mapping{RomMSlug: slug, RelativePath: slug}
+		if err := os.MkdirAll(filepath.Join(card, "ROMS", slug), 0o755); err != nil {
+			t.Fatalf("making a rom folder for %s: %v", slug, err)
+		}
+	}
+
+	encoded, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		t.Fatalf("encoding the config: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(card, "config.json"), encoded, 0o644); err != nil {
+		t.Fatalf("writing the config: %v", err)
+	}
 }

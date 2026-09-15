@@ -7,6 +7,7 @@ FROM golang:1.25-bookworm
 RUN apt-get update && apt-get install -y --no-install-recommends \
       libsdl2-dev libsdl2-ttf-dev libsdl2-image-dev libsdl2-gfx-dev \
       xvfb x11-utils xdotool imagemagick openbox \
+      python3 python3-requests python3-socketio \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
@@ -17,7 +18,6 @@ COPY . .
 RUN rm -f go.work go.work.sum && GOWORK=off go build -o /grout ./app
 
 ENV GROUT_BINARY=/grout
-ENV DISPLAY=:99
 
 # Development mode leaves the toolkit's keyboard mapping in place. Without it
 # grout loads the firmware's controller mapping and ignores every keystroke.
