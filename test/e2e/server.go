@@ -15,6 +15,9 @@ type server struct {
 	URL      string
 	Username string
 	Token    string
+	// DeviceID is a device already known to the server, so a card can be
+	// given one without walking the pairing flow.
+	DeviceID string
 }
 
 var (
@@ -55,16 +58,16 @@ func provision() (*server, error) {
 		return nil, err
 	}
 
-	token := strings.TrimSpace(string(out))
-	if token == "" {
+	lines := strings.Fields(strings.TrimSpace(string(out)))
+	if len(lines) < 2 {
 		return nil, errNoToken
 	}
 
-	return &server{URL: url, Username: "e2e", Token: token}, nil
+	return &server{URL: url, Username: "e2e", Token: lines[0], DeviceID: lines[1]}, nil
 }
 
 type provisionFailure string
 
 func (e provisionFailure) Error() string { return string(e) }
 
-const errNoToken = provisionFailure("provisioning produced no token")
+const errNoToken = provisionFailure("provisioning produced no token and device id")

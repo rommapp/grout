@@ -1,7 +1,8 @@
 """Bring a fresh RomM to the state the end to end tests need.
 
-Creates the first user, scans the library that was mounted in, and mints a
-client token. Prints the token on stdout so the caller can hand it to grout.
+Creates the first user, scans the library that was mounted in, mints a client
+token and registers a device. Prints the token and the device id on stdout,
+one per line, so the caller can hand them to grout.
 
 Everything here goes through RomM's own API rather than its database, so a
 change in how RomM stores things does not quietly break the tests, and a
@@ -98,6 +99,30 @@ def scan_library(session: requests.Session, csrf: str) -> None:
         raise RuntimeError(f"scan did not finish: {outcome['error']}")
 
 
+def register_device(session: requests.Session, csrf: str) -> str:
+    """Register a device, so save sync has one to sync to.
+
+    Grout registers its own through the same endpoint when a person walks the
+    pairing flow. Doing it here lets a test start with a card that is already
+    known to the server.
+    """
+    response = session.post(
+        f"{URL}/api/devices",
+        auth=(USER, PASSWORD),
+        json={
+            "name": "grout-e2e-device",
+            "platform": "e2e",
+            "client": "grout",
+            "sync_mode": "api",
+            "allow_existing": True,
+        },
+        headers={"X-CSRFToken": csrf},
+        timeout=30,
+    )
+    response.raise_for_status()
+    return response.json()["device_id"]
+
+
 def mint_token(session: requests.Session, csrf: str) -> str:
     response = session.post(
         f"{URL}/api/client-tokens",
@@ -127,7 +152,9 @@ def main() -> int:
         return 1
     print(f"scanned {len(platforms)} platforms", file=sys.stderr)
 
+    # One line each, so the caller can read them without parsing anything.
     print(mint_token(session, csrf))
+    print(register_device(session, csrf))
     return 0
 
 

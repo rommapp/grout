@@ -16,9 +16,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -87,6 +89,10 @@ type options struct {
 	// Platforms are the rom folders to map, by their RomM slug. Without a
 	// mapping a platform has nowhere to download to and is not offered.
 	Platforms []string
+	// Existing are folders a real card of this firmware would already have.
+	// Grout writes into some of them and does not create them itself, so a
+	// card without them behaves in ways a device never would.
+	Existing []string
 }
 
 // start lays out a card, brings up a virtual display, and runs grout on it.
@@ -101,7 +107,7 @@ func start(t *testing.T, opts options) *session {
 	}
 
 	card := t.TempDir()
-	for _, dir := range []string{"ROMS", "BIOS", "logs"} {
+	for _, dir := range append([]string{"ROMS", "BIOS", "logs"}, opts.Existing...) {
 		if err := os.MkdirAll(filepath.Join(card, dir), 0o755); err != nil {
 			t.Fatalf("laying out the card: %v", err)
 		}
@@ -201,16 +207,20 @@ func (s *session) focusWindow() {
 // press sends button presses, named as the toolkit maps them: arrow keys for
 // the d-pad, a b x y for the face buttons, Return for start, space for select.
 //
+// Each key waits for the screen to stop moving first. A key sent while a
+// screen is still being drawn lands on whatever was there before, which shows
+// up as a test that passes alone and fails in a run.
+//
 // The keys go through XTEST rather than being posted at the window, because
 // SDL ignores events it can tell were synthesised.
 func (s *session) press(keys ...string) {
 	s.t.Helper()
 
 	for _, key := range keys {
+		s.awaitStill()
 		if _, err := s.x("xdotool", "key", "--clearmodifiers", key); err != nil {
 			s.t.Fatalf("pressing %s: %v", key, err)
 		}
-		time.Sleep(settle)
 	}
 }
 
@@ -273,13 +283,21 @@ func (s *session) readLog() []logEntry {
 
 func (s *session) logTail() string {
 	entries := s.readLog()
-	if len(entries) > 12 {
-		entries = entries[len(entries)-12:]
+	if len(entries) > 25 {
+		entries = entries[len(entries)-25:]
 	}
 
 	var b strings.Builder
 	for _, entry := range entries {
-		fmt.Fprintf(&b, "  %-5s %s\n", entry.Level, entry.Msg)
+		fmt.Fprintf(&b, "  %-5s %s", entry.Level, entry.Msg)
+		// Anything that went wrong says why in its fields, and a line without
+		// them is no use when a test is failing.
+		for _, name := range []string{"error", "path", "file"} {
+			if value, ok := entry.fields[name]; ok {
+				fmt.Fprintf(&b, "  %s=%v", name, value)
+			}
+		}
+		b.WriteString("\n")
 	}
 	return b.String()
 }
@@ -338,6 +356,68 @@ func (s *session) cardHas(relative string) bool {
 	return err == nil
 }
 
+// awaitCardFile waits for grout to put a file on the card.
+//
+// A download finishes when the file is there, which is a better thing to wait
+// on than a log line: it is what the user is actually after.
+func (s *session) awaitCardFile(relative string) {
+	s.t.Helper()
+
+	deadline := time.Now().Add(waitTimeout)
+	for time.Now().Before(deadline) {
+		if s.cardHas(relative) {
+			return
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+
+	s.screenshot("timeout")
+	s.t.Fatalf("grout never wrote %s to the card within %s\n\ncard holds:\n%s\nlog so far:\n%s",
+		relative, waitTimeout, indent(s.cardTree()), s.logTail())
+}
+
+// putSave writes a save onto the card where the firmware keeps them, as
+// though a game had been played.
+func (s *session) putSave(relative, content string) {
+	s.t.Helper()
+
+	path := filepath.Join(s.cardPath, relative)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		s.t.Fatalf("making a save folder: %v", err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		s.t.Fatalf("writing a save: %v", err)
+	}
+}
+
+// cardFile reads a file grout wrote to the card.
+func (s *session) cardFile(relative string) []byte {
+	s.t.Helper()
+
+	content, err := os.ReadFile(filepath.Join(s.cardPath, relative))
+	if err != nil {
+		s.t.Fatalf("reading %s from the card: %v", relative, err)
+	}
+	return content
+}
+
+// cardTree lists what is on the card, for a failure to show what did land
+// when the expected thing did not.
+func (s *session) cardTree() string {
+	var found []string
+	_ = filepath.WalkDir(s.cardPath, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil || entry.IsDir() {
+			return nil
+		}
+		relative, _ := filepath.Rel(s.cardPath, path)
+		found = append(found, relative)
+		return nil
+	})
+
+	sort.Strings(found)
+	return strings.Join(found, "\n")
+}
+
 func (s *session) x(name string, args ...string) (string, error) {
 	cmd := exec.Command(name, args...)
 	cmd.Env = append(os.Environ(), "DISPLAY="+s.display)
@@ -390,9 +470,11 @@ func writeConfig(t *testing.T, card string, opts options) {
 	t.Helper()
 
 	type host struct {
-		RootURI  string `json:"root_uri"`
-		Username string `json:"username"`
-		Token    string `json:"token"`
+		RootURI    string `json:"root_uri"`
+		Username   string `json:"username"`
+		Token      string `json:"token"`
+		DeviceID   string `json:"device_id,omitempty"`
+		DeviceName string `json:"device_name,omitempty"`
 	}
 	type mapping struct {
 		RomMSlug     string `json:"romm_slug"`
@@ -408,6 +490,11 @@ func writeConfig(t *testing.T, card string, opts options) {
 			RootURI:  opts.Server.URL,
 			Username: opts.Server.Username,
 			Token:    opts.Server.Token,
+			// Save sync needs a device the server knows. Grout registers its
+			// own when a person walks the pairing flow; a seeded card is
+			// handed one instead.
+			DeviceID:   opts.Server.DeviceID,
+			DeviceName: "grout-e2e-device",
 		}},
 		DirectoryMappings: map[string]mapping{},
 		// Grout defaults to logging errors only, and everything worth waiting

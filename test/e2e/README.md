@@ -44,6 +44,26 @@ Nothing is persisted between runs: the database is on tmpfs and the cards are
 temporary directories, so a test cannot pass because of something an earlier
 one left behind.
 
+## Walking a flow
+
+Buttons are the ones a device has: arrow keys for the d-pad, `a` `b` `x` `y`
+for the face buttons, Return for start, space for select, `h` for menu.
+
+```go
+s.press("a")  // the platform
+s.press("a")  // the game
+s.press("a")  // download it
+s.awaitCardFile("ROMS/snes/Test Game (USA).sfc")
+s.press("a")  // acknowledge the download
+```
+
+A press waits for the screen to stop moving first, so a key is never sent into
+a half drawn screen.
+
+Downloading only continues on its own when artwork is being fetched too.
+Otherwise it waits on "Download Completed!", and the metadata is written after
+that is acknowledged, which is what a person does on a device.
+
 ## Four things that will waste an afternoon
 
 `ENVIRONMENT=DEV` is required. Without it grout loads the firmware's own
@@ -60,6 +80,10 @@ so the keys land nowhere. openbox is enough.
 Grout logs errors and nothing else by default, so a seeded card asks for debug
 logging. Waiting for a debug line on a card that did not would hang until the
 timeout.
+
+A card needs the folders a real one of that firmware would already have.
+EmulationStation cards have `roms/tools`, and grout adds itself to the
+gamelist in it at startup rather than creating it.
 
 ## What it asserts
 
