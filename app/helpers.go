@@ -54,6 +54,10 @@ func executeMultiDownloadUI(state *AppState, r ui.GameListOutput) {
 	downloadScreen.Execute(*state.Config, state.Host, r.Platform, r.SelectedGames, r.AllGames, r.SearchFilter, 0)
 }
 
+func executeDownloadMissingUI(state *AppState, platform romm.Platform) {
+	ui.DownloadMissingForPlatform(*state.Config, state.Host, platform)
+}
+
 func handlePlatformMappingUpdateUI(state *AppState, r ui.PlatformMappingOutput) {
 	state.Config.DirectoryMappings = r.Mappings
 	state.Config.PlatformOrder = internal.PrunePlatformOrder(state.Config.PlatformOrder, r.Mappings)
