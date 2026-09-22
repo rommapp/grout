@@ -7,6 +7,7 @@ require (
 	github.com/BrandonKowalski/gabagool/v2 v2.24.0
 	github.com/beevik/etree v1.7.0
 	github.com/bodgit/sevenzip v1.6.5
+	github.com/holoplot/go-evdev v0.0.0-20260504100651-66d1748fe847
 	github.com/nicksnyder/go-i18n/v2 v2.6.1
 	github.com/piglig/go-qr v1.1.0
 	github.com/sonh/qs v0.7.0
@@ -24,7 +25,6 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
-	github.com/holoplot/go-evdev v0.0.0-20260504100651-66d1748fe847 // indirect
 	github.com/klauspost/compress v1.19.0 // indirect
 	github.com/mattn/go-isatty v0.0.23 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
@@ -34,7 +34,6 @@ require (
 	github.com/srwiley/oksvg v0.0.0-20221011165216-be6e8873101c // indirect
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect
 	github.com/stangelandcl/ppmd v0.1.1 // indirect
-	github.com/stretchr/testify v1.11.1 // indirect
 	github.com/ulikunitz/xz v0.5.15 // indirect
 	github.com/veandco/go-sdl2 v0.4.40 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect

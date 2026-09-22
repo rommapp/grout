@@ -49,6 +49,19 @@ func provision() (*server, error) {
 		url = "http://romm:8080"
 	}
 
+	// A run against a handheld points at a RomM that is already set up, and a
+	// device cannot reach the one inside the compose network anyway. Skipping
+	// provisioning also keeps that run from needing python on the machine
+	// driving it.
+	if token := os.Getenv("ROMM_TOKEN"); token != "" {
+		return &server{
+			URL:      url,
+			Username: envOr("ROMM_USERNAME", "e2e"),
+			Token:    token,
+			DeviceID: os.Getenv("ROMM_DEVICE_ID"),
+		}, nil
+	}
+
 	cmd := exec.Command("python3", "/provision.py")
 	cmd.Env = append(os.Environ(), "ROMM_URL="+url)
 	cmd.Stderr = os.Stderr

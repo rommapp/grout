@@ -1,7 +1,7 @@
 # End to end
 
-Runs the shipped binary against a real RomM, on a virtual display, with one
-synthetic card per firmware.
+Runs the shipped binary against a real RomM, either on a virtual display with
+one synthetic card per firmware, or on a handheld on the end of a cable.
 
 ```sh
 scripts/e2e.sh                                 # everything
@@ -93,6 +93,89 @@ anti-aliasing make that answer differ between machines.
 
 Screenshots are taken once the screen stops changing, so a progress bar or a
 transition is not what gets captured.
+
+## On a real device
+
+The same tests run against a handheld over ADB or SSH. Nothing in a test
+changes: the target underneath it does.
+
+```sh
+GROUT_E2E_DEVICE=adb:<serial> \
+  go test -tags e2e -run TestDeviceIsDrivable -v ./test/e2e/   # read only, safe
+
+GROUT_DEVICE_BINARY=/mnt/mmc/MUOS/application/Grout/grout \
+GROUT_E2E_DEVICE_CFW=MUOS \
+ROMM_URL=http://10.0.0.2:8080 ROMM_TOKEN=... ROMM_DEVICE_ID=... \
+  scripts/e2e-device.sh
+```
+
+Deploy grout first, with `task deploy:muos-sd1` or one of its neighbours, and
+point `GROUT_DEVICE_BINARY` at where that put it.
+
+`TestDeviceIsDrivable` reads nothing but what is already there and is worth
+running first: every one of the things a device run needs fails in a way that
+looks like something else. A missing `/dev/uinput` looks like grout ignoring
+buttons, a missing `base64` looks like a corrupt file, an unreadable `fb0`
+looks like a blank screenshot.
+
+### What the device target stands in for
+
+| | On this machine | On a handheld |
+| --- | --- | --- |
+| Buttons | `xdotool` through XTEST | a uinput keyboard, fed through a fifo |
+| Screen | `import` off the X root | `/dev/fb0`, decoded here |
+| Card | a temp directory | a scratch folder, `adb push` and `cat` |
+| Waiting for a still screen | hash of the X root | hash of the framebuffer |
+
+The keyboard is `test/e2e/groutkeys`, cross compiled and pushed at the start of
+a run. It has to be a daemon rather than a command per keypress: a uinput
+device disappears when its descriptor closes, and SDL reads the input devices
+that exist when it starts. So it comes up before grout and stays up.
+
+`ENVIRONMENT=DEV` matters here for the same reason it does in a container.
+Without it the firmware's controller mapping replaces the keyboard mapping and
+the virtual keyboard is ignored.
+
+### The firmware is in the way
+
+A handheld's own menu owns the screen and the buttons. `GROUT_E2E_DEVICE_PREPARE`
+runs before a test and `GROUT_E2E_DEVICE_RESTORE` after it, and what goes in
+them is firmware specific: killing MainUI on NextUI, stopping
+`emulationstation` on Knulli. There is no sensible default, so there is not
+one.
+
+### One firmware at a time
+
+A handheld is one firmware, and running the twelve case matrix at it would be
+eleven runs of the wrong device pretending to be this one. Set
+`GROUT_E2E_DEVICE_CFW` and the other eleven skip.
+
+### What ADB actually gives you
+
+These handhelds run a cut down adbd. `adb exec-out` is not implemented, and
+`adb shell` both throws the exit status away and rewrites every newline. So
+every command is wrapped to carry its own status and its output comes back
+base64 encoded. This was found by pointing the runner at hardware, not by
+reading a manual.
+
+The framebuffer is usually double buffered: a device reporting `720,960` in
+`virtual_size` with `U:720x480p-59` in `modes` has a 720x480 screen in a buffer
+twice that tall. Keeping all of it would put two copies of the screen in every
+screenshot.
+
+### What is verified and what is assumed
+
+Verified against hardware: the transport, exit statuses, exact binary reads,
+the framebuffer shape, and a screenshot that comes out the right way round and
+the right colours.
+
+Verified in a privileged container: `groutkeys` creates a keyboard the kernel
+publishes at `/dev/input/event0` with the fifteen keys the toolkit maps, and a
+name written to its fifo comes back out as a press and a release.
+
+Not verified: that SDL on a given firmware picks that keyboard up, that grout
+starts and stops cleanly under this, and the prepare and restore commands.
+Those need a device with grout deployed to it and its frontend stopped.
 
 ## What it does not cover
 

@@ -2,9 +2,14 @@
 
 package e2e
 
-import "testing"
+import (
+	"os"
+	"strings"
+	"testing"
+)
 
-// target is where a run happens.
+// target is where a run happens: this machine, or a handheld on the end of a
+// cable.
 //
 // The tests do not know which they are talking to. What differs between them
 // is only how a file is read, a button is pressed and the screen is captured,
@@ -49,9 +54,24 @@ type target interface {
 	awaitStill()
 }
 
-// chooseTarget decides where a run happens. For now that is always this
-// machine.
+// chooseTarget decides where a run happens.
+//
+// Nothing is attached by default, so a plain `go test` runs on this machine.
+// A device is opted into, because a run against one writes to it and takes
+// over its screen.
 func chooseTarget(t *testing.T, opts options) target {
 	t.Helper()
-	return newLocal(t, opts.Width, opts.Height)
+
+	spec := os.Getenv("GROUT_E2E_DEVICE")
+	if spec == "" {
+		return newLocal(t, opts.Width, opts.Height)
+	}
+
+	// A handheld is one firmware. Running the whole matrix at it would be
+	// eleven runs of the wrong device pretending to be this one.
+	if only := os.Getenv("GROUT_E2E_DEVICE_CFW"); only != "" && !strings.EqualFold(only, opts.CFW) {
+		t.Skipf("the attached device is %s, this case is %s", only, opts.CFW)
+	}
+
+	return newDevice(t, spec)
 }
