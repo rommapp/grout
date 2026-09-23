@@ -234,9 +234,38 @@ func discoverRemoteOnlySaves(client *romm.Client, config *settings.Config, devic
 	return buildDiscoveryItems(uncovered, savesByRom, config)
 }
 
-// fetchSavesForRoms queries the server for each ROM's saves with bounded concurrency.
-// ROMs whose fetch errors are logged and omitted.
+// fetchSavesForRoms asks for saves scoped to the uncovered ROMs. If that request
+// fails, or no device ID is available, it uses bounded per-ROM concurrency.
 func fetchSavesForRoms(client *romm.Client, deviceID string, uncovered map[int]cfw.LocalRomFile) map[int][]romm.Save {
+	logger := gaba.GetLogger()
+
+	if deviceID != "" {
+		romIDs := make([]int, 0, len(uncovered))
+		for romID := range uncovered {
+			romIDs = append(romIDs, romID)
+		}
+		bulkSaves, err := client.GetSavesForROMIDs(romm.SaveQuery{DeviceID: deviceID}, romIDs)
+		if err == nil {
+			out := make(map[int][]romm.Save)
+			for _, save := range bulkSaves {
+				out[save.RomID] = append(out[save.RomID], save)
+			}
+			logger.Debug("Discovery: fetched saves in bulk", "roms", len(romIDs), "records", len(bulkSaves))
+			return out
+		}
+		logger.Warn("Discovery: device-scoped bulk save fetch failed; using per-ROM fallback",
+			"fallbackRequests", len(uncovered),
+			"error", err)
+	} else {
+		logger.Warn("Discovery: device ID empty; using per-ROM fallback", "requests", len(uncovered))
+	}
+
+	return fetchSavesForRomsFallback(client, deviceID, uncovered)
+}
+
+// fetchSavesForRomsFallback queries each ROM with bounded concurrency. ROMs whose
+// fetch errors are logged and omitted.
+func fetchSavesForRomsFallback(client *romm.Client, deviceID string, uncovered map[int]cfw.LocalRomFile) map[int][]romm.Save {
 	logger := gaba.GetLogger()
 
 	type result struct {
@@ -245,21 +274,34 @@ func fetchSavesForRoms(client *romm.Client, deviceID string, uncovered map[int]c
 		err   error
 	}
 
-	results := make(chan result, len(uncovered))
-	sem := make(chan struct{}, maxConcurrentRequests)
+	workerCount := len(uncovered)
+	if workerCount > maxConcurrentRequests {
+		workerCount = maxConcurrentRequests
+	}
+	if workerCount == 0 {
+		return map[int][]romm.Save{}
+	}
+	jobs := make(chan int, workerCount)
+	results := make(chan result, workerCount)
 	var wg sync.WaitGroup
 
-	for romID := range uncovered {
+	for range workerCount {
 		wg.Add(1)
-		go func(id int) {
+		go func() {
 			defer wg.Done()
-			sem <- struct{}{}
-			defer func() { <-sem }()
-
-			saves, err := client.GetSaves(romm.SaveQuery{RomID: id, DeviceID: deviceID})
-			results <- result{romID: id, saves: saves, err: err}
-		}(romID)
+			for id := range jobs {
+				saves, err := client.GetSavesForROMIDs(romm.SaveQuery{RomID: id, DeviceID: deviceID}, []int{id})
+				results <- result{romID: id, saves: saves, err: err}
+			}
+		}()
 	}
+
+	go func() {
+		for romID := range uncovered {
+			jobs <- romID
+		}
+		close(jobs)
+	}()
 
 	go func() {
 		wg.Wait()
