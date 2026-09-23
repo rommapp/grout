@@ -3,12 +3,11 @@ package minui
 import (
 	"embed"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
-
-	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
 
 const DeviceType = "MINUI_DEVICE"
@@ -38,7 +37,7 @@ const (
 )
 
 func detectDeviceByEnv() Device {
-	logger := gaba.GetLogger()
+	logger := slog.Default()
 	logger.Debug("Detecting MinUI device type", "env", DeviceType)
 	deviceType := os.Getenv(DeviceType)
 
@@ -56,7 +55,7 @@ func detectDeviceByEnv() Device {
 }
 
 func DetectDevice() Device {
-	logger := gaba.GetLogger()
+	logger := slog.Default()
 	logger.Debug("Detecting MinUI device type", "arch", runtime.GOARCH)
 
 	if runtime.GOARCH == "arm" {

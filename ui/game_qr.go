@@ -2,17 +2,17 @@ package ui
 
 import (
 	"errors"
-	"grout/internal/imageutil"
+	"grout/imaging"
 	"grout/romm"
+	"grout/settings"
+	"os"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type GameQRInput struct {
-	Host romm.Host
+	Host settings.Host
 	Game romm.Rom
 }
 
@@ -29,15 +29,17 @@ func (s *GameQRScreen) Draw(input GameQRInput) (GameQROutput, error) {
 	logger := gaba.GetLogger()
 
 	gameURL := input.Game.GetGamePage(input.Host)
-	qrcode, err := imageutil.CreateTempQRCode(gameURL, 256)
+	qrcode, err := imaging.CreateTempQRCode(gameURL, 256)
 	if err != nil {
 		logger.Error("Unable to generate QR code", "error", err)
 		return output, err
 	}
+	// It only has to last as long as the screen is drawn.
+	defer os.Remove(qrcode)
 
 	sections := []gaba.Section{
 		gaba.NewImageSection(
-			i18n.Localize(&goi18n.Message{ID: "game_qr_title", Other: "RomM Game Page"}, nil),
+			localize("game_qr_title", "RomM Game Page"),
 			qrcode,
 			int32(256),
 			int32(256),
@@ -51,7 +53,7 @@ func (s *GameQRScreen) Draw(input GameQRInput) (GameQROutput, error) {
 	options.ConfirmButton = constants.VirtualButtonUnassigned
 
 	footerItems := []gaba.FooterHelpItem{
-		{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_back", Other: "Back"}, nil)},
+		{ButtonName: "B", HelpText: localize("button_back", "Back")},
 	}
 
 	_, err = gaba.DetailScreen(input.Game.Name, options, footerItems)

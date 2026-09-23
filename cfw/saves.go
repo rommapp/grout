@@ -1,19 +1,7 @@
 package cfw
 
 import (
-	"grout/cfw/allium"
-	"grout/cfw/arkos"
-	"grout/cfw/batocera"
-	"grout/cfw/knulli"
-	"grout/cfw/koriki"
-	"grout/cfw/minui"
-	"grout/cfw/muos"
-	"grout/cfw/nextui"
-	"grout/cfw/onion"
-	"grout/cfw/rocknix"
-	"grout/cfw/spruce"
-	"grout/cfw/trimui"
-	"grout/internal/stringutil"
+	"grout/textmatch"
 	"path/filepath"
 	"strings"
 )
@@ -34,49 +22,18 @@ func SaveBasename(keepRomExt bool, romFileName string) string {
 	return strings.TrimSuffix(romFileName, filepath.Ext(romFileName))
 }
 
-// DefaultKeepsRomExt reports the CFW's default save-naming style, used only as a fallback
-// when the actual on-device convention can't be detected from existing saves. The minarch
-// CFWs (NextUI, MinUI) default to keeping the ROM extension; all others default to the
-// RetroArch convention of stripping it (issue #245).
+// DefaultKeepsRomExt reports the CFW's default save-naming style, used only as
+// a fallback when the actual on-device convention can't be detected from
+// existing saves (issue #245).
 func DefaultKeepsRomExt(c CFW) bool {
-	switch c {
-	case NextUI, MinUI:
-		return true
-	default:
-		return false
-	}
+	return Lookup(c).KeepsRomExtInSaves()
 }
 
-// EmulatorFolderMap returns the emulator/save directory mapping for the given CFW.
+// EmulatorFolderMap returns the emulator save folders the given CFW uses,
+// keyed by RomM filesystem slug. Firmwares that keep saves in the rom folder
+// return their platform table.
 func EmulatorFolderMap(c CFW) map[string][]string {
-	switch c {
-	case MuOS:
-		return muos.SaveDirectories
-	case NextUI:
-		return nextui.SaveDirectories
-	case Knulli:
-		return knulli.SaveDirectories
-	case Spruce:
-		return spruce.SaveDirectories
-	case ROCKNIX:
-		return rocknix.Platforms // ROCKNIX stores saves alongside ROMs
-	case ArkOS:
-		return arkos.Platforms // ArkOS stores saves alongside ROMs
-	case Allium:
-		return allium.SaveDirectories
-	case Onion:
-		return onion.SaveDirectories
-	case Koriki:
-		return koriki.SaveDirectories
-	case Trimui:
-		return trimui.SaveDirectories
-	case Batocera:
-		return batocera.Platforms
-	case MinUI:
-		return minui.SaveDirectories
-	default:
-		return nil
-	}
+	return Lookup(c).SaveDirectories()
 }
 
 // EmulatorFoldersForFSSlug returns the emulator folders for a given filesystem slug.
@@ -124,7 +81,7 @@ func GetSaveDirectoryForRomPath(fsSlug, romPath string) string {
 	}
 
 	romDir := filepath.Base(filepath.Dir(romPath))
-	romTag := stringutil.ParseTag(romDir)
+	romTag := textmatch.ParseTag(romDir)
 	for _, emulatorDir := range emulatorDirs {
 		if strings.EqualFold(emulatorDir, romDir) || (romTag != "" && strings.EqualFold(emulatorDir, romTag)) {
 			return filepath.Join(baseSavePath, emulatorDir)
@@ -132,4 +89,9 @@ func GetSaveDirectoryForRomPath(fsSlug, romPath string) string {
 	}
 
 	return filepath.Join(baseSavePath, emulatorDirs[0])
+}
+
+// EmulatorLabel is what to call a save folder on screen for firmware c.
+func EmulatorLabel(c CFW, dir string) string {
+	return Lookup(c).EmulatorLabel(dir)
 }

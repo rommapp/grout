@@ -2,9 +2,10 @@ package muos
 
 import (
 	"embed"
-	"grout/internal/jsonutil"
+	"grout/tables"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 //go:embed data/*.json
@@ -16,9 +17,9 @@ const (
 )
 
 var (
-	Platforms       = jsonutil.MustLoadJSONMap[string, []string](embeddedFiles, "data/platforms.json")
-	SaveDirectories = jsonutil.MustLoadJSONMap[string, []string](embeddedFiles, "data/save_directories.json")
-	ArtDirectories  = jsonutil.MustLoadJSONMap[string, string](embeddedFiles, "data/art_directories.json")
+	Platforms       = tables.MustLoad[string, []string](embeddedFiles, "data/platforms.json")
+	SaveDirectories = tables.MustLoad[string, []string](embeddedFiles, "data/save_directories.json")
+	ArtDirectories  = tables.MustLoad[string, string](embeddedFiles, "data/art_directories.json")
 )
 
 func GetBasePath() string {
@@ -77,4 +78,15 @@ func GetSplashDirectory(platformFSSlug, platformName string) string {
 		systemName = platformName
 	}
 	return filepath.Join(GetInfoDirectory(), "catalogue", systemName, "splash")
+}
+
+// EmulatorLabel is what to call a save folder on screen.
+//
+// muOS stores saves under paths like "file/PPSSPP/backup", where the parts
+// around the emulator's name are storage layout rather than anything the user
+// chose between.
+func EmulatorLabel(dir string) string {
+	trimmed := strings.ReplaceAll(dir, "file/", "")
+	trimmed = strings.ReplaceAll(trimmed, "/backup", "")
+	return filepath.Base(trimmed)
 }

@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"grout/settings"
 	"io"
 	"net/http"
 	"strings"
@@ -66,7 +67,7 @@ func NewClient(baseURL string, opts ...ClientOption) *Client {
 	return c
 }
 
-func NewClientFromHost(host Host, timeout ...time.Duration) *Client {
+func NewClientFromHost(host settings.Host, timeout ...time.Duration) *Client {
 	opts := []ClientOption{
 		WithAuthHeader(host.AuthHeader()),
 		WithInsecureSkipVerify(host.InsecureSkipVerify),
@@ -117,7 +118,7 @@ func (c *Client) doRequest(method string, path string, queryParams queryParam, b
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("API error: status %d, body: %s", resp.StatusCode, string(bodyBytes))
+		return statusError(resp.StatusCode, bodyBytes)
 	}
 
 	if result != nil && resp.StatusCode != http.StatusNoContent {
@@ -166,7 +167,7 @@ func (c *Client) doRequestRaw(method, path string, body interface{}) ([]byte, er
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("API error: status %d, body: %s", resp.StatusCode, string(bodyBytes))
+		return nil, statusError(resp.StatusCode, bodyBytes)
 	}
 
 	return bodyBytes, nil
@@ -203,7 +204,7 @@ func (c *Client) doRequestRawWithQuery(method, path string, queryParams queryPar
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("API error: status %d, body: %s", resp.StatusCode, string(bodyBytes))
+		return nil, statusError(resp.StatusCode, bodyBytes)
 	}
 
 	return bodyBytes, nil
@@ -242,7 +243,7 @@ func (c *Client) doMultipartRequest(method, path string, queryParams queryParam,
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("API error: status %d, body: %s", resp.StatusCode, string(bodyBytes))
+		return statusError(resp.StatusCode, bodyBytes)
 	}
 
 	if result != nil && resp.StatusCode != http.StatusNoContent {

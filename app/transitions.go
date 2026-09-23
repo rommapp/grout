@@ -2,10 +2,10 @@ package main
 
 import (
 	"grout/cache"
+	"grout/catalog"
 	"grout/cfw"
-	"grout/internal"
-	"grout/romm"
-	"grout/sync"
+	"grout/saves"
+	"grout/settings"
 	"grout/ui"
 	"os"
 
@@ -93,6 +93,11 @@ func buildTransitionFunc(state *AppState, quitOnBack bool, initialShowCollection
 		case ScreenServerAddress:
 			return transitionServerAddress(ctx, result)
 		case ScreenInputMapping:
+			// The toolkit reads the mapping once at startup, so a new one only
+			// takes effect on the next run. The screen has already said so.
+			if r, ok := result.(ui.InputMappingOutput); ok && r.Saved {
+				os.Exit(0)
+			}
 			return popOrExit(stack)
 		}
 
@@ -195,7 +200,8 @@ func transitionSaveMapping(ctx *transitionContext, result any) (router.Screen, a
 	if r.Config != nil {
 		ctx.state.Config = r.Config
 		if r.Action == ui.SaveMappingActionSaved {
-			internal.SaveConfig(r.Config)
+			settings.SaveConfig(r.Config)
+			ui.ApplyRuntimeSettings(r.Config)
 		}
 	}
 	return popOrExit(ctx.stack)
@@ -209,7 +215,7 @@ func transitionSyncedGames(ctx *transitionContext, result any) (router.Screen, a
 
 	if r.Action == ui.SyncedGamesActionSyncNow {
 		// Resume data is nil because SyncedGamesScreen doesn't track scroll position
-		// externally — it manages its own navigation loops internally.
+		// externally: it manages its own navigation loops internally.
 		ctx.stack.Push(ScreenSyncedGames, ui.SyncedGamesInput{
 			Config:    ctx.state.Config,
 			Host:      ctx.state.Host,
@@ -242,18 +248,17 @@ func transitionSaveSyncSettings(ctx *transitionContext, result any) (router.Scre
 		ctx.state.Host.DeviceName = r.Host.DeviceName
 		needsSave = true
 	}
-	if r.Config.SaveBackupLimit != ctx.state.Config.SaveBackupLimit {
-		ctx.state.Config.SaveBackupLimit = r.Config.SaveBackupLimit
-		needsSave = true
-	}
-
+	// The screen saves its own config. It cannot be checked here: it was
+	// handed the very config it edits, so there is nothing left to compare
+	// against. Only the host, which travels by value, is settled here.
 	if needsSave {
 		if len(ctx.state.Config.Hosts) > 0 {
 			ctx.state.Config.Hosts[0] = ctx.state.Host
 		} else {
-			ctx.state.Config.Hosts = []romm.Host{ctx.state.Host}
+			ctx.state.Config.Hosts = []settings.Host{ctx.state.Host}
 		}
-		internal.SaveConfig(ctx.state.Config)
+		settings.SaveConfig(ctx.state.Config)
+		ui.ApplyRuntimeSettings(ctx.state.Config)
 	}
 
 	if r.Action == ui.SaveSyncSettingsActionSaveMapping {
@@ -276,10 +281,10 @@ func transitionSaveSync(ctx *transitionContext, result any) (router.Screen, any)
 	}
 
 	// Build the conflict display list from ConflictIndices (in order) so it stays
-	// aligned with the index map and shows exactly the conflicts the caller selected —
+	// aligned with the index map and shows exactly the conflicts the caller selected,
 	// e.g. on an execution-time 409 loop-back, only the newly surfaced conflicts, not
 	// ones the user already skipped.
-	conflicts := make([]sync.SyncItem, 0, len(r.ConflictIndices))
+	conflicts := make([]saves.SyncItem, 0, len(r.ConflictIndices))
 	for ci := 0; ci < len(r.ConflictIndices); ci++ {
 		if idx, ok := r.ConflictIndices[ci]; ok && idx < len(r.Items) {
 			conflicts = append(conflicts, r.Items[idx])
@@ -611,7 +616,8 @@ func transitionSettings(ctx *transitionContext, result any) (router.Screen, any)
 
 	if r.Config != nil {
 		ctx.state.Config = r.Config
-		internal.SaveConfig(ctx.state.Config)
+		settings.SaveConfig(ctx.state.Config)
+		ui.ApplyRuntimeSettings(ctx.state.Config)
 	}
 
 	pushInput := ui.SettingsInput{Config: ctx.state.Config, CFW: ctx.state.CFW, Host: ctx.state.Host}
@@ -664,7 +670,7 @@ func transitionSettings(ctx *transitionContext, result any) (router.Screen, any)
 		}
 
 	case ui.SettingsActionSaved, ui.SettingsActionBack:
-		ctx.showCollections = ctx.state.Config.ShowCollections(ctx.state.Host)
+		ctx.showCollections = catalog.ShowCollections(*ctx.state.Config, ctx.state.Host)
 		return popOrExitWithCollections(ctx.stack, ctx.showCollections, ctx.state.Host.DeviceID != "")
 	}
 
@@ -697,7 +703,7 @@ func transitionCollectionsSettings(ctx *transitionContext, result any) (router.S
 		}
 		ctx.showCollections = true
 	} else {
-		ctx.showCollections = ctx.state.Config.ShowCollections(ctx.state.Host)
+		ctx.showCollections = catalog.ShowCollections(*ctx.state.Config, ctx.state.Host)
 	}
 	return popOrExit(ctx.stack)
 }
@@ -753,6 +759,9 @@ func transitionAdvancedSettings(ctx *transitionContext, result any) (router.Scre
 		return ScreenInputMapping, nil
 
 	case ui.AdvancedSettingsActionResetInputMapping:
+		// The toolkit reads the mapping once at startup, so the reset only
+		// takes effect on the next run. The screen has already said so.
+		os.Exit(0)
 		return popOrExit(ctx.stack)
 
 	default:
@@ -769,7 +778,8 @@ func transitionServerAddress(ctx *transitionContext, result any) (router.Screen,
 	if r.Action == ui.ServerAddressActionSaved {
 		ctx.state.Host = r.Host
 		ctx.state.Config.Hosts[0] = r.Host
-		if err := internal.SaveConfig(ctx.state.Config); err != nil {
+		if err := settings.SaveConfig(ctx.state.Config); err != nil {
+			ui.ApplyRuntimeSettings(ctx.state.Config)
 			gaba.GetLogger().Error("Failed to save config after server address change", "error", err)
 		}
 	}
@@ -814,7 +824,7 @@ func transitionLogoutConfirmation(ctx *transitionContext, result any) (router.Sc
 		return ScreenPlatformSelection, ui.PlatformSelectionInput{
 			Platforms:       &ctx.state.Platforms,
 			QuitOnBack:      ctx.quitOnBack,
-			ShowCollections: ctx.state.Config.ShowCollections(ctx.state.Host),
+			ShowCollections: catalog.ShowCollections(*ctx.state.Config, ctx.state.Host),
 			ShowSaveSync:    ctx.state.Host.DeviceID != "",
 		}
 	}

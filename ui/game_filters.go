@@ -2,13 +2,13 @@ package ui
 
 import (
 	"errors"
+
 	"grout/cache"
+	"grout/catalog"
 	"grout/romm"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	gabaconst "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type GameFiltersInput struct {
@@ -30,33 +30,96 @@ func NewGameFiltersScreen() *GameFiltersScreen {
 	return &GameFiltersScreen{}
 }
 
+// filterCategory is one row of the filters screen: what it is called, where
+// the cache keeps the values it can take, and which field of a GameFilter it
+// fills.
+//
+// Reading a row back, narrowing the others, and restoring what was chosen last
+// time all go through get and set, so a category is described once.
 type filterCategory struct {
-	labelID       string
-	labelDefault  string
+	// key identifies the row when the screen is read back, since a label
+	// changes with the language.
+	key          string
+	labelID      string
+	labelDefault string
+	// lookupTable and its companions name where the cache holds this
+	// category's values. The platform row leaves them empty: its values come
+	// from the collection rather than from a metadata table.
 	lookupTable   string
 	junctionTable string
 	fkCol         string
+	get           func(cache.GameFilter) []string
+	set           func(*cache.GameFilter, []string)
 }
 
 var filterCategories = []filterCategory{
-	{"filter_genre", "Genre", "genres", "game_genres", "genre_id"},
-	{"filter_franchise", "Franchise", "franchises", "game_franchises", "franchise_id"},
-	{"filter_company", "Company", "companies", "game_companies", "company_id"},
-	{"filter_game_mode", "Game Mode", "game_modes", "game_game_modes", "game_mode_id"},
-	{"filter_region", "Region", "regions", "game_regions", "region_id"},
-	{"filter_language", "Language", "languages", "game_languages", "language_id"},
-	{"filter_age_rating", "Age Rating", "age_ratings", "game_age_ratings", "age_rating_id"},
-	{"filter_tag", "Tag", "tags", "game_tags", "tag_id"},
+	{
+		key: "platform", labelID: "filter_platform", labelDefault: "Platform",
+		get: func(f cache.GameFilter) []string { return f.PlatformSlugs },
+		set: func(f *cache.GameFilter, v []string) { f.PlatformSlugs = v },
+	},
+	{
+		key: "genre", labelID: "filter_genre", labelDefault: "Genre",
+		lookupTable: "genres", junctionTable: "game_genres", fkCol: "genre_id",
+		get: func(f cache.GameFilter) []string { return f.Genres },
+		set: func(f *cache.GameFilter, v []string) { f.Genres = v },
+	},
+	{
+		key: "franchise", labelID: "filter_franchise", labelDefault: "Franchise",
+		lookupTable: "franchises", junctionTable: "game_franchises", fkCol: "franchise_id",
+		get: func(f cache.GameFilter) []string { return f.Franchises },
+		set: func(f *cache.GameFilter, v []string) { f.Franchises = v },
+	},
+	{
+		key: "company", labelID: "filter_company", labelDefault: "Company",
+		lookupTable: "companies", junctionTable: "game_companies", fkCol: "company_id",
+		get: func(f cache.GameFilter) []string { return f.Companies },
+		set: func(f *cache.GameFilter, v []string) { f.Companies = v },
+	},
+	{
+		key: "game_mode", labelID: "filter_game_mode", labelDefault: "Game Mode",
+		lookupTable: "game_modes", junctionTable: "game_game_modes", fkCol: "game_mode_id",
+		get: func(f cache.GameFilter) []string { return f.GameModes },
+		set: func(f *cache.GameFilter, v []string) { f.GameModes = v },
+	},
+	{
+		key: "region", labelID: "filter_region", labelDefault: "Region",
+		lookupTable: "regions", junctionTable: "game_regions", fkCol: "region_id",
+		get: func(f cache.GameFilter) []string { return f.Regions },
+		set: func(f *cache.GameFilter, v []string) { f.Regions = v },
+	},
+	{
+		key: "language", labelID: "filter_language", labelDefault: "Language",
+		lookupTable: "languages", junctionTable: "game_languages", fkCol: "language_id",
+		get: func(f cache.GameFilter) []string { return f.Languages },
+		set: func(f *cache.GameFilter, v []string) { f.Languages = v },
+	},
+	{
+		key: "age_rating", labelID: "filter_age_rating", labelDefault: "Age Rating",
+		lookupTable: "age_ratings", junctionTable: "game_age_ratings", fkCol: "age_rating_id",
+		get: func(f cache.GameFilter) []string { return f.AgeRatings },
+		set: func(f *cache.GameFilter, v []string) { f.AgeRatings = v },
+	},
+	{
+		key: "tag", labelID: "filter_tag", labelDefault: "Tag",
+		lookupTable: "tags", junctionTable: "game_tags", fkCol: "tag_id",
+		get: func(f cache.GameFilter) []string { return f.Tags },
+		set: func(f *cache.GameFilter, v []string) { f.Tags = v },
+	},
 }
 
-const platformCatIdx = -1
+// isPlatform reports whether this row lists platforms rather than metadata,
+// which the cache answers a different way.
+func (c filterCategory) isPlatform() bool { return c.lookupTable == "" }
 
-func isCollection(input GameFiltersInput) bool {
-	return input.Collection.ID != 0 || input.Collection.VirtualID != ""
-}
-
-func isUnifiedCollection(input GameFiltersInput) bool {
-	return isCollection(input) && input.Platform.ID == 0
+// filterSource is what the rows are read out of.
+type filterSource struct {
+	manager    *cache.Manager
+	platformID int
+	collection romm.Collection
+	// unified is a collection with no platform picked, which is the only case
+	// where filtering by platform means anything.
+	unified bool
 }
 
 func (s *GameFiltersScreen) Draw(input GameFiltersInput) (GameFiltersOutput, error) {
@@ -66,20 +129,33 @@ func (s *GameFiltersScreen) Draw(input GameFiltersInput) (GameFiltersOutput, err
 		Filters:  input.CurrentFilters,
 	}
 
-	cm := cache.GetCacheManager()
-	if cm == nil {
+	manager := cache.GetCacheManager()
+	if manager == nil {
 		return output, nil
 	}
 
-	platformID := input.Platform.ID
-	items := s.buildMenuItems(cm, platformID, input)
+	source := filterSource{
+		manager:    manager,
+		platformID: input.Platform.ID,
+		collection: input.Collection,
+		unified:    catalog.IsCollection(input.Collection) && input.Platform.ID == 0,
+	}
 
+	base := cache.GameFilter{NameSearch: input.SearchQuery}
+	if catalog.IsCollection(input.Collection) {
+		if id, err := manager.ResolveCollectionID(input.Collection); err == nil {
+			base.CollectionInternalID = id
+		}
+	}
+
+	rows, items := s.buildItems(source, base, input.CurrentFilters)
 	if len(items) == 0 {
 		return output, nil
 	}
+	wireNarrowing(source, base, rows, items)
 
 	result, err := gaba.OptionsList(
-		i18n.Localize(&goi18n.Message{ID: "game_filters_title", Other: "Filters"}, nil),
+		localize("game_filters_title", "Filters"),
 		gaba.OptionListSettings{
 			FooterHelpItems:  OptionsListFooter(),
 			StatusBar:        StatusBar(),
@@ -88,7 +164,6 @@ func (s *GameFiltersScreen) Draw(input GameFiltersInput) (GameFiltersOutput, err
 		},
 		items,
 	)
-
 	if err != nil {
 		if errors.Is(err, gaba.ErrCancelled) {
 			return output, nil
@@ -96,281 +171,183 @@ func (s *GameFiltersScreen) Draw(input GameFiltersInput) (GameFiltersOutput, err
 		return output, err
 	}
 
-	output.Filters = s.applyFilters(result.Items)
-	output.Filters.PlatformID = platformID
+	// Everything the screen narrowed by has to come back out, or a filtered
+	// collection would be queried across the whole library.
+	filters := selectedFilter(result.Items)
+	filters.NameSearch = base.NameSearch
+	filters.CollectionInternalID = base.CollectionInternalID
+	filters.PlatformID = source.platformID
+
+	output.Filters = filters
 	output.Action = GameFiltersActionApply
 	return output, nil
 }
 
-func (s *GameFiltersScreen) buildMenuItems(cm *cache.Manager, platformID int, input GameFiltersInput) []gaba.ItemWithOptions {
-	current := input.CurrentFilters
-	currentValues := [8][]string{
-		current.Genres, current.Franchises, current.Companies, current.GameModes,
-		current.Regions, current.Languages, current.AgeRatings, current.Tags,
-	}
-
-	allLabel := i18n.Localize(&goi18n.Message{ID: "filter_all", Other: "All"}, nil)
-	searchFilter := cache.GameFilter{NameSearch: input.SearchQuery}
-
-	if isCollection(input) {
-		if collID, err := cm.ResolveCollectionID(input.Collection); err == nil {
-			searchFilter.CollectionInternalID = collID
-		}
-	}
-
+// buildItems makes a row for every category that has something to choose
+// between, and returns the categories alongside so the rows can be read back.
+func (s *GameFiltersScreen) buildItems(source filterSource, base cache.GameFilter, current cache.GameFilter) ([]filterCategory, []gaba.ItemWithOptions) {
+	var rows []filterCategory
 	var items []gaba.ItemWithOptions
-	var activeCats []int
 
-	if isUnifiedCollection(input) {
-		platforms, err := cm.GetCollectionPlatforms(input.Collection, searchFilter)
-		if err == nil && len(platforms) > 0 {
-			options := buildPlatformOptions(allLabel, platforms, nil)
-
-			selected := 0
-			if len(current.PlatformSlugs) == 1 {
-				for i, opt := range options {
-					if v, ok := opt.Value.(string); ok && v == current.PlatformSlugs[0] {
-						selected = i
-						break
-					}
-				}
-			}
-
-			items = append(items, gaba.ItemWithOptions{
-				Item:           gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "filter_platform", Other: "Platform"}, nil)},
-				Options:        options,
-				SelectedOption: selected,
-			})
-			activeCats = append(activeCats, platformCatIdx)
-		}
-	}
-
-	for catIdx, cat := range filterCategories {
-		available := safeDistinct(cm.GetDistinctValuesWithFilter(cat.lookupTable, cat.junctionTable, cat.fkCol, platformID, searchFilter))
-		if len(available) == 0 {
+	for _, category := range filterCategories {
+		if category.isPlatform() && !source.unified {
 			continue
 		}
 
-		options := buildFilterOptionsList(allLabel, available, nil)
-
-		selected := 0
-		if len(currentValues[catIdx]) == 1 {
-			for i, opt := range options {
-				if v, ok := opt.Value.(string); ok && v == currentValues[catIdx][0] {
-					selected = i
-					break
-				}
-			}
+		options := category.options(source, base)
+		// One entry is the "All" row on its own, which filters nothing.
+		if len(options) <= 1 {
+			continue
 		}
 
+		rows = append(rows, category)
 		items = append(items, gaba.ItemWithOptions{
-			Item:           gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: cat.labelID, Other: cat.labelDefault}, nil)},
+			Item:           gaba.MenuItem{Text: localize(category.labelID, category.labelDefault), Metadata: category.key},
 			Options:        options,
-			SelectedOption: selected,
+			SelectedOption: optionIndex(options, chosenValue(category.get(current))),
 		})
-		activeCats = append(activeCats, catIdx)
 	}
 
-	wireFilterCallbacks(cm, platformID, input.Collection, searchFilter.CollectionInternalID, items, activeCats, allLabel, input.SearchQuery)
-
-	return items
+	return rows, items
 }
 
-func buildFilterOptionsList(allLabel string, available []string, onUpdate func(any)) []gaba.Option {
-	options := make([]gaba.Option, 0, len(available)+1)
-	options = append(options, gaba.Option{DisplayName: allLabel, Value: "", OnUpdate: onUpdate})
-	for _, val := range available {
-		options = append(options, gaba.Option{DisplayName: val, Value: val, OnUpdate: onUpdate})
+// chosenValue is the single value a category is filtered by, or "" for none.
+// The screen offers one at a time even though a filter can hold several.
+func chosenValue(values []string) string {
+	if len(values) == 1 {
+		return values[0]
+	}
+	return ""
+}
+
+// options lists what this category can be narrowed to, given everything else
+// already chosen. The leading entry clears it.
+func (c filterCategory) options(source filterSource, narrowed cache.GameFilter) []gaba.Option {
+	all := gaba.Option{DisplayName: localize("filter_all", "All"), Value: ""}
+
+	if c.isPlatform() {
+		platforms, err := source.manager.GetCollectionPlatforms(source.collection, narrowed)
+		if err != nil {
+			gaba.GetLogger().Debug("Cannot list a collection's platforms to filter by", "error", err)
+			return nil
+		}
+
+		options := make([]gaba.Option, 0, len(platforms)+1)
+		options = append(options, all)
+		for _, platform := range platforms {
+			options = append(options, gaba.Option{DisplayName: platform.DisplayName, Value: platform.Slug})
+		}
+		return options
+	}
+
+	values, err := source.manager.GetDistinctValuesWithFilter(c.lookupTable, c.junctionTable, c.fkCol, source.platformID, narrowed)
+	if err != nil {
+		// The row is dropped rather than shown empty, so say why: silently
+		// missing filters look like the library has no such metadata.
+		gaba.GetLogger().Debug("Cannot list a filter's values", "category", c.key, "error", err)
+		return nil
+	}
+
+	options := make([]gaba.Option, 0, len(values)+1)
+	options = append(options, all)
+	for _, value := range values {
+		options = append(options, gaba.Option{DisplayName: value, Value: value})
 	}
 	return options
 }
 
-func buildPlatformOptions(allLabel string, platforms []cache.PlatformOption, onUpdate func(any)) []gaba.Option {
-	options := make([]gaba.Option, 0, len(platforms)+1)
-	options = append(options, gaba.Option{DisplayName: allLabel, Value: "", OnUpdate: onUpdate})
-	for _, p := range platforms {
-		options = append(options, gaba.Option{DisplayName: p.DisplayName, Value: p.Slug, OnUpdate: onUpdate})
+// selectedFilter reads the screen back. Rows are found by key, so a category
+// that reads the same as another in some language cannot be mistaken for it.
+func selectedFilter(items []gaba.ItemWithOptions) cache.GameFilter {
+	byKey := make(map[string]filterCategory, len(filterCategories))
+	for _, category := range filterCategories {
+		byKey[category.key] = category
 	}
-	return options
+
+	var filter cache.GameFilter
+	for _, item := range items {
+		key, _ := item.Item.Metadata.(string)
+		category, ok := byKey[key]
+		if !ok {
+			continue
+		}
+		if value := selectedValue(item); value != "" {
+			category.set(&filter, []string{value})
+		}
+	}
+	return filter
 }
 
-func wireFilterCallbacks(cm *cache.Manager, platformID int, collection romm.Collection, collectionInternalID int64, items []gaba.ItemWithOptions, activeCats []int, allLabel string, searchQuery string) {
+func selectedValue(item gaba.ItemWithOptions) string {
+	if item.SelectedOption < 0 || item.SelectedOption >= len(item.Options) {
+		return ""
+	}
+	value, _ := item.Options[item.SelectedOption].Value.(string)
+	return value
+}
+
+// wireNarrowing makes each row re-read the others whenever it changes, so the
+// screen only ever offers combinations that match something.
+//
+// A row is narrowed by every choice except its own: including it would leave
+// each row offering nothing but what it already shows.
+func wireNarrowing(source filterSource, base cache.GameFilter, rows []filterCategory, items []gaba.ItemWithOptions) {
 	if len(items) <= 1 {
 		return
 	}
 
-	rebuildFilter := func() cache.GameFilter {
-		f := buildGameFilterFromSelections(items, activeCats)
-		f.NameSearch = searchQuery
-		f.CollectionInternalID = collectionInternalID
-		return f
+	chosen := func() cache.GameFilter {
+		filter := selectedFilter(items)
+		filter.NameSearch = base.NameSearch
+		filter.CollectionInternalID = base.CollectionInternalID
+		return filter
 	}
 
-	var makeCallback func(itemIdx int) func(any)
-	makeCallback = func(itemIdx int) func(any) {
-		return func(_ any) {
-			filter := rebuildFilter()
+	var callbackFor func(int) func(any)
+	callbackFor = func(changed int) func(any) {
+		return func(any) {
+			filter := chosen()
 
-			for j := range items {
-				if j == itemIdx {
+			for i := range items {
+				if i == changed {
 					continue
 				}
 
-				catIdx := activeCats[j]
-				partialFilter := clearFilter(filter, catIdx)
+				withoutOwn := filter
+				rows[i].set(&withoutOwn, nil)
 
-				if catIdx == platformCatIdx {
-					platforms, err := cm.GetCollectionPlatforms(collection, partialFilter)
-					if err != nil {
-						continue
-					}
-					cb := makeCallback(j)
-					options := buildPlatformOptions(allLabel, platforms, cb)
-					preserveSelection(items, j, options)
-				} else {
-					cat := filterCategories[catIdx]
-					available := safeDistinct(cm.GetDistinctValuesWithFilter(
-						cat.lookupTable, cat.junctionTable, cat.fkCol, platformID, partialFilter,
-					))
-					cb := makeCallback(j)
-					options := buildFilterOptionsList(allLabel, available, cb)
-					preserveSelection(items, j, options)
+				options := rows[i].options(source, withoutOwn)
+				if len(options) == 0 {
+					continue
 				}
+				for j := range options {
+					options[j].OnUpdate = callbackFor(i)
+				}
+				keepSelection(&items[i], options)
 
-				// Rebuild filter so subsequent iterations reflect any cleared selections
-				filter = rebuildFilter()
+				// Narrowing a row can drop the value it held, which changes
+				// what the rows after it should offer.
+				filter = chosen()
 			}
 		}
 	}
 
 	for i := range items {
-		cb := makeCallback(i)
+		callback := callbackFor(i)
 		for j := range items[i].Options {
-			items[i].Options[j].OnUpdate = cb
+			items[i].Options[j].OnUpdate = callback
 		}
 	}
 }
 
-func preserveSelection(items []gaba.ItemWithOptions, idx int, options []gaba.Option) {
-	currentVal := ""
-	if items[idx].SelectedOption < len(items[idx].Options) {
-		if v, ok := items[idx].Options[items[idx].SelectedOption].Value.(string); ok {
-			currentVal = v
-		}
+// keepSelection swaps in a narrowed set of options, staying on the same value
+// when it survived and falling back to All when it did not.
+func keepSelection(item *gaba.ItemWithOptions, options []gaba.Option) {
+	current := selectedValue(*item)
+
+	item.Options = options
+	item.SelectedOption = 0
+	if current != "" {
+		item.SelectedOption = optionIndex(options, current)
 	}
-
-	newSelected := 0
-	if currentVal != "" {
-		for i, opt := range options {
-			if v, ok := opt.Value.(string); ok && v == currentVal {
-				newSelected = i
-				break
-			}
-		}
-	}
-
-	items[idx].Options = options
-	items[idx].SelectedOption = newSelected
-}
-
-func buildGameFilterFromSelections(items []gaba.ItemWithOptions, activeCats []int) cache.GameFilter {
-	var f cache.GameFilter
-	for i, catIdx := range activeCats {
-		if items[i].SelectedOption >= len(items[i].Options) {
-			continue
-		}
-		val, ok := items[i].Options[items[i].SelectedOption].Value.(string)
-		if !ok || val == "" {
-			continue
-		}
-		setGameFilter(&f, catIdx, val)
-	}
-	return f
-}
-
-func clearFilter(f cache.GameFilter, catIdx int) cache.GameFilter {
-	switch catIdx {
-	case platformCatIdx:
-		f.PlatformSlugs = nil
-	case 0:
-		f.Genres = nil
-	case 1:
-		f.Franchises = nil
-	case 2:
-		f.Companies = nil
-	case 3:
-		f.GameModes = nil
-	case 4:
-		f.Regions = nil
-	case 5:
-		f.Languages = nil
-	case 6:
-		f.AgeRatings = nil
-	case 7:
-		f.Tags = nil
-	}
-	return f
-}
-
-func setGameFilter(f *cache.GameFilter, catIdx int, val string) {
-	switch catIdx {
-	case platformCatIdx:
-		f.PlatformSlugs = []string{val}
-	case 0:
-		f.Genres = []string{val}
-	case 1:
-		f.Franchises = []string{val}
-	case 2:
-		f.Companies = []string{val}
-	case 3:
-		f.GameModes = []string{val}
-	case 4:
-		f.Regions = []string{val}
-	case 5:
-		f.Languages = []string{val}
-	case 6:
-		f.AgeRatings = []string{val}
-	case 7:
-		f.Tags = []string{val}
-	}
-}
-
-func (s *GameFiltersScreen) applyFilters(items []gaba.ItemWithOptions) cache.GameFilter {
-	var f cache.GameFilter
-
-	for _, item := range items {
-		val, ok := item.Options[item.SelectedOption].Value.(string)
-		if !ok || val == "" {
-			continue
-		}
-		values := []string{val}
-
-		text := item.Item.Text
-		switch text {
-		case i18n.Localize(&goi18n.Message{ID: "filter_platform", Other: "Platform"}, nil):
-			f.PlatformSlugs = values
-		case i18n.Localize(&goi18n.Message{ID: "filter_genre", Other: "Genre"}, nil):
-			f.Genres = values
-		case i18n.Localize(&goi18n.Message{ID: "filter_franchise", Other: "Franchise"}, nil):
-			f.Franchises = values
-		case i18n.Localize(&goi18n.Message{ID: "filter_company", Other: "Company"}, nil):
-			f.Companies = values
-		case i18n.Localize(&goi18n.Message{ID: "filter_game_mode", Other: "Game Mode"}, nil):
-			f.GameModes = values
-		case i18n.Localize(&goi18n.Message{ID: "filter_region", Other: "Region"}, nil):
-			f.Regions = values
-		case i18n.Localize(&goi18n.Message{ID: "filter_language", Other: "Language"}, nil):
-			f.Languages = values
-		case i18n.Localize(&goi18n.Message{ID: "filter_age_rating", Other: "Age Rating"}, nil):
-			f.AgeRatings = values
-		case i18n.Localize(&goi18n.Message{ID: "filter_tag", Other: "Tag"}, nil):
-			f.Tags = values
-		}
-	}
-
-	return f
-}
-
-func safeDistinct(vals []string, _ error) []string {
-	return vals
 }

@@ -65,7 +65,7 @@ func TestCanonicalLocalBasename(t *testing.T) {
 }
 
 // LocalBasenames must return EVERY on-disk basename a ROM can occupy, so a save/ROM for
-// any of a multi-file game's alternative versions resolves — not just Files[0] (issue #242).
+// any of a multi-file game's alternative versions resolves, not just Files[0] (issue #242).
 func TestLocalBasenames(t *testing.T) {
 	tests := []struct {
 		name string

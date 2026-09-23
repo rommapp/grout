@@ -2,9 +2,10 @@ package main
 
 import (
 	"grout/cache"
+	"grout/catalog"
 	"grout/cfw"
-	"grout/internal"
 	"grout/romm"
+	"grout/settings"
 	"grout/ui"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -31,7 +32,8 @@ func savePlatformOrder(state *AppState, platforms []romm.Platform) {
 	}
 	state.Config.PlatformOrder = platformOrder
 	state.Platforms = platforms
-	internal.SaveConfig(state.Config)
+	settings.SaveConfig(state.Config)
+	ui.ApplyRuntimeSettings(state.Config)
 }
 
 func executeDownloadUI(state *AppState, r ui.GameDetailsOutput, stack *router.Stack) {
@@ -56,10 +58,11 @@ func executeMultiDownloadUI(state *AppState, r ui.GameListOutput) {
 
 func handlePlatformMappingUpdateUI(state *AppState, r ui.PlatformMappingOutput) {
 	state.Config.DirectoryMappings = r.Mappings
-	state.Config.PlatformOrder = internal.PrunePlatformOrder(state.Config.PlatformOrder, r.Mappings)
-	internal.SaveConfig(state.Config)
+	state.Config.PlatformOrder = catalog.PruneOrder(state.Config.PlatformOrder, r.Mappings)
+	settings.SaveConfig(state.Config)
+	ui.ApplyRuntimeSettings(state.Config)
 
-	platforms, err := internal.GetMappedPlatforms(state.Host, r.Mappings, state.Config.ApiTimeout.Duration())
+	platforms, err := catalog.MappedPlatforms(state.Host, r.Mappings, state.Config.ApiTimeout.Duration())
 	if err != nil {
 		gaba.GetLogger().Error("Failed to refresh platforms after mapping update", "error", err)
 		return
@@ -95,21 +98,25 @@ func handleLogout(state *AppState) {
 	state.Config.DirectoryMappings = nil
 	state.Config.PlatformOrder = nil
 
-	if err := internal.SaveConfig(state.Config); err != nil {
+	if err := settings.SaveConfig(state.Config); err != nil {
+
+		ui.ApplyRuntimeSettings(state.Config)
 		logger.Error("Failed to save config after logout", "error", err)
 		return
 	}
 
 	logger.Info("User logged out successfully")
 
-	loginConfig, err := ui.LoginFlow(romm.Host{})
+	loginConfig, err := ui.LoginFlow(settings.Host{})
 	if err != nil {
+		// A cancelled login leaves the app running and logged out.
 		logger.Error("Login flow failed after logout", "error", err)
 		return
 	}
 
 	state.Config.Hosts = loginConfig.Hosts
-	if err := internal.SaveConfig(state.Config); err != nil {
+	if err := settings.SaveConfig(state.Config); err != nil {
+		ui.ApplyRuntimeSettings(state.Config)
 		logger.Error("Failed to save config after re-login", "error", err)
 		return
 	}
@@ -130,15 +137,16 @@ func handleLogout(state *AppState) {
 
 		if err == nil && result.Action == ui.PlatformMappingActionSaved {
 			state.Config.DirectoryMappings = result.Mappings
-			internal.SaveConfig(state.Config)
+			settings.SaveConfig(state.Config)
+			ui.ApplyRuntimeSettings(state.Config)
 		}
 	}
 
-	if err := cache.InitCacheManager(state.Config.Hosts[0], state.Config); err != nil {
+	if err := cache.InitCacheManager(state.Config.Hosts[0], *state.Config); err != nil {
 		logger.Error("Failed to re-initialize cache manager", "error", err)
 	}
 
-	platforms, err := internal.GetMappedPlatforms(state.Config.Hosts[0], state.Config.DirectoryMappings, state.Config.ApiTimeout.Duration())
+	platforms, err := catalog.MappedPlatforms(state.Config.Hosts[0], state.Config.DirectoryMappings, state.Config.ApiTimeout.Duration())
 	if err != nil {
 		logger.Error("Failed to load platforms after re-login", "error", err)
 		return

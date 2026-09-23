@@ -10,10 +10,28 @@ tasks:
       - staticcheck ./...
     silent: true
 
-  gen-platforms:
-    desc: Generate platforms.json from markdown docs
+  archcheck:
+    desc: Check package layering (imports, UI toolkit, package-level state)
     cmds:
-      - go run tools/gen-platforms/main.go
+      - go run ./tools/archcheck -v
+    silent: true
+
+  archcheck-update:
+    desc: Rewrite the archcheck allowlist from the current tree
+    cmds:
+      - go run ./tools/archcheck -update
+    silent: true
+
+  gen-platform-docs:
+    desc: Regenerate docs/platforms/*.md from the platforms.json files the app reads
+    cmds:
+      - go run ./tools/gen-platform-docs
+    silent: true
+
+  check-platform-docs:
+    desc: Fail if docs/platforms/*.md are out of date with platforms.json
+    cmds:
+      - go run ./tools/gen-platform-docs -check
     silent: true
 
   hooks-setup:

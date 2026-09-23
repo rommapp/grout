@@ -17,6 +17,8 @@ grout
 app/app
 es_restart_request
 /save-sync-preview
+/gen-platform-docs
+/archcheck
 
 # Local config
 .env
@@ -47,3 +49,6 @@ site/
 /create-conflict
 /input_mapping.json
 /gamelist.xml
+
+# Screenshots from the end to end run, kept as CI artifacts rather than in git.
+test/e2e/screenshots/

@@ -22,7 +22,7 @@ flowchart LR
 
 The login flow runs at startup (in `app/setup.go` via `ui.LoginFlow`) before the main
 app router. It is also re-entered on startup when a stored login can no longer
-authenticate — including legacy installs from before the RomM 5.0 device-auth cutover,
+authenticate, including legacy installs from before the RomM 5.0 device-auth cutover,
 which are routed back here to re-pair. Username/password (basic auth) is no longer
 supported.
 
@@ -53,7 +53,7 @@ flowchart TD
 
 - **Server Connection** collects the protocol, hostname, port, and SSL verification
   settings, then validates connectivity and reads the server heartbeat.
-- **Authentication** presents an Auth Method picker on RomM 5.0+ — **Device Pairing**
+- **Authentication** presents an Auth Method picker on RomM 5.0+: **Device Pairing**
   (default) or **Pairing Code**. On servers older than 5.0 the picker is hidden and only
   Pairing Code is offered.
 - **Device Pairing** shows a QR code / verification URL (`ui/device_pairing.go`), which is

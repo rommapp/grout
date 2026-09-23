@@ -1,0 +1,66 @@
+# A disposable RomM for the end to end run.
+#
+# Nothing here is persisted: every run starts from an empty database and an
+# empty library, so a test cannot pass because of something an earlier one
+# left behind.
+name: grout-e2e-romm
+
+services:
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: romm
+      MARIADB_DATABASE: romm
+      MARIADB_USER: romm
+      MARIADB_PASSWORD: romm
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    tmpfs:
+      - /var/lib/mysql
+
+  romm:
+    image: rommapp/romm:latest
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_NAME: romm
+      DB_USER: romm
+      DB_PASSWD: romm
+      ROMM_AUTH_SECRET_KEY: e2e-only-not-a-real-secret-0123456789abcdef
+      # Scanning is asked for explicitly by provision.py. Neither of these
+      # would fire in time for a test run, and a rescan landing midway
+      # through one would change the library under it.
+      ENABLE_RESCAN_ON_FILESYSTEM_CHANGE: "false"
+      ENABLE_SCHEDULED_RESCAN: "false"
+    # Not published: only the test container talks to it, over the compose
+    # network. Publishing would collide with whatever the developer already
+    # has on that port.
+    volumes:
+      - ./library:/romm/library
+      - ./romm/provision.py:/provision.py:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/api/heartbeat || exit 1"]
+      interval: 3s
+      timeout: 3s
+      retries: 60
+
+  tests:
+    build:
+      context: ../..
+      dockerfile: test/e2e/Dockerfile
+    depends_on:
+      romm:
+        condition: service_healthy
+    environment:
+      ROMM_URL: http://romm:8080
+      GROUT_E2E_SCREENSHOTS: /screenshots
+    volumes:
+      - ./screenshots:/screenshots
+      - ./romm/provision.py:/provision.py:ro
+    # Overridden by the runner script, which passes through any go test flags.
+    command: ["go", "test", "-tags=e2e", "-count=1", "-v", "-timeout", "20m", "./..."]

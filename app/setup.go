@@ -2,23 +2,16 @@ package main
 
 import (
 	"errors"
+	"grout/auth"
 	"grout/cache"
+	"grout/catalog"
 	"grout/cfw"
-	"grout/cfw/allium"
-	"grout/cfw/arkos"
-	"grout/cfw/koriki"
-	"grout/cfw/minui"
-	"grout/cfw/muos"
-	"grout/cfw/nextui"
-	"grout/cfw/onion"
-	"grout/cfw/rocknix"
-	"grout/cfw/spruce"
-	"grout/internal"
-	"grout/internal/environment"
-	"grout/internal/fileutil"
+	"grout/environment"
+	"grout/files"
 	"grout/resources"
 	"grout/romm"
-	"grout/sync"
+	"grout/saves"
+	"grout/settings"
 	"grout/ui"
 	"log"
 	"log/slog"
@@ -33,12 +26,20 @@ import (
 )
 
 type SetupResult struct {
-	Config    *internal.Config
+	Config    *settings.Config
 	Platforms []romm.Platform
 }
 
 func setup() SetupResult {
-	currentCFW := cfw.GetCFW()
+	// The launch script for each firmware sets this. Resolving it once here,
+	// before anything else runs, is what lets the rest of the codebase treat an
+	// unknown firmware as "no such directory" instead of terminating from
+	// wherever it happened to notice.
+	currentCFW, err := cfw.Active()
+	if err != nil {
+		log.SetOutput(os.Stderr)
+		log.Fatalf("Cannot start: %v", err)
+	}
 
 	setupInputMapping(currentCFW)
 	initFramework(currentCFW)
@@ -49,7 +50,7 @@ func setup() SetupResult {
 	config = handleFirstLaunch(config, isFirstLaunch, logger)
 	config = applyConfig(config, isFirstLaunch, currentCFW, logger)
 
-	if err := cache.InitCacheManager(config.Hosts[0], config); err != nil {
+	if err := cache.InitCacheManager(config.Hosts[0], *config); err != nil {
 		logger.Error("Failed to initialize cache manager", "error", err)
 	}
 
@@ -67,8 +68,8 @@ func setupInputMapping(currentCFW cfw.CFW) {
 		return
 	}
 
-	cwdMappingPath := filepath.Join(cwd, "input_mapping.json")
-	if fileutil.FileExists(cwdMappingPath) {
+	cwdMappingPath := filepath.Join(cwd, settings.InputMappingFileName)
+	if files.FileExists(cwdMappingPath) {
 		os.Setenv("INPUT_MAPPING_PATH", cwdMappingPath)
 		return
 	}
@@ -77,31 +78,13 @@ func setupInputMapping(currentCFW cfw.CFW) {
 		return
 	}
 
-	var mappingBytes []byte
-	var mappingErr error
-	switch currentCFW {
-	case cfw.MuOS:
-		mappingBytes, mappingErr = muos.GetInputMappingBytes()
-	case cfw.Allium:
-		mappingBytes, mappingErr = allium.GetInputMappingBytes()
-	case cfw.Onion:
-		mappingBytes, mappingErr = onion.GetInputMappingBytes()
-	case cfw.Koriki:
-		mappingBytes, mappingErr = koriki.GetInputMappingBytes()
-	case cfw.MinUI:
-		mappingBytes, mappingErr = minui.GetInputMappingBytes()
-	case cfw.Spruce:
-		mappingBytes, mappingErr = spruce.GetInputMappingBytes()
-	case cfw.ROCKNIX:
-		mappingBytes, mappingErr = rocknix.GetInputMappingBytes()
-	case cfw.ArkOS:
-		mappingBytes, mappingErr = arkos.GetInputMappingBytes()
+	mappingBytes, err := cfw.Lookup(currentCFW).InputMapping()
+	if err != nil {
+		gaba.GetLogger().Error("Unable to read input mapping file", "error", err)
+		return
 	}
-
-	if mappingBytes != nil && mappingErr == nil {
+	if mappingBytes != nil {
 		gaba.SetInputMappingBytes(mappingBytes)
-	} else if mappingErr != nil {
-		gaba.GetLogger().Error("Unable to read input mapping file", "error", mappingErr)
 	}
 }
 
@@ -113,23 +96,19 @@ func initFramework(currentCFW cfw.CFW) {
 		IsNextUI:             currentCFW == cfw.NextUI,
 		DisplayOrientation:   gaba.OrientationNormal,
 	}
-	if preConfig, err := internal.LoadConfig(); err == nil {
+	if preConfig, err := settings.LoadConfig(); err == nil {
 		gaba.SetFlipFaceButtons(preConfig.SwapFaceButtons)
 	}
-	if currentCFW == cfw.Spruce && spruce.DetectDevice() == spruce.DeviceA30 {
+	display := cfw.Lookup(currentCFW).Display()
+	switch display.RotationDegrees {
+	case 90:
+		gabaOptions.DisplayOrientation = gaba.OrientationRotate90
+	case 180:
+		gabaOptions.DisplayOrientation = gaba.OrientationRotate180
+	case 270:
 		gabaOptions.DisplayOrientation = gaba.OrientationRotate270
 	}
-
-	var minuiDevice minui.Device
-	if currentCFW == cfw.MinUI {
-		minuiDevice = minui.DetectDevice()
-		if minuiDevice == minui.DeviceZero28 {
-			gabaOptions.DisplayOrientation = gaba.OrientationRotate90
-		}
-	}
-
-	if (currentCFW == cfw.MinUI && minuiDevice == minui.DeviceMiyooFlip) ||
-		(currentCFW == cfw.NextUI && nextui.DetectDevice() == nextui.DeviceMiyooFlip) {
+	if display.DisableKeyboardAndJoystick {
 		gabaOptions.DisabledInputSources = gaba.DisabledInputSources{
 			Keyboard: true,
 			Joystick: true,
@@ -144,14 +123,18 @@ func initFramework(currentCFW cfw.CFW) {
 	}, gaba.ChordOptions{
 		Window: time.Millisecond * 1500,
 		OnTrigger: func() {
-			if internal.IsKidModeEnabled() {
-				internal.SetKidMode(false)
+			if settings.IsKidModeEnabled() {
+				settings.SetKidMode(false)
 				gaba.GetLogger().Info("Kid Mode unlocked for this session")
 			}
 		},
 	})
 
 	gaba.SetLogLevel(slog.LevelDebug)
+
+	// Lower layers log through slog rather than importing the UI toolkit, so
+	// point the standard logger at the same place gabagool writes.
+	slog.SetDefault(gaba.GetLogger())
 
 	localeFiles, err := resources.GetLocaleMessageFiles()
 	if err != nil {
@@ -166,8 +149,8 @@ func initFramework(currentCFW cfw.CFW) {
 	cfw.AddGroutToGamelist(currentCFW)
 }
 
-func loadOrCreateConfig(logger *slog.Logger) (*internal.Config, bool) {
-	config, err := internal.LoadConfig()
+func loadOrCreateConfig(logger *slog.Logger) (*settings.Config, bool) {
+	config, err := settings.LoadConfig()
 	isFirstLaunch := err != nil || (len(config.Hosts) == 0 && config.Language == "")
 
 	if isFirstLaunch {
@@ -185,10 +168,10 @@ func loadOrCreateConfig(logger *slog.Logger) (*internal.Config, bool) {
 		}
 
 		if config == nil {
-			config = &internal.Config{
+			config = &settings.Config{
 				ShowRegularCollections: true,
-				ApiTimeout:             internal.DurationSeconds(30 * time.Second),
-				DownloadTimeout:        internal.DurationSeconds(60 * time.Minute),
+				ApiTimeout:             settings.DurationSeconds(30 * time.Second),
+				DownloadTimeout:        settings.DurationSeconds(60 * time.Minute),
 			}
 		}
 		config.Language = selectedLanguage
@@ -197,13 +180,19 @@ func loadOrCreateConfig(logger *slog.Logger) (*internal.Config, bool) {
 	return config, isFirstLaunch
 }
 
-func handleFirstLaunch(config *internal.Config, isFirstLaunch bool, logger *slog.Logger) *internal.Config {
+func handleFirstLaunch(config *settings.Config, isFirstLaunch bool, logger *slog.Logger) *settings.Config {
 	if len(config.Hosts) > 0 {
 		return config
 	}
 
 	logger.Debug("No RomM Host Configured, starting login flow")
-	loginConfig, loginErr := ui.LoginFlow(romm.Host{})
+	loginConfig, loginErr := ui.LoginFlow(settings.Host{})
+	if errors.Is(loginErr, ui.ErrLoginCancelled) {
+		// Nothing to go back to on first launch, so backing out leaves grout.
+		logger.Debug("Login cancelled, exiting")
+		gaba.Close()
+		os.Exit(0)
+	}
 	if loginErr != nil {
 		logger.Error("Login flow failed", "error", loginErr)
 		gaba.Close()
@@ -213,12 +202,13 @@ func handleFirstLaunch(config *internal.Config, isFirstLaunch bool, logger *slog
 	logger.Debug("Login successful, saving configuration")
 	config.Hosts = loginConfig.Hosts
 	config.PlatformsBinding = loginConfig.PlatformsBinding
-	internal.SaveConfig(config)
+	settings.SaveConfig(config)
+	ui.ApplyRuntimeSettings(config)
 
 	return config
 }
 
-func applyConfig(config *internal.Config, isFirstLaunch bool, currentCFW cfw.CFW, logger *slog.Logger) *internal.Config {
+func applyConfig(config *settings.Config, isFirstLaunch bool, currentCFW cfw.CFW, logger *slog.Logger) *settings.Config {
 	if config.LogLevel != "" {
 		gaba.SetRawLogLevel(string(config.LogLevel))
 	}
@@ -229,10 +219,10 @@ func applyConfig(config *internal.Config, isFirstLaunch bool, currentCFW cfw.CFW
 		}
 	}
 
-	internal.InitKidMode(config)
+	settings.InitKidMode(config)
 	gaba.SetFlipFaceButtons(config.SwapFaceButtons)
 
-	if internal.IsKidModeEnabled() {
+	if settings.IsKidModeEnabled() {
 		splashBytes, _ := resources.GetSplashImageBytes()
 		gaba.ProcessMessage("", gaba.ProcessMessageOptions{
 			ImageBytes:   splashBytes,
@@ -242,7 +232,7 @@ func applyConfig(config *internal.Config, isFirstLaunch bool, currentCFW cfw.CFW
 		}, func() (interface{}, error) {
 			for i := 0; i < 20; i++ {
 				time.Sleep(100 * time.Millisecond)
-				if !internal.IsKidModeEnabled() {
+				if !settings.IsKidModeEnabled() {
 					break
 				}
 			}
@@ -266,7 +256,8 @@ func applyConfig(config *internal.Config, isFirstLaunch bool, currentCFW cfw.CFW
 
 		if err == nil && result.Action == ui.PlatformMappingActionSaved {
 			config.DirectoryMappings = result.Mappings
-			internal.SaveConfig(config)
+			settings.SaveConfig(config)
+			ui.ApplyRuntimeSettings(config)
 		}
 	}
 
@@ -275,7 +266,7 @@ func applyConfig(config *internal.Config, isFirstLaunch bool, currentCFW cfw.CFW
 	return config
 }
 
-func connectAndLoadPlatforms(config *internal.Config, logger *slog.Logger) []romm.Platform {
+func connectAndLoadPlatforms(config *settings.Config, logger *slog.Logger) []romm.Platform {
 	var platforms []romm.Platform
 	splashBytes, _ := resources.GetSplashImageBytes()
 
@@ -292,7 +283,7 @@ func connectAndLoadPlatforms(config *internal.Config, logger *slog.Logger) []rom
 			host := config.Hosts[0]
 
 			// Validate server connectivity
-			client := romm.NewClient(host.URL(), romm.WithInsecureSkipVerify(host.InsecureSkipVerify), romm.WithTimeout(internal.ValidationTimeout))
+			client := romm.NewClient(host.URL(), romm.WithInsecureSkipVerify(host.InsecureSkipVerify), romm.WithTimeout(settings.ValidationTimeout))
 			if err := client.ValidateConnection(); err != nil {
 				connErr = err
 				return nil, nil
@@ -300,7 +291,7 @@ func connectAndLoadPlatforms(config *internal.Config, logger *slog.Logger) []rom
 
 			// Validate token; configs from before the RomM 5.0 cutover have no
 			// token and must re-pair.
-			authClient := romm.NewClientFromHost(host, internal.LoginTimeout)
+			authClient := romm.NewClientFromHost(host, settings.LoginTimeout)
 			if !host.HasTokenAuth() {
 				authErr = errors.New("stored basic-auth credentials require re-pairing")
 				return nil, nil
@@ -313,30 +304,32 @@ func connectAndLoadPlatforms(config *internal.Config, logger *slog.Logger) []rom
 				if user, err := authClient.GetCurrentUser(); err == nil {
 					host.Username = user.Username
 					config.Hosts[0] = host
-					internal.SaveConfig(config)
+					settings.SaveConfig(config)
+					ui.ApplyRuntimeSettings(config)
 				}
 			}
 
 			// If grout was upgraded since this device last reported in, refresh the
 			// client_version the server has on record (diagnostic/display only).
-			if v, changed := sync.RefreshDeviceVersion(authClient, host.DeviceID, host.DeviceClientVersion); changed {
+			if v, changed := saves.RefreshDeviceVersion(authClient, host.DeviceID, host.DeviceClientVersion); changed {
 				host.DeviceClientVersion = v
 				config.Hosts[0] = host
-				internal.SaveConfig(config)
+				settings.SaveConfig(config)
+				ui.ApplyRuntimeSettings(config)
 			}
 
 			// Load platforms
-			if err := config.LoadPlatformsBinding(config.Hosts[0], config.ApiTimeout.Duration()); err != nil {
+			if err := catalog.LoadPlatformsBinding(config, config.Hosts[0], config.ApiTimeout.Duration()); err != nil {
 				logger.Debug("Failed to load platform bindings", "error", err)
 			}
 
 			var err error
-			platforms, err = internal.GetMappedPlatforms(config.Hosts[0], config.DirectoryMappings, config.ApiTimeout.Duration())
+			platforms, err = catalog.MappedPlatforms(config.Hosts[0], config.DirectoryMappings, config.ApiTimeout.Duration())
 			if err != nil {
 				loadErr = err
 				return nil, nil
 			}
-			platforms = internal.SortPlatformsByOrder(platforms, config.PlatformOrder)
+			platforms = catalog.SortByOrder(platforms, config.PlatformOrder)
 			return nil, nil
 		})
 
@@ -372,7 +365,7 @@ func connectAndLoadPlatforms(config *internal.Config, logger *slog.Logger) []rom
 	return platforms
 }
 
-func handleAuthFailure(config *internal.Config, logger *slog.Logger) *internal.Config {
+func handleAuthFailure(config *settings.Config, logger *slog.Logger) *settings.Config {
 	var msg string
 	if config.Hosts[0].HasTokenAuth() {
 		msg = i18n.Localize(&goi18n.Message{ID: "startup_error_token_invalid", Other: "Your API token is invalid or expired.\nPlease set up a new one."}, nil)
@@ -385,6 +378,12 @@ func handleAuthFailure(config *internal.Config, logger *slog.Logger) *internal.C
 	}, gaba.MessageOptions{})
 
 	loginConfig, loginErr := ui.LoginFlow(config.Hosts[0])
+	if errors.Is(loginErr, ui.ErrLoginCancelled) {
+		// The stored token is known bad, so there is nothing to go back to.
+		logger.Debug("Re-login cancelled, exiting")
+		gaba.Close()
+		os.Exit(0)
+	}
 	if loginErr != nil {
 		logger.Error("Re-login failed", "error", loginErr)
 		gaba.Close()
@@ -393,9 +392,10 @@ func handleAuthFailure(config *internal.Config, logger *slog.Logger) *internal.C
 	}
 	config.Hosts = loginConfig.Hosts
 	config.PlatformsBinding = loginConfig.PlatformsBinding
-	internal.SaveConfig(config)
+	settings.SaveConfig(config)
+	ui.ApplyRuntimeSettings(config)
 
-	if err := cache.InitCacheManager(config.Hosts[0], config); err != nil {
+	if err := cache.InitCacheManager(config.Hosts[0], *config); err != nil {
 		logger.Error("Failed to re-initialize cache manager", "error", err)
 	}
 
@@ -407,22 +407,22 @@ func classifyStartupError(err error) *goi18n.Message {
 		return nil
 	}
 
-	switch {
-	case errors.Is(err, romm.ErrInvalidHostname):
+	switch auth.Classify(err) {
+	case auth.FailureHostname:
 		return &goi18n.Message{ID: "startup_error_invalid_hostname", Other: "Could not resolve hostname!\nPlease check your server configuration."}
-	case errors.Is(err, romm.ErrConnectionRefused):
+	case auth.FailureConnection:
 		return &goi18n.Message{ID: "startup_error_connection_refused", Other: "Could not connect to RomM!\nPlease check the server is running."}
-	case errors.Is(err, romm.ErrTimeout):
+	case auth.FailureTimeout:
 		return &goi18n.Message{ID: "startup_error_timeout", Other: "Connection timed out!\nPlease check your network connection."}
-	case errors.Is(err, romm.ErrUnauthorized):
+	case auth.FailureCredentials:
 		return &goi18n.Message{ID: "startup_error_credentials", Other: "Authentication failed!\nYour RomM login may need to be re-paired."}
-	case errors.Is(err, romm.ErrForbidden):
+	case auth.FailureForbidden:
 		return &goi18n.Message{ID: "startup_error_forbidden", Other: "Access forbidden!\nCheck your server permissions."}
-	case errors.Is(err, romm.ErrServerError):
+	case auth.FailureServer:
 		return &goi18n.Message{ID: "startup_error_server", Other: "RomM server error!\nPlease check the RomM server logs."}
-	default:
-		return &goi18n.Message{ID: "error_loading_platforms", Other: "Error loading platforms!\nPlease check the logs for more info."}
 	}
+
+	return &goi18n.Message{ID: "error_loading_platforms", Other: "Error loading platforms!\nPlease check the logs for more info."}
 }
 
 func showStartupError(errorMsg string) bool {

@@ -28,5 +28,5 @@ curl -sL https://github.com/niemasd/GameDB-PSP/releases/latest/download/PSP.titl
 Then regenerate the Go package:
 
 ```bash
-go generate ./internal/pspdb/
+go generate ./pspdb/
 ```

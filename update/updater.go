@@ -6,8 +6,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"grout/cfw"
-	"grout/internal"
 	"grout/romm"
+	"grout/settings"
 	"grout/version"
 	"io"
 	"net/http"
@@ -30,43 +30,10 @@ type Info struct {
 	UpdateAvailable bool
 }
 
-// GetDistributionAssetName returns the distribution zip asset name for a given CFW and architecture.
+// GetDistributionAssetName returns the release zip for a CFW on this
+// architecture, or "" when there is no build for it.
 func GetDistributionAssetName(c cfw.CFW) string {
-	switch c {
-	case cfw.NextUI:
-		return "Grout.pak.zip"
-	case cfw.MuOS:
-		return "Grout.muxapp"
-	case cfw.Knulli:
-		return "Grout-Knulli.zip"
-	case cfw.Spruce:
-		return "Grout.spruce.zip"
-	case cfw.ROCKNIX:
-		return "Grout-ROCKNIX.zip"
-	case cfw.Trimui:
-		return "Grout-Trimui.zip"
-	case cfw.Allium:
-		return "Grout-Allium.zip"
-	case cfw.Onion:
-		return "Grout-Onion.zip"
-	case cfw.Koriki:
-		return "Grout-Koriki.zip"
-	case cfw.MinUI:
-		return "Grout-MinUI.zip"
-	case cfw.Batocera:
-		switch runtime.GOARCH {
-		case "arm64":
-			return "Grout-Batocera-arm64.zip"
-		case "amd64":
-			return "Grout-Batocera-amd64.zip"
-		case "386":
-			return "Grout-Batocera-x86.zip"
-		default:
-			return ""
-		}
-	default:
-		return ""
-	}
+	return cfw.Lookup(c).Packaging().AssetName(runtime.GOARCH)
 }
 
 // getInstallRoot returns the top-level install directory where the
@@ -81,13 +48,9 @@ func getInstallRoot(c cfw.CFW) (string, error) {
 		return "", fmt.Errorf("failed to resolve executable path: %w", err)
 	}
 
-	// Number of directory levels up from the binary to the zip extraction root.
-	levels := 2
-	switch c {
-	case cfw.NextUI:
-		levels = 1 // zip has no wrapper dir
-	case cfw.Spruce, cfw.Allium, cfw.Onion, cfw.Trimui, cfw.Koriki:
-		levels = 3 // binary is nested: e.g. Grout.pak/grout/grout
+	levels := cfw.Lookup(c).Packaging().InstallDepth
+	if levels < 1 {
+		return "", fmt.Errorf("no packaging layout known for %s", c)
 	}
 
 	root := execPath
@@ -100,7 +63,7 @@ func getInstallRoot(c cfw.CFW) (string, error) {
 // CheckForUpdate checks for available updates based on the release channel.
 // For ReleaseChannelMatchRomM, the host parameter is required to fetch the RomM version.
 // For other channels, the host parameter is optional and ignored.
-func CheckForUpdate(c cfw.CFW, releaseChannel internal.ReleaseChannel, host *romm.Host) (*Info, error) {
+func CheckForUpdate(c cfw.CFW, releaseChannel settings.ReleaseChannel, host *settings.Host) (*Info, error) {
 	currentVersion := version.Get().Version
 
 	if currentVersion == "dev" {
@@ -120,7 +83,7 @@ func CheckForUpdate(c cfw.CFW, releaseChannel internal.ReleaseChannel, host *rom
 	var release *ChannelRelease
 
 	switch releaseChannel {
-	case internal.ReleaseChannelMatchRomM:
+	case settings.ReleaseChannelMatchRomM:
 		if host == nil {
 			return nil, fmt.Errorf("host is required for Match RomM release channel")
 		}
@@ -144,7 +107,7 @@ func CheckForUpdate(c cfw.CFW, releaseChannel internal.ReleaseChannel, host *rom
 			return nil, fmt.Errorf("no Grout release found matching RomM version %s", key)
 		}
 
-	case internal.ReleaseChannelBeta:
+	case settings.ReleaseChannelBeta:
 		release = versions.Beta
 		if release == nil {
 			return nil, fmt.Errorf("no beta release available")
@@ -157,6 +120,12 @@ func CheckForUpdate(c cfw.CFW, releaseChannel internal.ReleaseChannel, host *rom
 		}
 	}
 
+	return checkRelease(c, release, currentVersion)
+}
+
+// checkRelease works out whether a release is worth offering and where to get
+// it, given the version already installed.
+func checkRelease(c cfw.CFW, release *ChannelRelease, currentVersion string) (*Info, error) {
 	info := &Info{
 		CurrentVersion: currentVersion,
 		LatestVersion:  release.Version,
@@ -178,6 +147,14 @@ func CheckForUpdate(c cfw.CFW, releaseChannel internal.ReleaseChannel, host *rom
 		return nil, fmt.Errorf("update not found for platform: %s", assetName)
 	}
 
+	// The checksum is what pins the download, and it arrives in the same
+	// document that says where to download from. Treating a missing one as
+	// nothing to check would let that document waive its own verification, so
+	// an asset without one is not offered at all.
+	if asset.SHA256 == "" {
+		return nil, fmt.Errorf("no checksum published for %s", assetName)
+	}
+
 	info.UpdateAvailable = true
 	info.DownloadURL = asset.URL
 	info.AssetSize = asset.Size
@@ -187,6 +164,14 @@ func CheckForUpdate(c cfw.CFW, releaseChannel internal.ReleaseChannel, host *rom
 }
 
 func PerformUpdate(c cfw.CFW, downloadURL string, expectedSize int64, expectedSHA256 string, progress *atomic.Float64) error {
+	// Nothing else checks the download: the expected size only drives the
+	// progress bar. Without a checksum the zip would be unpacked over the
+	// install on trust alone, so this is settled before spending a download on
+	// it.
+	if expectedSHA256 == "" {
+		return fmt.Errorf("refusing to install an update with no checksum")
+	}
+
 	installRoot, err := getInstallRoot(c)
 	if err != nil {
 		return err
@@ -199,10 +184,8 @@ func PerformUpdate(c cfw.CFW, downloadURL string, expectedSize int64, expectedSH
 		return fmt.Errorf("failed to download update: %w", err)
 	}
 
-	if expectedSHA256 != "" {
-		if err := verifySHA256(tmpZip, expectedSHA256); err != nil {
-			return err
-		}
+	if err := verifySHA256(tmpZip, expectedSHA256); err != nil {
+		return err
 	}
 
 	// Extract the full zip to a staging directory at the install root.
@@ -234,32 +217,7 @@ func PerformUpdate(c cfw.CFW, downloadURL string, expectedSize int64, expectedSH
 }
 
 func getLaunchScriptPath(c cfw.CFW) string {
-	switch c {
-	case cfw.NextUI:
-		return "launch.sh"
-	case cfw.MuOS:
-		return "Grout/mux_launch.sh"
-	case cfw.Knulli:
-		return "Grout/Grout.sh"
-	case cfw.Spruce:
-		return "Grout/launch.sh"
-	case cfw.ROCKNIX:
-		return "Grout.sh"
-	case cfw.Trimui:
-		return "Grout/launch.sh"
-	case cfw.Allium:
-		return "Grout.pak/launch.sh"
-	case cfw.Onion:
-		return "Grout/launch.sh"
-	case cfw.Koriki:
-		return "Grout/launch.sh"
-	case cfw.MinUI:
-		return "Grout.pak/launch.sh"
-	case cfw.Batocera:
-		return "Grout.sh"
-	default:
-		return ""
-	}
+	return cfw.Lookup(c).Packaging().LaunchScript
 }
 
 func extractZip(zipPath, destDir string) error {
@@ -336,7 +294,7 @@ func verifySHA256(filePath, expected string) error {
 
 func downloadFile(url, destPath string, expectedSize int64, progress *atomic.Float64) error {
 	client := &http.Client{
-		Timeout: internal.UpdaterTimeout,
+		Timeout: settings.UpdaterTimeout,
 	}
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)

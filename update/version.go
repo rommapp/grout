@@ -143,7 +143,7 @@ func CompareVersions(current, latest string) int {
 			cNum, cErr := strconv.Atoi(currentParts[i])
 			lNum, lErr := strconv.Atoi(latestParts[i])
 			if cErr == nil && lErr == nil {
-				// Both numeric — compare as integers
+				// Both numeric: compare as integers
 				if cNum < lNum {
 					return -1
 				}
@@ -151,7 +151,7 @@ func CompareVersions(current, latest string) int {
 					return 1
 				}
 			} else {
-				// At least one non-numeric — compare as strings
+				// At least one non-numeric: compare as strings
 				if currentParts[i] < latestParts[i] {
 					return -1
 				}

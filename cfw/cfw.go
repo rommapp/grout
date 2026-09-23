@@ -1,7 +1,9 @@
 package cfw
 
 import (
-	"log"
+	"errors"
+	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 )
@@ -23,25 +25,59 @@ const (
 	MinUI    CFW = "MINUI"
 )
 
-func GetCFW() CFW {
-	cfwEnv := strings.ToUpper(os.Getenv("CFW"))
-	cfw := CFW(cfwEnv)
-
-	switch cfw {
-	case MuOS, NextUI, Knulli, Spruce, ROCKNIX, Trimui, Allium, Onion, Koriki, ArkOS, Batocera, MinUI:
-		return cfw
-	default:
-		log.SetOutput(os.Stderr)
-		log.Fatalf("Unsupported CFW: '%s'. Valid options: NextUI, muOS, Knulli, Spruce, ROCKNIX, Trimui, Allium, Onion, Koriki, ArkOS, Batocera, MinUI", cfwEnv)
-		return ""
-	}
+// All lists every supported firmware. Conformance tests range over it.
+var All = []CFW{
+	NextUI, MuOS, Knulli, Spruce, ROCKNIX, Trimui,
+	Allium, Onion, Koriki, ArkOS, Batocera, MinUI,
 }
 
-func (c CFW) IsBasedOnEmulationStation() bool {
-	switch c {
-	case Knulli, ROCKNIX, ArkOS, Batocera:
-		return true
-	default:
-		return false
+// ErrUnsupported reports a firmware name grout does not recognise.
+var ErrUnsupported = errors.New("unsupported CFW")
+
+// EnvVar is set by each firmware's launch script.
+const EnvVar = "CFW"
+
+// Supported reports whether c is a known firmware.
+func (c CFW) Supported() bool {
+	for _, known := range All {
+		if c == known {
+			return true
+		}
 	}
+	return false
+}
+
+// Parse returns the firmware named by s, ignoring case and surrounding space.
+func Parse(s string) (CFW, error) {
+	c := CFW(strings.ToUpper(strings.TrimSpace(s)))
+	if !c.Supported() {
+		names := make([]string, len(All))
+		for i, known := range All {
+			names[i] = string(known)
+		}
+		return "", fmt.Errorf("%w: %q; valid options are %s", ErrUnsupported, s, strings.Join(names, ", "))
+	}
+	return c, nil
+}
+
+// Active returns the firmware named by the CFW environment variable. Resolved
+// once at startup so nothing deeper has to handle a misconfigured device.
+func Active() (CFW, error) {
+	return Parse(os.Getenv(EnvVar))
+}
+
+// GetCFW returns the active firmware, or "" if unsupported. Callers treat ""
+// as "no such thing here"; startup validates through Active.
+func GetCFW() CFW {
+	c, err := Active()
+	if err != nil {
+		slog.Default().Debug("Unsupported CFW environment variable", "error", err)
+		return ""
+	}
+	return c
+}
+
+// IsBasedOnEmulationStation decides where artwork goes and what it is called.
+func (c CFW) IsBasedOnEmulationStation() bool {
+	return Lookup(c).IsBasedOnEmulationStation()
 }

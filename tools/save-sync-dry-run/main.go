@@ -4,9 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"grout/cache"
-	"grout/internal"
 	"grout/romm"
-	"grout/sync"
+	"grout/saves"
+	"grout/settings"
 	"os"
 	"strings"
 	"time"
@@ -27,7 +27,7 @@ func main() {
 		return
 	}
 
-	config, err := internal.LoadConfig()
+	config, err := settings.LoadConfig()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to load config: %v\n", err)
 		os.Exit(1)
@@ -44,7 +44,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := cache.InitCacheManager(host, config); err != nil {
+	if err := cache.InitCacheManager(host, *config); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to init cache: %v\n", err)
 		os.Exit(1)
 	}
@@ -56,7 +56,7 @@ func main() {
 	fmt.Printf("Device:   %s\n", host.DeviceID)
 	fmt.Println()
 
-	result, err := sync.ResolveSaveSync(client, config, host.DeviceID)
+	result, err := saves.ResolveSaveSync(client, config, host.DeviceID)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to resolve sync: %v\n", err)
 		os.Exit(1)
@@ -84,7 +84,7 @@ type row struct {
 	slot          string
 }
 
-func printTable(items []sync.SyncItem, deviceID string) {
+func printTable(items []saves.SyncItem, deviceID string) {
 	headers := row{"ACTION", "ROM", "LOCAL FILE", "LOCAL MTIME", "REMOTE ID", "REMOTE UPDATED", "CURRENT", "SLOT"}
 
 	var rows []row

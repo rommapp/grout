@@ -1,37 +1,29 @@
 package ui
 
 import (
-	"crypto/tls"
 	"errors"
-	"fmt"
-	"grout/cfw"
-	"grout/cfw/muos"
-	"grout/internal"
-	"grout/internal/artutil"
-	"grout/internal/fileutil"
-	"grout/internal/gamelist"
-	"grout/internal/imageutil"
-	"grout/romm"
-	_ "image/gif"
-	_ "image/jpeg"
-	"io"
-	"net/http"
-	"net/url"
-	"os"
 	"path/filepath"
 	"slices"
-	"strconv"
 	"strings"
+	"time"
+
+	_ "image/gif"
+	_ "image/jpeg"
+
+	"grout/cfw"
+	"grout/download"
+	"grout/files"
+	"grout/imaging"
+	"grout/romm"
+	"grout/settings"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 	"go.uber.org/atomic"
 )
 
 type DownloadInput struct {
-	Config         internal.Config
-	Host           romm.Host
+	Config         settings.Config
+	Host           settings.Host
 	Platform       romm.Platform
 	SelectedGames  []romm.Rom
 	AllGames       []romm.Rom
@@ -48,18 +40,11 @@ type DownloadOutput struct {
 
 type DownloadScreen struct{}
 
-type artDownload struct {
-	URL      string
-	Location string
-	GameName string
-	IsImage  bool
-}
-
 func NewDownloadScreen() *DownloadScreen {
 	return &DownloadScreen{}
 }
 
-func (s *DownloadScreen) Execute(config internal.Config, host romm.Host, platform romm.Platform, selectedGames []romm.Rom, allGames []romm.Rom, searchFilter string, selectedFileID int) DownloadOutput {
+func (s *DownloadScreen) Execute(config settings.Config, host settings.Host, platform romm.Platform, selectedGames []romm.Rom, allGames []romm.Rom, searchFilter string, selectedFileID int) DownloadOutput {
 	result, err := s.draw(DownloadInput{
 		Config:         config,
 		Host:           host,
@@ -69,20 +54,14 @@ func (s *DownloadScreen) Execute(config internal.Config, host romm.Host, platfor
 		SelectedFileID: selectedFileID,
 		SearchFilter:   searchFilter,
 	})
-
 	if err != nil {
 		gaba.GetLogger().Error("Download failed", "error", err)
-		return DownloadOutput{
-			AllGames:     allGames,
-			Platform:     platform,
-			SearchFilter: searchFilter,
-		}
+		return DownloadOutput{AllGames: allGames, Platform: platform, SearchFilter: searchFilter}
 	}
 
 	if len(result.DownloadedGames) > 0 {
 		gaba.GetLogger().Debug("Successfully downloaded games", "count", len(result.DownloadedGames))
 	}
-
 	return result
 }
 
@@ -95,660 +74,192 @@ func (s *DownloadScreen) draw(input DownloadInput) (DownloadOutput, error) {
 		SearchFilter: input.SearchFilter,
 	}
 
-	downloads, artDownloads, gamelistEntries := s.buildDownloads(input.Config, input.Host, input.Platform, input.SelectedGames, input.SelectedFileID)
+	plan, skipped := download.BuildPlan(input.Config, input.Host, input.Platform, input.SelectedGames, input.SelectedFileID)
+	for _, skip := range skipped {
+		logger.Warn("Skipping ROM", "game", skip.Game.Name, "id", skip.Game.ID,
+			"fs_name", skip.Game.FsName, "reason", skip.Reason)
+	}
 
-	headers := make(map[string]string)
-	headers["Authorization"] = input.Host.AuthHeader()
+	arrived, err := s.fetchRoms(plan, input)
+	if err != nil {
+		return output, err
+	}
 
+	downloaded := gamesThatArrived(input.SelectedGames, arrived)
+	logger.Debug("Download complete", "successful", len(downloaded), "attempted", len(input.SelectedGames))
+	if len(downloaded) == 0 {
+		return output, nil
+	}
+
+	s.unpack(input, plan, downloaded)
+
+	if len(plan.Art) > 0 {
+		s.fetchArt(plan.Art, downloaded, input.Host)
+	}
+
+	cfw.FillGamesMetadata(plan.Entries)
+
+	output.DownloadedGames = downloaded
+	return output, nil
+}
+
+// fetchRoms runs the download widget and returns the names that landed.
+//
+// A partial file left by a failure is deleted: the frontend would list it as a
+// game, and grout would count it as already downloaded.
+func (s *DownloadScreen) fetchRoms(plan download.Plan, input DownloadInput) (map[string]bool, error) {
+	logger := gaba.GetLogger()
+
+	downloads := romDownloads(plan, input.Config.DownloadTimeout.Duration())
 	slices.SortFunc(downloads, func(a, b gaba.Download) int {
 		return strings.Compare(strings.ToLower(a.DisplayName), strings.ToLower(b.DisplayName))
 	})
 
-	logger.Debug("Starting ROM download", "downloads", downloads)
-
-	res, err := gaba.DownloadManager(downloads, headers, gaba.DownloadManagerOptions{
+	result, err := gaba.DownloadManager(downloads, map[string]string{
+		"Authorization": input.Host.AuthHeader(),
+	}, gaba.DownloadManagerOptions{
 		AutoContinueOnComplete: input.Config.DownloadArt,
 		SkipSSLVerification:    input.Host.InsecureSkipVerify,
 	})
 	if err != nil {
 		logger.Error("Error downloading", "error", err)
-
-		// Clean up any partial downloads when cancelled
 		if errors.Is(err, gaba.ErrCancelled) {
-			for _, d := range downloads {
-				fileutil.DeleteFile(d.Location)
+			for _, item := range downloads {
+				files.DeleteFile(item.Location)
 			}
 		}
-
-		return output, err
+		return nil, err
 	}
 
-	logger.Debug("Download results", "completed", len(res.Completed), "failed", len(res.Failed))
+	logger.Debug("Download results", "completed", len(result.Completed), "failed", len(result.Failed))
 
-	if len(res.Failed) > 0 {
-		for _, f := range res.Failed {
-			logger.Warn("Download failed", "name", f.Download.DisplayName, "url", f.Download.URL, "error", f.Error)
-		}
-
-		for _, g := range downloads {
-			failedMatch := slices.ContainsFunc(res.Failed, func(de gaba.DownloadError) bool {
-				return de.Download.DisplayName == g.DisplayName
-			})
-			if failedMatch {
-				fileutil.DeleteFile(g.Location)
-			}
-		}
+	for _, failure := range result.Failed {
+		logger.Warn("Download failed", "name", failure.Download.DisplayName,
+			"url", failure.Download.URL, "error", failure.Error)
+		files.DeleteFile(failure.Download.Location)
 	}
 
-	if len(res.Completed) == 0 {
-		return output, nil
+	arrived := make(map[string]bool, len(result.Completed))
+	for _, item := range result.Completed {
+		arrived[item.DisplayName] = true
 	}
-
-	for _, g := range input.SelectedGames {
-		if !g.HasMultipleFiles {
-			continue
-		}
-
-		completed := slices.ContainsFunc(res.Completed, func(d gaba.Download) bool {
-			return d.DisplayName == g.Name
-		})
-		if !completed {
-			continue
-		}
-
-		gamePlatform := input.Platform
-		if input.Platform.ID == 0 && g.PlatformID != 0 {
-			gamePlatform = romm.Platform{
-				ID:     g.PlatformID,
-				FSSlug: g.PlatformFSSlug,
-				Name:   g.PlatformDisplayName,
-			}
-		}
-
-		tmpZipPath := filepath.Join(fileutil.TempDir(), fmt.Sprintf("grout_multirom_%d.zip", g.ID))
-		romDirectory := input.Config.GetPlatformRomDirectory(gamePlatform)
-		extractDir := filepath.Join(romDirectory, g.FsNameNoExt)
-
-		progress := &atomic.Float64{}
-		_, err := gaba.ProcessMessage(
-			i18n.Localize(&goi18n.Message{ID: "download_extracting", Other: "Extracting {{.Name}}..."}, map[string]interface{}{"Name": g.DisplayName}),
-			gaba.ProcessMessageOptions{
-				ShowThemeBackground: true,
-				ShowProgressBar:     true,
-				Progress:            progress,
-			},
-			func() (interface{}, error) {
-				logger.Debug("Extracting multi-file ROM", "game", g.DisplayName, "dest", extractDir)
-
-				if err := fileutil.Unzip(tmpZipPath, extractDir, progress); err != nil {
-					logger.Error("Failed to extract multi-file ROM", "game", g.DisplayName, "error", err)
-					os.Remove(tmpZipPath)
-					return nil, err
-				}
-
-				if cfw.GetCFW() == cfw.MuOS {
-					if err := muos.OrganizeMultiFileRom(extractDir, romDirectory, g.FsNameNoExt); err != nil {
-						logger.Error("Failed to organize multi-file ROM for muOS", "game", g.FsNameNoExt, "error", err)
-						os.Remove(tmpZipPath)
-						os.RemoveAll(extractDir)
-						return nil, err
-					}
-				}
-
-				if err := os.Remove(tmpZipPath); err != nil {
-					logger.Warn("Failed to remove temp zip file", "path", tmpZipPath, "error", err)
-				}
-
-				// Update the gamelist entry to point to the extracted file
-				// instead of the (now deleted) temporary zip.
-				newGamePath := resolveExtractedGamePath(romDirectory, extractDir, g.FsNameNoExt)
-				for i, entry := range gamelistEntries {
-					if entry.Game.ID == g.ID {
-						gamelistEntries[i].GamePath = newGamePath
-						break
-					}
-				}
-
-				return nil, nil
-			},
-		)
-
-		if err != nil {
-			continue
-		}
-	}
-
-	if input.Config.UnzipDownloads {
-		for _, g := range input.SelectedGames {
-			if g.HasMultipleFiles {
-				continue
-			}
-
-			completed := slices.ContainsFunc(res.Completed, func(d gaba.Download) bool {
-				return d.DisplayName == g.Name
-			})
-			if !completed {
-				continue
-			}
-
-			gamePlatform := input.Platform
-			if input.Platform.ID == 0 && g.PlatformID != 0 {
-				gamePlatform = romm.Platform{
-					ID:     g.PlatformID,
-					FSSlug: g.PlatformFSSlug,
-					Name:   g.PlatformDisplayName,
-				}
-			}
-
-			if len(g.Files) > 0 {
-				ext := strings.ToLower(filepath.Ext(g.Files[0].FileName))
-				if ext == ".zip" || ext == ".7z" {
-					romDirectory := input.Config.GetPlatformRomDirectory(gamePlatform)
-					archivePath := filepath.Join(romDirectory, g.Files[0].FileName)
-
-					progress := &atomic.Float64{}
-					_, err := gaba.ProcessMessage(
-						i18n.Localize(&goi18n.Message{ID: "download_extracting", Other: "Extracting {{.Name}}..."}, map[string]interface{}{"Name": g.Name}),
-						gaba.ProcessMessageOptions{
-							ShowThemeBackground: true,
-							ShowProgressBar:     true,
-							Progress:            progress,
-						},
-						func() (interface{}, error) {
-							logger.Debug("Extracting single-file ROM", "game", g.Name, "file", archivePath)
-
-							var archiveFiles []string
-							var extractErr error
-							if ext == ".7z" {
-								archiveFiles, extractErr = fileutil.SevenZipFileNames(archivePath)
-								if extractErr == nil {
-									extractErr = fileutil.Un7zip(archivePath, romDirectory, progress)
-								}
-							} else {
-								archiveFiles, extractErr = fileutil.ZipFileNames(archivePath)
-								if extractErr == nil {
-									extractErr = fileutil.Unzip(archivePath, romDirectory, progress)
-								}
-							}
-
-							if extractErr != nil {
-								logger.Error("Failed to extract single-file ROM", "game", g.Name, "error", extractErr)
-								return nil, extractErr
-							}
-
-							if err := os.Remove(archivePath); err != nil {
-								logger.Warn("Failed to remove archive file after extraction", "path", archivePath, "error", err)
-							}
-
-							if len(archiveFiles) > 0 {
-								gamePath := archiveFiles[0]
-								if len(archiveFiles) > 1 {
-									for _, f := range archiveFiles {
-										if strings.ToLower(filepath.Ext(f)) == ".m3u" {
-											gamePath = f
-											break
-										}
-									}
-								}
-								for i, entry := range gamelistEntries {
-									if entry.Game.ID == g.ID {
-										gamelistEntries[i].GamePath = filepath.Join(romDirectory, gamePath)
-										break
-									}
-								}
-							}
-
-							return nil, nil
-						},
-					)
-
-					if err != nil {
-						logger.Warn("Failed to extract ROM, keeping archive file", "game", g.Name)
-						continue
-					}
-				}
-			}
-		}
-	}
-
-	downloadedGames := make([]romm.Rom, 0, len(res.Completed))
-	for _, g := range input.SelectedGames {
-		if slices.ContainsFunc(res.Completed, func(d gaba.Download) bool {
-			return d.DisplayName == g.Name
-		}) {
-			downloadedGames = append(downloadedGames, g)
-		}
-	}
-
-	logger.Debug("Download complete", "successful", len(downloadedGames), "attempted", len(input.SelectedGames))
-
-	if len(artDownloads) > 0 && len(downloadedGames) > 0 {
-		progress := &atomic.Float64{}
-		_, err := gaba.ProcessMessage(
-			i18n.Localize(&goi18n.Message{ID: "download_artwork", Other: "Downloading artwork..."}, nil),
-			gaba.ProcessMessageOptions{
-				ShowThemeBackground: true,
-				ShowProgressBar:     true,
-				Progress:            progress,
-			},
-			func() (interface{}, error) {
-				s.downloadArt(artDownloads, downloadedGames, headers, progress, input.Host.InsecureSkipVerify)
-				return nil, nil
-			},
-		)
-
-		if err != nil {
-			logger.Warn("Art download process encountered an error", "error", err)
-		}
-	}
-
-	cfw.FillGamesMetadata(gamelistEntries)
-
-	output.DownloadedGames = downloadedGames
-	return output, nil
+	return arrived, nil
 }
 
-func (s *DownloadScreen) buildDownloads(config internal.Config, host romm.Host, platform romm.Platform, games []romm.Rom, selectedFileID int) ([]gaba.Download, []artDownload, []gamelist.RomGameEntry) {
-	downloads := make([]gaba.Download, 0, len(games))
-	artDownloads := make([]artDownload, 0, len(games))
-	gamesSummaries := make([]gamelist.RomGameEntry, 0, len(games))
-
-	for _, g := range games {
-		gamelistRomEntry := gamelist.RomGameEntry{
-			Game:     &g,
-			Platform: &platform,
+// gamesThatArrived keeps the games whose rom file actually landed. The widget
+// reports the name the plan gave each download, which is the game's own.
+func gamesThatArrived(selected []romm.Rom, arrived map[string]bool) []romm.Rom {
+	games := make([]romm.Rom, 0, len(arrived))
+	for _, game := range selected {
+		if arrived[game.Name] {
+			games = append(games, game)
 		}
-		gamePlatform := platform
-		if platform.ID == 0 && g.PlatformID != 0 {
-			gamePlatform = romm.Platform{
-				ID:     g.PlatformID,
-				FSSlug: g.PlatformFSSlug,
-				Name:   g.PlatformDisplayName,
-			}
-		}
-
-		romDirectory := config.GetPlatformRomDirectory(gamePlatform)
-		gamelistRomEntry.RomDirectory = romDirectory
-		downloadLocation := ""
-
-		sourceURL := ""
-
-		if g.HasMultipleFiles {
-			tmpDir := fileutil.TempDir()
-			downloadLocation = filepath.Join(tmpDir, fmt.Sprintf("grout_multirom_%d.zip", g.ID))
-			sourceURL, _ = url.JoinPath(host.URL(), "/api/roms/", strconv.Itoa(g.ID), "content", g.FsName)
-		} else {
-			// Skip games with no file metadata to avoid an out-of-range panic.
-			// This can happen when the cached row was written without a
-			// `files` array (e.g. after an incremental cache update).
-			if len(g.Files) == 0 {
-				gaba.GetLogger().Warn("Skipping ROM with no file metadata; refresh the library to repopulate it",
-					"game", g.Name, "id", g.ID, "fs_name", g.FsName)
-				continue
-			}
-			// Find the file to download - use selected file if specified, otherwise first file
-			fileToDownload := g.Files[0]
-			if selectedFileID > 0 {
-				for _, f := range g.Files {
-					if f.ID == selectedFileID {
-						fileToDownload = f
-						break
-					}
-				}
-			}
-			downloadLocation = filepath.Join(romDirectory, fileToDownload.FileName)
-			sourceURL, _ = url.JoinPath(host.URL(), "/api/roms/", strconv.Itoa(g.ID), "content", fileToDownload.FileName)
-			sourceURL += "?" + url.Values{"file_ids": {strconv.Itoa(fileToDownload.ID)}}.Encode()
-		}
-
-		gamelistRomEntry.GamePath = downloadLocation
-
-		downloads = append(downloads, gaba.Download{
-			URL:         sourceURL,
-			Location:    downloadLocation,
-			DisplayName: g.Name,
-			Timeout:     config.DownloadTimeout.Duration(),
-		})
-
-		if config.DownloadArt && (g.PathCoverLarge != "" || g.PathCoverSmall != "" || g.URLCover != "") {
-			// Prepare download for cover art
-			artDir := config.GetArtDirectory(gamePlatform)
-			var artFileName string
-			if cfw.GetCFW() == cfw.MinUI && len(g.Files) > 0 {
-				artFileName = g.Files[0].FileName + ".png"
-			} else {
-				artFileName = g.FsNameNoExt + ".png"
-			}
-			artLocation := filepath.Join(artDir, artFileName)
-			coverURL := g.GetArtworkURL(config.ArtKind, host)
-			gamelistRomEntry.ArtLocation.ImagePath = artLocation
-
-			artDownloads = append(artDownloads, artDownload{
-				URL:      coverURL,
-				Location: artLocation,
-				GameName: g.Name,
-				IsImage:  true,
-			})
-
-			// Prepare download for additional art types if enabled
-			artPreviewDir := config.GetArtPreviewDirectory(gamePlatform)
-			if config.DownloadArtScreenshotPreview && artPreviewDir != "" {
-				screenshotPreviewLocation := filepath.Join(artPreviewDir, artFileName)
-				if screenshotURL := g.GetScreenshotURL(host); screenshotURL != "" {
-					artDownloads = append(artDownloads, artDownload{
-						URL:      screenshotURL,
-						Location: screenshotPreviewLocation,
-						GameName: g.Name,
-						IsImage:  true,
-					})
-				}
-			}
-
-			artSplashDir := config.GetArtSplashDirectory(gamePlatform)
-			if (config.DownloadSplashArt != artutil.ArtKindNone || config.AdditionalDownloads.Thumbnail != artutil.ArtKindNone) && artSplashDir != "" {
-				artSplashFileName := g.FsNameNoExt
-				isESBased := cfw.GetCFW().IsBasedOnEmulationStation()
-				if isESBased {
-					artSplashFileName += "-thumb.png"
-				} else {
-					artSplashFileName += ".png"
-				}
-				splashArtLocation := filepath.Join(artSplashDir, artSplashFileName)
-				kind := config.DownloadSplashArt
-				if config.AdditionalDownloads.Thumbnail != artutil.ArtKindNone {
-					kind = config.AdditionalDownloads.Thumbnail
-				}
-				if splashURL := g.GetSplashArtURL(kind, host); splashURL != "" {
-					if isESBased {
-						gamelistRomEntry.ArtLocation.ThumbnailPath = splashArtLocation
-					}
-					artDownloads = append(artDownloads, artDownload{
-						URL:      splashURL,
-						Location: splashArtLocation,
-						GameName: g.Name,
-						IsImage:  true,
-					})
-				}
-			}
-
-			artMarqueeDir := config.GetArtMarqueeDirectory(gamePlatform)
-			if config.AdditionalDownloads.Marquee != artutil.ArtKindNone && artMarqueeDir != "" {
-				marqueeArtFileName := g.FsNameNoExt
-				// is cfw is ES based, use -marquee suffix to avoid conflicts with cover art
-				if cfw.GetCFW().IsBasedOnEmulationStation() {
-					marqueeArtFileName += "-marquee.png"
-				} else {
-					marqueeArtFileName += ".png"
-				}
-				marqueeArtLocation := filepath.Join(artMarqueeDir, marqueeArtFileName)
-				marqueeURL := ""
-				switch config.AdditionalDownloads.Marquee {
-				case artutil.ArtKindMarquee:
-					marqueeURL = g.GetMarqueeURL(host)
-				case artutil.ArtKindLogo:
-					marqueeURL = g.GetLogoURL(host)
-				}
-				if marqueeURL != "" {
-					gamelistRomEntry.ArtLocation.MarqueePath = marqueeArtLocation
-					artDownloads = append(artDownloads, artDownload{
-						URL:      marqueeURL,
-						Location: marqueeArtLocation,
-						GameName: g.Name,
-						IsImage:  true,
-					})
-				}
-			}
-
-			artVideoDir := config.GetArtVideoDirectory(gamePlatform)
-			if config.AdditionalDownloads.Video && artVideoDir != "" {
-				videoLocation := filepath.Join(artVideoDir, g.FsNameNoExt+".mp4")
-				if videoURL := g.GetVideoURL(host); videoURL != "" {
-					gamelistRomEntry.ArtLocation.VideoPath = videoLocation
-					artDownloads = append(artDownloads, artDownload{
-						URL:      videoURL,
-						Location: videoLocation,
-						GameName: g.Name,
-						IsImage:  false,
-					})
-				}
-			}
-
-			artBezelDir := config.GetArtBezelDirectory(gamePlatform)
-			if config.AdditionalDownloads.Bezel && artBezelDir != "" {
-				bezelArtLocation := filepath.Join(artBezelDir, artFileName)
-				if bezelURL := g.GetBezelURL(host); bezelURL != "" {
-					gamelistRomEntry.ArtLocation.BezelPath = bezelArtLocation
-					artDownloads = append(artDownloads, artDownload{
-						URL:      bezelURL,
-						Location: bezelArtLocation,
-						GameName: g.Name,
-						IsImage:  true,
-					})
-				}
-			}
-
-			manualDir := config.GetManualDirectory(gamePlatform)
-			if config.AdditionalDownloads.Manual && manualDir != "" {
-				manualLocation := filepath.Join(manualDir, g.FsNameNoExt+".pdf")
-				if manualURL := g.GetManualURL(host); manualURL != "" {
-					gamelistRomEntry.ArtLocation.ManualPath = manualLocation
-					artDownloads = append(artDownloads, artDownload{
-						URL:      manualURL,
-						Location: manualLocation,
-						GameName: g.Name,
-						IsImage:  false,
-					})
-				}
-			}
-
-			boxbackDir := config.GetBoxbackDirectory(gamePlatform)
-			if config.AdditionalDownloads.BoxBack && boxbackDir != "" {
-				boxbackArtFileName := g.FsNameNoExt
-				// is cfw is ES based, use -boxback suffix to avoid conflicts with cover art
-				if cfw.GetCFW().IsBasedOnEmulationStation() {
-					boxbackArtFileName += "-boxback.png"
-				} else {
-					boxbackArtFileName += ".png"
-				}
-				boxbackArtLocation := filepath.Join(boxbackDir, boxbackArtFileName)
-				if boxbackURL := g.GetBoxbackURL(host); boxbackURL != "" {
-					gamelistRomEntry.ArtLocation.BoxBackPath = boxbackArtLocation
-					artDownloads = append(artDownloads, artDownload{
-						URL:      boxbackURL,
-						Location: boxbackArtLocation,
-						GameName: g.Name,
-						IsImage:  true,
-					})
-				}
-			}
-
-			fanartDir := config.GetFanartDirectory(gamePlatform)
-			if config.AdditionalDownloads.Fanart && fanartDir != "" {
-				fanartFileName := g.FsNameNoExt
-				// is cfw is ES based, use -fanart suffix to avoid conflicts with cover art
-				if cfw.GetCFW().IsBasedOnEmulationStation() {
-					fanartFileName += "-fanart.png"
-				} else {
-					fanartFileName += ".png"
-				}
-				fanartLocation := filepath.Join(fanartDir, fanartFileName)
-				if fanartURL := g.GetFanartURL(host); fanartURL != "" {
-					gamelistRomEntry.ArtLocation.FanartPath = fanartLocation
-					artDownloads = append(artDownloads, artDownload{
-						URL:      fanartURL,
-						Location: fanartLocation,
-						GameName: g.Name,
-						IsImage:  true,
-					})
-				}
-			}
-
-		}
-		gamesSummaries = append(gamesSummaries, gamelistRomEntry)
 	}
-
-	return downloads, artDownloads, gamesSummaries
+	return games
 }
 
-// resolveExtractedGamePath returns the best path for a multi-file ROM after extraction.
-func resolveExtractedGamePath(romDirectory, extractDir, fsNameNoExt string) string {
+// unpack expands whatever arrived as an archive and points the metadata entry
+// at the file that came out.
+//
+// A game that fails to unpack keeps its archive and is left out of the
+// metadata rather than failing the run, so the rest of the batch still lands.
+func (s *DownloadScreen) unpack(input DownloadInput, plan download.Plan, downloaded []romm.Rom) {
 	logger := gaba.GetLogger()
 
-	m3uPath := filepath.Join(romDirectory, fsNameNoExt+".m3u")
-	if _, err := os.Stat(m3uPath); err == nil {
-		logger.Debug("Multi-file ROM gamelist path resolved to .m3u in rom directory", "path", m3uPath)
-		return m3uPath
+	for _, game := range downloaded {
+		// Where the rom actually landed. A game shipping several versions is
+		// downloaded under the name of the one that was picked, so its file
+		// list cannot say which.
+		location := plan.RomLocation(game.Name)
+		if location == "" {
+			continue
+		}
+
+		switch {
+		case game.HasMultipleFiles:
+			romDirectory := cfw.PlatformRomDirectory(input.Config, platformOf(input.Platform, game).FSSlug)
+			path, err := s.extracting(game.Name, func(progress *atomic.Float64) (string, error) {
+				return download.ExtractMultiFile(game, romDirectory, progress)
+			})
+			if err != nil {
+				logger.Error("Failed to unpack multi-file ROM", "game", game.Name, "error", err)
+				continue
+			}
+			plan.SetGamePath(game.FsName, path)
+
+		case input.Config.UnzipDownloads && download.IsArchive(location):
+			path, err := s.extracting(game.Name, func(progress *atomic.Float64) (string, error) {
+				return download.ExtractArchive(location, filepath.Dir(location), progress)
+			})
+			if err != nil {
+				logger.Warn("Failed to unpack ROM, keeping the archive", "game", game.Name, "error", err)
+				continue
+			}
+			plan.SetGamePath(game.FsName, path)
+		}
 	}
-	entries, err := os.ReadDir(extractDir)
+}
+
+// extracting runs one unpack behind a progress dialog.
+func (s *DownloadScreen) extracting(gameName string, unpack func(*atomic.Float64) (string, error)) (string, error) {
+	progress := &atomic.Float64{}
+
+	return gaba.ProcessMessage(
+		localizeWith("download_extracting", "Extracting {{.Name}}...", map[string]any{"Name": gameName}),
+		gaba.ProcessMessageOptions{
+			ShowThemeBackground: true,
+			ShowProgressBar:     true,
+			Progress:            progress,
+		},
+		func() (string, error) { return unpack(progress) },
+	)
+}
+
+func (s *DownloadScreen) fetchArt(items []download.Item, downloaded []romm.Rom, host settings.Host) {
+	progress := &atomic.Float64{}
+
+	// One fetcher for the whole run so connections are reused across what can
+	// be hundreds of art downloads.
+	fetcher := romm.NewArtFetcher(host, romm.DefaultClientTimeout)
+	fetcher.Process = imaging.ProcessArtImage
+
+	_, err := gaba.ProcessMessage(
+		localize("download_artwork", "Downloading artwork..."),
+		gaba.ProcessMessageOptions{
+			ShowThemeBackground: true,
+			ShowProgressBar:     true,
+			Progress:            progress,
+		},
+		func() (any, error) {
+			download.FetchArt(fetcher, items, downloaded, progress)
+			return nil, nil
+		},
+	)
 	if err != nil {
-		logger.Debug("Multi-file ROM gamelist path falling back to extract directory (unreadable)", "path", extractDir, "error", err)
-		return extractDir
+		gaba.GetLogger().Warn("Art download process encountered an error", "error", err)
 	}
-	var firstFile string
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		if strings.ToLower(filepath.Ext(entry.Name())) == ".m3u" {
-			p := filepath.Join(extractDir, entry.Name())
-			logger.Debug("Multi-file ROM gamelist path resolved to .m3u in extract directory", "path", p)
-			return p
-		}
-		if firstFile == "" {
-			firstFile = filepath.Join(extractDir, entry.Name())
-		}
-	}
-	if firstFile != "" {
-		logger.Debug("Multi-file ROM gamelist path resolved to first file (no .m3u found)", "path", firstFile)
-		return firstFile
-	}
-	logger.Debug("Multi-file ROM gamelist path falling back to extract directory (no files found)", "path", extractDir)
-	return extractDir
 }
 
-func (s *DownloadScreen) downloadArt(artDownloads []artDownload, downloadedGames []romm.Rom, headers map[string]string, progress *atomic.Float64, insecureSkipVerify bool) {
-	logger := gaba.GetLogger()
-
-	downloadedGameNames := make(map[string]bool)
-	for _, g := range downloadedGames {
-		downloadedGameNames[g.Name] = true
+// platformOf prefers the game's own platform, which differs from the screen's
+// when browsing a collection that spans several.
+func platformOf(screen romm.Platform, game romm.Rom) romm.Platform {
+	if screen.ID != 0 || game.PlatformID == 0 {
+		return screen
 	}
+	return romm.Platform{ID: game.PlatformID, FSSlug: game.PlatformFSSlug, Name: game.PlatformDisplayName}
+}
 
-	totalArt := 0
-	for _, art := range artDownloads {
-		if downloadedGameNames[art.GameName] {
-			totalArt++
-		}
+// romDownloads adapts the plan's rom items to what the download widget takes.
+// The plan says what to fetch; only this layer knows the widget's shape.
+func romDownloads(plan download.Plan, timeout time.Duration) []gaba.Download {
+	out := make([]gaba.Download, 0, len(plan.Roms))
+	for _, item := range plan.Roms {
+		out = append(out, gaba.Download{
+			URL:         item.URL,
+			Location:    item.Location,
+			DisplayName: item.GameName,
+			Timeout:     timeout,
+		})
 	}
-
-	successCount := 0
-	failCount := 0
-	processedCount := 0
-
-	for _, art := range artDownloads {
-		if !downloadedGameNames[art.GameName] {
-			continue
-		}
-
-		artDir := filepath.Dir(art.Location)
-		if err := os.MkdirAll(artDir, 0755); err != nil {
-			logger.Warn("Failed to create art directory", "dir", artDir, "game", art.GameName, "error", err)
-			failCount++
-			processedCount++
-			if totalArt > 0 {
-				progress.Store(float64(processedCount) / float64(totalArt))
-			}
-			continue
-		}
-
-		req, err := http.NewRequest("GET", art.URL, nil)
-		if err != nil {
-			logger.Warn("Failed to create art request", "game", art.GameName, "error", err)
-			failCount++
-			processedCount++
-			if totalArt > 0 {
-				progress.Store(float64(processedCount) / float64(totalArt))
-			}
-			continue
-		}
-
-		for k, v := range headers {
-			req.Header.Set(k, v)
-		}
-
-		client := &http.Client{Timeout: romm.DefaultClientTimeout}
-		if insecureSkipVerify {
-			client.Transport = &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			}
-		}
-		resp, err := client.Do(req)
-		if err != nil {
-			logger.Warn("Failed to download art", "game", art.GameName, "url", art.URL, "error", err)
-			failCount++
-			processedCount++
-			if totalArt > 0 {
-				progress.Store(float64(processedCount) / float64(totalArt))
-			}
-			continue
-		}
-
-		if resp.StatusCode != http.StatusOK {
-			resp.Body.Close()
-			logger.Warn("Art download failed with bad status", "game", art.GameName, "url", art.URL, "status", resp.Status)
-			failCount++
-			processedCount++
-			if totalArt > 0 {
-				progress.Store(float64(processedCount) / float64(totalArt))
-			}
-			continue
-		}
-
-		outFile, err := os.Create(art.Location)
-		if err != nil {
-			resp.Body.Close()
-			logger.Warn("Failed to create art file", "game", art.GameName, "location", art.Location, "error", err)
-			failCount++
-			processedCount++
-			if totalArt > 0 {
-				progress.Store(float64(processedCount) / float64(totalArt))
-			}
-			continue
-		}
-
-		_, err = io.Copy(outFile, resp.Body)
-		resp.Body.Close()
-		outFile.Close()
-
-		if err != nil {
-			logger.Warn("Failed to write art file", "game", art.GameName, "location", art.Location, "error", err)
-			os.Remove(art.Location)
-			failCount++
-			processedCount++
-			if totalArt > 0 {
-				progress.Store(float64(processedCount) / float64(totalArt))
-			}
-			continue
-		}
-
-		if art.IsImage {
-			if err := imageutil.ProcessArtImage(art.Location); err != nil {
-				logger.Warn("Failed to process art image", "game", art.GameName, "location", art.Location, "error", err, "url", art.URL)
-				os.Remove(art.Location)
-				failCount++
-				processedCount++
-				if totalArt > 0 {
-					progress.Store(float64(processedCount) / float64(totalArt))
-				}
-				continue
-			}
-		}
-
-		successCount++
-
-		processedCount++
-		if totalArt > 0 {
-			progress.Store(float64(processedCount) / float64(totalArt))
-		}
-	}
+	return out
 }

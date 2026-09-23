@@ -3,31 +3,24 @@ package ui
 import (
 	"errors"
 	"fmt"
-	"grout/cache"
-	"grout/internal"
-	"grout/internal/fileutil"
-	"grout/internal/imageutil"
-	"grout/internal/stringutil"
-	"io"
-	"net/http"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
+	"grout/cache"
+	"grout/catalog"
 	"grout/romm"
+	"grout/settings"
+	"grout/textmatch"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 	"go.uber.org/atomic"
 )
 
 type GameDetailsInput struct {
-	Config   *internal.Config
-	Host     romm.Host
+	Config   *settings.Config
+	Host     settings.Host
 	Platform romm.Platform
 	Game     romm.Rom
 }
@@ -46,304 +39,210 @@ func NewGameDetailsScreen() *GameDetailsScreen {
 	return &GameDetailsScreen{}
 }
 
+// fileVersionDropdown identifies the version picker among the screen's
+// sections, both when reading the result and when reacting to a change.
+const fileVersionDropdown = "file_version"
+
 func (s *GameDetailsScreen) Draw(input GameDetailsInput) (GameDetailsOutput, error) {
-	logger := gaba.GetLogger()
 	output := GameDetailsOutput{
 		Action:   GameDetailsActionBack,
 		Game:     input.Game,
 		Platform: input.Platform,
 	}
 
-	hasMultipleFiles := input.Game.HasNestedSingleFile && len(input.Game.Files) > 1
-	downloadText := i18n.Localize(&goi18n.Message{ID: "button_download", Other: "Download"}, nil)
-	redownloadText := i18n.Localize(&goi18n.Message{ID: "button_redownload", Other: "Redownload"}, nil)
+	// A game shipping several versions is downloaded one version at a time, so
+	// the picker takes the A button and downloading moves to X.
+	versions := input.Game.Files
+	picksVersion := input.Game.HasNestedSingleFile && len(versions) > 1
 
-	// Determine initial download text based on first file
-	initialDownloadText := downloadText
-	if input.Game.IsDownloaded(input.Config) {
-		initialDownloadText = redownloadText
-	}
+	sections := s.sections(input, picksVersion)
 
-	// Create dynamic help text for multi-file games
-	var dynamicDownloadText *atomic.String
-	if hasMultipleFiles {
-		dynamicDownloadText = atomic.NewString(initialDownloadText)
-	}
-
-	sections := s.buildSections(input)
-
-	// Set OnChange callback for the file version dropdown to update footer dynamically
-	if hasMultipleFiles && dynamicDownloadText != nil {
-		romDirectory := input.Config.GetPlatformRomDirectory(input.Platform)
-		for i := range sections {
-			if sections[i].DropdownID == "file_version" {
-				sections[i].OnChange = func(option gaba.DropdownOption) {
-					if fileID, err := strconv.Atoi(option.Value); err == nil {
-						for _, file := range input.Game.Files {
-							if file.ID == fileID {
-								filePath := filepath.Join(romDirectory, file.FileName)
-								if fileutil.FileExists(filePath) {
-									dynamicDownloadText.Store(redownloadText)
-								} else {
-									dynamicDownloadText.Store(downloadText)
-								}
-								return
-							}
-						}
-					}
-				}
-				break
-			}
-		}
+	downloadText := downloadLabel(catalog.IsDownloaded(*input.Config, input.Game))
+	var dynamicText *atomic.String
+	if picksVersion {
+		// The picker opens on the first version, so the footer answers for
+		// that one rather than for the game as a whole.
+		downloadText = downloadLabel(catalog.IsFileDownloaded(*input.Config, input.Game, versions[0].FileName))
+		dynamicText = atomic.NewString(downloadText)
+		s.followVersion(sections, input, dynamicText)
 	}
 
 	options := gaba.DefaultInfoScreenOptions()
 	options.Sections = sections
 	options.ShowThemeBackground = false
 	options.ShowScrollbar = true
-	if hasMultipleFiles {
+	if picksVersion {
 		options.ConfirmButton = constants.VirtualButtonX
 	}
-	if !internal.IsKidModeEnabled() {
+	if !settings.IsKidModeEnabled() {
 		options.ActionButton = constants.VirtualButtonY
 		options.AllowAction = true
 	}
 
-	downloadButton := "A"
-	if hasMultipleFiles {
-		downloadButton = "X"
-	}
-
-	// Build footer items
-	footerItems := []gaba.FooterHelpItem{
-		{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_back", Other: "Back"}, nil)},
-	}
-	if !internal.IsKidModeEnabled() {
-		footerItems = append(footerItems, gaba.FooterHelpItem{ButtonName: "Y", HelpText: i18n.Localize(&goi18n.Message{ID: "button_options", Other: "Options"}, nil)})
-	}
-	footerItems = append(footerItems, gaba.FooterHelpItem{
-		ButtonName:      downloadButton,
-		HelpText:        initialDownloadText,
-		HelpTextDynamic: dynamicDownloadText,
-	})
-
-	result, err := gaba.DetailScreen(input.Game.Name, options, footerItems)
-
+	result, err := gaba.DetailScreen(input.Game.Name, options, s.footer(picksVersion, downloadText, dynamicText))
 	if err != nil {
 		if errors.Is(err, gaba.ErrCancelled) {
 			return output, nil
 		}
-		logger.Error("Detail screen error", "error", err)
+		gaba.GetLogger().Error("Detail screen error", "error", err)
 		return output, err
 	}
 
-	if result.Action == gaba.DetailActionConfirmed {
+	switch result.Action {
+	case gaba.DetailActionConfirmed:
 		output.Action = GameDetailsActionDownload
 		output.DownloadRequested = true
-		// Check if a specific file was selected from the dropdown
-		for _, selection := range result.DropdownSelections {
-			if selection.ID == "file_version" {
-				if fileID, err := strconv.Atoi(selection.Option.Value); err == nil {
-					output.SelectedFileID = fileID
-				}
-				break
-			}
-		}
-		return output, nil
-	}
-
-	if result.Action == gaba.DetailActionTriggered {
+		output.SelectedFileID = selectedFileID(result.DropdownSelections)
+	case gaba.DetailActionTriggered:
 		output.Action = GameDetailsActionOptions
-		return output, nil
 	}
 
 	return output, nil
 }
 
-func (s *GameDetailsScreen) buildSections(input GameDetailsInput) []gaba.Section {
-	sections := make([]gaba.Section, 0)
-	game := input.Game
-	logger := gaba.GetLogger()
+func (s *GameDetailsScreen) footer(picksVersion bool, downloadText string, dynamicText *atomic.String) []gaba.FooterHelpItem {
+	items := []gaba.FooterHelpItem{FooterBack()}
 
-	coverImagePath := s.getCoverImagePath(input.Config, input.Host, game)
-	if coverImagePath != "" {
-		sections = append(sections, gaba.NewImageSection("", coverImagePath, 640, 480, constants.TextAlignCenter))
-	} else {
-		logger.Debug("No cover image available", "game", game.Name)
+	if !settings.IsKidModeEnabled() {
+		items = append(items, gaba.FooterHelpItem{ButtonName: "Y", HelpText: localize("button_options", "Options")})
 	}
 
-	// Show file selection dropdown for games with nested single file (multiple versions)
-	if game.HasNestedSingleFile && len(game.Files) > 1 {
-		fileOptions := make([]gaba.DropdownOption, len(game.Files))
-		romDirectory := input.Config.GetPlatformRomDirectory(input.Platform)
-		for i, file := range game.Files {
-			label := file.FileName
-			filePath := filepath.Join(romDirectory, file.FileName)
-			if fileutil.FileExists(filePath) {
-				label = constants.Download + " " + label
-			}
-			fileOptions[i] = gaba.DropdownOption{
-				Label: label,
-				Value: fmt.Sprintf("%d", file.ID),
+	button := "A"
+	if picksVersion {
+		button = "X"
+	}
+	return append(items, gaba.FooterHelpItem{
+		ButtonName:      button,
+		HelpText:        downloadText,
+		HelpTextDynamic: dynamicText,
+	})
+}
+
+// downloadLabel says whether pressing the button fetches something new or
+// replaces what is already on the card.
+func downloadLabel(have bool) string {
+	if have {
+		return localize("button_redownload", "Redownload")
+	}
+	return localize("button_download", "Download")
+}
+
+// followVersion keeps the footer in step with the version picker.
+func (s *GameDetailsScreen) followVersion(sections []gaba.Section, input GameDetailsInput, text *atomic.String) {
+	for i := range sections {
+		if sections[i].DropdownID != fileVersionDropdown {
+			continue
+		}
+		sections[i].OnChange = func(option gaba.DropdownOption) {
+			for _, file := range input.Game.Files {
+				if strconv.Itoa(file.ID) == option.Value {
+					text.Store(downloadLabel(catalog.IsFileDownloaded(*input.Config, input.Game, file.FileName)))
+					return
+				}
 			}
 		}
+		return
+	}
+}
+
+func selectedFileID(selections []gaba.DropdownSelection) int {
+	for _, selection := range selections {
+		if selection.ID == fileVersionDropdown {
+			id, _ := strconv.Atoi(selection.Option.Value)
+			return id
+		}
+	}
+	return 0
+}
+
+func (s *GameDetailsScreen) sections(input GameDetailsInput, picksVersion bool) []gaba.Section {
+	game := input.Game
+	var sections []gaba.Section
+
+	if cover := cache.ArtworkPath(game, input.Config.ArtKind, input.Host); cover != "" {
+		sections = append(sections, gaba.NewImageSection("", cover, 640, 480, constants.TextAlignCenter))
+	}
+
+	if picksVersion {
+		options := make([]gaba.DropdownOption, len(game.Files))
+		for i, file := range game.Files {
+			label := file.FileName
+			if catalog.IsFileDownloaded(*input.Config, game, file.FileName) {
+				label = constants.Download + " " + label
+			}
+			options[i] = gaba.DropdownOption{Label: label, Value: strconv.Itoa(file.ID)}
+		}
 		sections = append(sections, gaba.NewDropdownSection(
-			i18n.Localize(&goi18n.Message{ID: "game_details_file_version", Other: "File Version"}, nil),
-			"file_version",
-			fileOptions,
-			0,
-		))
+			localize("game_details_file_version", "File Version"), fileVersionDropdown, options, 0))
 	}
 
 	if game.Summary != "" {
 		sections = append(sections, gaba.NewDescriptionSection("", game.Summary))
 	}
 
-	metadata := make([]gaba.MetadataItem, 0)
-
-	if game.Metadatum.FirstReleaseDate > 0 {
-		releaseDate := time.Unix(game.Metadatum.FirstReleaseDate/1000, 0)
-		metadata = append(metadata, gaba.MetadataItem{
-			Label: i18n.Localize(&goi18n.Message{ID: "game_details_release_date", Other: "Release Date"}, nil),
-			Value: releaseDate.Format("January 2, 2006"),
-		})
+	if facts := gameFacts(game); len(facts) > 0 {
+		sections = append(sections, gaba.NewInfoSection("", facts))
 	}
 
-	if game.Metadatum.AverageRating > 0 {
-		metadata = append(metadata, gaba.MetadataItem{
-			Label: i18n.Localize(&goi18n.Message{ID: "game_details_average_rating", Other: "Average Rating"}, nil),
-			Value: fmt.Sprintf("%.1f/100", game.Metadatum.AverageRating),
-		})
-	}
-
-	if len(game.Metadatum.Genres) > 0 {
-		metadata = append(metadata, gaba.MetadataItem{
-			Label: i18n.Localize(&goi18n.Message{ID: "game_details_genres", Other: "Genres"}, nil),
-			Value: strings.Join(game.Metadatum.Genres, ", "),
-		})
-	}
-
-	if len(game.Metadatum.Companies) > 0 {
-		metadata = append(metadata, gaba.MetadataItem{
-			Label: i18n.Localize(&goi18n.Message{ID: "game_details_companies", Other: "Companies"}, nil),
-			Value: strings.Join(game.Metadatum.Companies, ", "),
-		})
-	}
-
-	if len(game.Metadatum.GameModes) > 0 {
-		metadata = append(metadata, gaba.MetadataItem{
-			Label: i18n.Localize(&goi18n.Message{ID: "game_details_game_modes", Other: "Game Modes"}, nil),
-			Value: strings.Join(game.Metadatum.GameModes, ", "),
-		})
-	}
-
-	if len(game.Regions) > 0 {
-		metadata = append(metadata, gaba.MetadataItem{
-			Label: i18n.Localize(&goi18n.Message{ID: "game_details_regions", Other: "Regions"}, nil),
-			Value: strings.Join(game.Regions, ", "),
-		})
-	}
-
-	if len(game.Languages) > 0 {
-		metadata = append(metadata, gaba.MetadataItem{
-			Label: i18n.Localize(&goi18n.Message{ID: "game_details_languages", Other: "Languages"}, nil),
-			Value: strings.Join(game.Languages, ", "),
-		})
-	}
-
-	if game.FsSizeBytes > 0 {
-		metadata = append(metadata, gaba.MetadataItem{
-			Label: i18n.Localize(&goi18n.Message{ID: "game_details_file_size", Other: "File Size"}, nil),
-			Value: stringutil.FormatBytes(int64(game.FsSizeBytes)),
-		})
-	}
-
-	if game.HasMultipleFiles {
-		metadata = append(metadata, gaba.MetadataItem{
-			Label: i18n.Localize(&goi18n.Message{ID: "game_details_type", Other: "Type"}, nil),
-			Value: i18n.Localize(&goi18n.Message{ID: "game_details_multi_file_rom", Other: "Multi-file ROM"}, nil),
-		})
-	}
-
-	if len(metadata) > 0 {
-		sections = append(sections, gaba.NewInfoSection("", metadata))
-	}
-
+	// A game RomM knows nothing about would otherwise be a blank screen.
 	if len(sections) == 0 {
-		logger.Warn("No sections available for game", "game", game.Name)
+		gaba.GetLogger().Warn("No details available for game", "game", game.Name)
 		sections = append(sections, gaba.NewInfoSection("", []gaba.MetadataItem{
-			{Label: i18n.Localize(&goi18n.Message{ID: "game_details_game", Other: "Game"}, nil), Value: game.Name},
-			{Label: i18n.Localize(&goi18n.Message{ID: "game_details_platform", Other: "Platform"}, nil), Value: game.PlatformDisplayName},
+			{Label: localize("game_details_game", "Game"), Value: game.Name},
+			{Label: localize("game_details_platform", "Platform"), Value: game.PlatformDisplayName},
 		}))
 	}
 
 	return sections
 }
 
-// getCoverImagePath returns the path to the cover image, using cache if available
-func (s *GameDetailsScreen) getCoverImagePath(config *internal.Config, host romm.Host, game romm.Rom) string {
-	logger := gaba.GetLogger()
-
-	// First, check if artwork is in the cache
-	if cache.ArtworkExists(game.PlatformFSSlug, game.ID) {
-		cachePath := cache.GetArtworkCachePath(game.PlatformFSSlug, game.ID)
-		logger.Debug("Using cached artwork for game details", "game", game.Name)
-		return cachePath
-	}
-
-	coverURL := game.GetArtworkURL(config.ArtKind, host)
-	imageData := s.fetchImageFromURL(host, coverURL)
-
-	// Cache the artwork for future use and return cache path
-	if imageData != nil {
-		if err := cache.EnsureArtworkCacheDir(game.PlatformFSSlug); err == nil {
-			cachePath := cache.GetArtworkCachePath(game.PlatformFSSlug, game.ID)
-			if err := os.WriteFile(cachePath, imageData, 0644); err == nil {
-				imageutil.ProcessArtImage(cachePath)
-				return cachePath
-			}
+// factRows are the metadata rows a game can show, in the order they appear.
+// A row whose value comes back empty is left out, so a game RomM knows little
+// about does not show a column of blanks.
+var factRows = []struct {
+	id, fallback string
+	value        func(romm.Rom) string
+}{
+	{"game_details_release_date", "Release Date", func(g romm.Rom) string {
+		if g.Metadatum.FirstReleaseDate <= 0 {
+			return ""
 		}
-	}
-
-	return ""
+		// RomM reports this in milliseconds.
+		return time.Unix(g.Metadatum.FirstReleaseDate/1000, 0).Format("January 2, 2006")
+	}},
+	{"game_details_average_rating", "Average Rating", func(g romm.Rom) string {
+		if g.Metadatum.AverageRating <= 0 {
+			return ""
+		}
+		return fmt.Sprintf("%.1f/100", g.Metadatum.AverageRating)
+	}},
+	{"game_details_genres", "Genres", func(g romm.Rom) string { return list(g.Metadatum.Genres) }},
+	{"game_details_companies", "Companies", func(g romm.Rom) string { return list(g.Metadatum.Companies) }},
+	{"game_details_game_modes", "Game Modes", func(g romm.Rom) string { return list(g.Metadatum.GameModes) }},
+	{"game_details_regions", "Regions", func(g romm.Rom) string { return list(g.Regions) }},
+	{"game_details_languages", "Languages", func(g romm.Rom) string { return list(g.Languages) }},
+	{"game_details_file_size", "File Size", func(g romm.Rom) string {
+		if g.FsSizeBytes <= 0 {
+			return ""
+		}
+		return textmatch.FormatBytes(int64(g.FsSizeBytes))
+	}},
+	{"game_details_type", "Type", func(g romm.Rom) string {
+		if !g.HasMultipleFiles {
+			return ""
+		}
+		return localize("game_details_multi_file_rom", "Multi-file ROM")
+	}},
 }
 
-func (s *GameDetailsScreen) fetchImageFromURL(host romm.Host, imageURL string) []byte {
-	logger := gaba.GetLogger()
-
-	imageURL = strings.ReplaceAll(imageURL, " ", "%20")
-
-	req, err := http.NewRequest("GET", imageURL, nil)
-	if err != nil {
-		logger.Warn("Failed to create image request", "url", imageURL, "error", err)
-		return nil
-	}
-
-	req.Header.Set("Authorization", host.AuthHeader())
-
-	client := &http.Client{Timeout: internal.DefaultHTTPTimeout}
-	resp, err := client.Do(req)
-	if err != nil {
-		logger.Warn("Failed to fetch image", "url", imageURL, "error", err)
-		return nil
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			logger.Warn("Failed to close response body", "error", err)
+func gameFacts(game romm.Rom) []gaba.MetadataItem {
+	facts := make([]gaba.MetadataItem, 0, len(factRows))
+	for _, row := range factRows {
+		if value := row.value(game); value != "" {
+			facts = append(facts, gaba.MetadataItem{Label: localize(row.id, row.fallback), Value: value})
 		}
-	}()
-
-	if resp.StatusCode != http.StatusOK {
-		logger.Warn("Image fetch failed with bad status", "url", imageURL, "status", resp.Status)
-		return nil
 	}
-
-	imageData, err := io.ReadAll(resp.Body)
-	if err != nil {
-		logger.Warn("Failed to read image data", "error", err)
-		return nil
-	}
-
-	logger.Debug("Successfully fetched image", "url", imageURL, "size", len(imageData))
-	return imageData
+	return facts
 }
+
+func list(values []string) string { return strings.Join(values, ", ") }

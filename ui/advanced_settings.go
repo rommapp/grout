@@ -2,28 +2,24 @@ package ui
 
 import (
 	"errors"
-	"grout/internal"
-	"grout/romm"
+	"fmt"
 	"os"
 	"time"
 
+	"grout/settings"
+
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type AdvancedSettingsInput struct {
-	Config                *internal.Config
-	Host                  romm.Host
+	Config                *settings.Config
+	Host                  settings.Host
 	LastSelectedIndex     int
 	LastVisibleStartIndex int
 }
 
 type AdvancedSettingsOutput struct {
 	Action                AdvancedSettingsAction
-	RebuildCacheClicked   bool
-	SyncArtworkClicked    bool
-	ServerAddressClicked  bool
 	LastSelectedIndex     int
 	LastVisibleStartIndex int
 }
@@ -38,16 +34,13 @@ func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (AdvancedSett
 	config := input.Config
 	output := AdvancedSettingsOutput{Action: AdvancedSettingsActionBack}
 
-	items := s.buildMenuItems(config)
+	rows := advancedRows()
+	items := settingItems(rows, *config)
 
 	result, err := gaba.OptionsList(
-		i18n.Localize(&goi18n.Message{ID: "settings_advanced", Other: "Advanced"}, nil),
+		localize("settings_advanced", "Advanced"),
 		gaba.OptionListSettings{
-			FooterHelpItems: []gaba.FooterHelpItem{
-				FooterBack(),
-				FooterCycle(),
-				FooterSave(),
-			},
+			FooterHelpItems:      []gaba.FooterHelpItem{FooterBack(), FooterCycle(), FooterSave()},
 			InitialSelectedIndex: input.LastSelectedIndex,
 			VisibleStartIndex:    input.LastVisibleStartIndex,
 			StatusBar:            StatusBar(),
@@ -55,12 +48,10 @@ func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (AdvancedSett
 		},
 		items,
 	)
-
 	if result != nil {
 		output.LastSelectedIndex = result.Selected
 		output.LastVisibleStartIndex = result.VisibleStartIndex
 	}
-
 	if err != nil {
 		if errors.Is(err, gaba.ErrCancelled) {
 			return output, nil
@@ -69,55 +60,20 @@ func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (AdvancedSett
 		return output, err
 	}
 
-	if result.Action == gaba.ListActionSelected {
-		selectedText := items[result.Selected].Item.Text
-
-		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_rebuild_cache", Other: "Rebuild Cache"}, nil) {
-			output.RebuildCacheClicked = true
-			output.Action = AdvancedSettingsActionRebuildCache
-			return output, nil
-		}
-
-		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_sync_artwork", Other: "Preload Artwork"}, nil) {
-			output.SyncArtworkClicked = true
-			output.Action = AdvancedSettingsActionSyncArtwork
-			return output, nil
-		}
-
-		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_server_address", Other: "Server Address"}, nil) {
-			output.ServerAddressClicked = true
-			output.Action = AdvancedSettingsActionServerAddress
-			return output, nil
-		}
-
-		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_input_mapping", Other: "Input Mapping"}, nil) {
-			output.Action = AdvancedSettingsActionInputMapping
-			return output, nil
-		}
-
-		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_reset_input_mapping", Other: "Reset Input Mapping"}, nil) {
-			if err := os.Remove("input_mapping.json"); err != nil {
-				gaba.GetLogger().Error("Failed to delete input mapping", "error", err)
-			} else {
-				gaba.SetInputMappingBytes(nil)
-				gaba.ConfirmationMessage(
-					i18n.Localize(&goi18n.Message{ID: "input_mapping_reset", Other: "Input mapping reset.\nGrout needs to restart to apply changes."}, nil),
-					[]gaba.FooterHelpItem{
-						{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_exit", Other: "Exit"}, nil)},
-					},
-					gaba.MessageOptions{},
-				)
-				os.Exit(0)
+	if result.Action == gaba.ListActionSelected && result.Selected < len(rows) {
+		if action, leads := advancedDestinations[rows[result.Selected].key]; leads {
+			if action == AdvancedSettingsActionResetInputMapping {
+				return s.resetInputMapping(output)
 			}
-			output.Action = AdvancedSettingsActionResetInputMapping
+			output.Action = action
 			return output, nil
 		}
-
 	}
 
-	s.applySettings(config, result.Items)
+	applySettingRows(rows, config, result.Items)
 
-	err = internal.SaveConfig(config)
+	err = settings.SaveConfig(config)
+	ApplyRuntimeSettings(config)
 	if err != nil {
 		gaba.GetLogger().Error("Error saving advanced settings", "error", err)
 		return output, err
@@ -127,149 +83,131 @@ func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (AdvancedSett
 	return output, nil
 }
 
-func (s *AdvancedSettingsScreen) buildMenuItems(config *internal.Config) []gaba.ItemWithOptions {
-	items := []gaba.ItemWithOptions{
-		{
-			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_sync_artwork", Other: "Preload Artwork"}, nil)},
-			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
-		},
-		{
-			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_rebuild_cache", Other: "Rebuild Cache"}, nil)},
-			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
-		},
-		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_download_timeout", Other: "Download Timeout"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "time_15_minutes", Other: "15 Minutes"}, nil), Value: 15 * time.Minute},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "time_30_minutes", Other: "30 Minutes"}, nil), Value: 30 * time.Minute},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "time_45_minutes", Other: "45 Minutes"}, nil), Value: 45 * time.Minute},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "time_60_minutes", Other: "60 Minutes"}, nil), Value: 60 * time.Minute},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "time_75_minutes", Other: "75 Minutes"}, nil), Value: 75 * time.Minute},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "time_90_minutes", Other: "90 Minutes"}, nil), Value: 90 * time.Minute},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "time_105_minutes", Other: "105 Minutes"}, nil), Value: 105 * time.Minute},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "time_120_minutes", Other: "120 Minutes"}, nil), Value: 120 * time.Minute},
-			},
-			SelectedOption: s.findDownloadTimeoutIndex(config.DownloadTimeout.Duration()),
-		},
-		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_api_timeout", Other: "API Timeout"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "time_15_seconds", Other: "15 Seconds"}, nil), Value: 15 * time.Second},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "time_30_seconds", Other: "30 Seconds"}, nil), Value: 30 * time.Second},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "time_45_seconds", Other: "45 Seconds"}, nil), Value: 45 * time.Second},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "time_60_seconds", Other: "60 Seconds"}, nil), Value: 60 * time.Second},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "time_75_seconds", Other: "75 Seconds"}, nil), Value: 75 * time.Second},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "time_90_seconds", Other: "90 Seconds"}, nil), Value: 90 * time.Second},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "time_120_seconds", Other: "120 Seconds"}, nil), Value: 120 * time.Second},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "time_180_seconds", Other: "180 Seconds"}, nil), Value: 180 * time.Second},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "time_240_seconds", Other: "240 Seconds"}, nil), Value: 240 * time.Second},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "time_300_seconds", Other: "300 Seconds"}, nil), Value: 300 * time.Second},
-			},
-			SelectedOption: s.findApiTimeoutIndex(config.ApiTimeout.Duration()),
-		},
-		{
-			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_server_address", Other: "Server Address"}, nil)},
-			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
-		},
-		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_release_channel", Other: "Release Channel"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "release_match_romm", Other: "Match RomM"}, nil), Value: internal.ReleaseChannelMatchRomM},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "release_stable", Other: "Stable"}, nil), Value: internal.ReleaseChannelStable},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "release_beta", Other: "Beta"}, nil), Value: internal.ReleaseChannelBeta},
-			},
-			SelectedOption: releaseChannelToIndex(config.ReleaseChannel),
-		},
-		{
-			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_log_level", Other: "Log Level"}, nil)},
-			Options: []gaba.Option{
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "log_level_debug", Other: "Debug"}, nil), Value: internal.LogLevelDebug},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "log_level_info", Other: "Info"}, nil), Value: internal.LogLevelInfo},
-				{DisplayName: i18n.Localize(&goi18n.Message{ID: "log_level_error", Other: "Error"}, nil), Value: internal.LogLevelError},
-			},
-			SelectedOption: logLevelToIndex(config.LogLevel),
-		},
-		{
-			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_input_mapping", Other: "Input Mapping"}, nil)},
-			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
-		},
+// resetInputMapping deletes the device's saved button layout so the built-in
+// one is used again.
+//
+// The toolkit reads the mapping once at startup, so the change only takes
+// effect on the next run. The caller ends the app; saying so here is the only
+// warning the user gets.
+func (s *AdvancedSettingsScreen) resetInputMapping(output AdvancedSettingsOutput) (AdvancedSettingsOutput, error) {
+	if err := os.Remove(settings.InputMappingFileName); err != nil {
+		gaba.GetLogger().Error("Failed to delete input mapping", "error", err)
+		gaba.ConfirmationMessage(
+			localize("input_mapping_reset_failed", "Could not reset the input mapping.\nCheck the logs for more info."),
+			ContinueFooter(),
+			gaba.MessageOptions{},
+		)
+		output.Action = AdvancedSettingsActionBack
+		return output, nil
 	}
 
-	if _, err := os.Stat("input_mapping.json"); err == nil {
-		items = append(items, gaba.ItemWithOptions{
-			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_reset_input_mapping", Other: "Reset Input Mapping"}, nil)},
-			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
+	gaba.SetInputMappingBytes(nil)
+	gaba.ConfirmationMessage(
+		localize("input_mapping_reset", "Input mapping reset.\nGrout needs to restart to apply changes."),
+		[]gaba.FooterHelpItem{{ButtonName: "A", HelpText: localize("button_exit", "Exit")}},
+		gaba.MessageOptions{},
+	)
+
+	output.Action = AdvancedSettingsActionResetInputMapping
+	return output, nil
+}
+
+// advancedDestinations is where each row that navigates goes. Rows that only
+// hold a value are absent.
+var advancedDestinations = map[string]AdvancedSettingsAction{
+	"sync_artwork":        AdvancedSettingsActionSyncArtwork,
+	"rebuild_cache":       AdvancedSettingsActionRebuildCache,
+	"server_address":      AdvancedSettingsActionServerAddress,
+	"input_mapping":       AdvancedSettingsActionInputMapping,
+	"reset_input_mapping": AdvancedSettingsActionResetInputMapping,
+}
+
+func advancedRows() []settingRow {
+	rows := []settingRow{
+		clickableRow("sync_artwork", "settings_sync_artwork", "Preload Artwork"),
+		clickableRow("rebuild_cache", "settings_rebuild_cache", "Rebuild Cache"),
+		{
+			key: "download_timeout", label: localize("settings_download_timeout", "Download Timeout"),
+			options: downloadTimeoutOptions(),
+			get:     func(c settings.Config) any { return c.DownloadTimeout.Duration() },
+			set: assign(func(c *settings.Config, v time.Duration) {
+				c.DownloadTimeout = settings.DurationSeconds(v)
+			}),
+			def: 60 * time.Minute,
+		},
+		{
+			key: "api_timeout", label: localize("settings_api_timeout", "API Timeout"),
+			options: apiTimeoutOptions(),
+			get:     func(c settings.Config) any { return c.ApiTimeout.Duration() },
+			set: assign(func(c *settings.Config, v time.Duration) {
+				c.ApiTimeout = settings.DurationSeconds(v)
+			}),
+			def: 30 * time.Second,
+		},
+		clickableRow("server_address", "settings_server_address", "Server Address"),
+		{
+			key: "release_channel", label: localize("settings_release_channel", "Release Channel"),
+			options: releaseChannelOptions(),
+			get:     func(c settings.Config) any { return c.ReleaseChannel },
+			set:     assign(func(c *settings.Config, v settings.ReleaseChannel) { c.ReleaseChannel = v }),
+			def:     settings.ReleaseChannelMatchRomM,
+		},
+		{
+			key: "log_level", label: localize("settings_log_level", "Log Level"),
+			options: logLevelOptions(),
+			get:     func(c settings.Config) any { return c.LogLevel },
+			set:     assign(func(c *settings.Config, v settings.LogLevel) { c.LogLevel = v }),
+			def:     settings.LogLevelError,
+		},
+		clickableRow("input_mapping", "settings_input_mapping", "Input Mapping"),
+	}
+
+	// Only worth offering when there is a saved mapping to undo.
+	if _, err := os.Stat(settings.InputMappingFileName); err == nil {
+		rows = append(rows, clickableRow("reset_input_mapping", "settings_reset_input_mapping", "Reset Input Mapping"))
+	}
+
+	return rows
+}
+
+func downloadTimeoutOptions() []gaba.Option {
+	minutes := []int{15, 30, 45, 60, 75, 90, 105, 120}
+
+	options := make([]gaba.Option, 0, len(minutes))
+	for _, m := range minutes {
+		options = append(options, gaba.Option{
+			DisplayName: localize(fmt.Sprintf("time_%d_minutes", m), fmt.Sprintf("%d Minutes", m)),
+			Value:       time.Duration(m) * time.Minute,
 		})
 	}
-
-	return items
+	return options
 }
 
-func (s *AdvancedSettingsScreen) applySettings(config *internal.Config, items []gaba.ItemWithOptions) {
-	for _, item := range items {
-		selectedText := item.Item.Text
+func apiTimeoutOptions() []gaba.Option {
+	seconds := []int{15, 30, 45, 60, 75, 90, 120, 180, 240, 300}
 
-		switch selectedText {
-		case i18n.Localize(&goi18n.Message{ID: "settings_download_timeout", Other: "Download Timeout"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(time.Duration); ok {
-				config.DownloadTimeout = internal.DurationSeconds(val)
-			}
+	options := make([]gaba.Option, 0, len(seconds))
+	for _, s := range seconds {
+		options = append(options, gaba.Option{
+			DisplayName: localize(fmt.Sprintf("time_%d_seconds", s), fmt.Sprintf("%d Seconds", s)),
+			Value:       time.Duration(s) * time.Second,
+		})
+	}
+	return options
+}
 
-		case i18n.Localize(&goi18n.Message{ID: "settings_api_timeout", Other: "API Timeout"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(time.Duration); ok {
-				config.ApiTimeout = internal.DurationSeconds(val)
-			}
-
-		case i18n.Localize(&goi18n.Message{ID: "settings_log_level", Other: "Log Level"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(internal.LogLevel); ok {
-				config.LogLevel = val
-			}
-
-		case i18n.Localize(&goi18n.Message{ID: "settings_release_channel", Other: "Release Channel"}, nil):
-			if val, ok := item.Options[item.SelectedOption].Value.(internal.ReleaseChannel); ok {
-				config.ReleaseChannel = val
-			}
-
-		}
+func releaseChannelOptions() []gaba.Option {
+	return []gaba.Option{
+		{DisplayName: localize("release_match_romm", "Match RomM"), Value: settings.ReleaseChannelMatchRomM},
+		{DisplayName: localize("release_stable", "Stable"), Value: settings.ReleaseChannelStable},
+		{DisplayName: localize("release_beta", "Beta"), Value: settings.ReleaseChannelBeta},
 	}
 }
 
-func (s *AdvancedSettingsScreen) findDownloadTimeoutIndex(timeout time.Duration) int {
-	timeouts := []time.Duration{
-		15 * time.Minute,
-		30 * time.Minute,
-		45 * time.Minute,
-		60 * time.Minute,
-		75 * time.Minute,
-		90 * time.Minute,
-		105 * time.Minute,
-		120 * time.Minute,
+func logLevelOptions() []gaba.Option {
+	return []gaba.Option{
+		{DisplayName: localize("log_level_debug", "Debug"), Value: settings.LogLevelDebug},
+		{DisplayName: localize("log_level_info", "Info"), Value: settings.LogLevelInfo},
+		{DisplayName: localize("log_level_error", "Error"), Value: settings.LogLevelError},
 	}
-	for i, t := range timeouts {
-		if t == timeout {
-			return i
-		}
-	}
-	return 0 // Default to 15 minutes
-}
-
-func (s *AdvancedSettingsScreen) findApiTimeoutIndex(timeout time.Duration) int {
-	timeouts := []time.Duration{
-		15 * time.Second,
-		30 * time.Second,
-		45 * time.Second,
-		60 * time.Second,
-		75 * time.Second,
-		90 * time.Second,
-		120 * time.Second,
-		180 * time.Second,
-		240 * time.Second,
-		300 * time.Second,
-	}
-	for i, t := range timeouts {
-		if t == timeout {
-			return i
-		}
-	}
-	return 0 // Default to 15 seconds
 }

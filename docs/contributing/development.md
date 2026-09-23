@@ -48,13 +48,20 @@ The codebase is laid out fairly well. It attempts to keep everything grouped by 
 - `cache` contains the logic for the SQLite database that powers the local cache
 - `cfw` contains all the logic for adapting Grout to the various CFWs that are supported
 - `docs` for the user guide and other repo housekeeping, including this document!
-- `internal` the college educated utils package. App-wide / stateless utilities live here
+- `library` holds the game and platform types grout works in once data has left the RomM client. No I/O and no
+  device knowledge, so identity and display stay apart.
+- `settings` the user's configuration and the servers they connect to, plus loading and saving it
+- `catalog` orchestration that spans the cache and the RomM client, such as which platforms are mapped
+- `saves` the save sync functionality
+- `archive`, `hashing`, `files`, `imaging`, `textmatch`, `tables` standalone utilities with no grout
+  dependencies. Each is named for what it does; there is no `util` grab bag.
+- `gamelist` writes the metadata each frontend reads
+- `pspdb` PSP Game ID to title lookup, used by save sync. Slated for removal in favour of Argosy Sigil
 - `resources` the splash screen image and localization files live here, along with the go file that embeds them
 - `romm` a client library for the RomM API.
     - Why wasn't this generated with the OpenAPI spec? We tried a number of the codegen tools for OpenAPI and they
       weren't compatible with version 3 of the spec and hacking around this limitation produced frustrating to use code.
 - `scripts` contains the scripts (and metadata) associated with creating a package for each CFW
-- `sync` contains the save sync functionality
 - `ui` contains the screens that the FSM references in `app/screens.go` (transitions live in `app/transitions.go`)
 - `update` handles the in-app updater functionality, excluding the UI
 - `version` exposes the version information that is injected at build time. Having it as its own package made the script
@@ -141,7 +148,7 @@ task build:arm64 LOCAL=true   # Build using local gabagool via go.work
 task all LOCAL=true           # Build and package all platforms with local gabagool
 ```
 
-This relies on the committed `go.work` file in the repository root, which references both projects — Grout (`.`) and a sibling `../gabagool` checkout — so make sure gabagool is cloned alongside Grout.
+This relies on the committed `go.work` file in the repository root, which references both projects, Grout (`.`) and a sibling `../gabagool` checkout, so make sure gabagool is cloned alongside Grout.
 
 ### Output Structure
 
@@ -195,6 +202,50 @@ This runs `go fmt`, `go vet`, and `staticcheck` across the codebase.
 
 Requires [staticcheck](https://staticcheck.dev/) to be installed (
 `go install honnef.co/go/tools/cmd/staticcheck@latest`).
+
+### Package Layering
+
+```shell
+# Check that imports go in the right direction
+task code:archcheck
+```
+
+Grout is being reorganised into layers, and `archcheck` is what keeps that
+direction honest. Go's compiler rejects an import *cycle* but says nothing
+about *direction*, so nothing otherwise stops a device package importing the
+HTTP client -- which is how the current shape came about.
+
+The layers, each of which may only import the ones below it:
+
+| Layer      | What lives there                                    |
+|------------|-----------------------------------------------------|
+| `pkg`      | standalone utilities with no grout dependencies      |
+| `domain`   | types and rules; no I/O, no device, no network. `library` and `settings` |
+| `platform` | firmware knowledge: paths, gamelists, save layouts   |
+| `infra`    | the RomM API, the SQLite store, the settings file    |
+| `service`  | orchestration of a use case                          |
+| `ui`       | screens; may call services, not infrastructure       |
+| `cmd`      | the composition root, and the only place with state  |
+
+Two extra rules: only `ui` and `cmd` may import the gabagool UI toolkit, and
+only `cmd` may hold package-level mutable state.
+
+The codebase does not satisfy this yet. Known violations are listed in
+`tools/archcheck/allow.txt`, and the check fails both when a **new** violation
+appears and when a listed one has been **fixed but left in the file** -- so the
+list can only shrink.
+
+If `archcheck` fails on your change:
+
+- Fixing the import is almost always right. The error names the offending
+  packages and the files that import them.
+- If the violation is a deliberate intermediate step, add its line to
+  `allow.txt` with a note in your PR explaining why.
+- If it says an entry is no longer present, you fixed something. Delete that
+  line from `allow.txt`.
+
+Regenerate the whole list after a large migration with `task
+code:archcheck-update`, but read the diff -- the file should get shorter.
 
 ### Media Conversion
 

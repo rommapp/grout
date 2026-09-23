@@ -25,7 +25,7 @@ See [Directory Mappings](#directory-mappings) below.
 **Advanced** - Opens a sub-menu for advanced configuration options. See [Advanced Settings](#advanced-settings) below.
 
 **Grout Info** - View version information, build details, server connection info (including your API token name and
-expiry), and the GitHub repository QR code. Press `X` on this screen to log out — the
+expiry), and the GitHub repository QR code. Press `X` on this screen to log out. The
 confirmation screen also uses `X` to confirm (`B` cancels), so you can't log out by accident.
 
 **Check for Updates** - Check for and install Grout updates.
@@ -230,7 +230,7 @@ Note that this artwork is only displayed within Grout's interface - it does not 
 Completely rebuilds the local cache from scratch. This deletes the SQLite database and re-downloads all platform
 and game data from RomM. Use this if you're experiencing cache issues or want a clean slate.
 
-Use `Left/Right` to choose what to rebuild — **Metadata**, **Artwork**, or **All** — then press `A` to continue or
+Use `Left/Right` to choose what to rebuild (**Metadata**, **Artwork**, or **All**), then press `A` to continue or
 `B` to cancel.
 
 > [!NOTE]

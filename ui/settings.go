@@ -2,35 +2,26 @@ package ui
 
 import (
 	"errors"
+
 	"grout/cfw"
-	"grout/internal"
-	"grout/internal/artutil"
-	"grout/romm"
+	"grout/settings"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type SettingsInput struct {
-	Config                *internal.Config
+	Config                *settings.Config
 	CFW                   cfw.CFW
-	Host                  romm.Host
+	Host                  settings.Host
 	LastSelectedIndex     int
 	LastVisibleStartIndex int
 }
 
 type SettingsOutput struct {
-	Action                     SettingsAction
-	Config                     *internal.Config
-	GeneralSettingsClicked     bool
-	InfoClicked                bool
-	CollectionsSettingsClicked bool
-	DirectoryMappingsClicked   bool
-	AdvancedSettingsClicked    bool
-	CheckUpdatesClicked        bool
-	LastSelectedIndex          int
-	LastVisibleStartIndex      int
+	Action                SettingsAction
+	Config                *settings.Config
+	LastSelectedIndex     int
+	LastVisibleStartIndex int
 }
 
 type SettingsScreen struct{}
@@ -39,38 +30,42 @@ func NewSettingsScreen() *SettingsScreen {
 	return &SettingsScreen{}
 }
 
-type SettingType string
+// settingsEntry is one row of the settings menu: what it says, and where
+// choosing it goes.
+type settingsEntry struct {
+	// key identifies the row when the screen is read back. A label changes
+	// with the language; this does not.
+	key      string
+	labelID  string
+	fallback string
+	action   SettingsAction
+}
 
-const (
-	SettingGeneralSettings     SettingType = "general_settings"
-	SettingCollectionsSettings SettingType = "collections_settings"
-	SettingDirectoryMappings   SettingType = "directory_mappings"
-	SettingToolsSettings       SettingType = "tools_settings"
-	SettingAdvancedSettings    SettingType = "advanced_settings"
-	SettingInfo                SettingType = "info"
-	SettingCheckUpdates        SettingType = "check_updates"
-	SettingSaveSync            SettingType = "save_sync"
-)
-
-var settingsOrder = []SettingType{
-	SettingGeneralSettings,
-	SettingCollectionsSettings,
-	SettingDirectoryMappings,
-	SettingSaveSync,
-	SettingToolsSettings,
-	SettingAdvancedSettings,
-	SettingInfo,
-	SettingCheckUpdates,
+// settingsMenu is the menu in the order it is shown.
+var settingsMenu = []settingsEntry{
+	{"general", "settings_general", "General", SettingsActionGeneral},
+	{"collections", "settings_collections", "Collections Settings", SettingsActionCollections},
+	{"directory_mappings", "settings_edit_mappings", "Directory Mappings", SettingsActionPlatformMapping},
+	{"save_sync", "settings_save_sync", "Save Sync", SettingsActionSaveSync},
+	{"tools", "settings_tools", "Tools", SettingsActionTools},
+	{"advanced", "settings_advanced", "Advanced", SettingsActionAdvanced},
+	{"info", "settings_info", "Grout Info", SettingsActionInfo},
+	{"check_updates", "update_check_for_updates", "Check for Updates", SettingsActionCheckUpdate},
 }
 
 func (s *SettingsScreen) Draw(input SettingsInput) (SettingsOutput, error) {
-	config := input.Config
-	output := SettingsOutput{Action: SettingsActionBack, Config: config}
+	output := SettingsOutput{Action: SettingsActionBack, Config: input.Config}
 
-	items := s.buildMenuItems()
+	items := make([]gaba.ItemWithOptions, 0, len(settingsMenu))
+	for _, entry := range settingsMenu {
+		items = append(items, gaba.ItemWithOptions{
+			Item:    gaba.MenuItem{Text: localize(entry.labelID, entry.fallback), Metadata: entry.key},
+			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
+		})
+	}
 
 	result, err := gaba.OptionsList(
-		i18n.Localize(&goi18n.Message{ID: "settings_title", Other: "Settings"}, nil),
+		localize("settings_title", "Settings"),
 		gaba.OptionListSettings{
 			FooterHelpItems:      []gaba.FooterHelpItem{FooterBack(), FooterSelect()},
 			InitialSelectedIndex: input.LastSelectedIndex,
@@ -80,7 +75,6 @@ func (s *SettingsScreen) Draw(input SettingsInput) (SettingsOutput, error) {
 		},
 		items,
 	)
-
 	if err != nil {
 		if errors.Is(err, gaba.ErrCancelled) {
 			return SettingsOutput{Action: SettingsActionBack}, nil
@@ -91,133 +85,26 @@ func (s *SettingsScreen) Draw(input SettingsInput) (SettingsOutput, error) {
 	output.LastSelectedIndex = result.Selected
 	output.LastVisibleStartIndex = result.VisibleStartIndex
 
-	// Apply settings before any navigation or exit
-	s.applySettings(config, result.Items)
-
-	if result.Action == gaba.ListActionSelected {
-		selectedText := items[result.Selected].Item.Text
-
-		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_general", Other: "General"}, nil) {
-			output.GeneralSettingsClicked = true
-			output.Action = SettingsActionGeneral
-			return output, nil
-		}
-
-		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_info", Other: "Grout Info"}, nil) {
-			output.InfoClicked = true
-			output.Action = SettingsActionInfo
-			return output, nil
-		}
-
-		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_collections", Other: "Collections Settings"}, nil) {
-			output.CollectionsSettingsClicked = true
-			output.Action = SettingsActionCollections
-			return output, nil
-		}
-
-		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_edit_mappings", Other: "Directory Mappings"}, nil) {
-			output.DirectoryMappingsClicked = true
-			output.Action = SettingsActionPlatformMapping
-			return output, nil
-		}
-
-		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_tools", Other: "Tools"}, nil) {
-			output.Action = SettingsActionTools
-			return output, nil
-		}
-
-		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_advanced", Other: "Advanced"}, nil) {
-			output.AdvancedSettingsClicked = true
-			output.Action = SettingsActionAdvanced
-			return output, nil
-		}
-
-		if selectedText == i18n.Localize(&goi18n.Message{ID: "update_check_for_updates", Other: "Check for Updates"}, nil) {
-			output.CheckUpdatesClicked = true
-			output.Action = SettingsActionCheckUpdate
-			return output, nil
-		}
-
-		if selectedText == i18n.Localize(&goi18n.Message{ID: "settings_save_sync", Other: "Save Sync"}, nil) {
-			output.Action = SettingsActionSaveSync
-			return output, nil
+	if result.Action == gaba.ListActionSelected && result.Selected < len(items) {
+		if key, ok := items[result.Selected].Item.Metadata.(string); ok {
+			if action, found := settingsAction(key); found {
+				output.Action = action
+				return output, nil
+			}
 		}
 	}
 
-	output.Config = config
 	output.Action = SettingsActionSaved
 	return output, nil
 }
 
-func (s *SettingsScreen) buildMenuItems() []gaba.ItemWithOptions {
-	items := make([]gaba.ItemWithOptions, 0, len(settingsOrder))
-	for _, settingType := range settingsOrder {
-		items = append(items, s.buildMenuItem(settingType))
-	}
-	return items
-}
-
-func (s *SettingsScreen) buildMenuItem(settingType SettingType) gaba.ItemWithOptions {
-	switch settingType {
-	case SettingGeneralSettings:
-		return gaba.ItemWithOptions{
-			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_general", Other: "General"}, nil)},
-			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
-		}
-
-	case SettingCollectionsSettings:
-		return gaba.ItemWithOptions{
-			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_collections", Other: "Collections Settings"}, nil)},
-			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
-		}
-
-	case SettingDirectoryMappings:
-		return gaba.ItemWithOptions{
-			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_edit_mappings", Other: "Directory Mappings"}, nil)},
-			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
-		}
-
-	case SettingToolsSettings:
-		return gaba.ItemWithOptions{
-			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_tools", Other: "Tools"}, nil)},
-			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
-		}
-
-	case SettingAdvancedSettings:
-		return gaba.ItemWithOptions{
-			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_advanced", Other: "Advanced"}, nil)},
-			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
-		}
-
-	case SettingInfo:
-		return gaba.ItemWithOptions{
-			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_info", Other: "Grout Info"}, nil)},
-			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
-		}
-
-	case SettingCheckUpdates:
-		return gaba.ItemWithOptions{
-			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "update_check_for_updates", Other: "Check for Updates"}, nil)},
-			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
-		}
-
-	case SettingSaveSync:
-		return gaba.ItemWithOptions{
-			Item:    gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_save_sync", Other: "Save Sync"}, nil)},
-			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
-		}
-
-	default:
-		// Should never happen, but return a safe default
-		return gaba.ItemWithOptions{
-			Item:    gaba.MenuItem{Text: "Unknown Setting"},
-			Options: []gaba.Option{{Type: gaba.OptionTypeClickable}},
+func settingsAction(key string) (SettingsAction, bool) {
+	for _, entry := range settingsMenu {
+		if entry.key == key {
+			return entry.action, true
 		}
 	}
-}
-
-func (s *SettingsScreen) applySettings(_ *internal.Config, _ []gaba.ItemWithOptions) {
-	// No toggle settings remain on the settings screen
+	return SettingsActionBack, false
 }
 
 func boolToIndex(b bool) int {
@@ -225,105 +112,4 @@ func boolToIndex(b bool) int {
 		return 1
 	}
 	return 0
-}
-
-func logLevelToIndex(level internal.LogLevel) int {
-	switch level {
-	case internal.LogLevelDebug:
-		return 0
-	case internal.LogLevelInfo:
-		return 1
-	case internal.LogLevelError:
-		return 2
-	default:
-		return 1
-	}
-}
-
-func releaseChannelToIndex(releaseChannel internal.ReleaseChannel) int {
-	switch releaseChannel {
-	case internal.ReleaseChannelMatchRomM:
-		return 0
-	case internal.ReleaseChannelStable:
-		return 1
-	case internal.ReleaseChannelBeta:
-		return 2
-	default:
-		return 0
-	}
-}
-
-func boxArtToIndex(boxArt artutil.ArtKind) int {
-	switch boxArt {
-	case artutil.ArtKindDefault:
-		return 0
-	case artutil.ArtKindBox2D:
-		return 1
-	case artutil.ArtKindBox3D:
-		return 2
-	case artutil.ArtKindMixImage:
-		return 3
-	default:
-		return 0
-	}
-}
-
-func marqueeArtToIndex(boxArt artutil.ArtKind) int {
-	switch boxArt {
-	case artutil.ArtKindNone:
-		return 0
-	case artutil.ArtKindMarquee:
-		return 1
-	case artutil.ArtKindLogo:
-		return 2
-	default:
-		return 0
-	}
-}
-
-func languageToIndex(lang string) int {
-	switch lang {
-	case "en":
-		return 0
-	case "de":
-		return 1
-	case "es":
-		return 2
-	case "fr":
-		return 3
-	case "it":
-		return 4
-	case "pt":
-		return 5
-	case "ru":
-		return 6
-	case "ja":
-		return 7
-	default:
-		return 0
-	}
-}
-
-func collectionViewToIndex(view internal.CollectionView) int {
-	switch view {
-	case internal.CollectionViewPlatform:
-		return 0
-	case internal.CollectionViewUnified:
-		return 1
-	default:
-		return 0
-	}
-}
-
-func backupLimitToIndex(limit int) int {
-	switch limit {
-	case 5:
-		return 0
-	case 10:
-		return 1
-	case 15:
-		return 2
-	default:
-		return 3 // No Limit (0)
-	}
 }

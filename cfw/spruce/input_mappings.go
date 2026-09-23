@@ -3,10 +3,9 @@ package spruce
 import (
 	"embed"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
-
-	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
 
 const DeviceType = "SPRUCE_DEVICE"
@@ -27,7 +26,7 @@ const (
 
 // DetectDevice detects the device type when running on Spruce by checking environment variables.
 func DetectDevice() Device {
-	logger := gaba.GetLogger()
+	logger := slog.Default()
 	logger.Debug("Detecting Spruce device type", "env", DeviceType)
 
 	switch os.Getenv(DeviceType) {

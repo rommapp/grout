@@ -2,8 +2,7 @@ package update
 
 import (
 	"grout/cfw"
-	"grout/internal"
-	"grout/romm"
+	"grout/settings"
 	"sync"
 	"sync/atomic"
 
@@ -14,16 +13,16 @@ const updateIcon = "\U000F06B0"
 
 type AutoUpdate struct {
 	cfwType         cfw.CFW
-	host            *romm.Host
+	host            *settings.Host
 	icon            *gaba.DynamicStatusBarIcon
 	running         atomic.Bool
 	updateAvailable atomic.Bool
 	mu              sync.Mutex
-	releaseChannel  internal.ReleaseChannel
+	releaseChannel  settings.ReleaseChannel
 	updateInfo      atomic.Pointer[Info]
 }
 
-func NewAutoUpdate(c cfw.CFW, r internal.ReleaseChannel, host *romm.Host) *AutoUpdate {
+func NewAutoUpdate(c cfw.CFW, r settings.ReleaseChannel, host *settings.Host) *AutoUpdate {
 	return &AutoUpdate{
 		cfwType:        c,
 		releaseChannel: r,
@@ -62,7 +61,7 @@ func (a *AutoUpdate) UpdateInfo() *Info {
 
 // Recheck updates the release channel and re-runs the update check.
 // This should be called when the user changes the release channel in settings.
-func (a *AutoUpdate) Recheck(releaseChannel internal.ReleaseChannel) {
+func (a *AutoUpdate) Recheck(releaseChannel settings.ReleaseChannel) {
 	if a.running.Load() {
 		return // Already running, skip
 	}

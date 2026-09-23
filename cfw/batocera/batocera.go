@@ -2,7 +2,7 @@ package batocera
 
 import (
 	"embed"
-	"grout/internal/jsonutil"
+	"grout/tables"
 	"os"
 	"path/filepath"
 )
@@ -11,7 +11,7 @@ import (
 var embeddedFiles embed.FS
 
 var (
-	Platforms = jsonutil.MustLoadJSONMap[string, []string](embeddedFiles, "data/platforms.json")
+	Platforms = tables.MustLoad[string, []string](embeddedFiles, "data/platforms.json")
 )
 
 func GetBasePath() string {

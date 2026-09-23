@@ -2,13 +2,12 @@ package cache
 
 import (
 	"fmt"
-	"grout/internal/artutil"
-	"grout/internal/fileutil"
-	"grout/internal/imageutil"
+	"grout/files"
+	"grout/imaging"
+	"grout/library"
 	"grout/romm"
+	"grout/settings"
 	"image/png"
-	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -21,7 +20,7 @@ func GetArtworkCachePath(platformFSSlug string, romID int) string {
 }
 
 func ArtworkExists(platformFSSlug string, romID int) bool {
-	return fileutil.FileExists(GetArtworkCachePath(platformFSSlug, romID))
+	return files.FileExists(GetArtworkCachePath(platformFSSlug, romID))
 }
 
 func EnsureArtworkCacheDir(platformFSSlug string) error {
@@ -116,13 +115,11 @@ func HasArtworkURL(rom romm.Rom) bool {
 	return rom.PathCoverSmall != "" || rom.PathCoverLarge != "" || rom.URLCover != ""
 }
 
-func GetArtworkCoverPath(rom romm.Rom, artkind artutil.ArtKind, host romm.Host) string {
+func GetArtworkCoverPath(rom romm.Rom, artkind library.ArtKind, host settings.Host) string {
 	return rom.GetArtworkURL(artkind, host)
 }
 
-func DownloadAndCacheArtwork(rom romm.Rom, kind artutil.ArtKind, host romm.Host) error {
-	logger := gaba.GetLogger()
-
+func DownloadAndCacheArtwork(rom romm.Rom, kind library.ArtKind, host settings.Host) error {
 	artURL := GetArtworkCoverPath(rom, kind, host)
 	if artURL == "" {
 		return nil // No artwork available
@@ -132,58 +129,12 @@ func DownloadAndCacheArtwork(rom romm.Rom, kind artutil.ArtKind, host romm.Host)
 		return fmt.Errorf("failed to create cache directory: %w", err)
 	}
 
-	cachePath := GetArtworkCachePath(rom.PlatformFSSlug, rom.ID)
-
-	req, err := http.NewRequest("GET", artURL, nil)
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Authorization", host.AuthHeader())
-
-	client := &http.Client{Timeout: romm.DefaultClientTimeout}
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to download artwork: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("bad status: %s", resp.Status)
-	}
-
-	outFile, err := os.Create(cachePath)
-	if err != nil {
-		return fmt.Errorf("failed to create cache file: %w", err)
-	}
-	defer outFile.Close()
-
-	if _, err = io.Copy(outFile, resp.Body); err != nil {
-		os.Remove(cachePath)
-		return fmt.Errorf("failed to write cache file: %w", err)
-	}
-	outFile.Close()
-
-	if err := imageutil.ProcessArtImage(cachePath); err != nil {
-		logger.Warn("Failed to process artwork image", "path", cachePath, "error", err)
-		os.Remove(cachePath)
-		return fmt.Errorf("failed to process artwork: %w", err)
-	}
-
-	file, err := os.Open(cachePath)
-	if err != nil {
-		return fmt.Errorf("failed to open processed artwork: %w", err)
-	}
-	_, err = png.DecodeConfig(file)
-	file.Close()
-	if err != nil {
-		os.Remove(cachePath)
-		return fmt.Errorf("processed artwork is not a valid PNG: %w", err)
-	}
-
-	return nil
+	fetcher := romm.NewArtFetcher(host, romm.DefaultClientTimeout)
+	fetcher.Process = imaging.ProcessArtImage
+	return fetcher.Save(artURL, GetArtworkCachePath(rom.PlatformFSSlug, rom.ID))
 }
 
-func SyncArtworkInBackground(artkind artutil.ArtKind, host romm.Host, games []romm.Rom) {
+func SyncArtworkInBackground(artkind library.ArtKind, host settings.Host, games []romm.Rom) {
 	logger := gaba.GetLogger()
 
 	missing := GetMissingArtwork(games)
@@ -196,4 +147,24 @@ func SyncArtworkInBackground(artkind artutil.ArtKind, host romm.Host, games []ro
 			logger.Debug("Failed to download artwork", "rom", rom.Name, "error", err)
 		}
 	}
+}
+
+// ArtworkPath is a local file holding a rom's cover, fetching and caching it
+// on first sight. An empty result means there is none to show.
+//
+// Going through DownloadAndCacheArtwork matters: it saves through the art
+// fetcher, which deletes the file when it turns out not to be an image. A
+// server returning an error page would otherwise leave that page in the cache,
+// where every later look finds it and never tries again.
+func ArtworkPath(rom romm.Rom, kind library.ArtKind, host settings.Host) string {
+	if !ArtworkExists(rom.PlatformFSSlug, rom.ID) {
+		if err := DownloadAndCacheArtwork(rom, kind, host); err != nil {
+			gaba.GetLogger().Warn("Failed to fetch cover art", "game", rom.Name, "error", err)
+			return ""
+		}
+		if !ArtworkExists(rom.PlatformFSSlug, rom.ID) {
+			return ""
+		}
+	}
+	return GetArtworkCachePath(rom.PlatformFSSlug, rom.ID)
 }

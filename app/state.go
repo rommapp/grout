@@ -3,8 +3,8 @@ package main
 import (
 	"grout/cache"
 	"grout/cfw"
-	"grout/internal"
 	"grout/romm"
+	"grout/settings"
 	"grout/update"
 	gosync "sync"
 	"sync/atomic"
@@ -13,8 +13,8 @@ import (
 var currentAppState *AppState
 
 type AppState struct {
-	Config    *internal.Config
-	Host      romm.Host
+	Config    *settings.Config
+	Host      settings.Host
 	CFW       cfw.CFW
 	Platforms []romm.Platform
 

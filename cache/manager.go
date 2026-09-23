@@ -2,8 +2,9 @@ package cache
 
 import (
 	"database/sql"
-	"grout/internal/fileutil"
+	"grout/files"
 	"grout/romm"
+	"grout/settings"
 	"os"
 	"path/filepath"
 	"sync"
@@ -18,8 +19,8 @@ type Manager struct {
 	db          *sql.DB
 	dbPath      string
 	mu          sync.RWMutex
-	host        romm.Host
-	config      Config
+	host        settings.Host
+	config      settings.Config
 	initialized bool
 
 	stats *Stats
@@ -63,12 +64,12 @@ func GetCacheManager() *Manager {
 	return cacheManager
 }
 
-func InitCacheManager(host romm.Host, config Config) error {
+func InitCacheManager(host settings.Host, config settings.Config) error {
 	cacheManagerMu.Lock()
 	defer cacheManagerMu.Unlock()
 
 	if cacheManager != nil {
-		// Already initialized — just update the host
+		// Already initialized: just update the host
 		cacheManager.mu.Lock()
 		cacheManager.host = host
 		cacheManager.config = config
@@ -81,7 +82,7 @@ func InitCacheManager(host romm.Host, config Config) error {
 	return cacheManagerErr
 }
 
-func newCacheManager(host romm.Host, config Config) (*Manager, error) {
+func newCacheManager(host settings.Host, config settings.Config) (*Manager, error) {
 	logger := gaba.GetLogger()
 
 	dbPath := getCacheDBPath()
@@ -256,7 +257,7 @@ func (cm *Manager) ClearArtwork() {
 	logger := gaba.GetLogger()
 
 	artworkDir := GetArtworkCacheDir()
-	if fileutil.FileExists(artworkDir) {
+	if files.FileExists(artworkDir) {
 		os.RemoveAll(artworkDir)
 	}
 
@@ -501,7 +502,7 @@ func cleanupLegacyCache() {
 	}
 
 	gamesDir := filepath.Join(wd, ".cache", "games")
-	if fileutil.FileExists(gamesDir) {
+	if files.FileExists(gamesDir) {
 		if err := os.RemoveAll(gamesDir); err != nil {
 			logger.Debug("Failed to remove legacy games cache", "error", err)
 		} else {
@@ -510,7 +511,7 @@ func cleanupLegacyCache() {
 	}
 
 	romsDir := filepath.Join(wd, ".cache", "roms")
-	if fileutil.FileExists(romsDir) {
+	if files.FileExists(romsDir) {
 		if err := os.RemoveAll(romsDir); err != nil {
 			logger.Debug("Failed to remove legacy roms cache", "error", err)
 		} else {

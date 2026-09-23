@@ -11,13 +11,12 @@ import (
 
 const GameDBPSPURL = "https://github.com/niemasd/GameDB-PSP/releases/latest/download/PSP.titles.json"
 
-// vendoredPath is relative to the project root. The generator is invoked by
-// go generate from internal/pspdb/, so we go up two levels to reach the root.
-const vendoredPath = "../../vendored/pspdb/PSP.titles.json"
+// vendoredPath is relative to the working directory go generate sets, which is
+// pspdb/, so one level up reaches the project root.
+const vendoredPath = "../vendored/pspdb/PSP.titles.json"
 
-// outputPath is relative to the working directory set by go generate,
-// which is the source directory of the package containing the directive
-// (i.e. internal/pspdb/).
+// outputPath is relative to the working directory go generate sets, which is
+// the directory holding the directive.
 const outputPath = "pspdb_generated.go"
 
 func main() {

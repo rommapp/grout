@@ -1,19 +1,20 @@
 package ui
 
 import (
-	"grout/cache"
-	"grout/internal"
-	"grout/romm"
+	"fmt"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 	uatomic "go.uber.org/atomic"
+
+	"grout/cache"
+	"grout/catalog"
+	"grout/romm"
+	"grout/settings"
 )
 
 type RebuildCacheInput struct {
-	Host      romm.Host
-	Config    *internal.Config
+	Host      settings.Host
+	Config    *settings.Config
 	CacheSync *cache.BackgroundSync
 }
 
@@ -29,12 +30,6 @@ const (
 	RebuildCacheActionError
 )
 
-const (
-	clearOptionMetadata = iota
-	clearOptionArtwork
-	clearOptionBoth
-)
-
 type RebuildCacheScreen struct{}
 
 func NewRebuildCacheScreen() *RebuildCacheScreen {
@@ -42,86 +37,92 @@ func NewRebuildCacheScreen() *RebuildCacheScreen {
 }
 
 func (s *RebuildCacheScreen) Draw(input RebuildCacheInput) (RebuildCacheOutput, error) {
-	logger := gaba.GetLogger()
 	output := RebuildCacheOutput{Action: RebuildCacheActionComplete}
 
-	result, err := gaba.SelectionMessage(
-		i18n.Localize(&goi18n.Message{ID: "cache_clear_prompt", Other: "What would you like to clear?"}, nil),
-		[]gaba.SelectionOption{
-			{DisplayName: i18n.Localize(&goi18n.Message{ID: "cache_clear_metadata", Other: "Metadata"}, nil), Value: clearOptionMetadata},
-			{DisplayName: i18n.Localize(&goi18n.Message{ID: "cache_clear_artwork", Other: "Artwork"}, nil), Value: clearOptionArtwork},
-			{DisplayName: i18n.Localize(&goi18n.Message{ID: "cache_clear_both", Other: "All"}, nil), Value: clearOptionBoth},
-		},
-		[]gaba.FooterHelpItem{
-			FooterContinue(),
-			FooterCancel(),
-		},
-		gaba.SelectionMessageSettings{},
-	)
-
-	if err != nil {
+	scope, chosen := askCacheScope()
+	if !chosen {
 		return output, nil
 	}
 
-	selected := result.SelectedValue.(int)
-
+	// The background sync writes to the same tables, so it has to stand down
+	// for the duration and be told the cache is current afterwards.
 	if input.CacheSync != nil {
 		input.CacheSync.Stop()
+		defer input.CacheSync.SetSynced()
 	}
 
-	cm := cache.GetCacheManager()
-	if cm == nil {
-		if err := cache.InitCacheManager(input.Host, input.Config); err != nil {
-			logger.Error("Failed to reinitialize cache manager", "error", err)
-			return RebuildCacheOutput{Action: RebuildCacheActionError}, err
-		}
-		cm = cache.GetCacheManager()
+	if err := catalog.ClearCache(input.Host, *input.Config, scope); err != nil {
+		return reportRebuildFailure(err)
 	}
 
-	switch selected {
-	case clearOptionMetadata:
-		if err := cm.ClearMetadata(); err != nil {
-			logger.Error("Failed to clear metadata cache", "error", err)
-		}
-	case clearOptionArtwork:
-		cm.ClearArtwork()
-	case clearOptionBoth:
-		if err := cm.ClearMetadata(); err != nil {
-			logger.Error("Failed to clear metadata cache", "error", err)
-		}
-		cm.ClearArtwork()
+	if !scope.ClearsMetadata() {
+		return output, nil
 	}
 
-	// Only rebuild metadata cache if metadata was cleared
-	if selected == clearOptionMetadata || selected == clearOptionBoth {
-		platforms, err := internal.GetMappedPlatforms(input.Host, input.Config.DirectoryMappings, input.Config.ApiTimeout.Duration())
-		if err != nil {
-			logger.Error("Failed to fetch platforms", "error", err)
-			return RebuildCacheOutput{Action: RebuildCacheActionError}, err
-		}
-
-		platforms = internal.SortPlatformsByOrder(platforms, input.Config.PlatformOrder)
-
-		progress := uatomic.NewFloat64(0)
-		gaba.ProcessMessage(
-			i18n.Localize(&goi18n.Message{ID: "cache_building", Other: "Building cache..."}, nil),
-			gaba.ProcessMessageOptions{
-				ShowThemeBackground: true,
-				ShowProgressBar:     true,
-				Progress:            progress,
-			},
-			func() (any, error) {
-				_, err := cm.PopulateFullCacheWithProgress(platforms, progress)
-				return nil, err
-			},
-		)
-
-		output.UpdatedPlatforms = platforms
+	platforms, err := rebuildMetadataWithProgress(input)
+	if err != nil {
+		return reportRebuildFailure(err)
 	}
 
-	if input.CacheSync != nil {
-		input.CacheSync.SetSynced()
-	}
-
+	output.UpdatedPlatforms = platforms
 	return output, nil
+}
+
+// askCacheScope asks what to clear, reporting false when the user backs out.
+//
+// The choice is carried as a catalog.CacheScope rather than the selected
+// label, so translating the menu cannot change what the screen does.
+func askCacheScope() (catalog.CacheScope, bool) {
+	result, err := gaba.SelectionMessage(
+		localize("cache_clear_prompt", "What would you like to clear?"),
+		[]gaba.SelectionOption{
+			{DisplayName: localize("cache_clear_metadata", "Metadata"), Value: catalog.ScopeMetadata},
+			{DisplayName: localize("cache_clear_artwork", "Artwork"), Value: catalog.ScopeArtwork},
+			{DisplayName: localize("cache_clear_both", "All"), Value: catalog.ScopeAll},
+		},
+		[]gaba.FooterHelpItem{FooterContinue(), FooterCancel()},
+		gaba.SelectionMessageSettings{},
+	)
+	if err != nil {
+		return 0, false
+	}
+
+	scope, ok := result.SelectedValue.(catalog.CacheScope)
+	return scope, ok
+}
+
+func rebuildMetadataWithProgress(input RebuildCacheInput) ([]romm.Platform, error) {
+	progress := uatomic.NewFloat64(0)
+
+	var platforms []romm.Platform
+	_, err := gaba.ProcessMessage(
+		localize("cache_building", "Building cache..."),
+		gaba.ProcessMessageOptions{
+			ShowThemeBackground: true,
+			ShowProgressBar:     true,
+			Progress:            progress,
+		},
+		func() (any, error) {
+			var err error
+			platforms, err = catalog.RebuildMetadata(input.Host, *input.Config, progress)
+			return nil, err
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return platforms, nil
+}
+
+// reportRebuildFailure tells the user, rather than returning to a menu that
+// looks as though the rebuild worked.
+func reportRebuildFailure(err error) (RebuildCacheOutput, error) {
+	gaba.GetLogger().Error("Cache rebuild failed", "error", err)
+	gaba.ConfirmationMessage(
+		fmt.Sprintf("%s: %v",
+			localize("cache_rebuild_failed", "Cache rebuild failed"), err),
+		ContinueFooter(),
+		gaba.MessageOptions{},
+	)
+	return RebuildCacheOutput{Action: RebuildCacheActionError}, err
 }

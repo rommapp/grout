@@ -2,7 +2,7 @@ package trimui
 
 import (
 	"embed"
-	"grout/internal/jsonutil"
+	"grout/tables"
 	"os"
 	"path/filepath"
 )
@@ -11,9 +11,9 @@ import (
 var embeddedFiles embed.FS
 
 var (
-	Platforms       = jsonutil.MustLoadJSONMap[string, []string](embeddedFiles, "data/platforms.json")
-	ArtDirectories  = jsonutil.MustLoadJSONMap[string, string](embeddedFiles, "data/art_directories.json")
-	SaveDirectories = jsonutil.MustLoadJSONMap[string, []string](embeddedFiles, "data/save_directories.json")
+	Platforms       = tables.MustLoad[string, []string](embeddedFiles, "data/platforms.json")
+	ArtDirectories  = tables.MustLoad[string, string](embeddedFiles, "data/art_directories.json")
+	SaveDirectories = tables.MustLoad[string, []string](embeddedFiles, "data/save_directories.json")
 )
 
 func GetBasePath() string {

@@ -4,7 +4,7 @@ import (
 	"embed"
 	"fmt"
 	"grout/cfw"
-	"grout/internal/jsonutil"
+	"grout/tables"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,12 +13,12 @@ import (
 //go:embed data
 var embeddedFiles embed.FS
 
-func mustLoadJSONMap[K comparable, V any](path string) map[K]V {
-	return jsonutil.MustLoadJSONMap[K, V](embeddedFiles, path)
+func mustLoad[K comparable, V any](path string) map[K]V {
+	return tables.MustLoad[K, V](embeddedFiles, path)
 }
 
-var LibretroCoreToBIOS = mustLoadJSONMap[string, CoreBIOS]("data/core_requirements.json")
-var PlatformToLibretroCores = mustLoadJSONMap[string, []string]("data/platform_cores.json")
+var LibretroCoreToBIOS = mustLoad[string, CoreBIOS]("data/core_requirements.json")
+var PlatformToLibretroCores = mustLoad[string, []string]("data/platform_cores.json")
 
 // File represents a single BIOS/firmware file requirement
 type File struct {

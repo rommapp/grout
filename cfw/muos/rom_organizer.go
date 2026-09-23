@@ -2,17 +2,16 @@ package muos
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
-
-	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
 
 // OrganizeMultiFileRom handles multi-file ROM extraction and M3U file organization for muOS.
 // It renames the extract directory to have an underscore prefix and updates M3U paths accordingly.
 func OrganizeMultiFileRom(extractDir, romDirectory, gameName string) error {
-	logger := gaba.GetLogger()
+	logger := slog.Default()
 
 	var m3uFile string
 	entries, err := os.ReadDir(extractDir)

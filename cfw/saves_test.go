@@ -10,10 +10,10 @@ import "testing"
 // (issue #245).
 func TestSaveBasename(t *testing.T) {
 	cases := []struct {
-		name        string
-		keepRomExt  bool
-		romFile     string
-		want        string
+		name       string
+		keepRomExt bool
+		romFile    string
+		want       string
 	}{
 		{"keep retains full ROM filename", true, "Donkey Kong Country (USA) (Rev 2).sfc", "Donkey Kong Country (USA) (Rev 2).sfc"},
 		{"keep with short name", true, "Mario.gb", "Mario.gb"},

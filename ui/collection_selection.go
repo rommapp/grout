@@ -2,22 +2,17 @@ package ui
 
 import (
 	"errors"
-	"fmt"
-	"grout/cache"
-	"grout/internal"
+	"grout/catalog"
 	"grout/romm"
-	"slices"
-	"strings"
+	"grout/settings"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	buttons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
-	"github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/i18n"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type CollectionSelectionInput struct {
-	Config               *internal.Config
-	Host                 romm.Host
+	Config               *settings.Config
+	Host                 settings.Host
 	SearchFilter         string
 	LastSelectedIndex    int
 	LastSelectedPosition int
@@ -45,63 +40,11 @@ func (s *CollectionSelectionScreen) Draw(input CollectionSelectionInput) (Collec
 		LastSelectedPosition: input.LastSelectedPosition,
 	}
 
-	// Try to get collections from cache first
-	var collections []romm.Collection
-	cm := cache.GetCacheManager()
-
-	if cm != nil && cm.HasCollections() {
-		// Load from cache, filtering by enabled types
-		if input.Config.ShowRegularCollections {
-			if regular, err := cm.GetCollectionsByType("regular"); err == nil {
-				collections = append(collections, regular...)
-			}
-		}
-		if input.Config.ShowSmartCollections {
-			if smart, err := cm.GetCollectionsByType("smart"); err == nil {
-				collections = append(collections, smart...)
-			}
-		}
-		if input.Config.ShowVirtualCollections {
-			if virtual, err := cm.GetCollectionsByType("virtual"); err == nil {
-				collections = append(collections, virtual...)
-			}
-		}
-
-		// Filter collections to only show those with games from mapped platforms
-		var mappedSlugs []string
-		for slug := range input.Config.DirectoryMappings {
-			mappedSlugs = append(mappedSlugs, slug)
-		}
-		cachedGameIDs := cm.GetCachedGameIDsForPlatforms(mappedSlugs)
-		if len(cachedGameIDs) > 0 {
-			filteredCollections := make([]romm.Collection, 0, len(collections))
-			for _, coll := range collections {
-				// Check if any of the collection's ROM IDs are in cached games
-				for _, romID := range coll.ROMIDs {
-					if cachedGameIDs[romID] {
-						filteredCollections = append(filteredCollections, coll)
-						break
-					}
-				}
-			}
-			collections = filteredCollections
-		}
-	}
-
-	// Sort collections alphabetically
-	slices.SortFunc(collections, func(a, b romm.Collection) int {
-		return strings.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
-	})
+	collections := catalog.VisibleCollections(*input.Config)
 
 	displayCollections := collections
 	if input.SearchFilter != "" {
-		filteredCollections := make([]romm.Collection, 0)
-		for _, collection := range collections {
-			if strings.Contains(strings.ToLower(collection.Name), strings.ToLower(input.SearchFilter)) {
-				filteredCollections = append(filteredCollections, collection)
-			}
-		}
-		displayCollections = filteredCollections
+		displayCollections = catalog.FilterCollectionsByName(collections, input.SearchFilter)
 	}
 
 	if len(displayCollections) == 0 {
@@ -110,23 +53,19 @@ func (s *CollectionSelectionScreen) Draw(input CollectionSelectionInput) (Collec
 
 	var menuItems []gaba.MenuItem
 	for _, collection := range displayCollections {
-		menuItems = append(menuItems, gaba.MenuItem{
-			Text:     collection.Name,
-			Selected: false,
-			Focused:  false,
-			Metadata: collection,
-		})
+		menuItems = append(menuItems, gaba.MenuItem{Text: collection.Name, Metadata: collection})
 	}
 
 	footerItems := []gaba.FooterHelpItem{
-		{ButtonName: "B", HelpText: i18n.Localize(&goi18n.Message{ID: "button_back", Other: "Back"}, nil)},
-		{ButtonName: "X", HelpText: i18n.Localize(&goi18n.Message{ID: "button_search", Other: "Search"}, nil)},
-		{ButtonName: "A", HelpText: i18n.Localize(&goi18n.Message{ID: "button_select", Other: "Select"}, nil)},
+		FooterBack(),
+		{ButtonName: "X", HelpText: localize("button_search", "Search")},
+		FooterSelect(),
 	}
 
-	title := "Collections"
+	title := localize("collections_title", "Collections")
 	if input.SearchFilter != "" {
-		title = fmt.Sprintf("[Search: \"%s\"] | Collections", input.SearchFilter)
+		title = localizeWith("games_list_search_prefix", `[Search: "{{.Query}}"]`,
+			map[string]any{"Query": input.SearchFilter}) + " " + title
 	}
 
 	options := gaba.DefaultListOptions(title, menuItems)

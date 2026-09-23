@@ -152,7 +152,7 @@ func boolToInt(b bool) int {
 func parseMaxPlayerCount(game romm.Rom) int {
 	pc := strings.TrimSpace(game.ScreenScraperMetadata.PlayerCount)
 	if pc != "" {
-		// Handle range like "1-4" — take the last number
+		// Handle range like "1-4": take the last number
 		if idx := strings.LastIndex(pc, "-"); idx >= 0 {
 			if n, err := strconv.Atoi(strings.TrimSpace(pc[idx+1:])); err == nil && n > 0 {
 				return n
@@ -336,8 +336,8 @@ func (cm *Manager) SavePlatformGames(platformID int, games []romm.Rom) error {
 		}
 
 		// Re-index this game's on-disk basenames (issue #242) and metadata junctions.
-		// Both use a per-game replace so an incremental refresh — which hands us only the
-		// games changed upstream — rebuilds just those games' rows and leaves every other
+		// Both use a per-game replace so an incremental refresh (which hands us only the
+		// games changed upstream) rebuilds just those games' rows and leaves every other
 		// game's rows intact. A per-platform wipe here would delete the filter metadata for
 		// games not in the incremental set, emptying the Filters screen.
 		if _, err := tx.Exec("DELETE FROM game_basenames WHERE game_id = ?", game.ID); err != nil {
@@ -1137,7 +1137,7 @@ func (cm *Manager) GetDistinctTags(platformID int) ([]string, error) {
 
 // GetRomByFSLookup resolves a local file (a downloaded ROM or an emulator save) back to its
 // RomM ROM. localBasename is the on-disk filename without extension; it is matched against
-// game_basenames — every basename a game can occupy on disk, one row per file — so a save or
+// game_basenames holds every basename a game can occupy on disk, one row per file, so a save or
 // ROM for ANY of a multi-file game's alternative versions resolves, not just Files[0] (#242).
 func (cm *Manager) GetRomByFSLookup(fsSlug, localBasename string) (romm.Rom, error) {
 	if cm == nil || !cm.initialized {
@@ -1181,7 +1181,7 @@ func (cm *Manager) GetRomByFSLookup(fsSlug, localBasename string) (romm.Rom, err
 // every game basename on the platform (see pickLenientMatch). Caller must hold cm.mu (read
 // lock). Returns the matched ROM and true on success.
 func (cm *Manager) lenientFSLookup(fsSlug, localBasename string) (romm.Rom, bool) {
-	// One lightweight row per (game, basename) — not the data_json blob; the matched game's
+	// One lightweight row per (game, basename), not the data_json blob; the matched game's
 	// JSON is point-queried afterward. Avoids loading hundreds of large blobs to discard.
 	rows, err := cm.db.Query(`
 		SELECT b.game_id, b.basename, g.name FROM game_basenames b
