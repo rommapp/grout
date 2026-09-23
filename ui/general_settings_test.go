@@ -24,6 +24,7 @@ func fullConfig() settings.Config {
 		DownloadSplashArt:            library.ArtKindTitle,
 		Language:                     "ja",
 		SwapFaceButtons:              true,
+		GamelistOmitsRegion:          true,
 	}
 	config.AdditionalDownloads.Thumbnail = library.ArtKindBox3D
 	config.AdditionalDownloads.Marquee = library.ArtKindLogo
@@ -61,6 +62,7 @@ func settingsDiff(before, after settings.Config) string {
 	compare("Fanart", before.AdditionalDownloads.Fanart, after.AdditionalDownloads.Fanart)
 	compare("Language", before.Language, after.Language)
 	compare("SwapFaceButtons", before.SwapFaceButtons, after.SwapFaceButtons)
+	compare("GamelistOmitsRegion", before.GamelistOmitsRegion, after.GamelistOmitsRegion)
 
 	return strings.Join(diffs, "; ")
 }

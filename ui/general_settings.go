@@ -75,6 +75,10 @@ func generalSettings(config settings.Config) []settingRow {
 	previewArt := &atomic.Bool{}
 	emulationStationArt := &atomic.Bool{}
 
+	// Only EmulationStation reads a gamelist, whether or not art is wanted.
+	emulationStation := &atomic.Bool{}
+	emulationStation.Store(activeCFW.IsBasedOnEmulationStation())
+
 	refresh := func(wanted bool) {
 		downloadingArt.Store(wanted)
 		previewArt.Store(wanted && activeCFW == cfw.MuOS)
@@ -210,6 +214,16 @@ func generalSettings(config settings.Config) []settingRow {
 			get:     func(c settings.Config) any { return c.AdditionalDownloads.Fanart },
 			set:     assign(func(c *settings.Config, v bool) { c.AdditionalDownloads.Fanart = v }),
 			visible: emulationStationArt,
+		},
+		{
+			key: "gamelist_region", label: localize("settings_gamelist_region", "Region in Gamelist Names"),
+			options: []gaba.Option{
+				{DisplayName: localize("settings_gamelist_region_include", "Include"), Value: false},
+				{DisplayName: localize("settings_gamelist_region_omit", "Omit"), Value: true},
+			},
+			get:     func(c settings.Config) any { return c.GamelistOmitsRegion },
+			set:     assign(func(c *settings.Config, v bool) { c.GamelistOmitsRegion = v }),
+			visible: emulationStation,
 		},
 		{
 			key: "language", label: localize("settings_language", "Language"),

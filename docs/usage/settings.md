@@ -88,6 +88,13 @@ options:
 - **Download Game Box back** - True / False
 - **Download Game Fan Art** - True / False
 
+### Region in Gamelist Names
+
+_EmulationStation-based firmwares only._ Whether the name written to the gamelist keeps the game's region:
+
+- **Include** - `Super Mario World (USA)`
+- **Omit** - `Super Mario World`
+
 ### Archived Downloads
 
 Controls what happens when downloading archived ROM files (zip and 7z):

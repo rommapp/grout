@@ -215,8 +215,13 @@ func BuildPlan(config settings.Config, host settings.Host, platform romm.Platfor
 			plan.Art = append(plan.Art, art...)
 		}
 
+		regions := game.Regions
+		if config.GamelistOmitsRegion {
+			regions = nil
+		}
+
 		plan.Entries = append(plan.Entries, gamelist.RomGameEntry{
-			Game:         game.ToGame(textmatch.PrepareRomName(game.Name, game.Regions), rom.Location, artPaths),
+			Game:         game.ToGame(textmatch.PrepareRomName(game.Name, regions), rom.Location, artPaths),
 			Platform:     gamePlatform.ToPlatform(),
 			RomDirectory: romDirectory,
 		})

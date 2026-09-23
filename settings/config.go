@@ -76,6 +76,9 @@ type Config struct {
 	DownloadArtScreenshotPreview bool                        `json:"download_art_screenshot_preview,omitempty"`
 	DownloadSplashArt            library.ArtKind             `json:"download_splash_art,omitempty"`
 	AdditionalDownloads          AdditionalDownloads         `json:"additional_downloads,omitempty"`
+	// GamelistOmitsRegion leaves the region out of the name written to an
+	// EmulationStation gamelist. Off by default, so false is the zero value.
+	GamelistOmitsRegion bool `json:"gamelist_omits_region,omitempty"`
 
 	SwapFaceButtons       bool              `json:"swap_face_buttons,omitempty"`
 	PlatformOrder         []string          `json:"platform_order,omitempty"`
@@ -110,6 +113,7 @@ func (c Config) ToLoggable() any {
 		"smart_collections":       c.ShowSmartCollections,
 		"virtual_collections":     c.ShowVirtualCollections,
 		"downloaded_games_action": c.DownloadedGames,
+		"gamelist_omits_region":   c.GamelistOmitsRegion,
 		"log_level":               c.LogLevel,
 	}
 }

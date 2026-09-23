@@ -245,3 +245,30 @@ func TestBuildPlan_ArtLocationsAreDistinct(t *testing.T) {
 		seen[item.Location] = true
 	}
 }
+
+// The gamelist carries the region by default, and leaves it out when asked.
+func TestBuildPlan_GamelistNameRegion(t *testing.T) {
+	games := []romm.Rom{{
+		ID: 42, Name: "Test Game (USA)", FsName: "test.nds", FsNameNoExt: "test",
+		Files:   []romm.RomFile{{ID: 100, FileName: "test.nds"}},
+		Regions: []string{"USA"},
+	}}
+
+	for _, tc := range []struct {
+		omit bool
+		want string
+	}{
+		{omit: false, want: "Test Game (USA)"},
+		{omit: true, want: "Test Game"},
+	} {
+		config := settings.Config{GamelistOmitsRegion: tc.omit}
+		plan, _ := BuildPlan(config, testHost(), testPlatform(), games, 0)
+
+		if len(plan.Entries) != 1 {
+			t.Fatalf("omit=%v: expected 1 entry, got %d", tc.omit, len(plan.Entries))
+		}
+		if got := plan.Entries[0].Game.DisplayName; got != tc.want {
+			t.Errorf("omit=%v: gamelist name = %q, want %q", tc.omit, got, tc.want)
+		}
+	}
+}
