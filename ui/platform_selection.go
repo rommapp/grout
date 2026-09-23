@@ -91,6 +91,18 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (PlatformSe
 		}
 	}
 
+	// R1 downloads whatever of the focused platform is not on the device yet.
+	// Which games that is only gets worked out once it is pressed, so the list
+	// costs no more to draw.
+	downloadMissing := !settings.IsKidModeEnabled()
+	if downloadMissing {
+		footerItems = append(footerItems, gaba.FooterHelpItem{
+			ButtonName: "R1",
+			HelpText:   localize("button_download_missing", "Download Missing"),
+			Group:      gaba.FooterGroupRight,
+		})
+	}
+
 	options := gaba.DefaultListOptions("Grout", menuItems)
 	if !settings.IsKidModeEnabled() {
 		options.ActionButton = buttons.VirtualButtonX
@@ -99,6 +111,9 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (PlatformSe
 		}
 	}
 	options.ReorderButton = buttons.VirtualButtonSelect
+	if downloadMissing {
+		options.TertiaryActionButton = buttons.VirtualButtonR1
+	}
 	options.FooterHelpItems = footerItems
 	options.SelectedIndex = input.LastSelectedIndex
 	options.VisibleStartIndex = max(0, input.LastSelectedIndex-input.LastSelectedPosition)
@@ -146,6 +161,20 @@ func (s *PlatformSelectionScreen) Draw(input PlatformSelectionInput) (PlatformSe
 		output.LastSelectedIndex = sel.Selected[0]
 		output.LastSelectedPosition = sel.VisiblePosition
 		output.Action = PlatformSelectionActionSaveSync
+		return output, nil
+
+	case gaba.ListActionTertiaryTriggered:
+		output.Action = PlatformSelectionActionDownloadMissing
+		if len(sel.Selected) == 0 {
+			return output, nil
+		}
+		output.LastSelectedIndex = sel.Selected[0]
+		output.LastSelectedPosition = sel.VisiblePosition
+		// The Collections row is not a platform, and leaves SelectedPlatform
+		// empty for the transition to ignore.
+		if platform, ok := sel.Items[sel.Selected[0]].Metadata.(romm.Platform); ok {
+			output.SelectedPlatform = platform
+		}
 		return output, nil
 	}
 

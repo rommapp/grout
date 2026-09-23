@@ -87,3 +87,15 @@ func DownloadStateOf(config settings.Config, game romm.Rom) DownloadState {
 		return NotDownloaded
 	}
 }
+
+// Missing keeps the games not fully on the device, in the order given. A
+// partly downloaded game is missing, as it is to the downloaded filter.
+func Missing(config settings.Config, games []romm.Rom) []romm.Rom {
+	var missing []romm.Rom
+	for _, game := range games {
+		if DownloadStateOf(config, game) != FullyDownloaded {
+			missing = append(missing, game)
+		}
+	}
+	return missing
+}

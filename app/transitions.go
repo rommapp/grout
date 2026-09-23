@@ -150,6 +150,14 @@ func transitionPlatformSelection(ctx *transitionContext, result any) (router.Scr
 			Host:   ctx.state.Host,
 		}
 
+	case ui.PlatformSelectionActionDownloadMissing:
+		if r.SelectedPlatform.ID != 0 {
+			ui.DownloadMissingForPlatform(*ctx.state.Config, ctx.state.Host, r.SelectedPlatform)
+		}
+		pushInput.LastSelectedIndex = r.LastSelectedIndex
+		pushInput.LastSelectedPosition = r.LastSelectedPosition
+		return ScreenPlatformSelection, pushInput
+
 	case ui.PlatformSelectionActionQuit:
 		return router.ScreenExit, nil
 	}

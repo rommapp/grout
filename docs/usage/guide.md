@@ -185,6 +185,7 @@ platforms - NES, SNES, PlayStation, whatever you've got.
 - `A` to select a platform or collection
 - `X` to open Settings
 - `Y` to open the Sync Menu (shown when a device is registered for Save Sync; hidden in Kid Mode)
+- `R1` to download every game of the highlighted platform that is not on the device yet, after confirming with `X` (hidden in Kid Mode)
 - `Select` to enter reordering mode
 - `B` to quit Grout
 
