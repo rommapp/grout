@@ -8,7 +8,7 @@ dependencies = [
     "mkdocs>=1.6.1",
     "mkdocs-github-admonitions-plugin>=0.1.1",
     "mkdocs-glightbox>=0.5.2",
-    "mkdocs-material>=9.7.1",
+    "mkdocs-material>=9.7.7",
     "pillow>=12.3.0",
     "pymdown-extensions>=11.0.1",
 ]
