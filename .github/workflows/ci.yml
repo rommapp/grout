@@ -111,6 +111,7 @@ jobs:
             ./bios \
             ./cfw \
             ./cfw/allium \
+            ./cfw/anbernic \
             ./cfw/arkos \
             ./cfw/batocera \
             ./cfw/knulli \

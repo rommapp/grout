@@ -2,6 +2,7 @@ package cfw
 
 import (
 	"grout/cfw/allium"
+	"grout/cfw/anbernic"
 	"grout/cfw/arkos"
 	"grout/cfw/batocera"
 	"grout/cfw/knulli"
@@ -344,6 +345,20 @@ var firmwares = map[CFW]*Firmware{
 		gamelist:        GamelistMiyoo,
 		inputMapping:    koriki.GetInputMappingBytes,
 		packaging:       Packaging{Asset: "Grout-Koriki.zip", LaunchScript: "Grout/launch.sh", InstallDepth: 3},
+	},
+
+	// The stock OS on the Allwinner H700 handhelds. Its RetroArch mirrors the rom
+	// folders under saves_RA, so the platform table is the save table too.
+	Anbernic: {
+		id:              Anbernic,
+		romDirectory:    anbernic.GetRomDirectory,
+		biosDirectory:   anbernic.GetBIOSDirectory,
+		baseSavePath:    anbernic.GetBaseSavePath,
+		coverDirectory:  besideRoms(anbernic.GetArtDirectory),
+		platforms:       anbernic.Platforms,
+		saveDirectories: anbernic.Platforms,
+		inputMapping:    anbernic.GetInputMappingBytes,
+		packaging:       Packaging{Asset: "Grout-Anbernic.zip", LaunchScript: "Roms/APPS/Grout.sh", InstallDepth: 4},
 	},
 
 	// The EmulationStation family: separate directories per art kind, and a
