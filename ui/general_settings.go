@@ -82,6 +82,14 @@ func (s *GeneralSettingsScreen) buildMenuItems(config *internal.Config) []gaba.I
 
 	return []gaba.ItemWithOptions{
 		{
+			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_include_region", Other: "Include Region in Gamelist Name"}, nil)},
+			Options: []gaba.Option{
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_true", Other: "True"}, nil), Value: true, OnUpdate: downloadArtUpdateFunc},
+				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_false", Other: "False"}, nil), Value: false, OnUpdate: downloadArtUpdateFunc},
+			},
+			SelectedOption: boolToIndex(!config.IncludeRegionInName),
+		},
+		{
 			Item: gaba.MenuItem{Text: i18n.Localize(&goi18n.Message{ID: "settings_box_art", Other: "Box Art"}, nil)},
 			Options: []gaba.Option{
 				{DisplayName: i18n.Localize(&goi18n.Message{ID: "common_show", Other: "Show"}, nil), Value: true},
@@ -313,6 +321,11 @@ func (s *GeneralSettingsScreen) applySettings(config *internal.Config, items []g
 			if val, ok := item.Options[item.SelectedOption].Value.(bool); ok {
 				config.SwapFaceButtons = val
 				gaba.SetFlipFaceButtons(val)
+			}
+
+		case i18n.Localize(&goi18n.Message{ID: "settings_include_region", Other: "Include Region in Gamelist Name"}, nil):
+			if val, ok := item.Options[item.SelectedOption].Value.(bool); ok {
+				config.IncludeRegionInName = val
 			}
 		}
 	}
