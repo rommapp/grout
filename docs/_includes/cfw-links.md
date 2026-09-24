@@ -1,4 +1,5 @@
 [allium]: https://github.com/goweiwen/Allium
+[anbernic]: https://anbernic.com
 [arkos]: https://github.com/christianhaitian/arkos
 [darkos]: https://github.com/christianhaitian/dArkOS
 [batocera]: https://batocera.org

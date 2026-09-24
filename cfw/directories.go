@@ -2,6 +2,7 @@ package cfw
 
 import (
 	"grout/cfw/allium"
+	"grout/cfw/anbernic"
 	"grout/cfw/arkos"
 	"grout/cfw/batocera"
 	"grout/cfw/knulli"
@@ -43,6 +44,8 @@ func GetRomDirectory() string {
 		return batocera.GetRomDirectory()
 	case MinUI:
 		return minui.GetRomDirectory()
+	case Anbernic:
+		return anbernic.GetRomDirectory()
 	}
 	return ""
 }
@@ -86,6 +89,8 @@ func GetBIOSDirectory() string {
 		return batocera.GetBIOSDirectory()
 	case MinUI:
 		return minui.GetBIOSDirectory()
+	case Anbernic:
+		return anbernic.GetBIOSDirectory()
 	}
 	return ""
 }
@@ -139,6 +144,8 @@ func GetArtDirectory(romDir string, platformFSSlug, platformName string) string 
 		return batocera.GetArtDirectory(romDir)
 	case MinUI:
 		return minui.GetArtDirectory(romDir)
+	case Anbernic:
+		return anbernic.GetArtDirectory(romDir)
 	default:
 		return ""
 	}
@@ -189,6 +196,8 @@ func BaseSavePath() string {
 		return batocera.GetBaseSavePath()
 	case MinUI:
 		return minui.GetBaseSavePath()
+	case Anbernic:
+		return anbernic.GetBaseSavePath()
 	}
 	return ""
 }
