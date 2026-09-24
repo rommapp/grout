@@ -2,13 +2,45 @@ package romm
 
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
+	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"time"
+
+	"github.com/sonh/qs"
 )
+
+const (
+	maxSaveListBytes     = int64(16 * 1024 * 1024)
+	maxSaveListRecords   = 10000
+	maxSaveListErrorBody = int64(64 * 1024)
+	maxSaveROMIDs        = 500
+)
+
+var errSaveScopeIgnored = errors.New("save list ROM scope ignored")
+
+type saveListLimits struct {
+	bytes   int64
+	records int
+}
+
+type countingReader struct {
+	r io.Reader
+	n int64
+}
+
+func (r *countingReader) Read(p []byte) (int, error) {
+	n, err := r.r.Read(p)
+	r.n += int64(n)
+	return n, err
+}
 
 type Save struct {
 	ID             int       `json:"id"`
@@ -77,7 +109,7 @@ type SaveQuery struct {
 }
 
 func (sq SaveQuery) Valid() bool {
-	return sq.RomID != 0 || sq.PlatformID != 0
+	return sq.RomID != 0 || sq.PlatformID != 0 || sq.DeviceID != ""
 }
 
 type UploadSaveQuery struct {
@@ -119,9 +151,159 @@ func (ssq SaveSummaryQuery) Valid() bool {
 }
 
 func (c *Client) GetSaves(query SaveQuery) ([]Save, error) {
-	var saves []Save
+	saves := make([]Save, 0)
 	err := c.doRequest("GET", endpointSaves, query, nil, &saves)
 	return saves, err
+}
+
+// GetSavesForROMIDs fetches a bounded save list and returns matching ROMs only
+// after the complete response has been validated.
+func (c *Client) GetSavesForROMIDs(query SaveQuery, romIDs []int) ([]Save, error) {
+	return c.getSavesForROMIDs(query, romIDs, saveListLimits{
+		bytes:   maxSaveListBytes,
+		records: maxSaveListRecords,
+	})
+}
+
+func (c *Client) getSavesForROMIDs(query SaveQuery, romIDs []int, limits saveListLimits) ([]Save, error) {
+	wanted := make(map[int]struct{}, len(romIDs))
+	for _, romID := range romIDs {
+		if romID > 0 {
+			wanted[romID] = struct{}{}
+		}
+	}
+	if !query.Valid() {
+		return nil, fmt.Errorf("save list query is invalid")
+	}
+	if len(wanted) == 0 {
+		return []Save{}, nil
+	}
+
+	ids := make([]int, 0, len(wanted))
+	for romID := range wanted {
+		ids = append(ids, romID)
+	}
+	sort.Ints(ids)
+
+	if query.RomID != 0 {
+		return c.streamSavesForROMIDs(query, wanted, nil, limits)
+	}
+
+	var saves []Save
+	for start := 0; start < len(ids); start += maxSaveROMIDs {
+		end := min(start+maxSaveROMIDs, len(ids))
+		batch, err := c.streamSavesForROMIDs(query, wanted, ids[start:end], limits)
+		if errors.Is(err, errSaveScopeIgnored) {
+			return c.streamSavesForROMIDs(query, wanted, nil, limits)
+		}
+		if err != nil {
+			return nil, err
+		}
+		saves = append(saves, batch...)
+	}
+	return saves, nil
+}
+
+func (c *Client) streamSavesForROMIDs(query SaveQuery, wanted map[int]struct{}, scope []int, limits saveListLimits) ([]Save, error) {
+	req, err := http.NewRequest(http.MethodGet, c.baseURL+endpointSaves, nil)
+	if err != nil {
+		return nil, err
+	}
+	values, err := qs.NewEncoder().Values(query)
+	if err != nil {
+		return nil, err
+	}
+	scoped := make(map[int]struct{}, len(scope))
+	if len(scope) > 0 {
+		for _, romID := range scope {
+			values.Add("rom_ids", strconv.Itoa(romID))
+			scoped[romID] = struct{}{}
+		}
+	}
+	req.URL.RawQuery = values.Encode()
+	if c.authHeader != "" {
+		req.Header.Set("Authorization", c.authHeader)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNoContent {
+		return []Save{}, nil
+	}
+	if resp.StatusCode != http.StatusOK {
+		if _, err := io.Copy(io.Discard, io.LimitReader(resp.Body, maxSaveListErrorBody)); err != nil {
+			return nil, fmt.Errorf("save list request failed with status %d: %w", resp.StatusCode, err)
+		}
+		return nil, fmt.Errorf("save list request failed with status %d", resp.StatusCode)
+	}
+
+	return decodeSaveList(resp.Body, wanted, scoped, limits)
+}
+
+func decodeSaveList(body io.Reader, wanted, scoped map[int]struct{}, limits saveListLimits) ([]Save, error) {
+	reader := &countingReader{r: io.LimitReader(body, limits.bytes+1)}
+	decoder := json.NewDecoder(reader)
+	fail := func(err error) ([]Save, error) {
+		if reader.n > limits.bytes {
+			return nil, fmt.Errorf("save list decoded byte limit exceeded")
+		}
+		return nil, err
+	}
+
+	token, err := decoder.Token()
+	if err != nil {
+		return fail(err)
+	}
+	if opening, ok := token.(json.Delim); !ok || opening != '[' {
+		return fail(fmt.Errorf("save list must be a top-level array"))
+	}
+
+	retained := make([]Save, 0)
+	scopeIgnored := false
+	records := 0
+	for decoder.More() {
+		var save Save
+		if err := decoder.Decode(&save); err != nil {
+			return fail(err)
+		}
+		records++
+		if records > limits.records {
+			return fail(fmt.Errorf("save list record limit exceeded"))
+		}
+		if len(scoped) > 0 {
+			if _, ok := scoped[save.RomID]; !ok {
+				scopeIgnored = true
+			}
+		}
+		if _, ok := wanted[save.RomID]; ok && save.RomID > 0 {
+			retained = append(retained, save)
+		}
+	}
+
+	closing, err := decoder.Token()
+	if err != nil {
+		return fail(err)
+	}
+	if delim, ok := closing.(json.Delim); !ok || delim != ']' {
+		return fail(fmt.Errorf("save list closing array token missing"))
+	}
+	var trailing json.RawMessage
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		if err == nil {
+			err = fmt.Errorf("trailing JSON value")
+		}
+		return fail(err)
+	}
+	if reader.n > limits.bytes {
+		return fail(fmt.Errorf("save list decoded byte limit exceeded"))
+	}
+	if scopeIgnored {
+		return nil, errSaveScopeIgnored
+	}
+	return retained, nil
 }
 
 func (c *Client) DownloadSave(downloadPath string) ([]byte, error) {
