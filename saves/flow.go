@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"errors"
 	"fmt"
+	"grout/appdir"
 	"grout/cache"
 	"grout/cfw"
 	"grout/files"
@@ -1430,7 +1431,7 @@ func download(client *romm.Client, config *settings.Config, deviceID string, ite
 
 	if item.LocalSave.IsDirectorySave {
 		// Write zip to temp, then extract to the save directory
-		tmpZip, err := os.CreateTemp("", "grout-save-dl-*.zip")
+		tmpZip, err := os.CreateTemp(appdir.SystemTmpDir(), "grout-save-dl-*.zip")
 		if err != nil {
 			logger.Error("Failed to create temp file for directory save", "error", err)
 			return false

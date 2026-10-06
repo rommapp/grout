@@ -91,7 +91,7 @@ func (s *AdvancedSettingsScreen) Draw(input AdvancedSettingsInput) (AdvancedSett
 // effect on the next run. The caller ends the app; saying so here is the only
 // warning the user gets.
 func (s *AdvancedSettingsScreen) resetInputMapping(output AdvancedSettingsOutput) (AdvancedSettingsOutput, error) {
-	if err := os.Remove(settings.InputMappingFileName); err != nil {
+	if err := os.Remove(settings.InputMappingPath()); err != nil {
 		gaba.GetLogger().Error("Failed to delete input mapping", "error", err)
 		gaba.ConfirmationMessage(
 			localize("input_mapping_reset_failed", "Could not reset the input mapping.\nCheck the logs for more info."),
@@ -181,7 +181,7 @@ func advancedRows() []settingRow {
 	}
 
 	// Only worth offering when there is a saved mapping to undo.
-	if _, err := os.Stat(settings.InputMappingFileName); err == nil {
+	if _, err := os.Stat(settings.InputMappingPath()); err == nil {
 		rows = append(rows, clickableRow("reset_input_mapping", "settings_reset_input_mapping", "Reset Input Mapping"))
 	}
 

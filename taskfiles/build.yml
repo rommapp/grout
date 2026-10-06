@@ -26,6 +26,9 @@ tasks:
       # NextUI's h700 build has SDL_ttf 2.0.10, which cannot draw icons above
       # U+FFFF. Kept out of lib/ so only the NextUI package ships it.
       - 'if [ -n "{{.TTF_PATH}}" ]; then mkdir -p {{.BUILD_DIR}}/lib-h700 && docker cp {{.CONTAINER_NAME}}-{{.BUILD_DIR}}:{{.TTF_PATH}} {{.BUILD_DIR}}/lib-h700/libSDL2_ttf-2.0.so.0; fi'
+      # The hosts RetroDECK runs on (SteamOS, Bazzite) do not all ship these.
+      # Kept out of lib/ so only the RetroDECK package ships them.
+      - 'if [ -n "{{.RETRODECK_LIBS}}" ]; then mkdir -p {{.BUILD_DIR}}/lib-retrodeck && for lib in {{.RETRODECK_LIBS}}; do docker cp -L {{.CONTAINER_NAME}}-{{.BUILD_DIR}}:{{.RETRODECK_LIB_DIR}}/$lib {{.BUILD_DIR}}/lib-retrodeck/ || exit 1; done; fi'
       - docker rm {{.CONTAINER_NAME}}-{{.BUILD_DIR}} >/dev/null 2>&1
       - docker image prune --filter "label={{.LABEL}}" -f >/dev/null 2>&1 || true
       - echo "Extract {{.BUILD_DIR}} complete"
@@ -46,7 +49,14 @@ tasks:
       - task: _build
         vars: { PLATFORM: linux/amd64, BUILD_DIR: build, IMAGE_TAG: "{{.IMAGE_NAME}}-amd64", DOCKERFILE: docker/Dockerfile }
       - task: _extract
-        vars: { BUILD_DIR: build, IMAGE_TAG: "{{.IMAGE_NAME}}-amd64", LIB_PATH: /usr/lib/x86_64-linux-gnu/libSDL2_gfx-1.0.so.0.0.2 }
+        vars:
+          BUILD_DIR: build
+          IMAGE_TAG: "{{.IMAGE_NAME}}-amd64"
+          LIB_PATH: /usr/lib/x86_64-linux-gnu/libSDL2_gfx-1.0.so.0.0.2
+          RETRODECK_LIB_DIR: /usr/lib/x86_64-linux-gnu
+          RETRODECK_LIBS: >-
+            libSDL2-2.0.so.0 libSDL2_image-2.0.so.0 libSDL2_ttf-2.0.so.0
+            libjpeg.so.62 libtiff.so.5 libwebp.so.6 libjbig.so.0 libdeflate.so.0
 
   x86:
     desc: Build and extract for x86 (32-bit)

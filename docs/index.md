@@ -15,7 +15,7 @@ A [RomM](https://romm.app) client for all of your Linux based retro doo-dads.
 
 [Allium](getting-started/install-allium.md) · [Anbernic Stock OS](getting-started/install-anbernic.md) · [ArkOS / dArkOS](getting-started/install-arkos.md) · [Batocera](getting-started/install-batocera.md) · [Knulli](getting-started/install-knulli.md) · [Koriki](getting-started/install-koriki.md) · [MinUI](getting-started/install-minui.md)
 
-[muOS](getting-started/install-muos.md) · [NextUI](getting-started/install-nextui.md) · [Onion](getting-started/install-onion.md) · [ROCKNIX](getting-started/install-rocknix.md) · [spruce / sprigUI / twigUI](getting-started/install-spruce.md) · [TrimUI Stock OS](getting-started/install-trimui.md)
+[muOS](getting-started/install-muos.md) · [NextUI](getting-started/install-nextui.md) · [Onion](getting-started/install-onion.md) · [RetroDECK](getting-started/install-retrodeck.md) · [ROCKNIX](getting-started/install-rocknix.md) · [spruce / sprigUI / twigUI](getting-started/install-spruce.md) · [TrimUI Stock OS](getting-started/install-trimui.md)
 
 [:fontawesome-solid-gamepad: Get Started](getting-started/index.md){ .md-button .md-button--primary }
 &nbsp;&nbsp;

@@ -40,16 +40,19 @@ func AddGroutToGamelist(c CFW) {
 // FillGamesMetadata writes game metadata in the form the firmware reads.
 func FillGamesMetadata(entries []gamelist.RomGameEntry) {
 	logger := slog.Default()
+	f := ActiveFirmware()
 
-	switch ActiveFirmware().Gamelist() {
+	switch f.Gamelist() {
 	case GamelistEmulationStation:
-		if err := gamelist.AddRomGamesToGamelist(entries, gamelist.GameListFileName); err != nil {
+		if err := gamelist.AddRomGamesToGamelist(entries, gamelist.GameListFileName, f.gamelistOptions()); err != nil {
 			logger.Warn("Failed to add games to ES gamelist.xml", "error", err)
 		}
-		scheduleESRestart()
+		if f.gamelistPath == nil {
+			scheduleESRestart()
+		}
 
 	case GamelistMiyoo:
-		if err := gamelist.AddRomGamesToGamelist(entries, gamelist.MiyooGameListFileName); err != nil {
+		if err := gamelist.AddRomGamesToGamelist(entries, gamelist.MiyooGameListFileName, nil); err != nil {
 			logger.Warn("Failed to add games to miyoogamelist.xml", "error", err)
 		}
 
@@ -59,5 +62,18 @@ func FillGamesMetadata(entries []gamelist.RomGameEntry) {
 		}
 
 	case GamelistNone:
+	}
+}
+
+// gamelistOptions points the writer at the firmware's own gamelist tree, or
+// returns nil to keep gamelists beside the roms.
+func (f *Firmware) gamelistOptions() *gamelist.AddRomGamesToGamelistOptions {
+	if f == nil || f.gamelistPath == nil {
+		return nil
+	}
+	return &gamelist.AddRomGamesToGamelistOptions{
+		PathResolver: func(entry gamelist.RomGameEntry, filename gamelist.FileName) string {
+			return f.gamelistPath(entry.RomDirectory, string(filename))
+		},
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"grout/appdir"
 	"grout/bios"
 	"grout/files"
 	"grout/romm"
@@ -141,7 +142,7 @@ func (s *BIOSDownloadScreen) fetch(input BIOSDownloadInput, chosen []bios.Requir
 	downloads := make([]gaba.Download, 0, len(chosen))
 	staged := make(map[string]bios.Requirement, len(chosen))
 	for _, requirement := range chosen {
-		location := filepath.Join(files.TempDir(), biosStagingName(requirement))
+		location := filepath.Join(appdir.TmpDir(), biosStagingName(requirement))
 		downloads = append(downloads, gaba.Download{
 			URL:         input.Host.URL() + requirement.Firmware.DownloadURL,
 			Location:    location,

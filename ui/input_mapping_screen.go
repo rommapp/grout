@@ -36,7 +36,7 @@ func (s *InputMappingScreen) Execute() InputMappingOutput {
 
 	data, err := mapping.ToJSON()
 	if err == nil {
-		err = mapping.SaveToJSON(settings.InputMappingFileName)
+		err = mapping.SaveToJSON(settings.InputMappingPath())
 	}
 	if err != nil {
 		// Without this the screen would simply close, which is what it does

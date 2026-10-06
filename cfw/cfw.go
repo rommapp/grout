@@ -11,26 +11,27 @@ import (
 type CFW string
 
 const (
-	NextUI   CFW = "NEXTUI"
-	MuOS     CFW = "MUOS"
-	Knulli   CFW = "KNULLI"
-	Spruce   CFW = "SPRUCE"
-	ROCKNIX  CFW = "ROCKNIX"
-	Trimui   CFW = "TRIMUI"
-	Allium   CFW = "ALLIUM"
-	Onion    CFW = "ONION"
-	Koriki   CFW = "KORIKI"
-	ArkOS    CFW = "ARKOS"
-	Batocera CFW = "BATOCERA"
-	MinUI    CFW = "MINUI"
-	Anbernic CFW = "ANBERNIC"
+	NextUI    CFW = "NEXTUI"
+	MuOS      CFW = "MUOS"
+	Knulli    CFW = "KNULLI"
+	Spruce    CFW = "SPRUCE"
+	ROCKNIX   CFW = "ROCKNIX"
+	Trimui    CFW = "TRIMUI"
+	Allium    CFW = "ALLIUM"
+	Onion     CFW = "ONION"
+	Koriki    CFW = "KORIKI"
+	ArkOS     CFW = "ARKOS"
+	Batocera  CFW = "BATOCERA"
+	MinUI     CFW = "MINUI"
+	Anbernic  CFW = "ANBERNIC"
+	RetroDECK CFW = "RETRODECK"
 )
 
 // All lists every supported firmware. Conformance tests range over it.
 var All = []CFW{
 	NextUI, MuOS, Knulli, Spruce, ROCKNIX, Trimui,
 	Allium, Onion, Koriki, ArkOS, Batocera, MinUI,
-	Anbernic,
+	Anbernic, RetroDECK,
 }
 
 // ErrUnsupported reports a firmware name grout does not recognise.

@@ -16,7 +16,6 @@ import (
 	"log"
 	"log/slog"
 	"os"
-	"path/filepath"
 	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -41,6 +40,7 @@ func setup() SetupResult {
 		log.Fatalf("Cannot start: %v", err)
 	}
 
+	setupLogPath(currentCFW)
 	setupInputMapping(currentCFW)
 	initFramework(currentCFW)
 
@@ -62,15 +62,18 @@ func setup() SetupResult {
 	}
 }
 
-func setupInputMapping(currentCFW cfw.CFW) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return
+// setupLogPath has to come before any gaba.GetLogger call: gabagool opens the
+// log file once, on first use, and never moves it afterward.
+func setupLogPath(currentCFW cfw.CFW) {
+	if logPath := cfw.Lookup(currentCFW).LogPath(); logPath != "" {
+		gaba.SetLogPath(logPath)
 	}
+}
 
-	cwdMappingPath := filepath.Join(cwd, settings.InputMappingFileName)
-	if files.FileExists(cwdMappingPath) {
-		os.Setenv("INPUT_MAPPING_PATH", cwdMappingPath)
+func setupInputMapping(currentCFW cfw.CFW) {
+	mappingPath := settings.InputMappingPath()
+	if files.FileExists(mappingPath) {
+		os.Setenv("INPUT_MAPPING_PATH", mappingPath)
 		return
 	}
 

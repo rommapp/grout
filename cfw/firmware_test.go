@@ -93,7 +93,9 @@ func TestFirmwares_EmulationStationFamilyIsConsistent(t *testing.T) {
 		if es != (f.sidecarDirectories != nil) {
 			t.Errorf("%s: IsBasedOnEmulationStation=%v but sidecar directories present=%v", c, es, f.sidecarDirectories != nil)
 		}
-		if es != (f.GroutLauncherPath() != "") {
+		// RetroDECK starts grout from Steam, so its frontend has no shortcut
+		// to it.
+		if es != (f.GroutLauncherPath() != "") && c != RetroDECK {
 			t.Errorf("%s: IsBasedOnEmulationStation=%v but launcher path is %q", c, es, f.GroutLauncherPath())
 		}
 
@@ -160,6 +162,9 @@ func TestFirmware_NilIsSafe(t *testing.T) {
 	}
 	if f.Gamelist() != GamelistNone {
 		t.Error("nil firmware should have no gamelist format")
+	}
+	if f.LogPath() != "" {
+		t.Error("nil firmware should keep the default log path")
 	}
 	if f.SavesBesideRoms() || f.KeepsRomExtInSaves() || f.IsBasedOnEmulationStation() {
 		t.Error("nil firmware should claim no capabilities")
@@ -321,5 +326,34 @@ func TestFirmwares_AssetNamesMatchReleaseWorkflow(t *testing.T) {
 				t.Errorf("%s publishes %q, which release.yml never produces", c, name)
 			}
 		}
+	}
+}
+
+// Every other firmware keeps gabagool's logs/ beside the binary; moving one is
+// a deliberate, per-firmware choice.
+func TestFirmwares_LogPathIsRetroDECKOnly(t *testing.T) {
+	setupDevice(t)
+	t.Setenv("RETRODECK_CFG", "")
+
+	for _, c := range All {
+		if c == RetroDECK {
+			continue
+		}
+		if got := Lookup(c).LogPath(); got != "" {
+			t.Errorf("%s has log path %q; only RetroDECK moves the log file", c, got)
+		}
+	}
+}
+
+func TestFirmwares_RetroDECKLogPathFollowsItsConfig(t *testing.T) {
+	cfg := filepath.Join(t.TempDir(), "retrodeck.json")
+	if err := os.WriteFile(cfg, []byte(`{"paths": {"logs_path": "/home/user/retrodeck/logs"}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("RETRODECK_CFG", cfg)
+
+	want := "/home/user/retrodeck/logs/grout.log"
+	if got := Lookup(RetroDECK).LogPath(); got != want {
+		t.Errorf("RetroDECK log path = %q, want %q", got, want)
 	}
 }

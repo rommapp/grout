@@ -193,7 +193,8 @@ Can't find what you're looking for? [Open an issue](https://github.com/rommapp/g
 > **Where are the log files?**
 >
 > Log files are stored alongside the Grout binary in a `logs` directory. The exact path depends on your firmware and
-> installation location.
+> installation location. On RetroDECK, they go to RetroDECK's configured `logs_path` instead
+> (`~/retrodeck/logs/grout.log` by default).
 
 > [!NOTE]
 > **My cache seems wrong or outdated**

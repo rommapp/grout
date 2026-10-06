@@ -2,6 +2,7 @@ package cache
 
 import (
 	"database/sql"
+	"grout/appdir"
 	"grout/files"
 	"grout/romm"
 	"grout/settings"
@@ -447,27 +448,15 @@ func (cm *Manager) SyncPlatformGames(platforms []romm.Platform) (int, error) {
 }
 
 func getCacheDBPath() string {
-	wd, err := os.Getwd()
-	if err != nil {
-		return filepath.Join(os.TempDir(), ".cache", "grout.db")
-	}
-	return filepath.Join(wd, ".cache", "grout.db")
+	return filepath.Join(appdir.CacheDir(), "grout.db")
 }
 
 func GetArtworkCacheDir() string {
-	wd, err := os.Getwd()
-	if err != nil {
-		return filepath.Join(os.TempDir(), ".cache", "artwork")
-	}
-	return filepath.Join(wd, ".cache", "artwork")
+	return filepath.Join(appdir.CacheDir(), "artwork")
 }
 
 func GetCacheDir() string {
-	wd, err := os.Getwd()
-	if err != nil {
-		return filepath.Join(os.TempDir(), ".cache")
-	}
-	return filepath.Join(wd, ".cache")
+	return appdir.CacheDir()
 }
 
 // DeleteCacheFolder removes the entire cache directory and resets the singleton
@@ -496,12 +485,7 @@ func DeleteCacheFolder() error {
 func cleanupLegacyCache() {
 	logger := gaba.GetLogger()
 
-	wd, err := os.Getwd()
-	if err != nil {
-		return
-	}
-
-	gamesDir := filepath.Join(wd, ".cache", "games")
+	gamesDir := filepath.Join(appdir.CacheDir(), "games")
 	if files.FileExists(gamesDir) {
 		if err := os.RemoveAll(gamesDir); err != nil {
 			logger.Debug("Failed to remove legacy games cache", "error", err)
@@ -510,7 +494,7 @@ func cleanupLegacyCache() {
 		}
 	}
 
-	romsDir := filepath.Join(wd, ".cache", "roms")
+	romsDir := filepath.Join(appdir.CacheDir(), "roms")
 	if files.FileExists(romsDir) {
 		if err := os.RemoveAll(romsDir); err != nil {
 			logger.Debug("Failed to remove legacy roms cache", "error", err)
