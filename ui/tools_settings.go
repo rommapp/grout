@@ -3,6 +3,7 @@ package ui
 import (
 	"errors"
 
+	"grout/cfw"
 	"grout/settings"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -31,6 +32,7 @@ func NewToolsSettingsScreen() *ToolsSettingsScreen {
 // a value are absent.
 var toolsDestinations = map[string]ToolsSettingsAction{
 	"sync_local_artwork": ToolsSettingsActionSyncLocalArtwork,
+	"sync_metadata":      ToolsSettingsActionSyncMetadata,
 }
 
 func (s *ToolsSettingsScreen) Draw(input ToolsSettingsInput) (ToolsSettingsOutput, error) {
@@ -97,9 +99,17 @@ func applyKidMode(before, after settings.Config) {
 }
 
 func toolsRows() []settingRow {
-	return []settingRow{
+	rows := []settingRow{
 		clickableRow("sync_local_artwork", "settings_sync_local_artwork", "Download Missing Art"),
-		{
+	}
+
+	// Only worth offering when the firmware reads metadata grout writes.
+	if cfw.HasGamesMetadata() {
+		rows = append(rows, clickableRow("sync_metadata", "settings_sync_metadata", "Update Metadata"))
+	}
+
+	return append(rows,
+		settingRow{
 			key: "kid_mode", label: localize("settings_kid_mode", "Kid Mode"),
 			options: []gaba.Option{
 				{DisplayName: localize("option_disabled", "Disabled"), Value: false},
@@ -111,5 +121,5 @@ func toolsRows() []settingRow {
 			get: func(c settings.Config) any { return c.KidMode },
 			set: assign(func(c *settings.Config, v bool) { c.KidMode = v }),
 		},
-	}
+	)
 }

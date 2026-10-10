@@ -181,6 +181,12 @@ func registerScreens(r *router.Router, state *AppState) {
 		return ui.ArtworkSyncOutput{}, nil
 	})
 
+	r.Register(ScreenMetadataSync, func(input any) (any, error) {
+		in := input.(ui.MetadataSyncInput)
+		screen := ui.NewMetadataSyncScreen()
+		return screen.Execute(in), nil
+	})
+
 	r.Register(ScreenUpdateCheck, func(input any) (any, error) {
 		screen := ui.NewUpdateScreen()
 		return screen.Draw(input.(ui.UpdateInput))

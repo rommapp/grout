@@ -116,6 +116,28 @@ func byFileName(fileName string) gameMatcher {
 	}
 }
 
+// byAnyFileName matches an entry whose rom file name is any of fileNames.
+//
+// A game's file name on the server is not always the one on the device.
+// A multi-disc game is launched through its playlist, and a rom with several
+// versions is stored under the one that was picked.
+func byAnyFileName(fileNames ...string) gameMatcher {
+	matchers := make([]gameMatcher, 0, len(fileNames))
+	for _, fileName := range fileNames {
+		if fileName != "" && fileName != "." {
+			matchers = append(matchers, byFileName(fileName))
+		}
+	}
+	return func(game *etree.Element) bool {
+		for _, match := range matchers {
+			if match(game) {
+				return true
+			}
+		}
+		return false
+	}
+}
+
 func (gl *GameList) Contains(element, value string) bool {
 	return gl.findGame(func(game *etree.Element) bool {
 		e := game.FindElement(element)
@@ -177,13 +199,18 @@ func (gl *GameList) upsert(match gameMatcher, info map[string]string) *etree.Ele
 	}
 
 	for key, value := range info {
-		if element := game.FindElement(key); element != nil {
-			element.SetText(value)
-		} else {
-			game.CreateElement(key).SetText(value)
-		}
+		setChild(game, key, value)
 	}
 	return game
+}
+
+// setChild sets the text of game's child element, creating it if absent.
+func setChild(game *etree.Element, element, value string) {
+	if child := game.FindElement(element); child != nil {
+		child.SetText(value)
+	} else {
+		game.CreateElement(element).SetText(value)
+	}
 }
 
 // AddOrUpdateEntry upserts an entry keyed by <name>, for non-rom entries such

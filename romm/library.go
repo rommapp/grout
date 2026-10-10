@@ -32,6 +32,13 @@ func (r Rom) ToGame(displayName, path string, art library.ArtPaths) library.Game
 		released = time.Unix(r.Metadatum.FirstReleaseDate/1000, 0).UTC()
 	}
 
+	// Without game modes the count is a guess, which must not pass for one the
+	// server knows.
+	var maxPlayers int
+	if len(r.Metadatum.GameModes) > 0 {
+		maxPlayers = r.MaxPlayerCount()
+	}
+
 	var rating float64
 	if r.Metadatum.AverageRating != 0 {
 		rating = r.Metadatum.AverageRating / 100
@@ -49,7 +56,7 @@ func (r Rom) ToGame(displayName, path string, art library.ArtPaths) library.Game
 		Developers:            developers,
 		ReleaseDate:           released,
 		Rating:                rating,
-		MaxPlayers:            r.MaxPlayerCount(),
+		MaxPlayers:            maxPlayers,
 		MD5:                   r.Md5Hash,
 		ScreenScraperID:       r.ScreenScraperID,
 		RetroAchievementsID:   r.RetroAchievementsID,

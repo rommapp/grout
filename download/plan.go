@@ -294,8 +294,8 @@ func artItems(config settings.Config, host settings.Host, game romm.Rom, platfor
 		if !spec.wanted(config) {
 			continue
 		}
-		dir := cfw.PlatformArtDirectory(config, spec.slot, platform.FSSlug, platform.Name)
-		if dir == "" {
+		location := spec.location(config, game, platform, activeCFW)
+		if location == "" {
 			continue
 		}
 		source := spec.sourceURL(game, config, host)
@@ -303,12 +303,6 @@ func artItems(config settings.Config, host settings.Host, game romm.Rom, platfor
 			continue
 		}
 
-		name := cfw.ArtFileName(activeCFW, spec.slot, romArtFileName(game), game.FsNameNoExt)
-		if spec.fixedExt != "" {
-			name = game.FsNameNoExt + spec.fixedExt
-		}
-
-		location := filepath.Join(dir, name)
 		spec.record(paths, location, isESBased)
 		items = append(items, Item{
 			URL:      source,
@@ -319,6 +313,21 @@ func artItems(config settings.Config, host settings.Host, game romm.Rom, platfor
 	}
 
 	return items
+}
+
+// location is where this kind of art for game lives on the device, or empty when
+// the firmware has nowhere to put it.
+func (spec artSpec) location(config settings.Config, game romm.Rom, platform romm.Platform, activeCFW cfw.CFW) string {
+	dir := cfw.PlatformArtDirectory(config, spec.slot, platform.FSSlug, platform.Name)
+	if dir == "" {
+		return ""
+	}
+
+	name := cfw.ArtFileName(activeCFW, spec.slot, romArtFileName(game), game.FsNameNoExt)
+	if spec.fixedExt != "" {
+		name = game.FsNameNoExt + spec.fixedExt
+	}
+	return filepath.Join(dir, name)
 }
 
 // romArtFileName is the rom's file name for artwork naming, or "" when the game

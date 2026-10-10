@@ -195,7 +195,7 @@ Backups are stored in a `.backup/` directory within each platform's save directo
 
 ## Tools
 
-This sub-menu contains artwork management and parental controls.
+This sub-menu contains artwork and metadata management, and parental controls.
 
 ### Download Missing Art
 
@@ -204,6 +204,21 @@ adding new games to your library.
 
 Note that this artwork is only displayed within Grout's interface - it does not affect the artwork shown in your CFW's
 game list.
+
+### Update Metadata
+
+Rewrites the metadata of the games already on your device (name, description, rating, release date, genre, developer,
+players, regions, languages and artwork paths) from what your RomM server currently knows. Useful when a download was
+cut short before the metadata was written, or when the metadata was updated on the server.
+
+Grout first fetches the latest changes from RomM for each mapped platform, then scans them for downloaded games and lets
+you pick the platforms to update. A platform that can't be refreshed from the server is skipped, and Grout tells you
+how many were. Only the fields Grout
+writes are replaced: what your frontend records on its own, such as play count, play time, last played or favourites,
+is kept. A field your server has no value for leaves the existing one alone, and artwork paths are only set when the
+file is on your device. A downloaded game missing from the game list gets a new entry.
+
+This option is only shown on CFWs that read game metadata written by Grout.
 
 ### Kid Mode
 

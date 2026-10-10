@@ -37,20 +37,30 @@ func (l RomLayout) DownloadPath(romDir string) string {
 // IsDownloaded reports whether the rom is present under romDir. A multi-disc
 // game needs its playlist; a game with several versions needs any one of them.
 func (l RomLayout) IsDownloaded(romDir string) bool {
+	return l.LocalPath(romDir) != ""
+}
+
+// LocalPath returns the file that makes the rom present under romDir: the
+// playlist of a multi-disc game, or the first of its versions found. It is ""
+// when the rom is not on the device.
+func (l RomLayout) LocalPath(romDir string) string {
 	if romDir == "" {
-		return false
+		return ""
 	}
 
 	if l.MultiDisc {
-		return files.FileExists(filepath.Join(romDir, l.BaseName+playlistExt))
+		if playlist := filepath.Join(romDir, l.BaseName+playlistExt); files.FileExists(playlist) {
+			return playlist
+		}
+		return ""
 	}
 
 	for _, name := range l.FileNames {
-		if files.FileExists(filepath.Join(romDir, name)) {
-			return true
+		if path := filepath.Join(romDir, name); files.FileExists(path) {
+			return path
 		}
 	}
-	return false
+	return ""
 }
 
 // IsFileDownloaded reports whether one named file of a rom is present.

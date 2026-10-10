@@ -212,6 +212,7 @@ flowchart TD
     TSET[Tools Settings]
     RC[Rebuild Cache]
     ART[Artwork Sync]
+    META[Metadata Sync]
     SA[Server Address]
     IM[Input Mapping]
 
@@ -228,6 +229,8 @@ flowchart TD
     IM --> ASET
 
     TSET -->|"Download Missing Art"| ART
+    TSET -->|"Update Metadata"| META
+    META --> TSET
 ```
 
 ---
@@ -255,6 +258,7 @@ flowchart TD
 | Platform Mapping              | Configure ROM directory mappings                                                                                                                                     |
 | Rebuild Cache                 | Select and rebuild cache types                                                                                                                                       |
 | Artwork Sync                  | Pre-cache artwork for all games                                                                                                                                      |
+| Metadata Sync                 | Rewrite the frontend metadata of downloaded games, keeping play stats                                                                                                |
 | Server Address                | Change the RomM server URL                                                                                                                                           |
 | Input Mapping                 | Remap physical buttons                                                                                                                                               |
 | Info                          | App info (version, CFW, RomM version) and logout option                                                                                                              |

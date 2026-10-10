@@ -134,6 +134,10 @@ other = "Configurações"
 hash = "sha1-905f63092ff26517a7aa8083857b3c8af9707002"
 other = "Sync"
 
+[button_update]
+hash = "sha1-fb91e24fa52d8d2b32937bf04d843f730319a902"
+other = "Atualizar"
+
 [cache_building]
 hash = "sha1-5c797965ec584713643883f81dd4a7b4c965791e"
 other = "Construindo cache..."
@@ -566,6 +570,30 @@ other = "Validating connection..."
 hash = "sha1-fc8c20806e08254d4bddd38e5e7d60c1bd01e564"
 other = "Tem certeza de que deseja sair?"
 
+[metadata_sync_complete]
+hash = "sha1-6c148ffd1822ca37bfbb20e33d4f767f9bb8725b"
+other = "Metadados atualizados para %d jogos."
+
+[metadata_sync_failed]
+hash = "sha1-3c1fa0d1431155b239be96d6d9ce3216e831db2c"
+other = "Não foi possível atualizar os metadados.\nVerifique os logs para mais informações."
+
+[metadata_sync_no_games]
+hash = "sha1-a98f22859243b5748319c4d655659ec3ba674554"
+other = "Nenhum jogo baixado encontrado."
+
+[metadata_sync_partial]
+hash = "sha1-86613bc501deb33e256cbaf85a4aeac59e4740f4"
+other = "Metadados atualizados para %d jogos, %d falharam.\nVerifique os logs para mais informações."
+
+[metadata_sync_refresh_failed]
+hash = "sha1-14e4180f3a2a6ba6dda4d7aead917e2f8d81eb32"
+other = "Não foi possível obter os metadados mais recentes de %d plataformas do RomM.\nElas foram ignoradas."
+
+[metadata_sync_updating]
+hash = "sha1-da99edac245a25c028a865dc561cc773caf0eb7c"
+other = "Atualizando metadados..."
+
 [option_disabled]
 hash = "sha1-f4f4473df8cb59f0a369aebee3d1509adc0151c6"
 other = "Desativado"
@@ -905,6 +933,10 @@ other = "Pré-carregar Artwork"
 [settings_sync_local_artwork]
 hash = "sha1-3d28f632e62c58dde573a3e907c712b9ad6cab24"
 other = "Download Missing Art"
+
+[settings_sync_metadata]
+hash = "sha1-c836f3c0c858f40bd314d48036955970f7db6a94"
+other = "Atualizar Metadados"
 
 [settings_title]
 hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"

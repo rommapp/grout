@@ -2,7 +2,6 @@ package muos
 
 import (
 	"fmt"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,20 +12,19 @@ import (
 	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-func AddGameDescription(entry gamelist.RomGameEntry) {
-	logger := slog.Default()
+// AddGameDescription writes the text muOS shows for a game, replacing any
+// written before.
+func AddGameDescription(entry gamelist.RomGameEntry) error {
 	textDir := GetTextDirectory(entry.Platform.FSSlug, entry.Platform.Name)
 	if err := os.MkdirAll(textDir, 0755); err != nil {
-		logger.Warn("Cannot create text directory", "path", textDir, "error", err)
-		return
+		return fmt.Errorf("creating text directory %s: %w", textDir, err)
 	}
 
 	game := entry.Game
 	gameTextPath := filepath.Join(textDir, fmt.Sprintf("%s.txt", game.BaseName))
 	gameTextFile, err := os.Create(gameTextPath)
 	if err != nil {
-		logger.Warn("Cannot create file", "path", gameTextPath, "error", err)
-		return
+		return fmt.Errorf("creating %s: %w", gameTextPath, err)
 	}
 	defer gameTextFile.Close()
 
@@ -50,6 +48,7 @@ func AddGameDescription(entry gamelist.RomGameEntry) {
 		i18n.Localize(&goi18n.Message{ID: "game_details_description", Other: "Description"}, nil), game.Summary))
 
 	if _, err = fmt.Fprint(gameTextFile, description.String()); err != nil {
-		logger.Warn("Cannot write to file", "file", gameTextFile.Name(), "error", err)
+		return fmt.Errorf("writing %s: %w", gameTextPath, err)
 	}
+	return nil
 }
