@@ -14,6 +14,7 @@ const (
 	ArtKindBox2D      ArtKind = "Box2D"
 	ArtKindBox3D      ArtKind = "Box3D"
 	ArtKindMixImage   ArtKind = "Miximage"
+	ArtKindMixImageV2 ArtKind = "Miximage_v2"
 	ArtKindMarquee    ArtKind = "Marquee"
 	ArtKindLogo       ArtKind = "Logo"
 	ArtKindTitle      ArtKind = "Title"

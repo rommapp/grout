@@ -132,6 +132,7 @@ func generalSettings(config settings.Config) []settingRow {
 				artKindOption("settings_download_art_kind_box2d", "Box2D", library.ArtKindBox2D),
 				artKindOption("settings_download_art_kind_box3d", "Box3D", library.ArtKindBox3D),
 				artKindOption("settings_download_art_kind_miximage", "MixImage", library.ArtKindMixImage),
+				artKindOption("settings_download_art_kind_miximage_v2", "MixImage v2", library.ArtKindMixImageV2),
 			},
 			get:     func(c settings.Config) any { return c.ArtKind },
 			set:     assign(func(c *settings.Config, v library.ArtKind) { c.ArtKind = v }),

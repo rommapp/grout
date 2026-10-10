@@ -66,6 +66,7 @@ Download Art is set to True.
 - **Box2D** - 2D box art scans
 - **Box3D** - 3D box art renders
 - **MixImage** - Composite mix images combining multiple artwork types
+- **MixImage v2** - Newer ScreenScraper mix image layout
 
 ### Download Screenshot Preview (muOS)
 

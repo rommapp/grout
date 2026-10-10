@@ -14,6 +14,7 @@ func TestArtKind_PersistedValues(t *testing.T) {
 		ArtKindBox2D:      "Box2D",
 		ArtKindBox3D:      "Box3D",
 		ArtKindMixImage:   "Miximage",
+		ArtKindMixImageV2: "Miximage_v2",
 		ArtKindMarquee:    "Marquee",
 		ArtKindLogo:       "Logo",
 		ArtKindTitle:      "Title",
