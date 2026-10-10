@@ -17,8 +17,7 @@ chmod +x ./grout
 
 if [ -f "$FLAG_FILE" ]; then
     rm -f "$FLAG_FILE"
-    killall emulationstation
-    nohup bash -c "sleep 3 && batocera-es-swissknife --restart" >/dev/null 2>&1 &
+    sudo systemctl restart emulationstation
 fi
 
 exit 0
