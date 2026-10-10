@@ -321,6 +321,18 @@ func (r *Rom) artworkURL(kind library.ArtKind, host settings.Host, preferLarge b
 			coverURL = r.ScreenScraperMetadata.MiximageURL
 			boxPath = r.ScreenScraperMetadata.MiximageURL
 		}
+	} else if kind == library.ArtKindMixImageV2 {
+		if r.ScreenScraperMetadata.MiximageV2Path != "" {
+			if !strings.Contains(r.ScreenScraperMetadata.MiximageV2Path, RommAssetPrefix) {
+				coverURL, err = joinPathWithQuery(host.URL(), RommAssetPrefix, r.ScreenScraperMetadata.MiximageV2Path)
+			} else {
+				coverURL, err = joinPathWithQuery(host.URL(), r.ScreenScraperMetadata.MiximageV2Path)
+			}
+			boxPath = r.ScreenScraperMetadata.MiximageV2Path
+		} else if r.ScreenScraperMetadata.MiximageV2URL != "" {
+			coverURL = r.ScreenScraperMetadata.MiximageV2URL
+			boxPath = r.ScreenScraperMetadata.MiximageV2URL
+		}
 	}
 
 	if kind == library.ArtKindDefault || coverURL == "" {

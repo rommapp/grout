@@ -12,6 +12,7 @@ type ScreenScrapper struct {
 	ManualURL          string   `json:"manual_url"`
 	MarqueeURL         string   `json:"marquee_url"`
 	MiximageURL        string   `json:"miximage_url"`
+	MiximageV2URL      string   `json:"miximage_v2_url"`
 	PhysicalURL        string   `json:"physical_url"`
 	ScreenshotURL      string   `json:"screenshot_url"`
 	SteamgridURL       string   `json:"steamgrid_url"`
@@ -23,6 +24,7 @@ type ScreenScrapper struct {
 	Box3DPath          string   `json:"box3d_path"`
 	FanartPath         string   `json:"fanart_path"`
 	MiximagePath       string   `json:"miximage_path"`
+	MiximageV2Path     string   `json:"miximage_v2_path"`
 	PhysicalPath       string   `json:"physical_path"`
 	MarqueePath        string   `json:"marquee_path"`
 	LogoPath           string   `json:"logo_path"`

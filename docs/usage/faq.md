@@ -98,6 +98,7 @@ Can't find what you're looking for? [Open an issue](https://github.com/rommapp/g
 > - **Box2D** - Flat front box art
 > - **Box3D** - 3D rendered box art with perspective
 > - **MixImage** - Composite image combining box art, screenshots, and system logos
+> - **MixImage v2** - Newer ScreenScraper composite layout
 
 > [!NOTE]
 > **Can I download artwork for games I already have?**

@@ -750,6 +750,10 @@ other = "Marquee"
 hash = "sha1-211950c5de78491829453dcda8daaf60931aaadb"
 other = "MixImage"
 
+[settings_download_art_kind_miximage_v2]
+hash = "sha1-6eca4fb1c14b244dd4860ccd4c1b51346d4412a1"
+other = "MixImage v2"
+
 [settings_download_art_kind_none]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
 other = "None"
