@@ -120,7 +120,13 @@ func (l *local) launch(t *testing.T, env map[string]string) {
 	}
 	t.Cleanup(func() {
 		_ = grout.Process.Kill()
-		_, _ = grout.Process.Wait()
+		state, _ := grout.Process.Wait()
+		// A grout that died before opening its log leaves an empty one, and a
+		// failure that says only that is no help. How it ended says whether
+		// it crashed or hung: "signal: killed" is this cleanup stopping it.
+		if t.Failed() {
+			t.Logf("grout ended with %v and printed:\n%s", state, indent(l.output.String()))
+		}
 	})
 
 	l.focusWindow()

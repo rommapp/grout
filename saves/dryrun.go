@@ -25,8 +25,10 @@ func RunScenario(name string, w io.Writer) error {
 		return scenarioNextUINaming(w, true)
 	case "nextui-retroarch":
 		return scenarioNextUINaming(w, false)
+	case "dreamcast-vmu":
+		return scenarioDreamcastVMU(w)
 	case "all":
-		for _, s := range []string{"slot-switch", "nextui-keep", "nextui-retroarch"} {
+		for _, s := range []string{"slot-switch", "nextui-keep", "nextui-retroarch", "dreamcast-vmu"} {
 			if err := RunScenario(s, w); err != nil {
 				return err
 			}
@@ -34,7 +36,7 @@ func RunScenario(name string, w io.Writer) error {
 		}
 		return nil
 	default:
-		return fmt.Errorf("unknown scenario %q (want: slot-switch, nextui-keep, nextui-retroarch, all)", name)
+		return fmt.Errorf("unknown scenario %q (want: slot-switch, nextui-keep, nextui-retroarch, dreamcast-vmu, all)", name)
 	}
 }
 
@@ -162,6 +164,59 @@ func scenarioNextUINaming(w io.Writer, keepStyle bool) error {
 	fmt.Fprintf(w, "\n  %s: save round-trips for this naming style.\n", passFail(ok))
 	if !ok {
 		return fmt.Errorf("scenario nextui naming (keepStyle=%v) failed: read=%v write=%v", keepStyle, readOK, writeOK)
+	}
+	return nil
+}
+
+// scenarioDreamcastVMU reproduces issue #254: Flycast writes per-game VMUs as
+// <rom>.A1.bin ... <rom>.D1.bin. The A1 card must resolve back to its ROM (B1-D1 are
+// blank and ignored), and a download, which RomM only reports as "bin", must be written
+// back as <rom>.A1.bin rather than <rom>.bin. It exercises the real splitSaveName /
+// saveLookupKeys read side and the real downloadSaveName write side.
+func scenarioDreamcastVMU(w io.Writer) error {
+	os.Setenv("CFW", "KNULLI")
+
+	dir, err := os.MkdirTemp("", "grout-dryrun-vmu-*")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(dir)
+
+	const romFile = "Sonic Adventure 2 (USA).chd"
+	romBase := cfw.SaveBasename(false, romFile)
+	fmt.Fprintln(w, "Scenario #254: Dreamcast Flycast per-game VMUs")
+	fmt.Fprintf(w, "  ROM on disk:           %s\n", romFile)
+	fmt.Fprintf(w, "  ROM expected_basename: %s\n\n", romBase)
+
+	// READ side: only the A1 card is a save, and it resolves to the ROM.
+	readOK := true
+	for _, port := range []string{"A1", "B1", "C1", "D1"} {
+		file := romBase + "." + port + ".bin"
+		base, _, isSave := splitSaveName("dc", file)
+		matched := false
+		if isSave {
+			for _, k := range saveLookupKeys(base) {
+				matched = matched || k == romBase
+			}
+		}
+		want := port == "A1"
+		readOK = readOK && matched == want
+		fmt.Fprintf(w, "  READ  %-34s synced=%-5v -> %s\n", file, matched, passFail(matched == want))
+	}
+
+	// WRITE side: RomM keeps the name but only reports file_extension "bin".
+	want := romBase + ".A1.bin"
+	writeOK := true
+	for _, server := range []string{romBase + ".A1 [2026-01-01_00-00-00].bin", "T-8111N.A1.bin"} {
+		dl := downloadSaveName("dc", romFile, server, "bin", dir)
+		writeOK = writeOK && dl == want
+		fmt.Fprintf(w, "  WRITE server %-44s -> %s  %s\n", server, dl, passFail(dl == want))
+	}
+
+	ok := readOK && writeOK
+	fmt.Fprintf(w, "\n  %s: VMU round-trips as %s.\n", passFail(ok), want)
+	if !ok {
+		return fmt.Errorf("scenario dreamcast-vmu failed: read=%v write=%v", readOK, writeOK)
 	}
 	return nil
 }

@@ -202,6 +202,31 @@ On NextUI, a downloaded save is named the way the **Save format** setting says, 
 `Game.gba.sav` for MinUI (the default), `Game.srm` for RetroArch, and `Game.sav` for Generic.
 MinUI has no such setting and always uses `Game.gba.sav`, so that is how saves are written there.
 
+### Dreamcast (Flycast)
+
+Flycast has no `.srm`: it keeps saves on virtual memory cards (VMUs). Where those cards live depends on the
+`reicast_per_content_vmus` core option (**Per-Game VMUs** in RetroArch's Quick Menu > Core Options), and Grout
+can only sync them when each game has its own card:
+
+- `"disabled"`: every game shares the same cards, `vmu_save_A1.bin` and so on, kept in RetroArch's system (BIOS)
+  folder under `dc/`. The saves folder then only holds a `.ldci` file, which records the last disc used, not a save.
+  A shared card can't be tied to a single game, so **nothing is synced**. This is the default on muOS and Spruce.
+- `"VMU A1"`: each game gets its own A1 card in the saves folder, `Game.A1.bin`. **Synced.**
+- `"All VMUs"`: each game gets one card per controller port, `Game.A1.bin` to `Game.D1.bin`. Grout syncs the **A1**
+  card only, which is where games save; the others are blank cards and are ignored. This is forced on Knulli and
+  Batocera.
+
+To sync Dreamcast saves on a firmware that defaults to `"disabled"`, set the option to `"VMU A1"`. Saves already on
+the shared card are not moved to the new per-game cards. Downloaded saves are only loaded by Flycast once the option
+is changed.
+
+A downloaded Dreamcast save is always written as `Game.A1.bin` so Flycast picks it up.
+
+Recent Flycast builds (v2.5 and later, the default Dreamcast core on Knulli and Batocera outside of
+H700/A133/RK3326 devices) name per-game cards after the disc's product ID instead, e.g. `T-8111N.A1.bin`. Those
+files are not matched to their game yet. A save downloaded by Grout as `Game.A1.bin` is still loaded by these
+builds, which rename it to the product ID on first launch.
+
 ### Syncs can be obscured by autoload { data-toc-label="Autoload Warning" }
 
 If you use save states with autoload enabled, the emulator will load the state instead of the save file. To use synced

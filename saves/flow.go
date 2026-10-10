@@ -700,11 +700,17 @@ func downloadSaveFileName(romFileName, serverFileName, serverExt string, keepRom
 	return cfw.SaveBasename(keepRomExt, romFileName) + "." + serverExt
 }
 
-// downloadSaveName is the name a downloaded save is written under. A firmware
-// that says how its emulator names saves, like NextUI's Save format setting,
-// decides both the style and the extension. Elsewhere the style is read off the
-// saves already in saveDir and the server's extension is kept.
-func downloadSaveName(romFileName, serverFileName, serverExt, saveDir string) string {
+// downloadSaveName is the name a downloaded save is written under. A platform
+// with a multi-part save suffix (Dreamcast VMUs, <rom>.A1.bin) gets that suffix
+// back, since RomM only reports the last extension. A firmware that says how its
+// emulator names saves, like NextUI's Save format setting, decides both the style
+// and the extension. Elsewhere, the style is read off the saves already in saveDir
+// and the server's extension is kept.
+func downloadSaveName(fsSlug, romFileName, serverFileName, serverExt, saveDir string) string {
+	if suffix, ok := platformSaveSuffix(fsSlug, serverExt); ok {
+		// The suffix is the emulator's own naming (Flycast drops the ROM extension).
+		return downloadSaveFileName(romFileName, serverFileName, suffix, false)
+	}
 	if keep, ext, ok := cfw.ActiveFirmware().SaveNaming(); ok {
 		return downloadSaveFileName(romFileName, serverFileName, ext, keep)
 	}
@@ -878,13 +884,12 @@ func ScanSaves(config *settings.Config) []LocalSave {
 						continue
 					}
 
-					ext := strings.ToLower(filepath.Ext(entry.Name()))
-					if !ValidSaveExtensions[ext] {
+					nameNoExt, _, isSave := splitSaveName(fsSlug, entry.Name())
+					if !isSave {
 						continue
 					}
 
 					saveFileCount++
-					nameNoExt := strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name()))
 
 					var rom romm.Rom
 					var matched bool
@@ -1419,7 +1424,11 @@ func download(client *romm.Client, config *settings.Config, deviceID string, ite
 			saveDir = ResolveSaveDirectory(item.LocalSave.FSSlug, config)
 		}
 		if saveDir != "" {
-			fileName := downloadSaveName(item.LocalSave.RomFileName, item.RemoteSave.FileName, item.RemoteSave.FileExtension, saveDir)
+			fsSlug := item.LocalSave.FSSlug
+			if config != nil {
+				fsSlug = config.ResolveFSSlug(fsSlug)
+			}
+			fileName := downloadSaveName(fsSlug, item.LocalSave.RomFileName, item.RemoteSave.FileName, item.RemoteSave.FileExtension, saveDir)
 			savePath = filepath.Join(saveDir, fileName)
 		}
 	}
