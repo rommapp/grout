@@ -106,3 +106,22 @@ func DirectoryChoicesFor(req ChoiceRequest) Choices {
 	}
 	return result
 }
+
+// DetectMappings picks a folder for every platform on a first run, so a
+// platform the user never scrolls to still gets the folder grout found for it.
+func DetectMappings(platforms []romm.Platform, base ChoiceRequest) map[string]settings.DirectoryMapping {
+	mappings := make(map[string]settings.DirectoryMapping)
+	for _, platform := range platforms {
+		req := base
+		req.Platform = platform
+		choices := DirectoryChoicesFor(req)
+		if choices.Selected < 0 {
+			continue
+		}
+		mappings[platform.FSSlug] = settings.DirectoryMapping{
+			RomMSlug:     platform.FSSlug,
+			RelativePath: choices.Directories[choices.Selected].RelativePath,
+		}
+	}
+	return mappings
+}

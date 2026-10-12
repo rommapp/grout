@@ -84,16 +84,12 @@ func (s *PlatformMappingScreen) Draw(input PlatformMappingInput) (PlatformMappin
 	// platform the user never scrolled to still gets the folder grout picked
 	// for it.
 	if len(mappings) == 0 {
-		for _, platform := range platforms {
-			choices := s.choicesFor(platform, directories, mappings, input)
-			if choices.Selected >= 0 {
-				slug := platform.FSSlug
-				mappings[slug] = settings.DirectoryMapping{
-					RomMSlug:     slug,
-					RelativePath: choices.Directories[choices.Selected].RelativePath,
-				}
-			}
-		}
+		mappings = catalog.DetectMappings(platforms, catalog.ChoiceRequest{
+			CFW:              input.CFW,
+			Directories:      directories,
+			PlatformsBinding: input.PlatformsBinding,
+			AutoSelect:       input.AutoSelect,
+		})
 	}
 
 	filter := catalog.PlatformFilter{Status: catalog.StatusAll}

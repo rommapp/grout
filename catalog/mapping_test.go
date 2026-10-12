@@ -180,3 +180,49 @@ func TestDirectoryChoicesFor_UnknownPlatformUsesItsSlug(t *testing.T) {
 		t.Errorf("choices = %v, want the platform's own slug", paths(got.Directories))
 	}
 }
+
+// A first run maps every platform whose folder is on disk, not just the first
+// one: a mapping found along the way must not turn the rest into a return
+// visit where they would start on Skip.
+func TestDetectMappings_MapsEveryDetectedPlatform(t *testing.T) {
+	platforms := []romm.Platform{
+		gba,
+		{FSSlug: "snes", Name: "Super Nintendo"},
+		{FSSlug: "psx", Name: "PlayStation"},
+		{FSSlug: "n64", Name: "Nintendo 64"},
+	}
+
+	got := DetectMappings(platforms, ChoiceRequest{
+		CFW:         cfw.MuOS,
+		Directories: []string{"gba", "snes", "ps"},
+	})
+
+	want := map[string]string{"gba": "gba", "snes": "snes", "psx": "ps"}
+	if len(got) != len(want) {
+		t.Fatalf("mappings = %v, want %v", got, want)
+	}
+	for slug, path := range want {
+		if got[slug].RelativePath != path || got[slug].RomMSlug != slug {
+			t.Errorf("mappings[%s] = %+v, want %q", slug, got[slug], path)
+		}
+	}
+}
+
+// With AutoSelect, a platform with no folder on disk is still offered the
+// firmware's own folder, whatever was detected before it.
+func TestDetectMappings_AutoSelectCreatesMissing(t *testing.T) {
+	platforms := []romm.Platform{gba, {FSSlug: "n64", Name: "Nintendo 64"}}
+
+	got := DetectMappings(platforms, ChoiceRequest{
+		CFW:         cfw.MuOS,
+		Directories: []string{"gba"},
+		AutoSelect:  true,
+	})
+
+	if got["gba"].RelativePath != "gba" {
+		t.Errorf("gba = %+v, want the folder on disk", got["gba"])
+	}
+	if got["n64"].RelativePath == "" {
+		t.Errorf("n64 = %+v, want a folder to create", got["n64"])
+	}
+}
