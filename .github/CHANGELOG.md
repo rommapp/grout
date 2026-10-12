@@ -1,5 +1,6 @@
 # Unreleased
 ## Bug Fixes
+- Downloaded art now honours the server's platform binding, so muOS art for platforms in ES-DE folders (`megadrive`, `mastersystem`, `pcengine`, ...) lands in the catalogue muOS reads instead of `Sega Mega Drive/Genesis/box`. - @JuanVqz
 - Fixed TrimUI Smart Pro input mapping on MinUI (#252). `DetectDevice()` now returns `DeviceTrimui` for `tg5040` instead of falling through to `DeviceGeneric`. No screen rotation is applied; the kernel framebuffer on TrimUI devices is already correctly oriented. The TrimUI Brick (1024×768 IPS) is distinguished from the Smart Pro via device-tree model - @jellydn
 
 # v4.9.1.0

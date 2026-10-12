@@ -16,6 +16,8 @@ func PlatformRomDirectory(config settings.Config, fsSlug string) string {
 
 // PlatformArtDirectory returns where a kind of artwork goes for a platform, or
 // "" when the firmware keeps none. Callers treat "" as "skip", not as an error.
+// Like the rom directory, it honours the server's platform binding, so a
+// folder RomM knows as "megadrive" still finds muOS's "genesis" catalogue.
 func PlatformArtDirectory(config settings.Config, slot ArtSlot, fsSlug, platformName string) string {
-	return ArtDirectory(GetCFW(), slot, PlatformRomDirectory(config, fsSlug), fsSlug, platformName)
+	return ArtDirectory(GetCFW(), slot, PlatformRomDirectory(config, fsSlug), config.ResolveFSSlug(fsSlug), platformName)
 }
