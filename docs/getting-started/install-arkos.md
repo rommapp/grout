@@ -21,7 +21,8 @@ _Please help verify compatibility on other devices by reporting your results!_
 
 1. Download the latest [Grout release for ArkOS](https://github.com/rommapp/grout/releases/latest/download/Grout-ArkOS.zip).
 2. Unzip the downloaded archive.
-3. Copy the `Grout` folder and `Grout.sh` into `/roms/ports/` on your device.
+3. Copy the `Grout` folder and `Grout.sh` into your Ports directory on your device (ROMs on the main SD card: `/roms/ports/`,
+   ROMs on SD2 via `Switch to SD2 for Roms`: `/roms2/ports/`).
 4. From the EmulationStation main menu, press `Start`, navigate to `Game Settings`, and select `Update Gamelist`.
 5. Launch Grout from the `Ports` menu and enjoy!
 
@@ -30,7 +31,8 @@ _Please help verify compatibility on other devices by reporting your results!_
 > [!NOTE]
 > Grout's built-in updater does not support ArkOS yet, so updates must be done manually.
 
-To update Grout, simply download the latest release and replace the existing `Grout` folder and `Grout.sh` in `/roms/ports/`. If you
+To update Grout, simply download the latest release and replace the existing `Grout` folder and `Grout.sh` in your Ports directory
+(`/roms/ports/`, or `/roms2/ports/` if your ROMs are on SD2). If you
 have made any custom configurations, ensure to back them up before replacing the folder. Be sure to keep the `config.json`
 file if you do not want to authenticate again, and configure platforms folder mappings again.
 
