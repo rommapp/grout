@@ -72,6 +72,8 @@ func buildTransitionFunc(state *AppState, quitOnBack bool, initialShowCollection
 			return popOrExit(stack)
 		case ScreenArtworkSync:
 			return popOrExit(stack)
+		case ScreenMetadataSync:
+			return popOrExit(stack)
 		case ScreenUpdateCheck:
 			return transitionUpdateCheck(ctx, result)
 		case ScreenGameFilters:
@@ -723,6 +725,13 @@ func transitionToolsSettings(ctx *transitionContext, result any) (router.Screen,
 			Config:         *ctx.state.Config,
 			Host:           ctx.state.Host,
 			DownloadedOnly: true,
+		}
+
+	case ui.ToolsSettingsActionSyncMetadata:
+		ctx.stack.Push(ScreenToolsSettings, pushInput, r)
+		return ScreenMetadataSync, ui.MetadataSyncInput{
+			Config: *ctx.state.Config,
+			Host:   ctx.state.Host,
 		}
 
 	default:

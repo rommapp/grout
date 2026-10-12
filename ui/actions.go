@@ -110,6 +110,7 @@ type ToolsSettingsAction int
 const (
 	ToolsSettingsActionSaved ToolsSettingsAction = iota
 	ToolsSettingsActionSyncLocalArtwork
+	ToolsSettingsActionSyncMetadata
 	ToolsSettingsActionBack
 )
 

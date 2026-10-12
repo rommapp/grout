@@ -42,7 +42,7 @@ func TestToGame_MapsFields(t *testing.T) {
 		{"RetroAchievementsID", got.RetroAchievementsID, 7},
 		{"RetroAchievementsHash", got.RetroAchievementsHash, "deadbeef"},
 		{"Art.Cover", got.Art.Cover, "/roms/gba/media/Sonic.png"},
-		{"MaxPlayers", got.MaxPlayers, 1},
+		{"MaxPlayers", got.MaxPlayers, 0},
 	}
 	for _, c := range checks {
 		if c.got != c.want {
@@ -127,5 +127,27 @@ func TestToPlatform(t *testing.T) {
 	got := Platform{ID: 3, FSSlug: "gba", Name: "Game Boy Advance"}.ToPlatform()
 	if got.FSSlug != "gba" || got.Name != "Game Boy Advance" {
 		t.Errorf("ToPlatform() = %+v", got)
+	}
+}
+
+// Without game modes the server does not know the player count, which must
+// stay distinguishable from a single-player game.
+func TestToGame_MaxPlayers(t *testing.T) {
+	tests := []struct {
+		name  string
+		modes []string
+		want  int
+	}{
+		{"no game modes is unknown", nil, 0},
+		{"single player", []string{"Single player"}, 1},
+		{"multiplayer", []string{"Single player", "Multiplayer"}, 4},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := Rom{Metadatum: RomMetadata{GameModes: tt.modes}}.ToGame("", "", library.ArtPaths{})
+			if got.MaxPlayers != tt.want {
+				t.Errorf("MaxPlayers = %d, want %d", got.MaxPlayers, tt.want)
+			}
+		})
 	}
 }

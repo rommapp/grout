@@ -144,3 +144,39 @@ func TestIsFileDownloaded(t *testing.T) {
 		t.Error("an empty file name must not report downloaded")
 	}
 }
+
+func TestRomLayout_LocalPath(t *testing.T) {
+	dir := t.TempDir()
+	touch(t, dir, "Sonic (Europe).gba")
+	touch(t, dir, "Final Fantasy VII.m3u")
+
+	tests := []struct {
+		name   string
+		layout RomLayout
+		want   string
+	}{
+		{
+			"the version that is present, not the first listed",
+			RomLayout{BaseName: "Sonic", FileNames: []string{"Sonic (USA).gba", "Sonic (Europe).gba"}},
+			filepath.Join(dir, "Sonic (Europe).gba"),
+		},
+		{
+			"multi disc resolves to the playlist",
+			RomLayout{BaseName: "Final Fantasy VII", MultiDisc: true, FileNames: []string{"disc1.bin"}},
+			filepath.Join(dir, "Final Fantasy VII.m3u"),
+		},
+		{
+			"absent rom has no path",
+			RomLayout{BaseName: "Tetris", FileNames: []string{"Tetris.gb"}},
+			"",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.layout.LocalPath(dir); got != tt.want {
+				t.Errorf("LocalPath = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}

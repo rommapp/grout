@@ -95,25 +95,53 @@ func (gl *GameList) findGame(match gameMatcher) *etree.Element {
 
 func byName(name string) gameMatcher {
 	return func(game *etree.Element) bool {
-		nameElement := game.FindElement(NameElement)
+		nameElement := game.SelectElement(NameElement)
 		return nameElement != nil && nameElement.Text() == name
 	}
 }
 
-// byFileName matches an entry on the rom's file name from <path>, the stable
+// fileNameOf is the rom's file name from the entry's <path>, the stable
 // identity of a rom entry. <name> is a display string and changes with regions,
 // locale and settings.
 //
-// Base names are compared so grout adopts entries written by EmulationStation,
+// The base name is kept so grout adopts entries written by EmulationStation,
 // which stores "./Game.gba" where grout stores an absolute path.
+func fileNameOf(game *etree.Element) string {
+	pathElement := game.SelectElement(PathElement)
+	if pathElement == nil {
+		return ""
+	}
+	return filepath.Base(strings.TrimSpace(pathElement.Text()))
+}
+
 func byFileName(fileName string) gameMatcher {
 	return func(game *etree.Element) bool {
-		pathElement := game.FindElement(PathElement)
-		if pathElement == nil {
-			return false
-		}
-		return filepath.Base(strings.TrimSpace(pathElement.Text())) == fileName
+		return fileNameOf(game) == fileName
 	}
+}
+
+// gamesByFileName indexes the entries by rom file name, for callers looking up
+// many games at once. Should several entries share a file name, the first one
+// in the file is kept, as findGame would find.
+//
+// The index is a snapshot: entries added or moved afterwards are not in it.
+func (gl *GameList) gamesByFileName() map[string]*etree.Element {
+	games := make(map[string]*etree.Element)
+	root := gl.root()
+	if root == nil {
+		return games
+	}
+	for _, game := range root.SelectElements(GameElement) {
+		fileName := fileNameOf(game)
+		if _, taken := games[fileName]; !taken && validFileName(fileName) {
+			games[fileName] = game
+		}
+	}
+	return games
+}
+
+func validFileName(fileName string) bool {
+	return fileName != "" && fileName != "."
 }
 
 func (gl *GameList) Contains(element, value string) bool {
@@ -177,13 +205,18 @@ func (gl *GameList) upsert(match gameMatcher, info map[string]string) *etree.Ele
 	}
 
 	for key, value := range info {
-		if element := game.FindElement(key); element != nil {
-			element.SetText(value)
-		} else {
-			game.CreateElement(key).SetText(value)
-		}
+		setChild(game, key, value)
 	}
 	return game
+}
+
+// setChild sets the text of game's child element, creating it if absent.
+func setChild(game *etree.Element, element, value string) {
+	if child := game.SelectElement(element); child != nil {
+		child.SetText(value)
+	} else {
+		game.CreateElement(element).SetText(value)
+	}
 }
 
 // AddOrUpdateEntry upserts an entry keyed by <name>, for non-rom entries such

@@ -73,7 +73,7 @@ func (s *ArtworkSyncScreen) draw(input ArtworkSyncInput) {
 		return
 	}
 
-	chosen, ok := s.choosePlatforms(found)
+	chosen, ok := choosePlatforms(found, localize("button_download", "Download"))
 	if !ok {
 		return
 	}
@@ -168,7 +168,8 @@ func (s *ArtworkSyncScreen) artFor(input ArtworkSyncInput, game romm.Rom, platfo
 
 // choosePlatforms lets the user drop platforms from the run. Everything starts
 // selected, since asking for a sync means wanting all of it by default.
-func (s *ArtworkSyncScreen) choosePlatforms(found []platformRoms) ([]platformRoms, bool) {
+// confirmLabel names what Start does.
+func choosePlatforms(found []platformRoms, confirmLabel string) ([]platformRoms, bool) {
 	items := make([]gaba.MenuItem, 0, len(found))
 	for _, entry := range found {
 		items = append(items, gaba.MenuItem{
@@ -184,7 +185,7 @@ func (s *ArtworkSyncScreen) choosePlatforms(found []platformRoms) ([]platformRom
 	options.StatusBar = StatusBar()
 	options.FooterHelpItems = []gaba.FooterHelpItem{
 		FooterBack(),
-		{ButtonName: icons.Start, HelpText: localize("button_download", "Download"), IsConfirmButton: true},
+		{ButtonName: icons.Start, HelpText: confirmLabel, IsConfirmButton: true},
 	}
 
 	result, err := gaba.List(options)

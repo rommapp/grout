@@ -53,7 +53,7 @@ type Game struct {
 	ReleaseDate time.Time
 	// Rating is 0 when unknown, otherwise 0..1.
 	Rating float64
-	// At least 1.
+	// MaxPlayers is 0 when unknown.
 	MaxPlayers int
 
 	MD5                   string
@@ -68,3 +68,6 @@ type Game struct {
 func (g Game) HasRating() bool { return g.Rating > 0 }
 
 func (g Game) HasReleaseDate() bool { return !g.ReleaseDate.IsZero() }
+
+// HasMaxPlayers distinguishes an unknown player count from a single player.
+func (g Game) HasMaxPlayers() bool { return g.MaxPlayers > 0 }

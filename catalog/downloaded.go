@@ -47,6 +47,15 @@ func IsDownloaded(config settings.Config, game romm.Rom) bool {
 	return romLayout(game).IsDownloaded(RomDirectory(config, game))
 }
 
+// LocalRomPath is the file on the device that holds a game, or "" when it is
+// not downloaded. It agrees with IsDownloaded on what counts as present.
+func LocalRomPath(config settings.Config, game romm.Rom) string {
+	if game.PlatformFSSlug == "" {
+		return ""
+	}
+	return romLayout(game).LocalPath(RomDirectory(config, game))
+}
+
 // IsFileDownloaded reports whether one named version of a game is present.
 func IsFileDownloaded(config settings.Config, game romm.Rom, fileName string) bool {
 	if game.PlatformFSSlug == "" {

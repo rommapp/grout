@@ -26,6 +26,7 @@ const (
 	ScreenRebuildCache
 	ScreenBIOSDownload
 	ScreenArtworkSync
+	ScreenMetadataSync
 	ScreenUpdateCheck
 	ScreenGameFilters
 	ScreenSaveSync

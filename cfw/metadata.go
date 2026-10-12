@@ -1,6 +1,7 @@
 package cfw
 
 import (
+	"errors"
 	"log/slog"
 	"os"
 
@@ -55,9 +56,53 @@ func FillGamesMetadata(entries []gamelist.RomGameEntry) {
 
 	case GamelistMuOSText:
 		for _, entry := range entries {
-			muos.AddGameDescription(entry)
+			if err := muos.AddGameDescription(entry); err != nil {
+				logger.Warn("Failed to write muOS game description", "error", err)
+			}
 		}
 
 	case GamelistNone:
 	}
+}
+
+// HasGamesMetadata reports whether the firmware reads game metadata grout can
+// write.
+func HasGamesMetadata() bool {
+	return ActiveFirmware().Gamelist() != GamelistNone
+}
+
+// RefreshGamesMetadata rewrites the metadata of games already on the device.
+//
+// Unlike FillGamesMetadata it keeps what the frontend recorded about each game
+// in a gamelist, such as play count or favourites, and only replaces what
+// grout writes. muOS keeps grout's text in files of its own, which are simply
+// rewritten.
+//
+// It returns how many entries were written, with every failure joined: one
+// game or platform failing does not stop the rest.
+func RefreshGamesMetadata(entries []gamelist.RomGameEntry) (int, error) {
+	switch ActiveFirmware().Gamelist() {
+	case GamelistEmulationStation:
+		written, err := gamelist.RefreshRomGamesInGamelist(entries, gamelist.GameListFileName)
+		if written > 0 {
+			scheduleESRestart()
+		}
+		return written, err
+
+	case GamelistMiyoo:
+		return gamelist.RefreshRomGamesInGamelist(entries, gamelist.MiyooGameListFileName)
+
+	case GamelistMuOSText:
+		written := 0
+		var errs []error
+		for _, entry := range entries {
+			if err := muos.AddGameDescription(entry); err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			written++
+		}
+		return written, errors.Join(errs...)
+	}
+	return 0, nil
 }
