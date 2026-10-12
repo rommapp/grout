@@ -306,6 +306,9 @@ func failureMessage(err error) *goi18n.Message {
 	case auth.FailureHostname:
 		return &goi18n.Message{ID: "login_error_invalid_hostname",
 			Other: "Could not resolve hostname!\nPlease check the hostname is correct."}
+	case auth.FailureNetwork:
+		return &goi18n.Message{ID: "login_error_network_unreachable",
+			Other: "No network connection!\nPlease check that Wi-Fi is on and connected."}
 	case auth.FailureConnection:
 		return &goi18n.Message{ID: "login_error_connection_refused",
 			Other: "Could not connect to host!\nPlease check the hostname and port are correct."}

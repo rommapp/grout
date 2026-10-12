@@ -502,6 +502,10 @@ other = "Invalid or expired pairing code.\nPlease try again."
 hash = "sha1-5b400e2f88225e333d6be2b1213d6bea077340d3"
 other = "¡No se pudo resolver el nombre de host!\nPor favor verifique que el nombre de host es correcto."
 
+[login_error_network_unreachable]
+hash = "sha1-e2efd728e490f6befb9f2fbb0211b036c3b8d631"
+other = "¡Sin conexión de red!\nPor favor verifique que el Wi-Fi está encendido y conectado."
+
 [login_error_server]
 hash = "sha1-1cda2ac7b6ff3b6e80528d50678fa0fcd2059bb5"
 other = "¡Error del servidor RomM!\nPor favor revise los logs del servidor RomM."
@@ -937,6 +941,10 @@ other = "¡Acceso denegado!\nVerifique los permisos del servidor."
 [startup_error_invalid_hostname]
 hash = "sha1-81f43aeacb5093a191340a52b378c5bfa1229bf1"
 other = "¡No se pudo resolver el nombre de host!\nPor favor verifique la configuración del servidor."
+
+[startup_error_network_unreachable]
+hash = "sha1-e2efd728e490f6befb9f2fbb0211b036c3b8d631"
+other = "¡Sin conexión de red!\nPor favor verifique que el Wi-Fi está encendido y conectado."
 
 [startup_error_server]
 hash = "sha1-1cda2ac7b6ff3b6e80528d50678fa0fcd2059bb5"

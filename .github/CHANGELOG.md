@@ -1,5 +1,6 @@
 # Unreleased
 ## Bug Fixes
+- Login and startup now say "No network connection!" when the device has no network (Wi-Fi off) instead of "Something unexpected happened". "No route to host" is reported as a failed connection. - @JuanVqz
 - Fixed TrimUI Smart Pro input mapping on MinUI (#252). `DetectDevice()` now returns `DeviceTrimui` for `tg5040` instead of falling through to `DeviceGeneric`. No screen rotation is applied; the kernel framebuffer on TrimUI devices is already correctly oriented. The TrimUI Brick (1024×768 IPS) is distinguished from the Smart Pro via device-tree model - @jellydn
 
 # v4.9.1.0

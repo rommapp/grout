@@ -13,15 +13,16 @@ import (
 )
 
 var (
-	ErrInvalidHostname   = errors.New("invalid hostname")
-	ErrConnectionRefused = errors.New("connection refused")
-	ErrTimeout           = errors.New("connection timeout")
-	ErrUnauthorized      = errors.New("invalid credentials")
-	ErrForbidden         = errors.New("access forbidden")
-	ErrServerError       = errors.New("server error")
-	ErrConflict          = errors.New("conflict")
-	ErrNotFound          = errors.New("not found")
-	ErrRateLimited       = errors.New("rate limited")
+	ErrInvalidHostname    = errors.New("invalid hostname")
+	ErrNetworkUnreachable = errors.New("network unreachable")
+	ErrConnectionRefused  = errors.New("connection refused")
+	ErrTimeout            = errors.New("connection timeout")
+	ErrUnauthorized       = errors.New("invalid credentials")
+	ErrForbidden          = errors.New("access forbidden")
+	ErrServerError        = errors.New("server error")
+	ErrConflict           = errors.New("conflict")
+	ErrNotFound           = errors.New("not found")
+	ErrRateLimited        = errors.New("rate limited")
 )
 
 // APIError is a non-2xx response from RomM. It unwraps to the sentinel for its
@@ -99,6 +100,14 @@ func ClassifyError(err error) error {
 		var opErr *net.OpError
 		if errors.As(urlErr.Err, &opErr) {
 			if errors.Is(opErr.Err, syscall.ECONNREFUSED) {
+				return fmt.Errorf("%w: host not reachable", ErrConnectionRefused)
+			}
+			// The device itself has no route out, usually because Wi-Fi is off
+			// or not connected yet. Nothing about the host is wrong.
+			if errors.Is(opErr.Err, syscall.ENETUNREACH) {
+				return fmt.Errorf("%w: device has no network connection", ErrNetworkUnreachable)
+			}
+			if errors.Is(opErr.Err, syscall.EHOSTUNREACH) {
 				return fmt.Errorf("%w: host not reachable", ErrConnectionRefused)
 			}
 			if opErr.Timeout() {

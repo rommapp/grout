@@ -233,6 +233,7 @@ func TestClassify(t *testing.T) {
 	}{
 		{"nil", nil, FailureUnknown},
 		{"hostname", romm.ErrInvalidHostname, FailureHostname},
+		{"network", romm.ErrNetworkUnreachable, FailureNetwork},
 		{"refused", romm.ErrConnectionRefused, FailureConnection},
 		{"timeout", romm.ErrTimeout, FailureTimeout},
 		{"unauthorized", romm.ErrUnauthorized, FailureCredentials},
