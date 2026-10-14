@@ -7,6 +7,7 @@ import (
 	"grout/cfw/batocera"
 	"grout/cfw/knulli"
 	"grout/cfw/koriki"
+	"grout/cfw/leaf"
 	"grout/cfw/minui"
 	"grout/cfw/muos"
 	"grout/cfw/nextui"
@@ -102,6 +103,10 @@ type Firmware struct {
 	// from its own settings: whether the rom's extension stays and the save's
 	// extension. It overrides inferring the style from saves on the card.
 	saveNaming func() (keepRomExt bool, ext string)
+
+	// rescanLibrary, when set, asks a frontend that indexes its library to pick
+	// up games just downloaded. Leaf only lists what its last scan found.
+	rescanLibrary func() error
 }
 
 func (f *Firmware) IsBasedOnEmulationStation() bool {
@@ -135,6 +140,15 @@ func (f *Firmware) OrganizeExtracted(extractDir, romDir, baseName string) error 
 		return nil
 	}
 	return f.organizeExtracted(extractDir, romDir, baseName)
+}
+
+// RescanLibrary asks the frontend to index new games. Firmwares that read the
+// rom folders directly do nothing.
+func (f *Firmware) RescanLibrary() error {
+	if f == nil || f.rescanLibrary == nil {
+		return nil
+	}
+	return f.rescanLibrary()
 }
 
 // DisplayQuirks describes handling a particular device needs. Rotation is in
@@ -380,6 +394,25 @@ var firmwares = map[CFW]*Firmware{
 		saveDirectories: anbernic.Platforms,
 		inputMapping:    anbernic.GetInputMappingBytes,
 		packaging:       Packaging{Asset: "Grout-Anbernic.zip", LaunchScript: "Roms/APPS/Grout.sh", InstallDepth: 4},
+	},
+
+	// Leaf, on the Miniloong Pocket 1. One canonical rom folder per system, art
+	// in a parallel Images tree, and RetroArch saves sorted into a folder per
+	// core. Its launcher indexes the library, so new games need a rescan. The
+	// release archive holds Grout.pak, which goes in Apps/mlp1 as Pak Rat
+	// installs it.
+	Leaf: {
+		id:              Leaf,
+		romDirectory:    leaf.GetRomDirectory,
+		biosDirectory:   leaf.GetBIOSDirectory,
+		baseSavePath:    leaf.GetBaseSavePath,
+		coverDirectory:  besideRoms(leaf.GetArtDirectory),
+		biosFilePaths:   leaf.GetBIOSFilePaths,
+		platforms:       leaf.Platforms,
+		saveDirectories: leaf.SaveDirectories,
+		inputMapping:    leaf.GetInputMappingBytes,
+		rescanLibrary:   leaf.RequestLibraryRescan,
+		packaging:       Packaging{Asset: "Grout-Leaf.zip", LaunchScript: "Grout.pak/launch.sh", InstallDepth: 2},
 	},
 
 	// The EmulationStation family: separate directories per art kind, and a

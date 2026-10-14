@@ -4,6 +4,7 @@
 - [Batocera](../platforms/batocera.md) - ES-DE style folder names (e.g., `gb`, `megadrive`, `psx`)
 - [KNULLI](../platforms/knulli.md) - ES-DE style folder names (e.g., `gb`, `snes`, `psx`)
 - [Koriki](../platforms/koriki.md) - Uppercase short codes (e.g., `GB`, `GBA`, `PS`)
+- [Leaf](../platforms/leaf.md) - Uppercase short codes (e.g., `GB`, `SNES`, `PSX`)
 - [MinUI](../platforms/minui.md) - Descriptive names with tags (e.g., `Game Boy (GB)`)
 - [muOS](../platforms/muos.md) - Mixed short codes and descriptive names (e.g., `gb`, `Nintendo Game Boy`)
 - [NextUI](../platforms/nextui.md) - Descriptive names with tags (e.g., `Game Boy (GB)`)

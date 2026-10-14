@@ -5,6 +5,7 @@
 [batocera]: https://batocera.org
 [knulli]: https://knulli.org
 [koriki]: https://github.com/Rparadise-Team/Koriki
+[leaf]: https://leaf.game
 [minui]: https://github.com/shauninman/MinUI
 [muos]: https://muos.dev
 [nextui]: https://nextui.loveretro.games

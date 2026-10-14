@@ -1,0 +1,10 @@
+{
+  "name": "Grout",
+  "version": "v5.3.1.3",
+  "icon": "icon.png",
+  "platform": "mlp1",
+  "type": "TOOL",
+  "description": "A RomM client: browse your RomM library, download games, art and BIOS, and sync saves.",
+  "author": "The RomM Team",
+  "repo_url": "https://github.com/rommapp/grout"
+}

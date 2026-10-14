@@ -55,16 +55,21 @@ jobs:
             echo "Version is already ${{ steps.version.outputs.value }}, skipping pak.json update"
           fi
 
+          # Update the Leaf pak manifest, which ships as-is in Grout.pak
+          jq --arg version "${{ steps.version.outputs.value }}" \
+             '.version = $version' \
+             scripts/Leaf/pak.json > scripts/Leaf/pak.json.tmp && mv scripts/Leaf/pak.json.tmp scripts/Leaf/pak.json
+
       - name: Commit pak.json changes
         if: ${{ inputs.beta == false }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          if git diff --quiet pak.json; then
+          if git diff --quiet pak.json scripts/Leaf/pak.json; then
             echo "No changes to commit"
           else
-            git add pak.json
+            git add pak.json scripts/Leaf/pak.json
             git commit -m "Update pak.json to ${{ steps.version.outputs.value }}"
             git push
           fi
@@ -95,7 +100,7 @@ jobs:
           GROUT_VERSION: ${{ needs.prepare.outputs.version }}
 
       - name: Package ARM64 platforms
-        run: task package:next package:muos package:knulli package:rocknix package:arkos package:trimui package:batocera package:anbernic
+        run: task package:next package:muos package:knulli package:rocknix package:arkos package:trimui package:batocera package:anbernic package:leaf
 
       - name: Create distributions
         run: |
@@ -107,6 +112,7 @@ jobs:
           cd dist/Trimui && zip -r ../Grout-Trimui.zip Grout && cd ../..
           cd dist/Batocera-arm64 && zip -r ../Grout-Batocera-arm64.zip Grout.sh Grout && cd ../..
           cd dist/Anbernic && zip -r ../Grout-Anbernic.zip Roms && cd ../..
+          cd dist/Leaf && zip -r ../Grout-Leaf.zip Grout.pak && cd ../..
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -121,6 +127,7 @@ jobs:
             dist/Grout-Trimui.zip
             dist/Grout-Batocera-arm64.zip
             dist/Grout-Anbernic.zip
+            dist/Grout-Leaf.zip
             build64/grout
             build64/lib/**
 
@@ -318,6 +325,7 @@ jobs:
             **/Grout-Batocera-x86.zip
             **/Grout-Batocera-amd64.zip
             **/Grout-Anbernic.zip
+            **/Grout-Leaf.zip
             **/grout
           draft: false
           prerelease: ${{ inputs.beta }}
@@ -398,6 +406,7 @@ jobs:
             "Grout-Batocera-amd64.zip"
             "Grout-Batocera-x86.zip"
             "Grout-Anbernic.zip"
+            "Grout-Leaf.zip"
           )
 
           # Build the assets JSON object

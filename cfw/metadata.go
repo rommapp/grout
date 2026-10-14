@@ -60,4 +60,8 @@ func FillGamesMetadata(entries []gamelist.RomGameEntry) {
 
 	case GamelistNone:
 	}
+
+	if err := ActiveFirmware().RescanLibrary(); err != nil {
+		logger.Warn("Failed to ask the frontend to rescan its library", "error", err)
+	}
 }

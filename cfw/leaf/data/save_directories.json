@@ -1,0 +1,185 @@
+{
+  "3do": [],
+  "3ds": [],
+  "acpc": [],
+  "amiga": [
+    "PUAE 2021",
+    "PUAE"
+  ],
+  "arcade": [
+    "FinalBurn Neo",
+    "MAME 2003-Plus",
+    "FB Alpha 2012",
+    "MAME",
+    "MAME 2010"
+  ],
+  "arduboy": [],
+  "atari-st": [],
+  "atari2600": [
+    "Stella 2014"
+  ],
+  "atari5200": [],
+  "atari7800": [
+    "ProSystem"
+  ],
+  "atari800": [],
+  "c128": [],
+  "c64": [],
+  "cave-story": [],
+  "colecovision": [],
+  "cpet": [],
+  "cps1": [
+    "FinalBurn Neo",
+    "MAME 2003-Plus",
+    "FB Alpha 2012"
+  ],
+  "cps2": [
+    "FinalBurn Neo",
+    "MAME 2003-Plus",
+    "FB Alpha 2012"
+  ],
+  "cps3": [
+    "FinalBurn Neo",
+    "MAME 2003-Plus",
+    "FB Alpha 2012"
+  ],
+  "dc": [
+    "Flycast",
+    "FlyCast Fast UMRK"
+  ],
+  "dos": [
+    "DOSBox-pure"
+  ],
+  "fairchild-channel-f": [],
+  "famicom": [
+    "FCEUmm"
+  ],
+  "fds": [
+    "FCEUmm"
+  ],
+  "g-and-w": [
+    "Game & Watch"
+  ],
+  "galaksija": [],
+  "gamegear": [
+    "Genesis Plus GX",
+    "PicoDrive"
+  ],
+  "gb": [
+    "Gambatte",
+    "mGBA"
+  ],
+  "gba": [
+    "mGBA",
+    "gpSP"
+  ],
+  "gbc": [
+    "Gambatte",
+    "mGBA"
+  ],
+  "genesis": [
+    "Genesis Plus GX",
+    "PicoDrive"
+  ],
+  "intellivision": [],
+  "j2me": [],
+  "jaguar": [],
+  "lynx": [
+    "Handy"
+  ],
+  "mega-duck-slash-cougar-boy": [],
+  "msx": [],
+  "n64": [
+    "Mupen64Plus-Next"
+  ],
+  "nds": [],
+  "neo-geo-cd": [],
+  "neo-geo-pocket": [
+    "Beetle NeoPop"
+  ],
+  "neo-geo-pocket-color": [
+    "Beetle NeoPop"
+  ],
+  "neogeoaes": [
+    "FinalBurn Neo",
+    "FB Alpha 2012"
+  ],
+  "neogeomvs": [
+    "FinalBurn Neo",
+    "FB Alpha 2012"
+  ],
+  "nes": [
+    "FCEUmm"
+  ],
+  "odyssey": [],
+  "openbor": [],
+  "pc-8000": [],
+  "pc-9800-series": [
+    "Neko Project II kai"
+  ],
+  "pc-fx": [],
+  "philips-cd-i": [],
+  "pico": [],
+  "pico-8": [
+    "fake-08"
+  ],
+  "pokemon-mini": [],
+  "ports": [],
+  "ps2": [],
+  "psp": [],
+  "psx": [
+    "PCSX-ReARMed",
+    "SwanStation"
+  ],
+  "satellaview": [],
+  "saturn": [
+    "YabaSanshiro"
+  ],
+  "scummvm": [],
+  "sega32": [
+    "PicoDrive"
+  ],
+  "segacd": [
+    "Genesis Plus GX",
+    "PicoDrive"
+  ],
+  "sfam": [
+    "Snes9x"
+  ],
+  "sg1000": [],
+  "sgb": [
+    "Gambatte",
+    "mGBA"
+  ],
+  "sharp-x68000": [],
+  "sms": [
+    "Genesis Plus GX",
+    "PicoDrive"
+  ],
+  "snes": [
+    "Snes9x"
+  ],
+  "sufami-turbo": [],
+  "supergrafx": [],
+  "supervision": [],
+  "tg16": [
+    "Beetle PCE Fast"
+  ],
+  "tic-80": [],
+  "turbografx-cd": [
+    "Beetle PCE Fast"
+  ],
+  "vectrex": [],
+  "vic-20": [],
+  "videopac": [],
+  "virtualboy": [],
+  "wonderswan": [
+    "Beetle WonderSwan"
+  ],
+  "wonderswan-color": [
+    "Beetle WonderSwan"
+  ],
+  "x1": [],
+  "zx81": [],
+  "zxs": []
+}

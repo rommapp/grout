@@ -116,6 +116,7 @@ jobs:
             ./cfw/batocera \
             ./cfw/knulli \
             ./cfw/koriki \
+            ./cfw/leaf \
             ./cfw/minui \
             ./cfw/muos \
             ./cfw/nextui \

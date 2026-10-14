@@ -59,6 +59,7 @@ tasks:
       - task: package:arkos
       - task: package:batocera
       - task: package:anbernic
+      - task: package:leaf
     silent: true
 
   all-arm32:
