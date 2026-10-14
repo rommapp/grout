@@ -217,3 +217,32 @@ func TestSaveSlotPreferencesTo_RemovesTheFileWhenEmpty(t *testing.T) {
 		t.Errorf("expected the file to be removed, stat err = %v", err)
 	}
 }
+
+// GROUT_DATA_DIR moves the settings and the slot choices together, so an
+// install outside the working directory keeps both.
+func TestConfigPath_FollowsTheDataDir(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("GROUT_DATA_DIR", dir)
+
+	config := &Config{SlotPreferences: map[string]string{"42": "slot2"}}
+	if err := SaveConfig(config); err != nil {
+		t.Fatalf("SaveConfig: %v", err)
+	}
+	if err := SaveSlotPreferences(config); err != nil {
+		t.Fatalf("SaveSlotPreferences: %v", err)
+	}
+
+	for _, name := range []string{ConfigFileName, SlotPreferencesFileName} {
+		if _, err := os.Stat(filepath.Join(dir, name)); err != nil {
+			t.Errorf("%s not in the data directory: %v", name, err)
+		}
+	}
+
+	loaded, err := LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+	if got := loaded.GetSlotPreference(42); got != "slot2" {
+		t.Errorf("GetSlotPreference(42) = %q, want slot2", got)
+	}
+}

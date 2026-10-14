@@ -3,6 +3,7 @@ package settings
 import (
 	"encoding/json"
 	"fmt"
+	"grout/appdir"
 	"grout/files"
 	"grout/library"
 	"log/slog"
@@ -121,13 +122,22 @@ func (c Config) ToLoggable() any {
 	}
 }
 
-// ConfigFileName is where settings live, relative to the working directory the
-// launch script starts grout in.
+// ConfigFileName is where settings live, in appdir.DataDir.
 const ConfigFileName = "config.json"
 
 // InputMappingFileName holds a device's button layout when the built-in one is
 // wrong for it. Its absence means the defaults are in use.
 const InputMappingFileName = "input_mapping.json"
+
+// ConfigPath is the settings file grout loads and saves.
+func ConfigPath() string {
+	return filepath.Join(appdir.DataDir(), ConfigFileName)
+}
+
+// InputMappingPath is the device's own button layout, beside the settings.
+func InputMappingPath() string {
+	return filepath.Join(appdir.DataDir(), InputMappingFileName)
+}
 
 // applyDefaults fills in every unset field.
 //
@@ -174,7 +184,7 @@ func applyDefaults(config *Config) {
 }
 
 func LoadConfig() (*Config, error) {
-	return LoadConfigFrom(ConfigFileName)
+	return LoadConfigFrom(ConfigPath())
 }
 
 // LoadConfigFrom reads settings from path, filling in defaults for anything
@@ -199,7 +209,7 @@ func LoadConfigFrom(path string) (*Config, error) {
 // SaveConfig writes settings to the default path. Applying the ones that take
 // effect immediately is the caller's job; see app.ApplyRuntimeSettings.
 func SaveConfig(config *Config) error {
-	return SaveConfigTo(config, ConfigFileName)
+	return SaveConfigTo(config, ConfigPath())
 }
 
 // SaveConfigTo writes settings to path.
@@ -274,7 +284,7 @@ func slotPreferencesPathFor(configPath string) string {
 }
 
 func LoadSlotPreferences() map[string]string {
-	return loadSlotPreferencesFrom(SlotPreferencesFileName)
+	return loadSlotPreferencesFrom(slotPreferencesPathFor(ConfigPath()))
 }
 
 func loadSlotPreferencesFrom(path string) map[string]string {
@@ -290,7 +300,7 @@ func loadSlotPreferencesFrom(path string) map[string]string {
 }
 
 func SaveSlotPreferences(config *Config) error {
-	return SaveSlotPreferencesTo(config, SlotPreferencesFileName)
+	return SaveSlotPreferencesTo(config, slotPreferencesPathFor(ConfigPath()))
 }
 
 // SaveSlotPreferencesTo writes the slot choices to path, removing the file when

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"grout/cache"
 	"grout/catalog"
+	"grout/cfw"
 	"grout/environment"
 	"grout/romm"
 	"grout/settings"
@@ -401,11 +402,20 @@ func (s *GameListScreen) listOptions(title string, items []gaba.MenuItem, chrome
 
 	options.SecondaryActionButton = gabaconst.VirtualButtonY
 	if chrome.ShowBIOS {
-		options.TertiaryActionButton = gabaconst.VirtualButtonMenu
+		options.TertiaryActionButton = biosButton()
 	}
 
 	options.FooterHelpItems = gameListFooter(chrome)
 	return options
+}
+
+// biosButton opens the BIOS screen. Steam keeps the guide button, which is Menu
+// by default, so RetroDECK puts the shortcut on L2.
+func biosButton() gabaconst.VirtualButton {
+	if cfw.GetCFW() == cfw.RetroDECK {
+		return gabaconst.VirtualButtonL2
+	}
+	return gabaconst.VirtualButtonMenu
 }
 
 func gameListFooter(chrome listChrome) []gaba.FooterHelpItem {
@@ -414,7 +424,7 @@ func gameListFooter(chrome listChrome) []gaba.FooterHelpItem {
 	if chrome.ShowBIOS {
 		// The Miyoo handhelds have no Menu button, so the shortcut sits on L2.
 		name := localize("button_menu", "Menu")
-		if environment.IsMiyoo() {
+		if environment.IsMiyoo() || biosButton() == gabaconst.VirtualButtonL2 {
 			name = "L2"
 		}
 		items = append(items, gaba.FooterHelpItem{ButtonName: name, HelpText: localize("button_bios", "BIOS")})

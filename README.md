@@ -11,7 +11,7 @@
 
 [Allium][allium] · [Anbernic Stock OS][anbernic] · [ArkOS][arkos] · [Batocera][batocera] · [dArkOS][darkos] · [Knulli][knulli] · [Koriki][koriki] · [MinUI][minui]
 
-[muOS][muos] · [NextUI][nextui] · [Onion][onion] · [ROCKNIX][rocknix] · [spruce][spruce] · [sprigUI][sprigui] · [twigUI][twigui] · [TrimUI][trimui]
+[muOS][muos] · [NextUI][nextui] · [Onion][onion] · [RetroDECK][retrodeck] · [ROCKNIX][rocknix] · [spruce][spruce] · [sprigUI][sprigui] · [twigUI][twigui] · [TrimUI][trimui]
 
 <br>
 
@@ -99,6 +99,7 @@ If you enjoy using Grout and feel inclined to pay it forward, go do something ni
 [muos]: https://muos.dev
 [nextui]: https://nextui.loveretro.games
 [onion]: https://onionui.github.io
+[retrodeck]: https://retrodeck.net
 [rocknix]: https://rocknix.org
 [spruce]: https://spruceui.github.io/
 [sprigui]: https://github.com/spruceUI/sprigUI

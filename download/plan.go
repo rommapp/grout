@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"grout/appdir"
 	"grout/cfw"
-	"grout/files"
 	"grout/gamelist"
 	"grout/library"
 	"grout/romm"
@@ -147,7 +147,7 @@ var artSpecs = []artSpec{
 // fails part way leaves no archive where the frontend would try to launch it.
 // Planning and unpacking both need this path, so it is derived in one place.
 func MultiFileArchivePath(game romm.Rom) string {
-	return filepath.Join(files.TempDir(), fmt.Sprintf("grout_multirom_%d.zip", game.ID))
+	return filepath.Join(appdir.TmpDir(), fmt.Sprintf("grout_multirom_%d.zip", game.ID))
 }
 
 // RomLocation is where a game's rom file was written, or "" when the game was

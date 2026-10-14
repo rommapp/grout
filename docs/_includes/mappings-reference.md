@@ -8,6 +8,7 @@
 - [muOS](../platforms/muos.md) - Mixed short codes and descriptive names (e.g., `gb`, `Nintendo Game Boy`)
 - [NextUI](../platforms/nextui.md) - Descriptive names with tags (e.g., `Game Boy (GB)`)
 - [Onion](../platforms/onion.md) - Uppercase short codes (e.g., `GB`, `GBA`, `PS`)
+- [RetroDECK](../platforms/retrodeck.md) - ES-DE style folder names (e.g., `gb`, `snes`, `psx`)
 - [ROCKNIX](../platforms/rocknix.md) - ES-DE style folder names (e.g., `gb`, `snes`, `psx`)
 - [spruce / sprigUI / twigUI](../platforms/spruce.md) - Uppercase short codes (e.g., `GB`, `SFC`, `PS`)
 - [TrimUI](../platforms/trimui.md) - Uppercase short codes (e.g., `GB`, `GBA`, `PS`)

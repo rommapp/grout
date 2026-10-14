@@ -4,9 +4,9 @@ tasks:
 
   all:
     desc: Package for all platforms
-    deps: [ next, muos, knulli, spruce, rocknix, arkos, trimui, allium, onion, koriki, minui, batocera, batocera-x86, batocera-amd64, anbernic ]
+    deps: [ next, muos, knulli, spruce, rocknix, arkos, trimui, allium, onion, koriki, minui, batocera, batocera-x86, batocera-amd64, anbernic, retrodeck ]
     cmds:
-      - echo "Packaging complete (16 platforms)"
+      - echo "Packaging complete (17 platforms)"
     silent: true
 
   next:
@@ -169,4 +169,16 @@ tasks:
       - cp build64/grout README.md LICENSE dist/Anbernic/Roms/APPS/grout/
       - cp -R build64/lib/* dist/Anbernic/Roms/APPS/grout/lib/
       - chmod a+x dist/Anbernic/Roms/APPS/grout/grout dist/Anbernic/Roms/APPS/Grout.sh
+    silent: true
+
+  retrodeck:
+    cmds:
+      - rm -rf dist/RetroDECK
+      - mkdir -p dist/RetroDECK/Grout/{lib,media}
+      - cp scripts/RetroDECK/Grout.sh dist/RetroDECK/
+      - cp scripts/RetroDECK/media/* dist/RetroDECK/Grout/media/
+      - cp build/grout README.md LICENSE dist/RetroDECK/Grout/
+      - cp -R build/lib/* dist/RetroDECK/Grout/lib/
+      - cp build/lib-retrodeck/* dist/RetroDECK/Grout/lib/
+      - chmod a+x dist/RetroDECK/Grout/grout dist/RetroDECK/Grout.sh
     silent: true

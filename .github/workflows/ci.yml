@@ -107,6 +107,7 @@ jobs:
       - name: Vet arm64 packages
         run: |
           go vet \
+            ./appdir \
             ./archive \
             ./bios \
             ./cfw \
@@ -120,6 +121,7 @@ jobs:
             ./cfw/muos \
             ./cfw/nextui \
             ./cfw/onion \
+            ./cfw/retrodeck \
             ./cfw/rocknix \
             ./cfw/spruce \
             ./cfw/trimui \

@@ -80,7 +80,7 @@ when Download Art is enabled.
 
 ### EmulationStation Art Options
 
-On EmulationStation-based CFWs (Batocera, Knulli, ROCKNIX, ArkOS), enabling Download Art reveals additional per-asset
+On EmulationStation-based CFWs (Batocera, Knulli, ROCKNIX, ArkOS, RetroDECK), enabling Download Art reveals additional per-asset
 options:
 
 - **Download Game Thumbnail** - None / Box2D / Box3D

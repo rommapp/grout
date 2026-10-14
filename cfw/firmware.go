@@ -11,6 +11,7 @@ import (
 	"grout/cfw/muos"
 	"grout/cfw/nextui"
 	"grout/cfw/onion"
+	"grout/cfw/retrodeck"
 	"grout/cfw/rocknix"
 	"grout/cfw/spruce"
 	"grout/cfw/trimui"
@@ -75,6 +76,10 @@ type Firmware struct {
 
 	// gamelist is how this firmware expects game metadata to be written.
 	gamelist GamelistFormat
+	// gamelistPath, when set, is where a platform's gamelist goes instead of
+	// beside its roms. ES-DE keeps its own tree, reads it when it starts, and
+	// does not watch the restart flag.
+	gamelistPath func(romDir, fileName string) string
 
 	// emulationStationBased implies the gamelist format, the sidecar
 	// directories and the art filename suffixes.
@@ -83,6 +88,10 @@ type Firmware struct {
 	// inputMapping is the firmware's controller mapping, embedded in its
 	// package. nil for firmwares that use gabagool's default.
 	inputMapping func() ([]byte, error)
+
+	// logPath, when set, is where the firmware wants grout's log file. nil, or
+	// an empty result, keeps gabagool's logs/ beside the binary.
+	logPath func() string
 
 	// packaging describes the release archive.
 	packaging Packaging
@@ -196,6 +205,15 @@ func (f *Firmware) InputMapping() ([]byte, error) {
 		return nil, nil
 	}
 	return f.inputMapping()
+}
+
+// LogPath returns where the firmware wants grout's log file. "" means the
+// toolkit default.
+func (f *Firmware) LogPath() string {
+	if f == nil || f.logPath == nil {
+		return ""
+	}
+	return f.logPath()
 }
 
 // GamelistFormat is how a firmware expects game metadata to be recorded.
@@ -451,6 +469,23 @@ var firmwares = map[CFW]*Firmware{
 		},
 			LaunchScript: "Grout.sh",
 			InstallDepth: 2},
+	},
+	// ES-DE keeps its gamelists out of the rom folders, and grout is started
+	// from Steam rather than the frontend, so there is no launcher shortcut.
+	RetroDECK: {
+		id:                    RetroDECK,
+		romDirectory:          retrodeck.GetRomDirectory,
+		biosDirectory:         retrodeck.GetBIOSDirectory,
+		baseSavePath:          retrodeck.GetBaseSavePath,
+		coverDirectory:        besideRoms(retrodeck.GetArtDirectory),
+		sidecarDirectories:    esSidecars(retrodeck.GetVideoDirectory, retrodeck.GetManualDirectory, retrodeck.GetBezelDirectory),
+		platforms:             retrodeck.Platforms,
+		saveDirectories:       retrodeck.Platforms,
+		gamelist:              GamelistEmulationStation,
+		gamelistPath:          retrodeck.GetGamelistPath,
+		emulationStationBased: true,
+		logPath:               retrodeck.GetLogPath,
+		packaging:             Packaging{Asset: "Grout-RetroDECK.zip", LaunchScript: "Grout.sh", InstallDepth: 2},
 	},
 }
 

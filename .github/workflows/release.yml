@@ -147,12 +147,13 @@ jobs:
         env:
           GROUT_VERSION: ${{ needs.prepare.outputs.version }}
 
-      - name: Package Batocera AMD64
-        run: task package:batocera-amd64
+      - name: Package AMD64 platforms
+        run: task package:batocera-amd64 package:retrodeck
 
-      - name: Create distribution
+      - name: Create distributions
         run: |
-          cd dist/Batocera-amd64 && zip -r ../Grout-Batocera-amd64.zip Grout.sh Grout
+          cd dist/Batocera-amd64 && zip -r ../Grout-Batocera-amd64.zip Grout.sh Grout && cd ../..
+          cd dist/RetroDECK && zip -r ../Grout-RetroDECK.zip Grout.sh Grout && cd ../..
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -160,6 +161,7 @@ jobs:
           name: amd64-artifacts
           path: |
             dist/Grout-Batocera-amd64.zip
+            dist/Grout-RetroDECK.zip
 
   build-x86:
     needs: prepare
@@ -318,6 +320,7 @@ jobs:
             **/Grout-Batocera-x86.zip
             **/Grout-Batocera-amd64.zip
             **/Grout-Anbernic.zip
+            **/Grout-RetroDECK.zip
             **/grout
           draft: false
           prerelease: ${{ inputs.beta }}
@@ -398,6 +401,7 @@ jobs:
             "Grout-Batocera-amd64.zip"
             "Grout-Batocera-x86.zip"
             "Grout-Anbernic.zip"
+            "Grout-RetroDECK.zip"
           )
 
           # Build the assets JSON object

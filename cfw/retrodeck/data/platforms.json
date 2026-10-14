@@ -1,0 +1,407 @@
+{
+  "3do": [
+    "3do"
+  ],
+  "3ds": [
+    "n3ds"
+  ],
+  "64dd": [
+    "n64dd"
+  ],
+  "acorn-archimedes": [
+    "archimedes"
+  ],
+  "acorn-electron": [
+    "electron"
+  ],
+  "acpc": [
+    "amstradcpc"
+  ],
+  "amiga": [
+    "amiga"
+  ],
+  "amiga-cd32": [
+    "amigacd32"
+  ],
+  "amstrad-gx4000": [
+    "gx4000"
+  ],
+  "apple-iigs": [
+    "apple2gs"
+  ],
+  "appleii": [
+    "apple2"
+  ],
+  "arcade": [
+    "arcade"
+  ],
+  "arcadia-2001": [
+    "arcadia"
+  ],
+  "arduboy": [
+    "arduboy"
+  ],
+  "astrocade": [
+    "astrocde"
+  ],
+  "atari-st": [
+    "atarist"
+  ],
+  "atari2600": [
+    "atari2600"
+  ],
+  "atari5200": [
+    "atari5200"
+  ],
+  "atari7800": [
+    "atari7800"
+  ],
+  "atari800": [
+    "atari800"
+  ],
+  "atari8bit": [
+    "atari8bit"
+  ],
+  "atari-xegs": [
+    "atarixe"
+  ],
+  "bbcmicro": [
+    "bbcmicro"
+  ],
+  "c-plus-4": [
+    "plus4"
+  ],
+  "c16": [
+    "plus4"
+  ],
+  "c64": [
+    "c64"
+  ],
+  "casio-pv-1000": [
+    "pv1000"
+  ],
+  "colecoadam": [
+    "adam"
+  ],
+  "colecovision": [
+    "colecovision"
+  ],
+  "commodore-cdtv": [
+    "cdtv"
+  ],
+  "creativision": [
+    "crvision"
+  ],
+  "dc": [
+    "dreamcast"
+  ],
+  "dos": [
+    "dos"
+  ],
+  "dragon-32-slash-64": [
+    "dragon32"
+  ],
+  "epoch-super-cassette-vision": [
+    "scv"
+  ],
+  "fairchild-channel-f": [
+    "channelf"
+  ],
+  "famicom": [
+    "famicom"
+  ],
+  "fds": [
+    "fds"
+  ],
+  "fm-7": [
+    "fm7"
+  ],
+  "fm-towns": [
+    "fmtowns"
+  ],
+  "g-and-w": [
+    "gameandwatch"
+  ],
+  "gamate": [
+    "gamate"
+  ],
+  "game-dot-com": [
+    "gamecom"
+  ],
+  "gamegear": [
+    "gamegear"
+  ],
+  "gb": [
+    "gb"
+  ],
+  "gba": [
+    "gba"
+  ],
+  "gbc": [
+    "gbc"
+  ],
+  "genesis": [
+    "genesis",
+    "megadrive",
+    "megadrivejp"
+  ],
+  "hartung": [
+    "gmaster"
+  ],
+  "intellivision": [
+    "intellivision"
+  ],
+  "j2me": [
+    "j2me"
+  ],
+  "jaguar": [
+    "atarijaguar"
+  ],
+  "lynx": [
+    "atarilynx"
+  ],
+  "mac": [
+    "macintosh"
+  ],
+  "mega-duck-slash-cougar-boy": [
+    "megaduck"
+  ],
+  "model2": [
+    "model2"
+  ],
+  "model3": [
+    "model2"
+  ],
+  "msx": [
+    "msx"
+  ],
+  "msx-turbo": [
+    "msxturbor"
+  ],
+  "msx2": [
+    "msx2"
+  ],
+  "msx2plus": [
+    "msx2plus"
+  ],
+  "mugen": [
+    "mugen"
+  ],
+  "multivision": [
+    "multivision"
+  ],
+  "n64": [
+    "n64"
+  ],
+  "nds": [
+    "nds"
+  ],
+  "neo-geo-cd": [
+    "neogeocd",
+    "neogeocdjp"
+  ],
+  "neo-geo-pocket": [
+    "ngp"
+  ],
+  "neo-geo-pocket-color": [
+    "ngpc"
+  ],
+  "neogeoaes": [
+    "neogeo"
+  ],
+  "neogeomvs": [
+    "neogeo"
+  ],
+  "nes": [
+    "nes"
+  ],
+  "new-nintendo-3ds": [
+    "n3ds"
+  ],
+  "ngc": [
+    "gc"
+  ],
+  "odyssey-2": [
+    "odyssey2"
+  ],
+  "openbor": [
+    "openbor"
+  ],
+  "oric": [
+    "oric"
+  ],
+  "palm-os": [
+    "palm"
+  ],
+  "pc-8800-series": [
+    "pc88"
+  ],
+  "pc-9800-series": [
+    "pc98"
+  ],
+  "pc-booter": [
+    "pc"
+  ],
+  "pc-engine": [
+    "pcengine",
+    "tg16"
+  ],
+  "pc-fx": [
+    "pcfx"
+  ],
+  "philips-cd-i": [
+    "cdimono1"
+  ],
+  "pico": [
+    "pico8"
+  ],
+  "pokemon-mini": [
+    "pokemini"
+  ],
+  "ps2": [
+    "ps2"
+  ],
+  "ps3": [
+    "ps3"
+  ],
+  "psp": [
+    "psp"
+  ],
+  "psvita": [
+    "psvita"
+  ],
+  "psx": [
+    "psx"
+  ],
+  "satellaview": [
+    "satellaview"
+  ],
+  "saturn": [
+    "saturn",
+    "saturnjp"
+  ],
+  "scummvm": [
+    "scummvm"
+  ],
+  "sega32": [
+    "sega32x",
+    "sega32xjp",
+    "sega32xna"
+  ],
+  "segacd": [
+    "segacd"
+  ],
+  "sfam": [
+    "sfc"
+  ],
+  "sg1000": [
+    "sg-1000"
+  ],
+  "sharp-x68000": [
+    "x68000"
+  ],
+  "sms": [
+    "mastersystem",
+    "mark3"
+  ],
+  "snes": [
+    "snes",
+    "snesna"
+  ],
+  "spectravideo": [
+    "spectravideo"
+  ],
+  "stv": [
+    "stv"
+  ],
+  "sufami-turbo": [
+    "sufami"
+  ],
+  "super-acan": [
+    "supracan"
+  ],
+  "supergrafx": [
+    "supergrafx"
+  ],
+  "supervision": [
+    "supervision"
+  ],
+  "switch": [
+    "switch"
+  ],
+  "tg16": [
+    "tg16",
+    "pcengine"
+  ],
+  "thomson-mo5": [
+    "moto"
+  ],
+  "thomson-to": [
+    "moto",
+    "to8"
+  ],
+  "ti-99": [
+    "ti99"
+  ],
+  "ti-994a": [
+    "ti99"
+  ],
+  "to8": [
+    "to8"
+  ],
+  "turbografx-cd": [
+    "pcenginecd",
+    "tg-cd"
+  ],
+  "uzebox": [
+    "uzebox"
+  ],
+  "vectrex": [
+    "vectrex"
+  ],
+  "vic-20": [
+    "vic20"
+  ],
+  "virtualboy": [
+    "virtualboy"
+  ],
+  "vsmile": [
+    "vsmile"
+  ],
+  "wasm-4": [
+    "wasm4"
+  ],
+  "wii": [
+    "wii"
+  ],
+  "wiiu": [
+    "wiiu"
+  ],
+  "win": [
+    "windows9x"
+  ],
+  "win3x": [
+    "windows3x"
+  ],
+  "wonderswan": [
+    "wonderswan"
+  ],
+  "wonderswan-color": [
+    "wonderswancolor"
+  ],
+  "x1": [
+    "x1"
+  ],
+  "xbox": [
+    "xbox"
+  ],
+  "z-machine": [
+    "zmachine"
+  ],
+  "zx81": [
+    "zx81"
+  ],
+  "zxs": [
+    "zxspectrum"
+  ]
+}

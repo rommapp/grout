@@ -77,6 +77,7 @@ nav:
       - NextUI: getting-started/install-nextui.md
       - Koriki: getting-started/install-koriki.md
       - Onion: getting-started/install-onion.md
+      - RetroDECK: getting-started/install-retrodeck.md
       - ROCKNIX: getting-started/install-rocknix.md
       - spruce: getting-started/install-spruce.md
       - TrimUI: getting-started/install-trimui.md
@@ -96,6 +97,7 @@ nav:
           - muOS: platforms/muos.md
           - NextUI: platforms/nextui.md
           - Onion: platforms/onion.md
+          - RetroDECK: platforms/retrodeck.md
           - ROCKNIX: platforms/rocknix.md
           - spruce: platforms/spruce.md
           - TrimUI: platforms/trimui.md

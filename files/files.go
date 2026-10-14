@@ -1,5 +1,5 @@
 // Package files holds the filesystem operations grout needs beyond the standard
-// library: temp locations, copying, and writes that survive a power cut.
+// library: copying, and writes that survive a power cut.
 package files
 
 import (
@@ -9,14 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 )
-
-func TempDir() string {
-	wd, err := os.Getwd()
-	if err != nil {
-		return os.TempDir()
-	}
-	return filepath.Join(wd, ".tmp")
-}
 
 func CopyFile(src, dest string) error {
 	sourceFile, err := os.Open(src)

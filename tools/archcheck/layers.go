@@ -69,6 +69,7 @@ var layerRules = []struct {
 	{"grout/app", Cmd},
 
 	// Leaf utilities.
+	{"grout/appdir", Pkg},
 	{"grout/archive", Pkg},
 	{"grout/environment", Pkg},
 	{"grout/files", Pkg},

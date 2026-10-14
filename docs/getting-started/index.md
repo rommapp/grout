@@ -7,7 +7,7 @@ Get up and running with Grout in five steps.
 Make sure you have:
 
 - A RomM server running and accessible
-- A compatible device running [Allium][allium], the [Anbernic stock OS][anbernic], [ArkOS][arkos]/[dArkOS][darkos], [Batocera][batocera], [Knulli][knulli], [Koriki][koriki], [MinUI][minui], [muOS][muos], [NextUI][nextui], [Onion][onion], [ROCKNIX][rocknix], [spruce v4][spruce]/[sprigUI][sprigui]/[twigUI][twigui], or [TrimUI][trimui]
+- A compatible device running [Allium][allium], the [Anbernic stock OS][anbernic], [ArkOS][arkos]/[dArkOS][darkos], [Batocera][batocera], [Knulli][knulli], [Koriki][koriki], [MinUI][minui], [muOS][muos], [NextUI][nextui], [Onion][onion], [RetroDECK][retrodeck], [ROCKNIX][rocknix], [spruce v4][spruce]/[sprigUI][sprigui]/[twigUI][twigui], or [TrimUI][trimui]
 - Your device connected to Wi-Fi
 
 ---
@@ -28,6 +28,7 @@ Choose your platform:
 - [muOS Installation](install-muos.md)
 - [NextUI Installation](install-nextui.md)
 - [Onion Installation](install-onion.md)
+- [RetroDECK Installation](install-retrodeck.md)
 - [ROCKNIX Installation](install-rocknix.md)
 - [spruce / sprigUI / twigUI Installation](install-spruce.md)
 - [TrimUI Installation](install-trimui.md)

@@ -13,7 +13,7 @@ func TestAll_ContainsEverySupportedFirmware(t *testing.T) {
 	declared := []CFW{
 		NextUI, MuOS, Knulli, Spruce, ROCKNIX, Trimui,
 		Allium, Onion, Koriki, ArkOS, Batocera, MinUI,
-		Anbernic,
+		Anbernic, RetroDECK,
 	}
 
 	for _, c := range declared {
@@ -123,7 +123,7 @@ func TestGetCFW_UnknownFirmwareDoesNotTerminate(t *testing.T) {
 }
 
 func TestIsBasedOnEmulationStation(t *testing.T) {
-	es := []CFW{Knulli, ROCKNIX, ArkOS, Batocera}
+	es := []CFW{Knulli, ROCKNIX, ArkOS, Batocera, RetroDECK}
 	for _, c := range All {
 		want := slices.Contains(es, c)
 		if got := c.IsBasedOnEmulationStation(); got != want {

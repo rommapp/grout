@@ -11,7 +11,7 @@ import (
 // for a directory nobody remembered to add it to.
 var allFirmwares = All
 
-var esFirmwares = []CFW{Knulli, ROCKNIX, ArkOS, Batocera}
+var esFirmwares = []CFW{Knulli, ROCKNIX, ArkOS, Batocera, RetroDECK}
 
 func isES(c CFW) bool {
 	return slices.Contains(esFirmwares, c)

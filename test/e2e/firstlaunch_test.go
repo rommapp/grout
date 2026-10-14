@@ -9,6 +9,7 @@ import "testing"
 var firmwares = []string{
 	"MUOS", "NEXTUI", "MINUI", "KNULLI", "SPRUCE", "ROCKNIX",
 	"TRIMUI", "ALLIUM", "ONION", "KORIKI", "ARKOS", "BATOCERA", "ANBERNIC",
+	"RETRODECK",
 }
 
 // A device with no config starts by asking for a language, and cannot get
