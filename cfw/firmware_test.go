@@ -170,6 +170,9 @@ func TestFirmware_NilIsSafe(t *testing.T) {
 	if got := f.RomFolderBase("Game Boy Advance", nil); got != "Game Boy Advance" {
 		t.Errorf("nil firmware should pass the folder name through, got %q", got)
 	}
+	if got := f.ExtractedDirName("Final Fantasy IX"); got != "Final Fantasy IX" {
+		t.Errorf("nil firmware should unpack into the game's own folder, got %q", got)
+	}
 
 	if Lookup("NOT_A_FIRMWARE") != nil {
 		t.Error("an unknown firmware should have no entry")
@@ -320,6 +323,19 @@ func TestFirmwares_AssetNamesMatchReleaseWorkflow(t *testing.T) {
 			if !strings.Contains(published, name) {
 				t.Errorf("%s publishes %q, which release.yml never produces", c, name)
 			}
+		}
+	}
+}
+
+// Only muOS moves a multi-file game out of the folder it was unpacked into.
+func TestFirmwares_ExtractedDirName(t *testing.T) {
+	for _, c := range All {
+		want := "Final Fantasy IX"
+		if c == MuOS {
+			want = "_Final Fantasy IX"
+		}
+		if got := Lookup(c).ExtractedDirName("Final Fantasy IX"); got != want {
+			t.Errorf("%s: ExtractedDirName = %q, want %q", c, got, want)
 		}
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/bodgit/sevenzip"
 	"go.uber.org/atomic"
@@ -17,6 +18,15 @@ const (
 	DefaultBufferSize = 128 * 1024
 	SmallBufferSize   = 32 * 1024
 )
+
+// IsArchive reports whether a file is an archive this package can unpack.
+func IsArchive(fileName string) bool {
+	switch strings.ToLower(filepath.Ext(fileName)) {
+	case ".zip", ".7z":
+		return true
+	}
+	return false
+}
 
 type progressWriter struct {
 	writer         io.Writer

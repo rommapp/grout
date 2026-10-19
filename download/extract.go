@@ -15,15 +15,6 @@ import (
 	"grout/romm"
 )
 
-// IsArchive reports whether a rom arrived as an archive worth unpacking.
-func IsArchive(fileName string) bool {
-	switch strings.ToLower(filepath.Ext(fileName)) {
-	case ".zip", ".7z":
-		return true
-	}
-	return false
-}
-
 // ExtractMultiFile unpacks a game that arrived as a single archive holding
 // several files, and returns the path the frontend should point at.
 //

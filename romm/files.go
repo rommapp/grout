@@ -32,3 +32,16 @@ func (r Rom) PlayableFiles() []RomFile {
 	}
 	return playable
 }
+
+// ArchiveMemberNames lists the files RomM found inside the file, when it is an
+// archive the server looked into.
+func (f RomFile) ArchiveMemberNames() []string {
+	if len(f.ArchiveMembers) == 0 {
+		return nil
+	}
+	names := make([]string, 0, len(f.ArchiveMembers))
+	for _, member := range f.ArchiveMembers {
+		names = append(names, member.Name)
+	}
+	return names
+}
