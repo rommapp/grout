@@ -1,8 +1,104 @@
-# Unreleased
+# v5.4.0.0
+## New Platform Support
+- **Leaf**: Initial support for the Leaf firmware (tested on the MLP1), with save, ROM and BIOS paths taken from the Leaf sources, and a library rescan after downloads (#302) - @pawndev
+- **dArkOS / ArkOS on SD2**: When ROMs are moved to the second SD card (`Switch to SD2 for Roms`), Grout detects the `/roms2` mount and uses it automatically. `BASE_PATH` in `Grout.sh` still overrides it (#297) - @pawndev
+## New Features
+- **Update Metadata**: New entry in Tools that refreshes the gamelist metadata of downloaded games from RomM, without redownloading anything (#265, #292) - @pawndev
 ## Bug Fixes
-- Login and startup now say "No network connection!" when the device has no network (Wi-Fi off) instead of "Something unexpected happened". "No route to host" is reported as a failed connection. - @JuanVqz
-- Downloaded art now honours the server's platform binding, so muOS art for platforms in ES-DE folders (`megadrive`, `mastersystem`, `pcengine`, ...) lands in the catalogue muOS reads instead of `Sega Mega Drive/Genesis/box`. - @JuanVqz
-- Fixed TrimUI Smart Pro input mapping on MinUI (#252). `DetectDevice()` now returns `DeviceTrimui` for `tg5040` instead of falling through to `DeviceGeneric`. No screen rotation is applied; the kernel framebuffer on TrimUI devices is already correctly oriented. The TrimUI Brick (1024×768 IPS) is distinguished from the Smart Pro via device-tree model - @jellydn
+- Login and startup now say "No network connection!" when the device has no network (Wi-Fi off) instead of "Something unexpected happened". "No route to host" is reported as a failed connection (#299) - @JuanVqz
+- Downloaded art now honours the server's platform binding, so muOS art for platforms in ES-DE folders (`megadrive`, `mastersystem`, `pcengine`, ...) lands in the catalogue muOS reads instead of `Sega Mega Drive/Genesis/box` (#300) - @JuanVqz
+- First launch now maps every platform whose folder is detected, instead of leaving the ones never scrolled to on Skip (#301) - @pawndev
+
+# v5.3.1.4
+## New Features
+- **MixImage v2 Art**: The MixImage v2 art kind from ScreenScraper (added in RomM 4.9) can now be picked for downloads (#296) - @pawndev
+## Bug Fixes
+- Fixed Dreamcast save sync on Knulli with Flycast `*.A1.bin` saves (#254, #293) - @pawndev
+- Added input mapping for R36S clones on ArkOS, and allowed the generic mapping to be overridden (#294, #295) - @pawndev
+- Added Anbernic H700 to the supported platforms in `pak.json`
+## Maintenance
+- Bumped gabagool to v2.26.6 and Go base images to 1.26
+
+# v5.3.1.3
+## Bug Fixes
+- Fixed PSP save sync on Batocera by externalizing save directories (#286, #287) - @gh0000000st
+- Platform slugs are now compared case-insensitively, fixing games, saves and mappings for platforms with a custom `fs_slug` in RomM (#285, #289) - @pawndev
+- Spruce now uses a relative icon path so themes can override the Grout icon (#288) - @pawndev
+
+# v5.3.1.2
+## Device Support
+- **Spruce**: Explicit support for the TrimUI Brick Pro and Anbernic H700 devices. Unhandled devices now still launch with a generic mapping instead of failing silently (#282) - @ryanmsartor
+
+# v5.3.1.1
+## Improvements
+- **Playable Versions Only**: The version picker now only lists files a player would launch, leaving out manuals, soundtracks, patches and the like. A download with no version picked takes the first playable file
+
+# v5.3.1.0
+Compatibility release for RomM 5.3.1.
+
+# v5.3.0.0
+## New Platform Support
+- **Anbernic Stock OS**: Grout now runs on the firmware Anbernic ships on its Allwinner H700 handhelds (RG35XX Plus/H/SP/2024, RG34XX, RG40XX, RG28XX, CubeXX), with no custom firmware installed (#268) - @Robilol
+## New Features
+- **Downloaded Games Filter**: The filters screen leads with a Downloaded Games row that hides or shows downloaded games for the list being browsed. Partly downloaded games stay listed - @nixxou
+- **Region in Gamelist Names**: New setting to leave the region out of game names in EmulationStation gamelists (files on disk keep their names) (#266) - @PixNyb
+- **muOS ROM Storage**: New Advanced setting to pin the library to one card. Grout now finds muOS ROMs without the old union mount, looking on USB, then SD2, then SD1
+- **muOS Pickles Save Sync**: Saves made under Pickles, muOS's own libretro frontend, are now synced
+- **NextUI / MinUI Save Naming**: Downloaded saves are named the way the emulator reads them (NextUI follows its Save format setting, MinUI always uses `Game.gba.sav`)
+- **Sync History by Platform**: Sync history is split into one table per platform for each day, so entries no longer wrap on small screens
+## Performance
+- **Faster Remote Save Discovery**: Remote saves are fetched 500 games per request instead of one request per game (uses the `rom_ids` filter added in RomM 5.3.0) (#270) - @brendannoble
+## Improvements
+- Downloads now write the large cover for the frontend, falling back to the small one (#257)
+- An empty main menu now explains why and offers Settings instead of quitting silently (#267)
+- Lists say so when every game is already downloaded instead of "No games found"
+- Filters screens use Start to apply rather than save
+- The pairing QR code now fits on short screens (Miyoo 480p)
+- Game Options no longer refetches save slots when returning from the QR code
+- Each failed BIOS download is now logged with its file, URL and error (#275)
+- The in-app updater now refuses updates without a published checksum
+- Removed the "Download Missing" action in favour of the Downloaded Games filter
+## Bug Fixes
+- Fixed NextUI fonts and icons on H700 devices by shipping a newer SDL_ttf
+- Followed muOS's new button numbering on Anbernic devices (A/B/X were swapped)
+- Fixed muOS WonderSwan / WonderSwan Color art and ROM folder mapping
+- The self-signed certificate setting is now honoured for artwork, cover art and BIOS downloads, not only ROMs
+- Fixed duplicate gamelist entries for region-tagged games and names with a colon on redownload
+- Unpacked games now point to the extracted file instead of the deleted archive in gamelist.xml
+- Fixed the version picker in collections showing every version as not downloaded
+- Partly downloaded multi-disc games are no longer hidden by the downloaded filter
+- Two BIOS files with the same name in different folders no longer overwrite each other while downloading
+- Unrecognised BIOS files are kept inside the BIOS folder
+- Wrong or expired tokens now show a real login error instead of "Something unexpected happened"
+- Runtime settings (such as muOS ROM Storage) are now applied on every launch, not only the first
+- Fixed the save backup limit not being persisted
+- Saving the Tools screen no longer re-locks a kid mode unlocked for the session
+- Saving General Settings no longer resets Download Splash Art on muOS
+- Failures when saving or resetting the input mapping are now reported to the user
+## Under the Hood
+- Large refactoring: firmware registry replacing CFW switch statements, `romm` as a pure Go client, flattened packages and an architecture check in CI
+- End-to-end tests driving the UI headlessly against a real RomM instance
+## Contributors
+Thanks to @Robilol, @nixxou, @PixNyb, @brendannoble and @ryanmsartor for their contributions to this release!
+
+# v5.2.0.0
+## Bug Fixes
+- Fixed NextUI (and other CFW) save sync path resolution when the ROM lives in an emulator-specific folder (e.g. `MGBA` instead of `GBA`): saves are downloaded next to the emulator that uses them, and newer server saves overwrite the existing local file instead of creating a second one (#269) - *first contribution by @hilts-vaughan*
+
+# v5.1.0.0
+## Bug Fixes
+- Prevented out-of-memory crashes on Spruce during ROM cache population: cache pages are now 250 items and each page is persisted before fetching the next (#263) - *first contribution by @boburning*
+- Fixed Onion save directory for Supafaust (renamed from Beetle Supafaust) (#202, #256) - @pawndev
+
+# v5.0.0.0
+## RomM 5.0 Support
+- **Device Pairing**: On RomM 5.0+, Grout shows an Auth Method picker with **Pair with Another Device** (default) and **Pairing Code**. Device pairing shows a QR code to approve from the RomM web UI, and Grout picks up the issued token automatically
+- **Token-Only Authentication**: Username/password (basic auth) has been removed. Installs from before the cutover are routed back to re-pair
+## Bug Fixes
+- Fixed TrimUI Smart Pro input mapping on MinUI (#252). `DetectDevice()` now returns `DeviceTrimui` for `tg5040` instead of falling through to `DeviceGeneric`. No screen rotation is applied; the kernel framebuffer on TrimUI devices is already correctly oriented. The TrimUI Brick (1024×768 IPS) is distinguished from the Smart Pro via device-tree model (#253) - @jellydn
+- Filters metadata (genres, companies, regions...) is kept through incremental cache refresh, and existing caches are repaired on upgrade. The Filters button is hidden when no game has filterable metadata
+## Docs
+- Documentation restructured, with new device pairing screenshots
 
 # v4.9.1.0
 ## Save Sync
