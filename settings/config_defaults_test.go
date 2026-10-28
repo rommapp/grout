@@ -217,3 +217,18 @@ func TestSaveSlotPreferencesTo_RemovesTheFileWhenEmpty(t *testing.T) {
 		t.Errorf("expected the file to be removed, stat err = %v", err)
 	}
 }
+
+func TestLoadConfigFrom_MigratesPicklesSaveMappings(t *testing.T) {
+	path := writeConfig(t, t.TempDir(), `{"save_directory_mappings":{"gba":"pickles/sram/gpsp/gba","psp":"file/PPSSPP"}}`)
+
+	config, err := LoadConfigFrom(path)
+	if err != nil {
+		t.Fatalf("LoadConfigFrom: %v", err)
+	}
+	if got := config.SaveDirectoryMappings["gba"]; got != "../pickles/sram/gpsp/gba" {
+		t.Errorf("gba = %q, want the pickles folder beside the save root", got)
+	}
+	if got := config.SaveDirectoryMappings["psp"]; got != "file/PPSSPP" {
+		t.Errorf("psp = %q, want it left alone", got)
+	}
+}

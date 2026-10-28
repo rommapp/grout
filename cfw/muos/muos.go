@@ -153,7 +153,7 @@ func GetSplashDirectory(platformFSSlug, platformName string) string {
 func EmulatorLabel(dir string) string {
 	// Pickles keeps saves per core under the rom folder's name, so the core is
 	// the part worth showing.
-	if core, ok := strings.CutPrefix(dir, "pickles/sram/"); ok {
+	if core, ok := strings.CutPrefix(dir, picklesSaveRoot+"/"); ok {
 		core, _, _ = strings.Cut(core, "/")
 		return "Pickles (" + core + ")"
 	}
