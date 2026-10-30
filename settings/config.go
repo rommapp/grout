@@ -171,6 +171,12 @@ func applyDefaults(config *Config) {
 	if config.AdditionalDownloads.Marquee == "" {
 		config.AdditionalDownloads.Marquee = library.ArtKindNone
 	}
+	for fsSlug, dir := range config.SaveDirectoryMappings {
+		// Pickles folders used to be recorded relative to the save root.
+		if strings.HasPrefix(dir, "pickles/sram/") {
+			config.SaveDirectoryMappings[fsSlug] = "../" + dir
+		}
+	}
 }
 
 func LoadConfig() (*Config, error) {

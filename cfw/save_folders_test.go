@@ -13,7 +13,7 @@ func picklesFirmware(onPickles bool) *Firmware {
 	return &Firmware{
 		saveDirectories: map[string][]string{"gba": {"file/gpSP", "file/mGBA"}},
 		extraSaveFolders: func(romFolder string) ([]string, bool) {
-			return []string{"pickles/sram/mgba/" + romFolder, "pickles/sram/gpsp/" + romFolder}, onPickles
+			return []string{"../pickles/sram/mgba/" + romFolder, "../pickles/sram/gpsp/" + romFolder}, onPickles
 		},
 	}
 }
@@ -28,7 +28,7 @@ func mappedGBA() settings.Config {
 // RetroArch's are still listed so older saves are found.
 func TestSaveFolders_PicklesFirst(t *testing.T) {
 	got := picklesFirmware(true).SaveFolders(mappedGBA(), "gba")
-	want := []string{"pickles/sram/mgba/Game Boy Advance", "pickles/sram/gpsp/Game Boy Advance", "file/gpSP", "file/mGBA"}
+	want := []string{"../pickles/sram/mgba/Game Boy Advance", "../pickles/sram/gpsp/Game Boy Advance", "file/gpSP", "file/mGBA"}
 	if !slices.Equal(got, want) {
 		t.Errorf("folders = %v, want %v", got, want)
 	}
@@ -46,12 +46,12 @@ func TestSaveFolders_RetroArchFirst(t *testing.T) {
 func TestPreferredSaveFolder(t *testing.T) {
 	config := mappedGBA()
 	config.SaveDirectoryMappings = map[string]string{"gba": "file/mGBA"}
-	if got := picklesFirmware(true).PreferredSaveFolder(config, "gba"); got != "pickles/sram/mgba/Game Boy Advance" {
+	if got := picklesFirmware(true).PreferredSaveFolder(config, "gba"); got != "../pickles/sram/mgba/Game Boy Advance" {
 		t.Errorf("RetroArch mapping on Pickles: %q", got)
 	}
 
-	config.SaveDirectoryMappings["gba"] = "pickles/sram/gpsp/Game Boy Advance"
-	if got := picklesFirmware(true).PreferredSaveFolder(config, "gba"); got != "pickles/sram/gpsp/Game Boy Advance" {
+	config.SaveDirectoryMappings["gba"] = "../pickles/sram/gpsp/Game Boy Advance"
+	if got := picklesFirmware(true).PreferredSaveFolder(config, "gba"); got != "../pickles/sram/gpsp/Game Boy Advance" {
 		t.Errorf("Pickles mapping on Pickles: %q", got)
 	}
 

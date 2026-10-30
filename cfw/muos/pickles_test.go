@@ -50,11 +50,11 @@ func TestPicklesSaveFolders_AssignedToPickles(t *testing.T) {
 	if !prefer {
 		t.Error("a folder on Pickles should prefer the Pickles folder")
 	}
-	if len(folders) == 0 || folders[0] != "pickles/sram/gpsp/gba" {
-		t.Fatalf("folders = %v, want pickles/sram/gpsp/gba first", folders)
+	if len(folders) == 0 || folders[0] != "../pickles/sram/gpsp/gba" {
+		t.Fatalf("folders = %v, want ../pickles/sram/gpsp/gba first", folders)
 	}
 	// Saves made under the other cores are still found.
-	for _, want := range []string{"pickles/sram/mgba/gba", "pickles/sram/mednafen_gba/gba"} {
+	for _, want := range []string{"../pickles/sram/mgba/gba", "../pickles/sram/mednafen_gba/gba"} {
 		if !slices.Contains(folders, want) {
 			t.Errorf("folders = %v, missing %s", folders, want)
 		}
@@ -72,7 +72,7 @@ func TestPicklesSaveFolders_AssignedToRetroArch(t *testing.T) {
 	if prefer {
 		t.Error("a folder on RetroArch should not prefer Pickles")
 	}
-	if !slices.Contains(folders, "pickles/sram/mgba/gba") {
+	if !slices.Contains(folders, "../pickles/sram/mgba/gba") {
 		t.Errorf("folders = %v, want the Pickles folders still listed", folders)
 	}
 }
@@ -84,7 +84,7 @@ func TestPicklesSaveFolders_UnassignedFolderDefaultsToPickles(t *testing.T) {
 	root := andromeda(t)
 
 	folders, prefer := picklesSaveFolders(root, "Game Boy-Advance")
-	if !prefer || len(folders) == 0 || folders[0] != "pickles/sram/mgba/Game Boy-Advance" {
+	if !prefer || len(folders) == 0 || folders[0] != "../pickles/sram/mgba/Game Boy-Advance" {
 		t.Errorf("folders = %v prefer=%v, want the default core under Pickles", folders, prefer)
 	}
 }
@@ -96,7 +96,7 @@ func TestPicklesSaveFolders_UserManifestWins(t *testing.T) {
 		`{"Nintendo Game Boy Advance": {"default": "gpsp", "cores": {"gpsp": {"core": "gpsp_libretro.so"}}}}`)
 
 	folders, _ := picklesSaveFolders(root, "gba")
-	if len(folders) == 0 || folders[0] != "pickles/sram/gpsp/gba" {
+	if len(folders) == 0 || folders[0] != "../pickles/sram/gpsp/gba" {
 		t.Errorf("folders = %v, want the user's default", folders)
 	}
 }
@@ -106,5 +106,18 @@ func TestPicklesSaveFolders_OlderMuOS(t *testing.T) {
 	folders, prefer := picklesSaveFolders(t.TempDir(), "gba")
 	if len(folders) != 0 || prefer {
 		t.Errorf("folders = %v prefer=%v, want nothing on a muOS without Pickles", folders, prefer)
+	}
+}
+
+func TestPicklesSaveFolders_BesideTheSaveRoot(t *testing.T) {
+	root := andromeda(t)
+
+	folders, _ := picklesSaveFolders(root, "gba")
+	if len(folders) == 0 {
+		t.Fatal("no folders")
+	}
+	got := filepath.Join(StoragePath, "save", folders[0])
+	if want := StoragePath + "/pickles/sram/mgba/gba"; got != want {
+		t.Errorf("save path = %q, want %q", got, want)
 	}
 }
