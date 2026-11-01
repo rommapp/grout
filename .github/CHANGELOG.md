@@ -1,3 +1,7 @@
+# Unreleased
+## New Platform Support
+- **spruce**: Support for the Powkiddy RGB30. It has no Menu button, so `L2` stands in for it, as on the Miyoo handhelds (#307, #313) - @pawndev
+
 # v5.4.0.0
 ## New Platform Support
 - **Leaf**: Initial support for the Leaf firmware (tested on the MLP1), with save, ROM and BIOS paths taken from the Leaf sources, and a library rescan after downloads (#302) - @pawndev

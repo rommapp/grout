@@ -17,7 +17,7 @@ Grout attempts to be consistent with its controls. Here's a quick reference:
 | `Select`     | Toggle list mode (multi-select, reorder)           |
 | `L1` / `R1`  | Jump letter groups in game lists; deselect/select all in multi-select; used in button combos |
 | `Menu`       | Context action (BIOS, also used in button combos)  |
-| `L2`         | Acts as `Menu` on Miyoo devices                    |
+| `L2`         | Acts as `Menu` on Miyoo devices and the RGB30      |
 | `Up/Down`    | Navigate lists                                     |
 | `Left/Right` | Cycle options / Jump pages in list                 |
 

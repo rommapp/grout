@@ -83,6 +83,18 @@ case "$PLATFORM" in
 
 
 ############################################################
+# Powkiddy RGB30
+############################################################
+    "RGB30" )
+        # No Menu button on the RGB30: L2 stands in for it, as on the Miyoo handhelds.
+        export IS_MIYOO=1
+        export LD_LIBRARY_PATH="$CUR_DIR/grout/lib64:$LD_LIBRARY_PATH"
+        export SPRUCE_DEVICE="RGB30"
+        ./grout64
+    ;;
+
+
+############################################################
 # Unknown
 ############################################################
     * )

@@ -22,6 +22,7 @@ const (
 	DeviceTrimui    Device = "TRIMUI"
 	DevicePixel     Device = "PIXEL"
 	DeviceH700      Device = "H700"
+	DeviceRGB30     Device = "RGB30"
 	DeviceGeneric   Device = "GENERIC"
 )
 
@@ -43,6 +44,8 @@ func DetectDevice() Device {
 		return DevicePixel
 	case "H700":
 		return DeviceH700
+	case "RGB30":
+		return DeviceRGB30
 	default:
 		logger.Warn("Unrecognized Spruce device, using generic SDL input", "device", os.Getenv(DeviceType), "platform", os.Getenv("PLATFORM"))
 		return DeviceGeneric
@@ -67,6 +70,8 @@ func GetInputMappingBytesForDevice(device Device) ([]byte, error) {
 		filename = "input_mappings/gkd_pixel_2.json"
 	case DeviceH700:
 		filename = "input_mappings/h700.json"
+	case DeviceRGB30:
+		filename = "input_mappings/rgb30.json"
 	default:
 		// TrimUI, Miyoo Flip, and generic devices use standard SDL controller input
 		return nil, nil
