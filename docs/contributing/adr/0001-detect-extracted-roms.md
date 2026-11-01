@@ -112,5 +112,4 @@ unpacking chooses it: the `.m3u` if there is one, otherwise the first file.
       others until a full library refresh.
     - With A, a file that has the archive's name but is not a game, and whose type is
       not on the exclusion list, would still mark the game as downloaded.
-- **Still to verify on a device:** that a multi-disc game unpacked on a firmware other
-  than muOS now appears as downloaded.
+- **Tested on a device:** spruce.
