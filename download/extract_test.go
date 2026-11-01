@@ -2,6 +2,7 @@ package download
 
 import (
 	"archive/zip"
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
@@ -130,6 +131,85 @@ func TestExtractMultiFile(t *testing.T) {
 	// The archive was only ever a staging file.
 	if _, err := os.Stat(archivePath); !os.IsNotExist(err) {
 		t.Error("the downloaded archive must be removed once it is unpacked")
+	}
+}
+
+// zipWithACorruptEntry writes an archive whose first file unpacks and whose
+// second fails its checksum, as a truncated download would.
+func zipWithACorruptEntry(t *testing.T, path string) {
+	t.Helper()
+	zipOf(t, path, "Game (Disc 1).bin", "Game (Disc 2).bin")
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Each entry holds "rom"; corrupting the last copy breaks the second
+	// entry's checksum while leaving the directory readable.
+	i := bytes.LastIndex(data, []byte("rom"))
+	if i < 0 {
+		t.Fatal("entry contents not found")
+	}
+	data[i] = 'X'
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// A failed unpack must not leave a folder that passes for the whole game.
+func TestExtractMultiFile_RemovesWhatAFailedUnpackLeft(t *testing.T) {
+	base := t.TempDir()
+	t.Setenv("BASE_PATH", base)
+	t.Setenv(cfw.EnvVar, string(cfw.Spruce))
+
+	romDirectory := filepath.Join(base, "Roms", "PS")
+	if err := os.MkdirAll(romDirectory, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	game := romm.Rom{ID: 43, Name: "Game", FsName: "Game.zip", FsNameNoExt: "Game", HasMultipleFiles: true}
+	archivePath := MultiFileArchivePath(game)
+	if err := os.MkdirAll(filepath.Dir(archivePath), 0755); err != nil {
+		t.Fatal(err)
+	}
+	zipWithACorruptEntry(t, archivePath)
+
+	if _, err := ExtractMultiFile(game, romDirectory, &atomic.Float64{}); err == nil {
+		t.Fatal("expected an error unpacking a corrupt archive")
+	}
+	if _, err := os.Stat(filepath.Join(romDirectory, "Game")); !os.IsNotExist(err) {
+		t.Error("the half-unpacked folder must be removed")
+	}
+}
+
+// A folder that was there before the unpack is the user's, not grout's to
+// remove.
+func TestExtractMultiFile_KeepsAFolderThatWasThereBefore(t *testing.T) {
+	base := t.TempDir()
+	t.Setenv("BASE_PATH", base)
+	t.Setenv(cfw.EnvVar, string(cfw.Spruce))
+
+	romDirectory := filepath.Join(base, "Roms", "PS")
+	kept := filepath.Join(romDirectory, "Game", "notes.txt")
+	if err := os.MkdirAll(filepath.Dir(kept), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(kept, []byte("mine"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	game := romm.Rom{ID: 44, Name: "Game", FsName: "Game.zip", FsNameNoExt: "Game", HasMultipleFiles: true}
+	archivePath := MultiFileArchivePath(game)
+	if err := os.MkdirAll(filepath.Dir(archivePath), 0755); err != nil {
+		t.Fatal(err)
+	}
+	zipWithACorruptEntry(t, archivePath)
+
+	if _, err := ExtractMultiFile(game, romDirectory, &atomic.Float64{}); err == nil {
+		t.Fatal("expected an error unpacking a corrupt archive")
+	}
+	if _, err := os.Stat(kept); err != nil {
+		t.Errorf("a file that was there before must survive: %v", err)
 	}
 }
 

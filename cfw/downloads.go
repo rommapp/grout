@@ -164,7 +164,8 @@ func isGameExtension(ext string) bool {
 }
 
 // unpackedSiblingPath finds a file named like the archive, or a folder named
-// exactly like it, that could have come out of it.
+// exactly like it, that could have come out of it. A folder resolves to what
+// to launch inside it, as unpacking chose it.
 func unpackedSiblingPath(romDir, archiveName string) string {
 	stem := strings.TrimSuffix(archiveName, filepath.Ext(archiveName))
 	if stem == "" {
@@ -174,7 +175,11 @@ func unpackedSiblingPath(romDir, archiveName string) string {
 	if name == "" {
 		return ""
 	}
-	return filepath.Join(romDir, name)
+	path := filepath.Join(romDir, name)
+	if info, err := os.Stat(path); err == nil && info.IsDir() {
+		return unpackedFolderPath(path)
+	}
+	return path
 }
 
 // unpackedFolderPath returns what to launch from the folder a multi-file game
@@ -233,7 +238,8 @@ type dirListings struct {
 }
 
 // stems maps the lowercased name, without extension, of each game in dir to
-// its file name. A playlist wins over other files sharing its name.
+// its file name. A playlist wins over other files sharing its name, and a file
+// over a folder.
 //
 // A listing is reused while the directory's modification time is unchanged.
 // One taken within mtimeGranularity of that time is not: a change landing in
@@ -257,15 +263,14 @@ func (d *dirListings) stems(dir string) map[string]string {
 		return nil
 	}
 	stems := make(map[string]string, len(entries))
+	var folders []string
 	for _, entry := range entries {
 		name := entry.Name()
 		if strings.HasPrefix(name, ".") {
 			continue
 		}
 		if entry.IsDir() {
-			if key := strings.ToLower(name); stems[key] == "" {
-				stems[key] = name
-			}
+			folders = append(folders, name)
 			continue
 		}
 		ext := filepath.Ext(name)
@@ -274,6 +279,11 @@ func (d *dirListings) stems(dir string) map[string]string {
 		}
 		key := strings.ToLower(strings.TrimSuffix(name, ext))
 		if stems[key] == "" || isPlaylist(name) {
+			stems[key] = name
+		}
+	}
+	for _, name := range folders {
+		if key := strings.ToLower(name); stems[key] == "" {
 			stems[key] = name
 		}
 	}

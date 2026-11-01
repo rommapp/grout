@@ -435,6 +435,10 @@ func TestRomLayout_LocalPath_UnpackedGames(t *testing.T) {
 	touch(t, dir, "Crash/Disc A/crash.bin")
 	touch(t, dir, "Spyro.cue")
 	touch(t, dir, "Spyro.m3u")
+	touch(t, dir, "Tekken/Tekken (Disc 1).bin")
+	touch(t, dir, "Tekken/Tekken.m3u")
+	touch(t, dir, "Mario.nes")
+	touch(t, dir, "Mario/notes.txt")
 
 	tests := []struct {
 		name   string
@@ -464,6 +468,16 @@ func TestRomLayout_LocalPath_UnpackedGames(t *testing.T) {
 			"by name, the playlist over a file sharing it",
 			RomLayout{FileNames: []string{"Spyro.7z"}},
 			filepath.Join(dir, "Spyro.m3u"),
+		},
+		{
+			"by name, a folder resolves to its playlist",
+			RomLayout{FileNames: []string{"Tekken.zip"}},
+			filepath.Join(dir, "Tekken", "Tekken.m3u"),
+		},
+		{
+			"by name, the rom over a folder sharing its name",
+			RomLayout{FileNames: []string{"Mario.zip"}},
+			filepath.Join(dir, "Mario.nes"),
 		},
 		{
 			"multi-file folder resolves to its playlist",
