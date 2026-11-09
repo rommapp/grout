@@ -11,6 +11,8 @@ This table shows the mappings of RomM Fs Slug to MinUI's platform folders.
 | Amstrad CPC                   | acpc                       | Amstrad CPC (CPC)                               |
 | Arcade                        | arcade                     | Arcade (FBN)                                    |
 | Arduboy                       | arduboy                    | *(none)*                                        |
+| Atari 8-bit                   | atari8bit                  | *(none)*                                        |
+| Atari 800                     | atari800                   | *(none)*                                        |
 | Atari 2600                    | atari2600                  | Atari 2600 (A2600)                              |
 | Atari 5200                    | atari5200                  | Atari 5200 (A5200)                              |
 | Atari 7800                    | atari7800                  | Atari 7800 (A7800)                              |
