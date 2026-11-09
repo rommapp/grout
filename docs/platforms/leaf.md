@@ -38,6 +38,7 @@ This table shows the mappings of RomM Fs Slug to Leaf platform folders.
 | Amstrad CPC                   | acpc                       | *(none)*                                        |
 | Arcade                        | arcade                     | ARCADE, MAME, MAME2003, MAME2010                |
 | Arduboy                       | arduboy                    | *(none)*                                        |
+| Atari 8-bit                   | atari8bit                  | *(none)*                                        |
 | Atari 800                     | atari800                   | *(none)*                                        |
 | Atari 2600                    | atari2600                  | ATARI2600, A2600                                |
 | Atari 5200                    | atari5200                  | *(none)*                                        |

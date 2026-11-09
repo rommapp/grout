@@ -36,6 +36,9 @@
   "atari800": [
     "atari800"
   ],
+  "atari8bit": [
+    "atari800"
+  ],
   "c128": [
     "c128"
   ],

@@ -21,6 +21,9 @@
   "atari800": [
     "Atari800"
   ],
+  "atari8bit": [
+    "Atari800"
+  ],
   "atari2600": [
     "Stella 2014"
   ],

@@ -11,6 +11,7 @@ This table shows the mappings of RomM Fs Slug to spruce's platform folders.
 | Amstrad CPC                   | acpc                       | CPC                 |
 | Arcade                        | arcade                     | ARCADE, CPS1, CPS2, CPS3, FBNEO, MAME2003PLUS, NAOMI |
 | Arduboy                       | arduboy                    | ARDUBOY             |
+| Atari 8-bit                   | atari8bit                  | EIGHTHUNDRED        |
 | Atari 800                     | atari800                   | EIGHTHUNDRED        |
 | Atari 2600                    | atari2600                  | ATARI               |
 | Atari 5200                    | atari5200                  | FIFTYTWOHUNDRED     |
