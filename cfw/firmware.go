@@ -15,6 +15,7 @@ import (
 	"grout/cfw/rocknix"
 	"grout/cfw/spruce"
 	"grout/cfw/trimui"
+	"grout/settings"
 	"path/filepath"
 )
 
@@ -104,9 +105,67 @@ type Firmware struct {
 	// extension. It overrides inferring the style from saves on the card.
 	saveNaming func() (keepRomExt bool, ext string)
 
+	// gameCores, when set, lists the cores a single game can be given, out of
+	// those that keep their saves in one of the given folders. setGameCore
+	// gives the game one of them, or takes its choice away. Only firmwares that
+	// let a single game change core have them.
+	gameCores   func(romPath string, folders []string) (GameCores, error)
+	setGameCore func(romPath, core string) error
+
+	// saveFolderForRom, when set, names the save folder a particular game uses
+	// when it runs on a core of its own, or "" when it uses the system's
+	// default. Only firmwares that let a single game change core have one.
+	saveFolderForRom func(romPath string) string
+
 	// rescanLibrary, when set, asks a frontend that indexes its library to pick
 	// up games just downloaded. Leaf only lists what its last scan found.
 	rescanLibrary func() error
+}
+
+// GameCore is a core a game can run on. Name is also the name of the folder the
+// core keeps its saves in.
+type GameCore struct {
+	ID   string
+	Name string
+}
+
+// GameCores is the cores a game can run on, and which it runs on now.
+type GameCores struct {
+	Choices []GameCore
+	Current string
+	Default string
+}
+
+// GameCores lists the cores one game could be given, or reports false when the
+// firmware cannot change a game's core or there is nothing to choose between.
+// Only cores whose saves live in a folder Grout syncs are offered.
+func (f *Firmware) GameCores(config settings.Config, fsSlug, romPath string) (GameCores, bool) {
+	if f == nil || f.gameCores == nil || romPath == "" {
+		return GameCores{}, false
+	}
+	cores, err := f.gameCores(romPath, f.SaveFolders(config, fsSlug))
+	if err != nil || len(cores.Choices) < 2 {
+		return GameCores{}, false
+	}
+	return cores, true
+}
+
+// SetGameCore gives one game a core of its own, or with the system's default
+// core, takes its choice away.
+func (f *Firmware) SetGameCore(romPath, coreID string) error {
+	if f == nil || f.setGameCore == nil {
+		return nil
+	}
+	return f.setGameCore(romPath, coreID)
+}
+
+// SaveFolderForRom is the save folder, relative to the save root, that one game
+// uses because it runs on a core of its own, or "" when it uses the default.
+func (f *Firmware) SaveFolderForRom(romPath string) string {
+	if f == nil || f.saveFolderForRom == nil {
+		return ""
+	}
+	return f.saveFolderForRom(romPath)
 }
 
 func (f *Firmware) IsBasedOnEmulationStation() bool {
@@ -358,16 +417,26 @@ var firmwares = map[CFW]*Firmware{
 		packaging:       Packaging{Asset: "Grout-Allium.zip", LaunchScript: "Grout.pak/launch.sh", InstallDepth: 3},
 	},
 	Onion: {
-		id:              Onion,
-		romDirectory:    onion.GetRomDirectory,
-		biosDirectory:   onion.GetBIOSDirectory,
-		baseSavePath:    onion.GetBaseSavePath,
-		coverDirectory:  besideRoms(onion.GetArtDirectory),
-		platforms:       onion.Platforms,
-		saveDirectories: onion.SaveDirectories,
-		gamelist:        GamelistMiyoo,
-		inputMapping:    onion.GetInputMappingBytes,
-		packaging:       Packaging{Asset: "Grout-Onion.zip", LaunchScript: "Grout/launch.sh", InstallDepth: 3},
+		id:               Onion,
+		romDirectory:     onion.GetRomDirectory,
+		biosDirectory:    onion.GetBIOSDirectory,
+		baseSavePath:     onion.GetBaseSavePath,
+		coverDirectory:   besideRoms(onion.GetArtDirectory),
+		platforms:        onion.Platforms,
+		saveDirectories:  onion.SaveDirectories,
+		gamelist:         GamelistMiyoo,
+		inputMapping:     onion.GetInputMappingBytes,
+		saveFolderForRom: onion.SaveFolderForRom,
+		gameCores: func(romPath string, folders []string) (GameCores, error) {
+			info, err := onion.GameCoreChoices(romPath, folders)
+			cores := GameCores{Current: info.Current, Default: info.Default}
+			for _, choice := range info.Choices {
+				cores.Choices = append(cores.Choices, GameCore{ID: choice.ID, Name: choice.Name})
+			}
+			return cores, err
+		},
+		setGameCore: onion.SetGameCore,
+		packaging:   Packaging{Asset: "Grout-Onion.zip", LaunchScript: "Grout/launch.sh", InstallDepth: 3},
 	},
 	Koriki: {
 		id:              Koriki,

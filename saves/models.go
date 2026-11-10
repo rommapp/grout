@@ -10,6 +10,7 @@ type LocalSave struct {
 	FilePath        string // Primary save path; for PSP, the first DATA directory
 	EmulatorDir     string
 	RomFileName     string
+	RomPath         string   // Where the ROM is on the device, when known
 	IsDirectorySave bool     // True for platforms like PSP where saves are directories
 	GameID          string   // PSP: game ID prefix (e.g. "UCUS98751")
 	RelatedDirs     []string // PSP: full paths of all save directories for this game
