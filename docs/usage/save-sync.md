@@ -234,7 +234,8 @@ game. Grout is careful about it:
 - It keeps a copy of the original next to it as `runtime.sh.grout-backup`.
 - Turning the setting off removes exactly the lines it added.
 
-The change takes effect the next time the device restarts. Onion updates replace `runtime.sh`; Grout puts the lines
+Grout tells you when you change the setting: the change takes effect the next time the device restarts, so
+power it off and on again. Onion updates replace `runtime.sh`; Grout puts the lines
 back the next time it starts while the setting is on. If something ever goes wrong with Onion's frontend, copy
 `runtime.sh.grout-backup` over `runtime.sh` from a computer.
 
