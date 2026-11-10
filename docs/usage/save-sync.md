@@ -165,8 +165,11 @@ Grout only syncs when it can do so quickly, and otherwise gets out of the way:
   not make you wait. **Sync save** in the Y menu and the upload after quitting always run.
 - **RomM does not answer in time**: the sync says so, and that the save may not have arrived, instead of reporting a
   bare failure. Run it again; if the upload did get through, RomM will say the saves are identical.
-- **The device is being powered off**: the after-quit upload is skipped so shutdown is not held up. That session's
-  save goes up the next time you launch the game.
+- **The device is being powered off** (after quit only): the upload still runs, since there may be no other chance
+  before the device is next used, but it never holds the shutdown up. Onion forces the shutdown 30 seconds after the
+  power button was held, so the upload is cut off after 15 seconds if RomM has not finished, it does not wait for
+  Wi-Fi to connect, and it is skipped when the battery is nearly flat. Anything that did not get through goes up the
+  next time you launch the game or run **Sync save**.
 
 Only the game being launched is synced. Anything that needs a decision from you is left alone and appears the next
 time you run **Sync Now**: conflicts, and games with saves in more than one server slot. Before a game, saves are
@@ -284,9 +287,9 @@ any other.
 
 > [!NOTE]
 > The sync runs when a game starts, not when you quit it, unless **Before Launch & After Quit** is selected. The
-> upload after a game runs when the emulator exits and Onion returns to the game list, so quit the game normally.
-> Powering the device off, or letting the battery run out, ends the game without it: that session's save goes up the
-> next time you launch the game or run **Sync save**.
+> upload after a game runs when the emulator exits, whether you quit to the game list or power the device off with
+> the power button. It does not run if the battery runs out, if the power button is held down for a forced shutdown,
+> or if the device is only put to sleep, since the game is still running then.
 
 ## Backup Retention
 

@@ -44,11 +44,14 @@ log() {
     if [ -f "$LOG" ] && [ "$(wc -c < "$LOG")" -gt 100000 ]; then
         tail -n 200 "$LOG" > "$LOG.tmp" && mv "$LOG.tmp" "$LOG"
     fi
-    echo "up=$(uptime_seconds)s [$MODE] $*" >> "$LOG"
+    label="$MODE"
+    [ "$SHUTTING_DOWN" -eq 1 ] && label="$MODE, power off"
+    echo "up=$(uptime_seconds)s [$label] $*" >> "$LOG"
 }
 
 RESULT="$APP_DIR/grout/launch_sync_result.txt"
 PANEL=0
+SHUTTING_DOWN=0
 
 # While the player waits on a sync they asked for, a message that stays up.
 panel_on() {
@@ -84,10 +87,16 @@ case "$MODE" in
     after)
         # Cheapest check first: the setting is off for most people.
         grep -q '"sync_on_launch": *"before_and_after"' config.json 2>/dev/null || exit 0
-        # Holding power quits the game on the way to switching off. Nobody
-        # wants the shutdown held up, and this session's save goes up the next
-        # time the game is launched.
-        [ ! -f /tmp/.offOrder ] || exit 0
+        # Holding power quits the game on the way to switching off. The save
+        # still goes up, since there may be no other chance before the next
+        # time the device is used, but it must not hold the shutdown up: Onion's
+        # key monitor forces it 30 seconds after the button was held, so the
+        # upload gets a strict limit well inside that, never waits for Wi-Fi,
+        # and is skipped when the battery is nearly flat.
+        if [ -f /tmp/.offOrder ]; then
+            [ ! -f /tmp/.lowBat ] || exit 0
+            SHUTTING_DOWN=1
+        fi
         ;;
     *)
         grep -Eq '"sync_on_launch": *"(before|before_and_after)"' config.json 2>/dev/null || exit 0
@@ -102,6 +111,22 @@ grep -q '^[[:space:]]*ssid=' "$WPA_CONF" 2>/dev/null || stop "No saved Wi-Fi net
 # Wi-Fi off: wpa_supplicant is not running.
 ps | grep -v grep | grep -q wpa_supplicant || stop "Wi-Fi is off." "wpa_supplicant is not running"
 
+# Runs a command, and stops it if it takes longer than the limit. Giving up on
+# an upload is harmless: nothing on the device changes, and the next sync
+# settles whatever RomM did or did not receive.
+run_within() {
+    limit="$1"
+    shift
+    "$@" > /dev/null 2>&1 &
+    pid=$!
+    ( sleep "$limit"; kill "$pid" 2> /dev/null ) &
+    watcher=$!
+    wait "$pid" 2> /dev/null
+    code=$?
+    kill "$watcher" 2> /dev/null
+    return "$code"
+}
+
 has_ip() {
     ifconfig wlan0 2>/dev/null | grep -q 'inet addr:'
 }
@@ -115,6 +140,9 @@ WAIT_SECONDS=8
 if [ "$MODE" = now ] || [ "$(uptime_seconds)" -lt 180 ]; then
     WAIT_SECONDS=30
 fi
+# Switching off: Wi-Fi was in use a moment ago, so it is either up or not worth
+# waiting for.
+[ "$SHUTTING_DOWN" -eq 1 ] && WAIT_SECONDS=0
 
 waited=0
 if ! has_ip; then
@@ -160,7 +188,11 @@ case "$MODE" in
     after)
         # After a game the save on the device is the newest there is, so only
         # send it.
-        ./grout --sync-rom "$ROM" --upload-only > /dev/null 2>&1
+        if [ "$SHUTTING_DOWN" -eq 1 ]; then
+            run_within "${GROUT_SHUTDOWN_LIMIT:-15}" ./grout --sync-rom "$ROM" --upload-only
+        else
+            ./grout --sync-rom "$ROM" --upload-only > /dev/null 2>&1
+        fi
         log "grout exited $? after $(($(uptime_seconds) - started))s"
         ;;
     *)
