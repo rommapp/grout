@@ -232,3 +232,29 @@ func TestLoadConfigFrom_MigratesPicklesSaveMappings(t *testing.T) {
 		t.Errorf("psp = %q, want it left alone", got)
 	}
 }
+
+// Sync on Launch touches the frontend's launch scripts, so it has to be
+// something the user turned on.
+func TestSyncOnLaunchIsOffUntilTurnedOn(t *testing.T) {
+	dir := t.TempDir()
+	config, err := LoadConfigFrom(writeConfig(t, dir, `{}`))
+	if err != nil {
+		t.Fatalf("LoadConfigFrom: %v", err)
+	}
+	if config.SyncOnLaunch {
+		t.Fatal("SyncOnLaunch defaults to on")
+	}
+
+	config.SyncOnLaunch = true
+	path := filepath.Join(dir, "saved.json")
+	if err := SaveConfigTo(config, path); err != nil {
+		t.Fatalf("SaveConfigTo: %v", err)
+	}
+	reloaded, err := LoadConfigFrom(path)
+	if err != nil {
+		t.Fatalf("LoadConfigFrom: %v", err)
+	}
+	if !reloaded.SyncOnLaunch {
+		t.Error("SyncOnLaunch did not survive a save and load")
+	}
+}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"grout/cfw"
 	"grout/romm"
 	"grout/saves"
 	"grout/settings"
@@ -75,6 +76,7 @@ func (s *SaveSyncSettingsScreen) drawUnregistered(input SaveSyncSettingsInput) (
 func (s *SaveSyncSettingsScreen) drawRegistered(input SaveSyncSettingsInput) (SaveSyncSettingsOutput, error) {
 	output := SaveSyncSettingsOutput{Config: input.Config, Host: input.Host}
 	rows := saveSyncRows(input.Host)
+	syncedOnLaunch := input.Config.SyncOnLaunch
 
 	result, err := gaba.OptionsList(
 		localize("settings_save_sync", "Save Sync"),
@@ -101,6 +103,10 @@ func (s *SaveSyncSettingsScreen) drawRegistered(input SaveSyncSettingsInput) (Sa
 		gaba.GetLogger().Error("Error saving save sync settings", "error", err)
 	}
 
+	if input.Config.SyncOnLaunch != syncedOnLaunch {
+		applySyncOnLaunch(input.Config)
+	}
+
 	if result.Action != gaba.ListActionSelected || result.Selected >= len(rows) {
 		return output, nil
 	}
@@ -122,7 +128,7 @@ func saveSyncRows(host settings.Host) []settingRow {
 	deviceName := clickableRow("device_name", "save_sync_device_name", "Device Name")
 	deviceName.display = host.DeviceName
 
-	return []settingRow{
+	rows := []settingRow{
 		deviceName,
 		{
 			key: "backup_limit", label: localize("save_sync_backup_limit", "Save Backups"),
@@ -131,8 +137,47 @@ func saveSyncRows(host settings.Host) []settingRow {
 			set:     assign(func(c *settings.Config, v int) { c.SaveBackupLimit = v }),
 			def:     0,
 		},
-		clickableRow("save_mapping", "sync_menu_save_mapping", "Save Mapping"),
 	}
+
+	// Only a firmware that can run something before a game starts has this.
+	if cfw.ActiveFirmware().SupportsSyncOnLaunch() {
+		rows = append(rows, settingRow{
+			key: "sync_on_launch", label: localize("save_sync_on_launch", "Sync on Launch"),
+			options: trueFalse(),
+			get:     func(c settings.Config) any { return c.SyncOnLaunch },
+			set:     assign(func(c *settings.Config, v bool) { c.SyncOnLaunch = v }),
+			def:     false,
+		})
+	}
+
+	return append(rows, clickableRow("save_mapping", "sync_menu_save_mapping", "Save Mapping"))
+}
+
+// applySyncOnLaunch puts the frontend's launch hook in line with the setting.
+// If that fails the setting goes back off, so what the screen says is what the
+// device does; the hook is only ever read by a script that checks the setting
+// too, so a hook left behind does nothing.
+func applySyncOnLaunch(config *settings.Config) {
+	logger := gaba.GetLogger()
+
+	changed, err := cfw.ActiveFirmware().SetSyncOnLaunchHook(config.SyncOnLaunch)
+	if err == nil {
+		logger.Debug("Updated launch hook", "enabled", config.SyncOnLaunch, "scripts", changed)
+		return
+	}
+
+	logger.Error("Failed to update launch hook", "enabled", config.SyncOnLaunch, "error", err)
+	if config.SyncOnLaunch {
+		config.SyncOnLaunch = false
+		if saveErr := settings.SaveConfig(config); saveErr != nil {
+			logger.Error("Error saving save sync settings", "error", saveErr)
+		}
+	}
+	gaba.ConfirmationMessage(
+		localize("save_sync_on_launch_failed", "Could not set up Sync on Launch."),
+		ContinueFooter(),
+		gaba.MessageOptions{},
+	)
 }
 
 // renameDevice changes what the server calls this device.

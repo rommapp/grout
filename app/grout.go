@@ -11,6 +11,10 @@ import (
 )
 
 func main() {
+	if romPath, ok := syncRomArg(os.Args[1:]); ok {
+		os.Exit(runLaunchSync(romPath))
+	}
+
 	defer cleanup()
 
 	result := setup()

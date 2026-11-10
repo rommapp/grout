@@ -104,9 +104,27 @@ type Firmware struct {
 	// extension. It overrides inferring the style from saves on the card.
 	saveNaming func() (keepRomExt bool, ext string)
 
+	// launchHook, when set, installs and removes whatever makes the frontend
+	// run Grout's save sync before it starts a game, and says how many files
+	// it touched. Only firmwares that can run a command at launch have one.
+	launchHook func(install bool) (int, error)
+
 	// rescanLibrary, when set, asks a frontend that indexes its library to pick
 	// up games just downloaded. Leaf only lists what its last scan found.
 	rescanLibrary func() error
+}
+
+// SupportsSyncOnLaunch reports whether the firmware can sync a save just
+// before it starts a game.
+func (f *Firmware) SupportsSyncOnLaunch() bool { return f != nil && f.launchHook != nil }
+
+// SetSyncOnLaunchHook installs or removes the frontend's call to Grout's launch
+// sync, returning how many files changed.
+func (f *Firmware) SetSyncOnLaunchHook(install bool) (int, error) {
+	if !f.SupportsSyncOnLaunch() {
+		return 0, nil
+	}
+	return f.launchHook(install)
 }
 
 func (f *Firmware) IsBasedOnEmulationStation() bool {
@@ -367,7 +385,13 @@ var firmwares = map[CFW]*Firmware{
 		saveDirectories: onion.SaveDirectories,
 		gamelist:        GamelistMiyoo,
 		inputMapping:    onion.GetInputMappingBytes,
-		packaging:       Packaging{Asset: "Grout-Onion.zip", LaunchScript: "Grout/launch.sh", InstallDepth: 3},
+		launchHook: func(install bool) (int, error) {
+			if install {
+				return onion.InstallLaunchHook()
+			}
+			return onion.RemoveLaunchHook()
+		},
+		packaging: Packaging{Asset: "Grout-Onion.zip", LaunchScript: "Grout/launch.sh", InstallDepth: 3},
 	},
 	Koriki: {
 		id:              Koriki,

@@ -31,6 +31,15 @@ import (
 const maxConcurrentRequests = 4
 
 func ResolveSaveSync(client *romm.Client, config *settings.Config, deviceID string) (SyncResult, error) {
+	return resolveSaveSync(client, config, deviceID, nil)
+}
+
+// resolveSaveSync negotiates with the server and maps its answer onto the
+// device. A non-nil roms stands in for the scan of the ROMs on the device, which
+// narrows the run to those ROMs. The negotiate payload still carries every
+// local save, so the server never reads a narrowed run as saves having gone
+// missing.
+func resolveSaveSync(client *romm.Client, config *settings.Config, deviceID string, roms map[int]cfw.LocalRomFile) (SyncResult, error) {
 	logger := gaba.GetLogger()
 	logger.Debug("Starting save sync resolve (negotiate)", "deviceID", deviceID)
 
@@ -78,8 +87,10 @@ func ResolveSaveSync(client *romm.Client, config *settings.Config, deviceID stri
 			"file", op.FileName, "slot", slot, "reason", op.Reason)
 	}
 
-	scan := cfw.ScanRoms(*config)
-	resolvedRoms := ResolveLocalRoms(scan)
+	resolvedRoms := roms
+	if resolvedRoms == nil {
+		resolvedRoms = ResolveLocalRoms(cfw.ScanRoms(*config))
+	}
 	cm := cache.GetCacheManager()
 
 	items := mapOperationsToItems(resp.Operations, localSaves, resolvedRoms, cm, config, recordedSlots, recordedHashes)
