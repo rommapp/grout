@@ -163,6 +163,8 @@ Grout only syncs when it can do so quickly, and otherwise gets out of the way:
 - **The game was synced in the last 10 minutes**, by a launch, by **Sync save** in the Y menu, by the upload after you
   quit it, or by **Sync Now** in Grout: the sync before launch is skipped, so relaunching a game you just played does
   not make you wait. **Sync save** in the Y menu and the upload after quitting always run.
+- **RomM does not answer in time**: the sync says so, and that the save may not have arrived, instead of reporting a
+  bare failure. Run it again; if the upload did get through, RomM will say the saves are identical.
 - **The device is being powered off**: the after-quit upload is skipped so shutdown is not held up. That session's
   save goes up the next time you launch the game.
 
@@ -218,7 +220,10 @@ If the same game has a save file in more than one emulator's folder, for example
 per slot and pairs what it says with the files on the device by game and slot, so two copies hide each other and the
 sync would quietly do nothing for that game.
 
-Grout leaves such a game out of the sync, says so, and does nothing to either copy:
+If the copies are byte-for-byte the same, as the leftovers of switching a game between cores usually are, there is
+nothing to decide: Grout keeps the one in the folder of the core the game runs on and moves the others to a `.backup`
+folder beside them, and the sync goes ahead. Only copies that differ need you. Grout leaves such a game out of the
+sync, says so, and does nothing to either copy:
 
 - **Sync Now** lists the games it skipped.
 - A sync before or after launching the game skips it, and **Sync save** in the Y menu says why.
@@ -278,7 +283,10 @@ any other.
 > emulator's `launch.sh`, so those games are not synced when they start. Use **Sync save** from the Y menu for them.
 
 > [!NOTE]
-> The sync runs when a game starts, not when you quit it, unless **Before Launch & After Quit** is selected.
+> The sync runs when a game starts, not when you quit it, unless **Before Launch & After Quit** is selected. The
+> upload after a game runs when the emulator exits and Onion returns to the game list, so quit the game normally.
+> Powering the device off, or letting the battery run out, ends the game without it: that session's save goes up the
+> next time you launch the game or run **Sync save**.
 
 ## Backup Retention
 

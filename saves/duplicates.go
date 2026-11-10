@@ -310,3 +310,71 @@ func UseRemoteSave(client *romm.Client, config *settings.Config, deviceID string
 	}
 	return nil
 }
+
+// tidyIdenticalCopies puts away the extra copies of a game's save that are
+// byte-for-byte the copy in the folder the game's core reads.
+//
+// Copies like these are what switching a game between cores leaves behind, and
+// they are no ambiguity: whichever is chosen is the same save. They still hide
+// each other from the sync, so they are moved to the .backup folder beside them,
+// which loses nothing. A game whose copies differ is left exactly as it is for
+// the player to settle, and so is one whose live folder cannot be told.
+func tidyIdenticalCopies(local []LocalSave, liveFolder func(romID int) string) ([]LocalSave, int) {
+	var away []LocalSave
+	for _, dup := range FindDuplicateSaves(local) {
+		live := liveFolder(dup.RomID)
+		if live == "" {
+			continue
+		}
+		var liveCopy *LocalSave
+		for i := range dup.Copies {
+			if strings.EqualFold(FolderName(dup.Copies[i]), live) {
+				liveCopy = &dup.Copies[i]
+			}
+		}
+		if liveCopy == nil {
+			continue
+		}
+		want, err := saveContentHash(*liveCopy)
+		if err != nil {
+			continue
+		}
+
+		var extras []LocalSave
+		identical := true
+		for _, copy := range dup.Copies {
+			if copy.FilePath == liveCopy.FilePath {
+				continue
+			}
+			if got, err := saveContentHash(copy); err != nil || got != want {
+				identical = false
+				break
+			}
+			extras = append(extras, copy)
+		}
+		if !identical {
+			continue
+		}
+
+		for _, extra := range extras {
+			if _, err := putAway(extra.FilePath, extra.FileName); err == nil {
+				away = append(away, extra)
+			}
+		}
+	}
+	if len(away) == 0 {
+		return local, 0
+	}
+
+	gone := map[string]bool{}
+	for _, extra := range away {
+		gone[extra.FilePath] = true
+	}
+	kept := make([]LocalSave, 0, len(local))
+	for _, save := range local {
+		if !gone[save.FilePath] {
+			kept = append(kept, save)
+		}
+	}
+	return kept, len(away)
+}

@@ -160,7 +160,11 @@ func runLaunchSync(request launchSync) int {
 		}
 	}()
 
-	probe := romm.NewClientFromHost(host, settings.ValidationTimeout)
+	probeTimeout := settings.LaunchProbeTimeout
+	if !request.skipsWhenRecent() {
+		probeTimeout = settings.OnRequestProbeTimeout
+	}
+	probe := romm.NewClientFromHost(host, probeTimeout)
 	if err := probe.ValidateConnectionRetrying(settings.LaunchRetryDelays, romm.IsNotReadyYet); err != nil {
 		logger.Info("Launch sync: server unreachable", "error", err, "elapsed", time.Since(started).Round(time.Millisecond))
 		return exitUnreachable

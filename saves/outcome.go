@@ -66,6 +66,14 @@ type SyncFacts struct {
 // DescribeSync works out what a sync of one game amounted to.
 func DescribeSync(f SyncFacts) Outcome {
 	switch {
+	case f.Report.Errors > 0 && f.Report.TimedOut == f.Report.Errors:
+		return Outcome{OutcomeFailed, []string{
+			"RomM took too long to",
+			"answer.",
+			"The save may not have",
+			"arrived. Try again soon.",
+		}}
+
 	case f.Report.Errors > 0:
 		return Outcome{OutcomeFailed, []string{
 			"Sync failed.",

@@ -51,12 +51,17 @@ func resolveSaveSync(client *romm.Client, config *settings.Config, deviceID stri
 	// A game with a save in two emulators' folders cannot be told apart by the
 	// server, which pairs saves by game and slot, so only one copy is reported
 	// and nothing is done with the game until the player picks the right one.
-	localSaves, duplicates := collapseDuplicates(ScanSaves(config), func(romID int) string {
+	liveFolder := func(romID int) string {
 		if rom, ok := resolvedRoms[romID]; ok {
 			return cfw.ActiveFirmware().SaveFolderForRom(rom.FilePath)
 		}
 		return ""
-	})
+	}
+	scanned, tidied := tidyIdenticalCopies(ScanSaves(config), liveFolder)
+	if tidied > 0 {
+		logger.Info("Put away extra copies of saves that were identical to the one in use", "copies", tidied)
+	}
+	localSaves, duplicates := collapseDuplicates(scanned, liveFolder)
 	for _, dup := range duplicates {
 		logger.Warn("Game has saves in more than one folder; leaving it out of the sync", "romID", dup.RomID, "rom", dup.RomName, "copies", len(dup.Copies))
 	}
@@ -650,7 +655,7 @@ func ExecuteSaveSync(client *romm.Client, config *settings.Config, deviceID stri
 	}
 
 	if sessionID > 0 {
-		if err := client.CompleteSession(sessionID, romm.SyncCompletePayload{
+		if err := client.WithTimeout(completeSessionTimeout).CompleteSession(sessionID, romm.SyncCompletePayload{
 			OperationsCompleted: report.Uploaded + report.Downloaded,
 			// Count runtime conflicts (e.g. a 409 that turned an upload into a conflict)
 			// as failed so the server's session totals reconcile with operations_planned.
@@ -1214,6 +1219,9 @@ func ExecuteActions(client *romm.Client, config *settings.Config, deviceID strin
 				report.Conflicts++
 			default:
 				report.Errors++
+				if item.TimedOut {
+					report.TimedOut++
+				}
 			}
 
 		case ActionDownload:
@@ -1226,6 +1234,9 @@ func ExecuteActions(client *romm.Client, config *settings.Config, deviceID strin
 				report.Downloaded++
 			} else {
 				report.Errors++
+				if item.TimedOut {
+					report.TimedOut++
+				}
 			}
 
 		case ActionConflict:
@@ -1382,6 +1393,7 @@ func upload(client *romm.Client, deviceID string, item *SyncItem) uploadOutcome 
 			return resolveUploadConflict(client, deviceID, item, query.Slot, err)
 		}
 		logger.Error("Failed to upload save", "romID", item.LocalSave.RomID, "error", err)
+		item.TimedOut = isTimeout(err)
 		return uploadErr
 	}
 
@@ -1463,6 +1475,7 @@ func download(client *romm.Client, config *settings.Config, deviceID string, ite
 	data, err := client.DownloadSaveByID(item.RemoteSave.ID, deviceID, false)
 	if err != nil {
 		logger.Error("Failed to download save", "romID", item.LocalSave.RomID, "saveID", item.RemoteSave.ID, "error", err)
+		item.TimedOut = isTimeout(err)
 		return false
 	}
 

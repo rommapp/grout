@@ -54,6 +54,9 @@ func ResolveRomOnLaunch(client *romm.Client, config *settings.Config, deviceID, 
 
 	// Local, so it is settled before the server is asked anything.
 	local := LocalSavesFor(config, romID)
+	local, _ = tidyIdenticalCopies(local, func(int) string {
+		return cfw.ActiveFirmware().SaveFolderForRom(romPath)
+	})
 	if duplicates := FindDuplicateSaves(local); len(duplicates) > 0 {
 		folders := make([]string, 0, len(duplicates[0].Copies))
 		for _, copy := range duplicates[0].Copies {

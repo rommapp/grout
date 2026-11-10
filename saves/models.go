@@ -47,6 +47,7 @@ type SyncItem struct {
 	Success        bool
 	ForceOverwrite bool
 	TargetSlot     string      // Slot to upload to (from slot preference); used by upload()
+	TimedOut       bool        // Set when RomM did not answer in time
 	AvailableSlots []string    // Distinct slot names when multiple slots exist (first-time downloads)
 	AllRemoteSaves []romm.Save // All remote saves for re-selection after slot pick
 }
@@ -73,5 +74,7 @@ type SyncReport struct {
 	Conflicts  int
 	Skipped    int
 	Errors     int
-	Items      []SyncItem
+	// TimedOut counts the errors that were RomM not answering in time.
+	TimedOut int
+	Items    []SyncItem
 }

@@ -67,6 +67,15 @@ func NewClient(baseURL string, opts ...ClientOption) *Client {
 	return c
 }
 
+// WithTimeout is the same client with a different time limit on each request.
+func (c *Client) WithTimeout(timeout time.Duration) *Client {
+	clone := *c
+	httpClient := *c.httpClient
+	httpClient.Timeout = timeout
+	clone.httpClient = &httpClient
+	return &clone
+}
+
 func NewClientFromHost(host settings.Host, timeout ...time.Duration) *Client {
 	opts := []ClientOption{
 		WithAuthHeader(host.AuthHeader()),
