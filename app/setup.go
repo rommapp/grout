@@ -49,6 +49,7 @@ func setup() SetupResult {
 	config, isFirstLaunch := loadOrCreateConfig(logger)
 	config = handleFirstLaunch(config, isFirstLaunch, logger)
 	config = applyConfig(config, isFirstLaunch, currentCFW, logger)
+	installSyncMenuEntry(config, logger)
 
 	if err := cache.InitCacheManager(config.Hosts[0], *config); err != nil {
 		logger.Error("Failed to initialize cache manager", "error", err)
@@ -438,4 +439,16 @@ func showStartupError(errorMsg string) bool {
 	result, err := gaba.ConfirmationMessage(errorMsg, footerItems, gaba.MessageOptions{})
 
 	return err == nil && result != nil && result.Confirmed
+}
+
+// installSyncMenuEntry gives the frontend's per-game menu a "Sync save" entry
+// once the device is registered with RomM, which is when syncing can work. It
+// is the same on every launch, so it costs nothing when there is nothing to do.
+func installSyncMenuEntry(config *settings.Config, logger *slog.Logger) {
+	if len(config.Hosts) == 0 || config.Hosts[0].DeviceID == "" {
+		return
+	}
+	if err := cfw.ActiveFirmware().InstallSyncMenuEntry(); err != nil {
+		logger.Warn("Could not add the Sync save menu entry", "error", err)
+	}
 }

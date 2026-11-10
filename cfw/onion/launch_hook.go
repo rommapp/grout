@@ -30,15 +30,15 @@ func SyncScriptPath() string {
 // one at the bottom runs once it has been quit. Onion updates replace those
 // files; setting the hook again puts it back, and a launch script without the
 // lines simply launches as before.
-//
-// It also adds a "Sync save" entry to the game list's Y menu while any of it
-// is on, and removes it when it is not.
 func SetLaunchHook(before, after bool) (int, error) {
-	changed, err := setLaunchHook(filepath.Join(GetBasePath(), "Emu"), SyncScriptPath(), before, after)
-	if menuErr := setSyncSaveMenuEntry(SyncSaveMenuEntryPath(), SyncScriptPath(), before || after); menuErr != nil && err == nil {
-		err = menuErr
-	}
-	return changed, err
+	return setLaunchHook(filepath.Join(GetBasePath(), "Emu"), SyncScriptPath(), before, after)
+}
+
+// InstallSyncSaveMenuEntry adds a "Sync save" entry to the game list's Y menu.
+// It does not depend on the launch hook: the entry only ever syncs when the
+// player picks it.
+func InstallSyncSaveMenuEntry() error {
+	return setSyncSaveMenuEntry(SyncSaveMenuEntryPath(), SyncScriptPath(), true)
 }
 
 // SyncSaveMenuEntryPath is where the Y menu's "Sync save" script goes. Onion

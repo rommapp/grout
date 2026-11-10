@@ -249,6 +249,9 @@ func (s *SaveSyncSettingsScreen) registerDevice(output SaveSyncSettingsOutput) (
 	}
 
 	output.Host.DeviceID = device.ID
+	if err := cfw.ActiveFirmware().InstallSyncMenuEntry(); err != nil {
+		gaba.GetLogger().Warn("Could not add the Sync save menu entry", "error", err)
+	}
 	output.Host.DeviceName = name
 	// RegisterDevice already pushed the current client_version; record it so the startup
 	// refresh only fires on a later upgrade.

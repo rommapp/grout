@@ -183,10 +183,13 @@ resume from its old state. Pick **Reset game** from the game's Y menu once to st
 
 ### Y menu: Sync save
 
-While Sync on Launch is on, the Y menu on a game in the list has a **Sync save (Grout)** entry. It syncs that one game
-right now, whatever the setting is, and shows what happened: up to date, downloaded, uploaded, or why it could not
-(Wi-Fi off, no saved network in range, RomM unreachable, a conflict that needs a manual sync). Setting Sync on Launch
-back to **Off** removes the entry.
+Once your device is registered, the Y menu on a game in the list has a **Sync save (Grout)** entry, whether or not Sync
+on Launch is turned on. It syncs that one game right now and shows what happened: up to date, downloaded, uploaded,
+or why it could not (Wi-Fi off, no saved network in range, RomM unreachable, a conflict that needs a manual sync).
+Grout adds it the next time it starts after the device is registered. To remove it, delete
+`App/romscripts/Grout - Sync save.sh`; Grout will put it back the next time it starts.
+
+When it downloads a newer save, it sets the game's resume state aside the same way a launch sync does.
 
 **Reset game** in the same menu starts the game without its resume state, and the game's launch is synced first like
 any other.
