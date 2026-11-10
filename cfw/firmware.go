@@ -4,6 +4,7 @@ import (
 	"grout/cfw/allium"
 	"grout/cfw/anbernic"
 	"grout/cfw/arkos"
+	"grout/cfw/banana"
 	"grout/cfw/batocera"
 	"grout/cfw/knulli"
 	"grout/cfw/koriki"
@@ -431,6 +432,17 @@ var firmwares = map[CFW]*Firmware{
 		groutLauncherPath:     "./Grout/Grout.sh",
 		emulationStationBased: true,
 		packaging:             Packaging{Asset: "Grout-Knulli.zip", LaunchScript: "Grout/Grout.sh", InstallDepth: 2},
+	},
+	Banana: {
+		id:              Banana,
+		romDirectory:    banana.GetRomDirectory,
+		biosDirectory:   banana.GetBIOSDirectory,
+		baseSavePath:    banana.GetBaseSavePath,
+		coverDirectory:  besideRoms(banana.GetArtDirectory),
+		platforms:       banana.Platforms,
+		saveDirectories: banana.SaveDirectories,
+		inputMapping:    rocknix.GetInputMappingBytes,
+		packaging:       Packaging{Asset: "Grout-Banana.zip", LaunchScript: "Grout.sh", InstallDepth: 2},
 	},
 	ROCKNIX: {
 		id:                    ROCKNIX,

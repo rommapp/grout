@@ -9,7 +9,7 @@
       A RomM Client for your retro doo-dad.
     </h3>
 
-[Allium][allium] · [Anbernic Stock OS][anbernic] · [ArkOS][arkos] · [Batocera][batocera] · [dArkOS][darkos] · [Knulli][knulli] · [Koriki][koriki] · [Leaf][leaf] · [MinUI][minui]
+[Allium][allium] · [Anbernic Stock OS][anbernic] · [ArkOS][arkos] · [BananaOS][banana] · [Batocera][batocera] · [dArkOS][darkos] · [Knulli][knulli] · [Koriki][koriki] · [Leaf][leaf] · [MinUI][minui]
 
 [muOS][muos] · [NextUI][nextui] · [Onion][onion] · [ROCKNIX][rocknix] · [spruce][spruce] · [sprigUI][sprigui] · [twigUI][twigui] · [TrimUI][trimui]
 
@@ -91,6 +91,7 @@ If you enjoy using Grout and feel inclined to pay it forward, go do something ni
 [allium]: https://github.com/goweiwen/Allium
 [anbernic]: https://anbernic.com
 [arkos]: https://github.com/christianhaitian/arkos
+[banana]: https://github.com/JorreFog/BananaLinux
 [darkos]: https://github.com/christianhaitian/dArkOS
 [batocera]: https://batocera.org
 [knulli]: https://knulli.org

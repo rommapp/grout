@@ -33,7 +33,7 @@ brew install sdl2 sdl2_image sdl2_ttf sdl2_gfx
     - `WINDOW_WIDTH` (optional)
     - `WINDOW_HEIGHT` (optional)
     - `NITRATES` [true | false] (optional) This is used for Gabagool development debugging
-    - `CFW` [NEXTUI | MUOS | KNULLI | SPRUCE | ROCKNIX | TRIMUI | ALLIUM | ONION | KORIKI | ARKOS | BATOCERA | MINUI | ANBERNIC | LEAF]
+    - `CFW` [NEXTUI | MUOS | KNULLI | SPRUCE | ROCKNIX | TRIMUI | ALLIUM | ONION | KORIKI | ARKOS | BATOCERA | MINUI | ANBERNIC | LEAF | BANANA]
       (mandatory), this controls how Grout interacts with and places files
     - `BASE_PATH` (mandatory), this acts as the root path like you would have on a handheld (e.g. `/mmc/sdcard` on
       muOS). Have the subdirectory structure of this path match the CFW you are working on.
@@ -119,6 +119,7 @@ After building, you can package for individual platforms:
 | `task package:batocera-amd64` | Batocera (AMD64)          | `dist/Batocera-amd64/`                  |
 | `task package:anbernic`       | Anbernic Stock OS         | `dist/Anbernic/Roms/APPS/`              |
 | `task package:leaf`           | Leaf (Miniloong Pocket 1) | `dist/Leaf/Grout.pak/`                  |
+| `task package:banana`         | BananaOS                  | `dist/Banana/`                          |
 
 Each packaging task copies the binary, launch scripts from `scripts/<platform>/`, shared libraries, and documentation
 into the appropriate directory structure for that CFW.

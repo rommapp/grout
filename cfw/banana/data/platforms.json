@@ -1,0 +1,12 @@
+{
+  "gb": ["gb"],
+  "gba": ["gba"],
+  "gbc": ["gbc"],
+  "genesis": ["megadrive"],
+  "n64": ["n64"],
+  "nds": ["nds"],
+  "nes": ["nes"],
+  "pico-8": ["pico-8"],
+  "psx": ["psx"],
+  "snes": ["snes"]
+}

@@ -4,9 +4,9 @@ tasks:
 
   all:
     desc: Package for all platforms
-    deps: [ next, muos, knulli, spruce, rocknix, arkos, trimui, allium, onion, koriki, minui, batocera, batocera-x86, batocera-amd64, anbernic, leaf ]
+    deps: [ next, muos, knulli, spruce, rocknix, banana, arkos, trimui, allium, onion, koriki, minui, batocera, batocera-x86, batocera-amd64, anbernic, leaf ]
     cmds:
-      - echo "Packaging complete (17 platforms)"
+      - echo "Packaging complete (18 platforms)"
     silent: true
 
   next:
@@ -94,6 +94,16 @@ tasks:
       - cp build64/grout scripts/ROCKNIX/logo.png README.md LICENSE dist/ArkOS/Grout/
       - cp -R build64/lib/* dist/ArkOS/Grout/lib/
       - chmod a+x dist/ArkOS/Grout/grout dist/ArkOS/Grout.sh
+    silent: true
+
+  banana:
+    cmds:
+      - rm -rf dist/Banana
+      - mkdir -p dist/Banana/Grout/lib
+      - cp scripts/BANANA/Grout.sh dist/Banana/
+      - cp build64/grout scripts/BANANA/logo.png README.md LICENSE dist/Banana/Grout/
+      - cp -R build64/lib/* dist/Banana/Grout/lib/
+      - chmod a+x dist/Banana/Grout/grout dist/Banana/Grout.sh
     silent: true
 
   rocknix:

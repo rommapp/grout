@@ -13,7 +13,7 @@ func TestAll_ContainsEverySupportedFirmware(t *testing.T) {
 	declared := []CFW{
 		NextUI, MuOS, Knulli, Spruce, ROCKNIX, Trimui,
 		Allium, Onion, Koriki, ArkOS, Batocera, MinUI,
-		Anbernic, Leaf,
+		Anbernic, Leaf, Banana,
 	}
 
 	for _, c := range declared {

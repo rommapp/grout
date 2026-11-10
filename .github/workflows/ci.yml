@@ -122,6 +122,7 @@ jobs:
             ./cfw/nextui \
             ./cfw/onion \
             ./cfw/rocknix \
+            ./cfw/banana \
             ./cfw/spruce \
             ./cfw/trimui \
             ./download \
