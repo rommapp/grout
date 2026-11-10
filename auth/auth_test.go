@@ -3,6 +3,7 @@ package auth
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -250,5 +251,14 @@ func TestClassify(t *testing.T) {
 				t.Errorf("Classify(%v) = %v, want %v", tt.err, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestClassify_ALookupThatGotNoAnswerIsNotABadHostname(t *testing.T) {
+	if got := Classify(fmt.Errorf("%w: romm.example", romm.ErrDNSUnavailable)); got != FailureAddressLookup {
+		t.Errorf("a lookup with no answer: %v", got)
+	}
+	if got := Classify(fmt.Errorf("%w: romm.example", romm.ErrInvalidHostname)); got != FailureHostname {
+		t.Errorf("a name that does not exist: %v", got)
 	}
 }

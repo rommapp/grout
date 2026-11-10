@@ -281,7 +281,7 @@ func connectAndLoadPlatforms(config *settings.Config, logger *slog.Logger) []rom
 
 			// Validate server connectivity
 			client := romm.NewClient(host.URL(), romm.WithInsecureSkipVerify(host.InsecureSkipVerify), romm.WithTimeout(settings.ValidationTimeout))
-			if err := client.ValidateConnection(); err != nil {
+			if err := client.ValidateConnectionRetrying(settings.StartupRetryDelays, romm.IsTransient); err != nil {
 				connErr = err
 				return nil, nil
 			}
@@ -413,6 +413,8 @@ func classifyStartupError(err error) *goi18n.Message {
 	switch auth.Classify(err) {
 	case auth.FailureHostname:
 		return &goi18n.Message{ID: "startup_error_invalid_hostname", Other: "Could not resolve hostname!\nPlease check your server configuration."}
+	case auth.FailureAddressLookup:
+		return &goi18n.Message{ID: "startup_error_dns", Other: "Could not look up the server address!\nThe network may still be starting. Try again in a moment."}
 	case auth.FailureNetwork:
 		return &goi18n.Message{ID: "startup_error_network_unreachable", Other: "No network connection!\nPlease check that Wi-Fi is on and connected."}
 	case auth.FailureConnection:
