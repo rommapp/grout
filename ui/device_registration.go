@@ -302,6 +302,13 @@ func applyCoverCoreOverrides(config *settings.Config) {
 	err := cfw.ActiveFirmware().SetRuntimeHook(config.CoverCoreOverrides)
 	if err == nil {
 		logger.Debug("Updated runtime hook", "enabled", config.CoverCoreOverrides)
+		// The runtime is already running and reads its script once, so the
+		// change is not seen until the device starts again.
+		gaba.ConfirmationMessage(
+			localize("save_sync_restart_required", "Restart your device for\nthis change to take effect."),
+			ContinueFooter(),
+			gaba.MessageOptions{},
+		)
 		return
 	}
 
