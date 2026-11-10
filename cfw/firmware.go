@@ -104,9 +104,57 @@ type Firmware struct {
 	// extension. It overrides inferring the style from saves on the card.
 	saveNaming func() (keepRomExt bool, ext string)
 
+	// launchHook, when set, makes the frontend run Grout's save sync before
+	// it starts a game and, if asked, after it is quit, removing whichever is
+	// not wanted, and says how many files it touched. Only firmwares that can
+	// run a command at launch have one.
+	launchHook func(before, after bool) (int, error)
+
+	// installSyncMenuEntry, when set, adds a "Sync save" entry to the
+	// frontend's per-game menu. Only firmwares with such a menu that other
+	// programs can extend have one.
+	installSyncMenuEntry func() error
+
+	// setAsideResumeState, when set, makes a game start from its save file
+	// rather than resume from the snapshot taken when it was last quit, and
+	// says how many files it moved. Only firmwares that resume games have one.
+	setAsideResumeState func(romPath string) (int, error)
+
 	// rescanLibrary, when set, asks a frontend that indexes its library to pick
 	// up games just downloaded. Leaf only lists what its last scan found.
 	rescanLibrary func() error
+}
+
+// SupportsSyncOnLaunch reports whether the firmware can sync a save just
+// before it starts a game.
+func (f *Firmware) SupportsSyncOnLaunch() bool { return f != nil && f.launchHook != nil }
+
+// SetSyncOnLaunchHook puts the frontend's calls to Grout's launch sync in line
+// with what is wanted, returning how many files changed.
+func (f *Firmware) SetSyncOnLaunchHook(before, after bool) (int, error) {
+	if !f.SupportsSyncOnLaunch() {
+		return 0, nil
+	}
+	return f.launchHook(before, after)
+}
+
+// InstallSyncMenuEntry puts a "Sync save" entry in the frontend's per-game
+// menu, where the firmware has one.
+func (f *Firmware) InstallSyncMenuEntry() error {
+	if f == nil || f.installSyncMenuEntry == nil {
+		return nil
+	}
+	return f.installSyncMenuEntry()
+}
+
+// SetAsideResumeState makes the game start from its save file the next time it
+// is launched, when the firmware would otherwise resume it from a snapshot that
+// a newer save has since overtaken. It returns how many files it moved.
+func (f *Firmware) SetAsideResumeState(romPath string) (int, error) {
+	if f == nil || f.setAsideResumeState == nil {
+		return 0, nil
+	}
+	return f.setAsideResumeState(romPath)
 }
 
 func (f *Firmware) IsBasedOnEmulationStation() bool {
@@ -358,16 +406,19 @@ var firmwares = map[CFW]*Firmware{
 		packaging:       Packaging{Asset: "Grout-Allium.zip", LaunchScript: "Grout.pak/launch.sh", InstallDepth: 3},
 	},
 	Onion: {
-		id:              Onion,
-		romDirectory:    onion.GetRomDirectory,
-		biosDirectory:   onion.GetBIOSDirectory,
-		baseSavePath:    onion.GetBaseSavePath,
-		coverDirectory:  besideRoms(onion.GetArtDirectory),
-		platforms:       onion.Platforms,
-		saveDirectories: onion.SaveDirectories,
-		gamelist:        GamelistMiyoo,
-		inputMapping:    onion.GetInputMappingBytes,
-		packaging:       Packaging{Asset: "Grout-Onion.zip", LaunchScript: "Grout/launch.sh", InstallDepth: 3},
+		id:                   Onion,
+		romDirectory:         onion.GetRomDirectory,
+		biosDirectory:        onion.GetBIOSDirectory,
+		baseSavePath:         onion.GetBaseSavePath,
+		coverDirectory:       besideRoms(onion.GetArtDirectory),
+		platforms:            onion.Platforms,
+		saveDirectories:      onion.SaveDirectories,
+		gamelist:             GamelistMiyoo,
+		inputMapping:         onion.GetInputMappingBytes,
+		launchHook:           onion.SetLaunchHook,
+		setAsideResumeState:  onion.SetAsideResumeState,
+		installSyncMenuEntry: onion.InstallSyncSaveMenuEntry,
+		packaging:            Packaging{Asset: "Grout-Onion.zip", LaunchScript: "Grout/launch.sh", InstallDepth: 3},
 	},
 	Koriki: {
 		id:              Koriki,

@@ -31,8 +31,22 @@ import (
 const maxConcurrentRequests = 4
 
 func ResolveSaveSync(client *romm.Client, config *settings.Config, deviceID string) (SyncResult, error) {
+	return resolveSaveSync(client, config, deviceID, nil)
+}
+
+// resolveSaveSync negotiates with the server and maps its answer onto the
+// device. A non-nil roms stands in for the scan of the ROMs on the device, which
+// narrows the run to those ROMs. The negotiate payload still carries every
+// local save, so the server never reads a narrowed run as saves having gone
+// missing.
+func resolveSaveSync(client *romm.Client, config *settings.Config, deviceID string, roms map[int]cfw.LocalRomFile) (SyncResult, error) {
 	logger := gaba.GetLogger()
 	logger.Debug("Starting save sync resolve (negotiate)", "deviceID", deviceID)
+
+	resolvedRoms := roms
+	if resolvedRoms == nil {
+		resolvedRoms = ResolveLocalRoms(cfw.ScanRoms(*config))
+	}
 
 	localSaves := ScanSaves(config)
 	logger.Debug("Scanned local saves", "count", len(localSaves))
@@ -78,11 +92,9 @@ func ResolveSaveSync(client *romm.Client, config *settings.Config, deviceID stri
 			"file", op.FileName, "slot", slot, "reason", op.Reason)
 	}
 
-	scan := cfw.ScanRoms(*config)
-	resolvedRoms := ResolveLocalRoms(scan)
 	cm := cache.GetCacheManager()
 
-	items := mapOperationsToItems(resp.Operations, localSaves, resolvedRoms, cm, config, recordedSlots, recordedHashes)
+	items, dropped := mapOperationsTracked(resp.Operations, localSaves, resolvedRoms, cm, config, recordedSlots, recordedHashes)
 
 	// Discovery fallback: the orchestrator only volunteers downloads for non-null-slot
 	// saves the device hasn't already synced, and never surfaces null-slot ("archival" /
@@ -98,7 +110,7 @@ func ResolveSaveSync(client *romm.Client, config *settings.Config, deviceID stri
 
 	logger.Debug("Total sync items resolved", "count", len(items))
 
-	return SyncResult{Items: items, SessionID: resp.SessionID}, nil
+	return SyncResult{Items: items, SessionID: resp.SessionID, Operations: resp.Operations, Dropped: dropped}, nil
 }
 
 // buildDiscoveryItems turns server saves for uncovered ROMs into download items.
@@ -333,7 +345,23 @@ func mapOperationsToItems(
 	recordedSlots map[saveKey]string,
 	recordedHashes map[saveKey]string,
 ) []SyncItem {
+	items, _ := mapOperationsTracked(ops, localSaves, resolvedRoms, cm, config, recordedSlots, recordedHashes)
+	return items
+}
+
+// mapOperationsTracked is mapOperationsToItems that also says which of RomM's
+// instructions it did not act on, and why, so the player can be told.
+func mapOperationsTracked(
+	ops []romm.SyncOperationSchema,
+	localSaves []LocalSave,
+	resolvedRoms map[int]cfw.LocalRomFile,
+	cm *cache.Manager,
+	config *settings.Config,
+	recordedSlots map[saveKey]string,
+	recordedHashes map[saveKey]string,
+) ([]SyncItem, []DroppedOp) {
 	logger := gaba.GetLogger()
+	var dropped []DroppedOp
 
 	type romSlotKey struct {
 		romID int
@@ -384,6 +412,7 @@ func mapOperationsToItems(
 			if !ok {
 				logger.Warn("Negotiate upload op has no local save in the reported slot",
 					"romID", op.RomID, "slot", slot, "file", op.FileName)
+				dropped = append(dropped, DroppedOp{Op: op, Reason: DropNoLocalSave})
 				continue
 			}
 			// Suppress a redundant promotion-upload: when the local save's content is
@@ -397,6 +426,7 @@ func mapOperationsToItems(
 				if localHash, err := saveContentHash(ls); err == nil && localHash == rec {
 					logger.Debug("Skipping upload: content unchanged since download (already on server)",
 						"romID", op.RomID, "slot", slot, "file", ls.FileName)
+					dropped = append(dropped, DroppedOp{Op: op, Reason: DropUnchangedSinceDownload})
 					continue
 				}
 			}
@@ -410,10 +440,12 @@ func mapOperationsToItems(
 		case "download":
 			if !installed[op.RomID] {
 				logger.Debug("Skipping download: ROM not downloaded locally", "romID", op.RomID, "file", op.FileName)
+				dropped = append(dropped, DroppedOp{Op: op, Reason: DropNotInstalled})
 				continue
 			}
 			if buildRemoteSaveStub(op) == nil {
 				logger.Error("Negotiate download op missing save identity (no save_id/server_updated_at)", "romID", op.RomID, "file", op.FileName)
+				dropped = append(dropped, DroppedOp{Op: op, Reason: DropNoIdentity})
 				continue
 			}
 			// grout keeps one save (one slot) per ROM. If the ROM already has a local
@@ -426,6 +458,7 @@ func mapOperationsToItems(
 				if opSlot != managedSlot {
 					logger.Debug("Skipping download: ROM's local save is in a different slot",
 						"romID", op.RomID, "opSlot", opSlot, "managedSlot", managedSlot, "file", op.FileName)
+					dropped = append(dropped, DroppedOp{Op: op, Reason: DropOtherSlot, LocalSlot: managedSlot})
 					continue
 				}
 			}
@@ -435,6 +468,7 @@ func mapOperationsToItems(
 			stub := buildRemoteSaveStub(op)
 			if stub == nil {
 				logger.Error("Negotiate conflict op missing save identity (no save_id/server_updated_at)", "romID", op.RomID, "file", op.FileName)
+				dropped = append(dropped, DroppedOp{Op: op, Reason: DropNoIdentity})
 				continue
 			}
 			slot := reportedOpSlot(op)
@@ -442,6 +476,7 @@ func mapOperationsToItems(
 			if !ok {
 				logger.Warn("Negotiate conflict op has no local save in the reported slot",
 					"romID", op.RomID, "slot", slot, "file", op.FileName)
+				dropped = append(dropped, DroppedOp{Op: op, Reason: DropNoLocalSave})
 				continue
 			}
 			items = append(items, SyncItem{
@@ -496,7 +531,7 @@ func mapOperationsToItems(
 		items = append(items, item)
 	}
 
-	return items
+	return items, dropped
 }
 
 // reportedOpSlot returns the slot a negotiate op is paired on, treating a nil/empty slot
@@ -601,7 +636,7 @@ func ExecuteSaveSync(client *romm.Client, config *settings.Config, deviceID stri
 	}
 
 	if sessionID > 0 {
-		if err := client.CompleteSession(sessionID, romm.SyncCompletePayload{
+		if err := client.WithTimeout(completeSessionTimeout).CompleteSession(sessionID, romm.SyncCompletePayload{
 			OperationsCompleted: report.Uploaded + report.Downloaded,
 			// Count runtime conflicts (e.g. a 409 that turned an upload into a conflict)
 			// as failed so the server's session totals reconcile with operations_planned.
@@ -1151,20 +1186,15 @@ func ExecuteActions(client *romm.Client, config *settings.Config, deviceID strin
 				item.Success = true
 				report.Uploaded++
 			case uploadSupersededByDownload:
-				// 409: server slot is ahead and local is unmodified, so reconcile by
-				// downloading the server save (download() backs up the local first).
-				item.Action = ActionDownload
-				if download(client, config, deviceID, item) {
-					item.Success = true
-					report.Downloaded++
-				} else {
-					report.Errors++
-				}
+				settleSuperseded(client, config, deviceID, item, &report)
 			case uploadConflict:
 				item.Action = ActionConflict
 				report.Conflicts++
 			default:
 				report.Errors++
+				if item.TimedOut {
+					report.TimedOut++
+				}
 			}
 
 		case ActionDownload:
@@ -1177,6 +1207,9 @@ func ExecuteActions(client *romm.Client, config *settings.Config, deviceID strin
 				report.Downloaded++
 			} else {
 				report.Errors++
+				if item.TimedOut {
+					report.TimedOut++
+				}
 			}
 
 		case ActionConflict:
@@ -1190,6 +1223,28 @@ func ExecuteActions(client *romm.Client, config *settings.Config, deviceID strin
 	report.Items = items
 	logger.Debug("Sync execution complete", "uploaded", report.Uploaded, "downloaded", report.Downloaded, "skipped", report.Skipped, "errors", report.Errors)
 	return report
+}
+
+// settleSuperseded handles an upload the server turned down because its own save
+// is ahead of an unmodified one on the device. The usual answer is to take the
+// server's save (download() backs up the local one first); a run that may only
+// send leaves it for a sync that may download.
+func settleSuperseded(client *romm.Client, config *settings.Config, deviceID string, item *SyncItem, report *SyncReport) {
+	if item.UploadOnly {
+		item.Action = ActionConflict
+		report.Conflicts++
+		return
+	}
+	item.Action = ActionDownload
+	if download(client, config, deviceID, item) {
+		item.Success = true
+		report.Downloaded++
+		return
+	}
+	report.Errors++
+	if item.TimedOut {
+		report.TimedOut++
+	}
 }
 
 type uploadOutcome int
@@ -1333,6 +1388,7 @@ func upload(client *romm.Client, deviceID string, item *SyncItem) uploadOutcome 
 			return resolveUploadConflict(client, deviceID, item, query.Slot, err)
 		}
 		logger.Error("Failed to upload save", "romID", item.LocalSave.RomID, "error", err)
+		item.TimedOut = isTimeout(err)
 		return uploadErr
 	}
 
@@ -1414,6 +1470,7 @@ func download(client *romm.Client, config *settings.Config, deviceID string, ite
 	data, err := client.DownloadSaveByID(item.RemoteSave.ID, deviceID, false)
 	if err != nil {
 		logger.Error("Failed to download save", "romID", item.LocalSave.RomID, "saveID", item.RemoteSave.ID, "error", err)
+		item.TimedOut = isTimeout(err)
 		return false
 	}
 
@@ -1494,6 +1551,10 @@ func download(client *romm.Client, config *settings.Config, deviceID string, ite
 			logger.Error("Failed to write save file", "path", savePath, "error", err)
 			return false
 		}
+	}
+
+	if item.AfterWrite != nil {
+		item.AfterWrite()
 	}
 
 	t := item.RemoteSave.UpdatedAt.Truncate(time.Second)

@@ -31,6 +31,24 @@ const (
 	LogLevelError LogLevel = "ERROR"
 )
 
+// LaunchSyncMode is when a game's save is synced around playing it. Empty
+// means never.
+type LaunchSyncMode string
+
+const (
+	LaunchSyncOff            LaunchSyncMode = ""
+	LaunchSyncBefore         LaunchSyncMode = "before"
+	LaunchSyncBeforeAndAfter LaunchSyncMode = "before_and_after"
+)
+
+// BeforeLaunch reports whether the save is brought up to date as the game starts.
+func (m LaunchSyncMode) BeforeLaunch() bool {
+	return m == LaunchSyncBefore || m == LaunchSyncBeforeAndAfter
+}
+
+// AfterQuit reports whether the save is uploaded once the game is quit.
+func (m LaunchSyncMode) AfterQuit() bool { return m == LaunchSyncBeforeAndAfter }
+
 // RomStorage pins muOS roms to one card. Empty means automatic. The values
 // are muOS's own names for each storage.
 type RomStorage string

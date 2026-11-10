@@ -135,6 +135,99 @@ Your slot preferences are stored in `save_slots.json`, separate from the main co
 
 ---
 
+## Sync on Launch
+
+Sync on Launch keeps a game's save up to date automatically as you play, so you are always playing the latest version
+without opening Grout first. It is **off by default**.
+
+**Supported on:** Onion (Miyoo Mini / Mini+). Other firmwares do not offer the setting.
+
+Open **Save Sync** from Settings and set **Sync on Launch** to one of:
+
+- **Off** - Nothing happens automatically.
+- **Before Launch** - The game's save is synced just before the game starts.
+- **Before Launch & After Quit** - As above, and when you quit the game its save is uploaded straight away, so it is
+  on your RomM server before you pick up another device.
+
+Grout adds a line to the top of each emulator's `Emu/*/launch.sh` (and, for after-quit, a few lines at the bottom) so
+that Onion calls Grout's sync around the game. Setting it back to **Off** removes those lines again. If an Onion
+update replaces the launch scripts, set it to Off and back on to put them back.
+
+Grout only syncs when it can do so quickly, and otherwise gets out of the way:
+
+- **No saved Wi-Fi networks** on the device: the sync is skipped immediately.
+- **Wi-Fi is off**: the sync is skipped. Grout never turns Wi-Fi on or off for you.
+- **Wi-Fi is on but no saved network is in range**: Grout waits up to 8 seconds for the device to join one, then
+  skips the sync.
+- **RomM is unreachable**: the sync is skipped after 3 seconds.
+- **The game was synced in the last 10 minutes**, by a launch, by **Sync save** in the Y menu, by the upload after you
+  quit it, or by **Sync Now** in Grout: the sync before launch is skipped, so relaunching a game you just played does
+  not make you wait. **Sync save** in the Y menu and the upload after quitting always run.
+- **It is taking too long**: a sync before a game is stopped after 45 seconds, and the upload after a game after 60,
+  so a slow server or network cannot hold up your game or the menu for long. Anything unfinished is picked up by the
+  next sync.
+- **RomM does not answer in time**: the sync says so, and that the save may not have arrived, instead of reporting a
+  bare failure. Run it again; if the upload did get through, RomM will say the saves are identical.
+- **The device is being powered off** (after quit only): the upload still runs, since there may be no other chance
+  before the device is next used, but it never holds the shutdown up. Onion forces the shutdown 30 seconds after the
+  power button was held, so the upload is cut off after 15 seconds if RomM has not finished, it does not wait for
+  Wi-Fi to connect, and it is skipped when the battery is nearly flat. Anything that did not get through goes up the
+  next time you launch the game or run **Sync save**.
+
+Only the game being launched is synced. Anything that needs a decision from you is left alone and appears the next
+time you run **Sync Now**: conflicts, and games with saves in more than one server slot. Before a game, saves are
+uploaded and downloaded the same way as a normal sync, including the backup of a save before it is replaced. After
+quitting, saves are only ever uploaded, never downloaded.
+
+Launch syncs write a line to `logs/app.log` and to `logs/sync_on_launch.log` in Grout's folder on the card, with how
+long each step took. Grout's own log level is normally set to Error; launch syncs log what they did regardless.
+
+### Resume states
+
+Onion resumes a game from the auto save state taken when you last quit it. That state is a snapshot of the whole game,
+so it would put the progress you had on this device back on top of a newer save brought in from another device.
+
+When a sync downloads a newer save for the game you are launching, Grout sets that game's auto save state aside so
+the game starts from the new save. Nothing is deleted: the state is renamed to `<game>.state.auto_<date>` in the same
+folder, the way Onion's own netplay scripts do it, and the last three are kept. Your numbered save state slots are
+never touched.
+
+If a newer save was downloaded earlier, for example by a sync you ran before turning this on, the game will still
+resume from its old state. Pick **Reset game** from the game's Y menu once to start from the save instead.
+
+### Y menu: Sync save
+
+Once your device is registered, the Y menu on a game in the list has a **Sync save (Grout)** entry, whether or not Sync
+on Launch is turned on. It syncs that one game right now and tells you what actually happened:
+
+- **Took RomM's save**, with the date of RomM's save and of the one it replaced, which is kept as a backup.
+- **Sent this device's save to RomM**, with both dates when RomM said what it had.
+- **Already in sync**, said only when RomM's own checksum of its save matches the one on the device.
+- **RomM says there is nothing to do, but Grout could not check**, when RomM sent no checksum or the save on the device
+  could not be read. Grout does not claim the saves match in that case.
+- **Nothing changed**, with the reason: RomM's newest save is in a different slot from the one this device uses, or
+  RomM asked for an upload of a save that is exactly what was last downloaded.
+- **A conflict or a choice needs you**, **Wi-Fi is off**, or **RomM unreachable**.
+
+A sync that did nothing is never reported as being up to date unless the two saves are the same. The same account
+of each launch sync, including what RomM said, is in `logs/app.log`. Grout's own **Sync Now** lists the games it left
+alone for the same reasons instead of saying everything is up to date.
+
+When it downloads a newer save, it sets the game's resume state aside the same way a launch sync does.
+
+**Reset game** in the same menu starts the game without its resume state, and the game's launch is synced first like
+any other.
+
+> [!NOTE]
+> Onion launches a game with a different core (Y menu > Game core) straight from RetroArch without going through the
+> emulator's `launch.sh`, so those games are not synced when they start. Use **Sync save** from the Y menu for them.
+
+> [!NOTE]
+> The sync runs when a game starts, not when you quit it, unless **Before Launch & After Quit** is selected. The
+> upload after a game runs when the emulator exits, whether you quit to the game list or power the device off with
+> the power button. It does not run if the battery runs out, if the power button is held down for a forced shutdown,
+> or if the device is only put to sleep, since the game is still running then.
+
 ## Backup Retention
 
 When Grout downloads a newer save from RomM, it backs up your current local save to a `.backup/` directory. You can

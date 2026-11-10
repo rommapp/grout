@@ -11,6 +11,10 @@ import (
 )
 
 func main() {
+	if request, ok := parseLaunchSync(os.Args[1:]); ok {
+		os.Exit(runLaunchSync(request))
+	}
+
 	defer cleanup()
 
 	result := setup()

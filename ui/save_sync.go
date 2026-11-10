@@ -3,7 +3,10 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"strings"
+	"time"
 
+	"grout/cache"
 	"grout/romm"
 	"grout/saves"
 	"grout/settings"
@@ -59,6 +62,8 @@ func (s *SaveSyncScreen) Execute(input SaveSyncInput) SaveSyncOutput {
 		return SaveSyncOutput{}
 	}
 
+	s.tellAboutLeftAlone(result.Dropped)
+
 	items := s.chooseSlots(config, result.Items)
 
 	// Anything the user has to decide goes back to the router for the conflict
@@ -105,6 +110,14 @@ func (s *SaveSyncScreen) executeSync(client *romm.Client, config *settings.Confi
 		s.withProgress(localize("save_sync_syncing", "Syncing saves..."), run)
 	} else {
 		run(nil)
+	}
+
+	// A sync of every game with nothing wrong means a launch right now has
+	// nothing to catch up on.
+	if report.Errors == 0 && config.SyncOnLaunch != settings.LaunchSyncOff {
+		if err := saves.RecordFullSync(time.Now()); err != nil {
+			gaba.GetLogger().Warn("Could not note that every game was synced", "error", err)
+		}
 	}
 
 	// The server can reject an upload because its own save moved on, which
@@ -308,4 +321,60 @@ func reportSections(report saves.SyncReport) []gaba.Section {
 	}
 
 	return sections
+}
+
+// tellAboutLeftAlone says which games had something from RomM that Grout did not
+// act on, so a sync that did nothing for them is not mistaken for one that found
+// them up to date. Games RomM knows that are not on this device are normal and
+// are not mentioned.
+func (s *SaveSyncScreen) tellAboutLeftAlone(dropped []saves.DroppedOp) {
+	reasons := map[int]saves.DropReason{}
+	var order []int
+	for _, drop := range dropped {
+		if drop.Reason == saves.DropNotInstalled || drop.Reason == saves.DropNoIdentity {
+			continue
+		}
+		if _, seen := reasons[drop.Op.RomID]; !seen {
+			order = append(order, drop.Op.RomID)
+			reasons[drop.Op.RomID] = drop.Reason
+		}
+	}
+	if len(order) == 0 {
+		return
+	}
+
+	names := map[int]string{}
+	if cm := cache.GetCacheManager(); cm != nil {
+		if games, err := cm.GetGamesByIDs(order); err == nil {
+			for _, game := range games {
+				names[game.ID] = game.Name
+			}
+		}
+	}
+
+	const shown = 4
+	lines := make([]string, 0, shown+1)
+	for i, romID := range order {
+		if i == shown {
+			lines = append(lines, localizeWith("save_sync_and_more", "and {{.Count}} more", map[string]any{"Count": len(order) - shown}))
+			break
+		}
+		name := names[romID]
+		if name == "" {
+			name = fmt.Sprintf("#%d", romID)
+		}
+		why := localize("save_sync_left_other_slot", "other slot")
+		if reasons[romID] != saves.DropOtherSlot {
+			why = localize("save_sync_left_held_back", "held back")
+		}
+		lines = append(lines, name+" ("+why+")")
+	}
+
+	gaba.ConfirmationMessage(
+		localizeWith("save_sync_left_alone",
+			"Not synced:\n{{.Games}}\nRomM has a save Grout left alone.\nOpen the game's Options to choose.",
+			map[string]any{"Games": strings.Join(lines, "\n")}),
+		ContinueFooter(),
+		gaba.MessageOptions{},
+	)
 }
