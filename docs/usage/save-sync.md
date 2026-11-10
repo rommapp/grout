@@ -187,6 +187,14 @@ never touched.
 If a newer save was downloaded earlier, for example by a sync you ran before turning this on, the game will still
 resume from its old state. Pick **Reset game** from the game's Y menu once to start from the save instead.
 
+### Games on a core of their own
+
+On Onion, a game can be given a core of its own (Y menu > Game core), and each core keeps its saves in a folder of its
+own: a GBA game on mGBA reads `saves/mGBA`, while the rest of the system's games, on gpSP, read `saves/gpSP`. When Grout
+downloads a save for a game that has none on the device yet, it puts it in the folder of that game's own core, read from
+the game's setting in `Roms/<system>/.game_config/`. Set the game's core before the first sync, or the save goes to the
+folder for the system's default core. A game with a save already on the device keeps using the folder that save is in.
+
 ### Y menu: Sync save
 
 Once your device is registered, the Y menu on a game in the list has a **Sync save (Grout)** entry, whether or not Sync

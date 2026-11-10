@@ -115,6 +115,11 @@ type Firmware struct {
 	// programs can extend have one.
 	installSyncMenuEntry func() error
 
+	// saveFolderForRom, when set, names the save folder a particular game uses
+	// when it runs on a core of its own, or "" when it uses the system's
+	// default. Only firmwares that let a single game change core have one.
+	saveFolderForRom func(romPath string) string
+
 	// setAsideResumeState, when set, makes a game start from its save file
 	// rather than resume from the snapshot taken when it was last quit, and
 	// says how many files it moved. Only firmwares that resume games have one.
@@ -136,6 +141,15 @@ func (f *Firmware) SetSyncOnLaunchHook(before, after bool) (int, error) {
 		return 0, nil
 	}
 	return f.launchHook(before, after)
+}
+
+// SaveFolderForRom is the save folder, relative to the save root, that one game
+// uses because it runs on a core of its own, or "" when it uses the default.
+func (f *Firmware) SaveFolderForRom(romPath string) string {
+	if f == nil || f.saveFolderForRom == nil {
+		return ""
+	}
+	return f.saveFolderForRom(romPath)
 }
 
 // InstallSyncMenuEntry puts a "Sync save" entry in the frontend's per-game
@@ -417,6 +431,7 @@ var firmwares = map[CFW]*Firmware{
 		inputMapping:         onion.GetInputMappingBytes,
 		launchHook:           onion.SetLaunchHook,
 		setAsideResumeState:  onion.SetAsideResumeState,
+		saveFolderForRom:     onion.SaveFolderForRom,
 		installSyncMenuEntry: onion.InstallSyncSaveMenuEntry,
 		packaging:            Packaging{Asset: "Grout-Onion.zip", LaunchScript: "Grout/launch.sh", InstallDepth: 3},
 	},
