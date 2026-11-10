@@ -314,7 +314,11 @@ func (s *GameOptionsScreen) offerToMoveSave(config *settings.Config, game romm.R
 
 	destDir := filepath.Join(cfw.BaseSavePath(), newFolder)
 	for _, save := range toMove {
-		if err := saves.CarrySave(save, destDir); err != nil {
+		save := save
+		err := whileWorking(localize("game_core_moving_save", "Moving the save..."), func() error {
+			return saves.CarrySave(save, destDir)
+		})
+		if err != nil {
 			logger.Error("Failed to move the save", "save", save.FilePath, "to", destDir, "error", err)
 			gaba.ConfirmationMessage(
 				localize("game_core_move_failed", "Could not move the save.\nSee the Grout logs."),
@@ -452,9 +456,13 @@ func (s *GameOptionsScreen) resolveSaves(config *settings.Config, host settings.
 	}
 
 	if choice == len(duplicates.Copies) && remote != nil {
-		err = saves.UseRemoteSave(client, config, host.DeviceID, duplicates, remote, destDir)
+		err = whileWorking(localize("force_downloading", "Getting RomM's save..."), func() error {
+			return saves.UseRemoteSave(client, config, host.DeviceID, duplicates, remote, destDir)
+		})
 	} else {
-		err = saves.KeepSave(duplicates, choice, destDir)
+		err = whileWorking(localize("resolve_saves_working", "Putting the save in place..."), func() error {
+			return saves.KeepSave(duplicates, choice, destDir)
+		})
 	}
 	if err != nil {
 		logger.Error("Failed to resolve the game's saves", "rom", duplicates.RomName, "error", err)
@@ -507,6 +515,23 @@ func confirmWarning(message string) bool {
 		gaba.MessageOptions{ConfirmButton: buttons.VirtualButtonX},
 	)
 	return err == nil
+}
+
+// whileWorking keeps a message on screen for as long as the work takes. A
+// confirmed choice otherwise shows nothing until the work is over, which on a
+// handheld over Wi-Fi can be many seconds, and a player cannot tell a press that
+// was received from one that was not.
+func whileWorking(message string, work func() error) error {
+	var err error
+	gaba.ProcessMessage(
+		message,
+		gaba.ProcessMessageOptions{ShowThemeBackground: true},
+		func() (any, error) {
+			err = work()
+			return nil, nil
+		},
+	)
+	return err
 }
 
 func tell(message string) {
@@ -573,7 +598,10 @@ func (s *GameOptionsScreen) useRommsSave(config *settings.Config, host settings.
 		return
 	}
 
-	if err := saves.UseRemoteSave(client, config, host.DeviceID, dup, remote, destDir); err != nil {
+	err := whileWorking(localize("force_downloading", "Getting RomM's save..."), func() error {
+		return saves.UseRemoteSave(client, config, host.DeviceID, dup, remote, destDir)
+	})
+	if err != nil {
 		logger.Error("Failed to use RomM's save", "game", game.Name, "error", err)
 		tell(localize("force_failed", "That did not work.\nSee the Grout logs."))
 		return
@@ -640,7 +668,10 @@ func (s *GameOptionsScreen) uploadLocalSave(config *settings.Config, host settin
 		return
 	}
 
-	if err := saves.ForceUpload(client, config, host.DeviceID, local[0]); err != nil {
+	err := whileWorking(localize("force_uploading", "Sending the save to RomM..."), func() error {
+		return saves.ForceUpload(client, config, host.DeviceID, local[0])
+	})
+	if err != nil {
 		logger.Error("Failed to upload the save", "game", game.Name, "error", err)
 		tell(localize("force_failed", "That did not work.\nSee the Grout logs."))
 		return
