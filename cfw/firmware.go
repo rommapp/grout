@@ -110,6 +110,11 @@ type Firmware struct {
 	// run a command at launch have one.
 	launchHook func(before, after bool) (int, error)
 
+	// setAsideResumeState, when set, makes a game start from its save file
+	// rather than resume from the snapshot taken when it was last quit, and
+	// says how many files it moved. Only firmwares that resume games have one.
+	setAsideResumeState func(romPath string) (int, error)
+
 	// rescanLibrary, when set, asks a frontend that indexes its library to pick
 	// up games just downloaded. Leaf only lists what its last scan found.
 	rescanLibrary func() error
@@ -126,6 +131,16 @@ func (f *Firmware) SetSyncOnLaunchHook(before, after bool) (int, error) {
 		return 0, nil
 	}
 	return f.launchHook(before, after)
+}
+
+// SetAsideResumeState makes the game start from its save file the next time it
+// is launched, when the firmware would otherwise resume it from a snapshot that
+// a newer save has since overtaken. It returns how many files it moved.
+func (f *Firmware) SetAsideResumeState(romPath string) (int, error) {
+	if f == nil || f.setAsideResumeState == nil {
+		return 0, nil
+	}
+	return f.setAsideResumeState(romPath)
 }
 
 func (f *Firmware) IsBasedOnEmulationStation() bool {
@@ -377,17 +392,18 @@ var firmwares = map[CFW]*Firmware{
 		packaging:       Packaging{Asset: "Grout-Allium.zip", LaunchScript: "Grout.pak/launch.sh", InstallDepth: 3},
 	},
 	Onion: {
-		id:              Onion,
-		romDirectory:    onion.GetRomDirectory,
-		biosDirectory:   onion.GetBIOSDirectory,
-		baseSavePath:    onion.GetBaseSavePath,
-		coverDirectory:  besideRoms(onion.GetArtDirectory),
-		platforms:       onion.Platforms,
-		saveDirectories: onion.SaveDirectories,
-		gamelist:        GamelistMiyoo,
-		inputMapping:    onion.GetInputMappingBytes,
-		launchHook:      onion.SetLaunchHook,
-		packaging:       Packaging{Asset: "Grout-Onion.zip", LaunchScript: "Grout/launch.sh", InstallDepth: 3},
+		id:                  Onion,
+		romDirectory:        onion.GetRomDirectory,
+		biosDirectory:       onion.GetBIOSDirectory,
+		baseSavePath:        onion.GetBaseSavePath,
+		coverDirectory:      besideRoms(onion.GetArtDirectory),
+		platforms:           onion.Platforms,
+		saveDirectories:     onion.SaveDirectories,
+		gamelist:            GamelistMiyoo,
+		inputMapping:        onion.GetInputMappingBytes,
+		launchHook:          onion.SetLaunchHook,
+		setAsideResumeState: onion.SetAsideResumeState,
+		packaging:           Packaging{Asset: "Grout-Onion.zip", LaunchScript: "Grout/launch.sh", InstallDepth: 3},
 	},
 	Koriki: {
 		id:              Koriki,

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"grout/cache"
 	"grout/cfw"
@@ -13,13 +14,31 @@ import (
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
 
-// syncRomFlag asks for the one-shot sync a frontend's launch hook runs around
-// a game: grout --sync-rom <path to the rom>, which brings the save up to date,
-// or grout --sync-rom <path> --upload-only, which only sends it, for after the
-// game has been quit.
+// The command line a frontend's hook runs around a game:
+//
+//	grout --sync-rom <rom>                   just before the game starts
+//	grout --sync-rom <rom> --upload-only     once it has been quit
+//	grout --sync-rom <rom> --now             because the player asked, whatever
+//	                                         Sync on Launch is set to
 const (
 	syncRomFlag    = "--sync-rom"
 	uploadOnlyFlag = "--upload-only"
+	nowFlag        = "--now"
+)
+
+// What a launch sync exits with. The hooks that run it before and after a game
+// ignore all of these; the menu entry that runs it on request turns them into a
+// message.
+const (
+	exitDone          = 0  // nothing needed doing, or nothing was asked for
+	exitError         = 1  // no usable config or cache
+	exitDownloaded    = 10 // a newer save came down
+	exitUploaded      = 11 // the save on the device went up
+	exitUnreachable   = 12 // RomM did not answer in time
+	exitNotMatched    = 13 // the game is not one RomM knows about
+	exitHeld          = 14 // a conflict or slot choice needs a manual sync
+	exitNoDevice      = 15 // this device is not registered with RomM
+	exitStateSetAside = 16 // a newer save came down and the resume state made way for it
 )
 
 // launchResolveBudget bounds the read-only part of a launch sync. The game is
@@ -31,6 +50,7 @@ const launchResolveBudget = 20 * time.Second
 type launchSync struct {
 	romPath    string
 	uploadOnly bool
+	now        bool
 }
 
 // parseLaunchSync reads the command line, and reports whether it asked for a
@@ -40,49 +60,68 @@ func parseLaunchSync(args []string) (launchSync, bool) {
 		return launchSync{}, false
 	}
 	request := launchSync{romPath: args[1]}
-	switch {
-	case len(args) == 2:
-	case len(args) == 3 && args[2] == uploadOnlyFlag:
-		request.uploadOnly = true
-	default:
+	for _, arg := range args[2:] {
+		switch arg {
+		case uploadOnlyFlag:
+			request.uploadOnly = true
+		case nowFlag:
+			request.now = true
+		default:
+			return launchSync{}, false
+		}
+	}
+	if request.uploadOnly && request.now {
 		return launchSync{}, false
 	}
 	return request, true
 }
 
+// wanted reports whether the Sync on Launch setting asks for this sync. A sync
+// the player asked for by hand is always wanted.
+func (r launchSync) wanted(mode settings.LaunchSyncMode) bool {
+	switch {
+	case r.now:
+		return true
+	case r.uploadOnly:
+		return mode.AfterQuit()
+	default:
+		return mode.BeforeLaunch()
+	}
+}
+
 // runLaunchSync syncs one game's save without bringing up the interface and
 // returns the process exit code. It never blocks a launch: every way it can
-// fail or have nothing to do is logged and left to the launch script to ignore.
+// fail or have nothing to do is logged and left to the caller to ignore.
 func runLaunchSync(request launchSync) int {
 	romPath := request.romPath
 	logger := gaba.GetLogger()
 
 	if _, err := cfw.Active(); err != nil {
 		fmt.Fprintf(os.Stderr, "Cannot sync: %v\n", err)
-		return 1
+		return exitError
 	}
 
 	config, err := settings.LoadConfig()
 	if err != nil {
 		logger.Error("Launch sync: no usable config", "error", err)
-		return 1
+		return exitError
 	}
 	gaba.SetRawLogLevel(string(config.LogLevel))
 	os.Setenv(settings.RomStorageEnvVar, string(config.MuOSRomStorage))
 
-	if request.uploadOnly && !config.SyncOnLaunch.AfterQuit() || !request.uploadOnly && !config.SyncOnLaunch.BeforeLaunch() {
+	if !request.wanted(config.SyncOnLaunch) {
 		logger.Debug("Launch sync: turned off", "mode", config.SyncOnLaunch, "uploadOnly", request.uploadOnly)
-		return 0
+		return exitDone
 	}
 	if len(config.Hosts) == 0 || config.Hosts[0].DeviceID == "" {
 		logger.Info("Launch sync: no registered device")
-		return 0
+		return exitNoDevice
 	}
 	host := config.Hosts[0]
 
 	if err := cache.InitCacheManager(host, *config); err != nil {
 		logger.Error("Launch sync: cache unavailable", "error", err)
-		return 1
+		return exitError
 	}
 	defer func() {
 		if cm := cache.GetCacheManager(); cm != nil {
@@ -93,19 +132,19 @@ func runLaunchSync(request launchSync) int {
 	probe := romm.NewClientFromHost(host, settings.ValidationTimeout)
 	if _, err := probe.GetHeartbeat(); err != nil {
 		logger.Info("Launch sync: server unreachable", "error", err)
-		return 0
+		return exitUnreachable
 	}
 
 	client := romm.NewClientFromHost(host, config.ApiTimeout.Duration())
 
 	type resolution struct {
-		result saves.SyncResult
-		err    error
+		plan saves.LaunchPlan
+		err  error
 	}
 	done := make(chan resolution, 1)
 	go func() {
-		result, err := saves.ResolveRomOnLaunch(client, config, host.DeviceID, romPath, request.uploadOnly)
-		done <- resolution{result, err}
+		plan, err := saves.ResolveRomOnLaunch(client, config, host.DeviceID, romPath, request.uploadOnly)
+		done <- resolution{plan, err}
 	}()
 
 	var resolved resolution
@@ -114,18 +153,43 @@ func runLaunchSync(request launchSync) int {
 	case <-time.After(launchResolveBudget):
 		// Nothing has been written yet, so walking away is safe.
 		logger.Warn("Launch sync: gave up waiting for the server", "rom", romPath)
-		return 0
+		return exitUnreachable
+	}
+	if errors.Is(resolved.err, saves.ErrRomNotMatched) {
+		logger.Info("Launch sync: nothing to do", "rom", romPath, "reason", resolved.err)
+		return exitNotMatched
 	}
 	if resolved.err != nil {
-		logger.Info("Launch sync: nothing to do", "rom", romPath, "reason", resolved.err)
-		return 0
+		logger.Info("Launch sync: could not work out what to do", "rom", romPath, "error", resolved.err)
+		return exitUnreachable
 	}
+	plan := resolved.plan
 
 	// From here on it runs to the end: a download interrupted partway is worse
 	// than one that makes the game wait.
-	report := saves.ExecuteSaveSync(client, config, host.DeviceID, resolved.result.Items, resolved.result.SessionID, nil)
+	report := saves.ExecuteSaveSync(client, config, host.DeviceID, plan.Items, plan.SessionID, nil)
 	logger.Info("Launch sync finished", "rom", romPath,
 		"uploaded", report.Uploaded, "downloaded", report.Downloaded,
-		"skipped", report.Skipped, "errors", report.Errors)
-	return 0
+		"skipped", report.Skipped, "errors", report.Errors, "held", plan.Held)
+
+	if report.Downloaded > 0 {
+		// The game would resume from a snapshot of the progress this save
+		// replaces, and the new save would never be seen.
+		moved, err := cfw.ActiveFirmware().SetAsideResumeState(romPath)
+		switch {
+		case err != nil:
+			logger.Error("Launch sync: could not set the resume state aside", "rom", romPath, "error", err)
+		case moved > 0:
+			logger.Info("Launch sync: set the resume state aside for the newer save", "rom", romPath, "files", moved)
+			return exitStateSetAside
+		}
+		return exitDownloaded
+	}
+	if report.Uploaded > 0 {
+		return exitUploaded
+	}
+	if plan.Held > 0 {
+		return exitHeld
+	}
+	return exitDone
 }

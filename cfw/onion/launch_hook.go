@@ -30,8 +30,60 @@ func SyncScriptPath() string {
 // one at the bottom runs once it has been quit. Onion updates replace those
 // files; setting the hook again puts it back, and a launch script without the
 // lines simply launches as before.
+//
+// It also adds a "Sync save" entry to the game list's Y menu while any of it
+// is on, and removes it when it is not.
 func SetLaunchHook(before, after bool) (int, error) {
-	return setLaunchHook(filepath.Join(GetBasePath(), "Emu"), SyncScriptPath(), before, after)
+	changed, err := setLaunchHook(filepath.Join(GetBasePath(), "Emu"), SyncScriptPath(), before, after)
+	if menuErr := setSyncSaveMenuEntry(SyncSaveMenuEntryPath(), SyncScriptPath(), before || after); menuErr != nil && err == nil {
+		err = menuErr
+	}
+	return changed, err
+}
+
+// SyncSaveMenuEntryPath is where the Y menu's "Sync save" script goes. Onion
+// lists every script in this folder in the game list's options menu.
+func SyncSaveMenuEntryPath() string {
+	return filepath.Join(GetBasePath(), "App", "romscripts", "Grout - Sync save.sh")
+}
+
+// syncSaveMenuEntry is the script Onion lists. Onion reads scriptlabel and
+// scriptinfo straight out of the file, and runs it with the ROM path as its
+// first argument. Whatever it exits with is passed back to the game list, where
+// zero means "launch the highlighted game", so it always exits 1.
+func syncSaveMenuEntry(script string) string {
+	return "#!/bin/sh\n" +
+		"scriptlabel=\"Sync save (Grout)\"\n" +
+		"scriptinfo=\"Syncs the save for this game\\nwith RomM right now\"\n" +
+		launchHookMarker + "\n" +
+		fmt.Sprintf("if [ -f \"%s\" ]; then sh \"%s\" --now \"$1\"; fi\n", script, script) +
+		"exit 1\n"
+}
+
+// setSyncSaveMenuEntry adds or removes the Y menu script. It only ever removes
+// a file it wrote.
+func setSyncSaveMenuEntry(path, script string, enabled bool) error {
+	if !enabled {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return nil
+			}
+			return err
+		}
+		if !strings.Contains(string(data), launchHookMarker) {
+			return nil
+		}
+		return os.Remove(path)
+	}
+
+	if existing, err := os.ReadFile(path); err == nil && !strings.Contains(string(existing), launchHookMarker) {
+		return fmt.Errorf("%s exists and is not Grout's", path)
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return err
+	}
+	return files.WriteFileAtomic(path, []byte(syncSaveMenuEntry(script)), 0755)
 }
 
 func launchScripts(emuDir string) ([]string, error) {

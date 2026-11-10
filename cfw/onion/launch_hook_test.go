@@ -213,3 +213,63 @@ func TestMissingSyncScriptLetsTheGameStartAsBefore(t *testing.T) {
 		t.Errorf("calls = %q", got)
 	}
 }
+
+func TestMenuEntryIsWhatOnionExpectsOfAScript(t *testing.T) {
+	entry := syncSaveMenuEntry("/mnt/SDCARD/App/Grout/sync_on_launch.sh")
+
+	for _, want := range []string{
+		"#!/bin/sh\n",
+		`scriptlabel="Sync save (Grout)"`,
+		`scriptinfo="`,
+		`sh "/mnt/SDCARD/App/Grout/sync_on_launch.sh" --now "$1"`,
+	} {
+		if !strings.Contains(entry, want) {
+			t.Errorf("entry is missing %q:\n%s", want, entry)
+		}
+	}
+	// Exiting 0 would make the game list launch the highlighted game.
+	if !strings.HasSuffix(entry, "exit 1\n") {
+		t.Errorf("entry does not end by exiting 1:\n%s", entry)
+	}
+	if n := strings.Count(entry, "scriptlabel"); n != 1 {
+		t.Errorf("scriptlabel appears %d times; Onion reads the first match", n)
+	}
+}
+
+func TestMenuEntryComesAndGoesWithTheSetting(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "App", "romscripts", "Grout - Sync save.sh")
+
+	if err := setSyncSaveMenuEntry(path, "/s.sh", true); err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Stat(path)
+	if err != nil || info.Mode().Perm() != 0755 {
+		t.Fatalf("entry not installed executable: %v %v", err, info)
+	}
+
+	if err := setSyncSaveMenuEntry(path, "/s.sh", false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Error("entry still there after turning the setting off")
+	}
+	if err := setSyncSaveMenuEntry(path, "/s.sh", false); err != nil {
+		t.Errorf("removing what is not there failed: %v", err)
+	}
+}
+
+func TestMenuEntryNeverTouchesAScriptThatIsNotGrouts(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "Grout - Sync save.sh")
+	mine := "#!/bin/sh\necho somebody else\n"
+	os.WriteFile(path, []byte(mine), 0755)
+
+	if err := setSyncSaveMenuEntry(path, "/s.sh", true); err == nil {
+		t.Error("overwrote someone else's script")
+	}
+	if err := setSyncSaveMenuEntry(path, "/s.sh", false); err != nil {
+		t.Error(err)
+	}
+	if read(t, path) != mine {
+		t.Error("someone else's script was changed or removed")
+	}
+}

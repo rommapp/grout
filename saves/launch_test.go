@@ -18,7 +18,11 @@ func TestForLaunchKeepsOnlyWhatCanRunUnattended(t *testing.T) {
 		{LocalSave: LocalSave{RomID: 2}, Action: ActionDownload},
 	}
 
-	got := ForLaunch(items, 1)
+	got, held := ForLaunch(items, 1)
+
+	if held != 2 {
+		t.Errorf("held %d items for an answer, want 2 (the conflict and the slot choice)", held)
+	}
 
 	want := []SyncAction{ActionDownload, ActionUpload, ActionSkip}
 	if len(got) != len(want) {
@@ -33,8 +37,8 @@ func TestForLaunchKeepsOnlyWhatCanRunUnattended(t *testing.T) {
 
 func TestForLaunchWithNothingForTheRomIsEmpty(t *testing.T) {
 	items := []SyncItem{{LocalSave: LocalSave{RomID: 2}, Action: ActionDownload}}
-	if got := ForLaunch(items, 1); len(got) != 0 {
-		t.Errorf("got %+v", got)
+	if got, held := ForLaunch(items, 1); len(got) != 0 || held != 0 {
+		t.Errorf("got %+v, held %d", got, held)
 	}
 }
 

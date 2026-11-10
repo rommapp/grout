@@ -1,7 +1,7 @@
 package saves
 
 import (
-	"fmt"
+	"errors"
 	"path/filepath"
 
 	"grout/cfw"
@@ -10,6 +10,16 @@ import (
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
+
+// LaunchPlan is what a launch sync would do for one game.
+type LaunchPlan struct {
+	Items     []SyncItem
+	SessionID int
+	RomID     int
+	// Held counts the things left for the next manual sync because they need
+	// an answer: conflicts, and games with saves in several server slots.
+	Held int
+}
 
 // ResolveRomOnLaunch works out what bringing one game's save up to date would
 // take, for the moment just before the frontend starts that game. It only
@@ -25,41 +35,47 @@ import (
 // With uploadOnly it keeps nothing but uploads, for after a game has been
 // quit: the save on the device is then the newest there is, so a download
 // would only ever be the wrong answer.
-func ResolveRomOnLaunch(client *romm.Client, config *settings.Config, deviceID, romPath string, uploadOnly bool) (SyncResult, error) {
+func ResolveRomOnLaunch(client *romm.Client, config *settings.Config, deviceID, romPath string, uploadOnly bool) (LaunchPlan, error) {
 	// Found before the server is asked anything: a negotiate that is never
 	// completed leaves a session open on the server.
 	resolved := ResolveLocalRoms(cfw.ScanRoms(*config))
 	romID, ok := FindRomByPath(resolved, romPath)
 	if !ok {
-		return SyncResult{}, fmt.Errorf("%s is not a ROM matched to RomM", romPath)
+		return LaunchPlan{}, ErrRomNotMatched
 	}
 
 	result, err := resolveSaveSync(client, config, deviceID, map[int]cfw.LocalRomFile{romID: resolved[romID]})
 	if err != nil {
-		return SyncResult{}, err
+		return LaunchPlan{}, err
 	}
 
-	result.Items = ForLaunch(result.Items, romID)
+	plan := LaunchPlan{SessionID: result.SessionID, RomID: romID}
+	plan.Items, plan.Held = ForLaunch(result.Items, romID)
 	if uploadOnly {
-		result.Items = UploadsOnly(result.Items)
+		plan.Items = UploadsOnly(plan.Items)
 	}
-	gaba.GetLogger().Debug("Launch sync items", "romID", romID, "count", len(result.Items))
-	return result, nil
+	gaba.GetLogger().Debug("Launch sync items", "romID", romID, "count", len(plan.Items), "held", plan.Held)
+	return plan, nil
 }
 
-// ForLaunch keeps the items for one ROM that can be carried out unattended.
-func ForLaunch(items []SyncItem, romID int) []SyncItem {
-	var kept []SyncItem
+// ErrRomNotMatched means the game is not one RomM knows about, or is not on the
+// device where Grout looks for games.
+var ErrRomNotMatched = errors.New("not a ROM matched to RomM")
+
+// ForLaunch keeps the items for one ROM that can be carried out unattended,
+// and counts the ones that need an answer.
+func ForLaunch(items []SyncItem, romID int) (kept []SyncItem, held int) {
 	for _, item := range items {
 		if item.LocalSave.RomID != romID {
 			continue
 		}
 		if item.Action == ActionConflict || len(item.AvailableSlots) > 1 {
+			held++
 			continue
 		}
 		kept = append(kept, item)
 	}
-	return kept
+	return kept, held
 }
 
 // UploadsOnly keeps just the uploads.

@@ -168,6 +168,36 @@ time you run **Sync Now**: conflicts, and games with saves in more than one serv
 uploaded and downloaded the same way as a normal sync, including the backup of a save before it is replaced. After
 quitting, saves are only ever uploaded, never downloaded.
 
+### Resume states
+
+Onion resumes a game from the auto save state taken when you last quit it. That state is a snapshot of the whole game,
+so it would put the progress you had on this device back on top of a newer save brought in from another device.
+
+When a sync downloads a newer save for the game you are launching, Grout sets that game's auto save state aside so
+the game starts from the new save. Nothing is deleted: the state is renamed to `<game>.state.auto_<date>` in the same
+folder, the way Onion's own netplay scripts do it, and the last three are kept. Your numbered save state slots are
+never touched.
+
+If a newer save was downloaded earlier, for example by a sync you ran before turning this on, the game will still
+resume from its old state. Pick **Reset game** from the game's Y menu once to start from the save instead.
+
+### Y menu: Sync save
+
+While Sync on Launch is on, the Y menu on a game in the list has a **Sync save (Grout)** entry. It syncs that one game
+right now, whatever the setting is, and shows what happened: up to date, downloaded, uploaded, or why it could not
+(Wi-Fi off, no saved network in range, RomM unreachable, a conflict that needs a manual sync). Setting Sync on Launch
+back to **Off** removes the entry.
+
+**Reset game** in the same menu starts the game without its resume state, and the game's launch is synced first like
+any other.
+
+> [!NOTE]
+> Onion launches a game with a different core (Y menu > Game core) straight from RetroArch without going through the
+> emulator's `launch.sh`, so those games are not synced when they start. Use **Sync save** from the Y menu for them.
+
+> [!NOTE]
+> The sync runs when a game starts, not when you quit it, unless **Before Launch & After Quit** is selected.
+
 ## Backup Retention
 
 When Grout downloads a newer save from RomM, it backs up your current local save to a `.backup/` directory. You can
