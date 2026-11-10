@@ -3,6 +3,7 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"grout/romm"
@@ -59,6 +60,8 @@ func (s *SaveSyncScreen) Execute(input SaveSyncInput) SaveSyncOutput {
 		s.tellUnreachable()
 		return SaveSyncOutput{}
 	}
+
+	s.tellAboutDuplicates(result.Duplicates)
 
 	items := s.chooseSlots(config, result.Items)
 
@@ -317,4 +320,30 @@ func reportSections(report saves.SyncReport) []gaba.Section {
 	}
 
 	return sections
+}
+
+// tellAboutDuplicates says which games were left out of the sync because their
+// save is in more than one emulator's folder, and where to put that right.
+func (s *SaveSyncScreen) tellAboutDuplicates(duplicates []saves.DuplicateSaves) {
+	if len(duplicates) == 0 {
+		return
+	}
+
+	const shown = 4
+	names := make([]string, 0, shown)
+	for i, dup := range duplicates {
+		if i == shown {
+			names = append(names, localizeWith("save_sync_and_more", "and {{.Count}} more", map[string]any{"Count": len(duplicates) - shown}))
+			break
+		}
+		names = append(names, dup.RomName)
+	}
+
+	gaba.ConfirmationMessage(
+		localizeWith("save_sync_saves_in_doubt",
+			"Skipped: saves in more than one folder.\n{{.Names}}\nOpen the game's Options and pick Resolve Saves.",
+			map[string]any{"Names": strings.Join(names, "\n")}),
+		ContinueFooter(),
+		gaba.MessageOptions{},
+	)
 }

@@ -211,6 +211,25 @@ When Grout downloads a save for a game that has none on the device yet, it puts 
 core, so set the core before the first sync. A game with a save already on the device keeps using the folder that save
 is in. Deleting a game's ROM folder also deletes its core choice, which lives beside the ROM.
 
+### A game with a save in two folders
+
+If the same game has a save file in more than one emulator's folder, for example one in `saves/gpSP` and one in
+`saves/mGBA` after trying the game on both cores, Grout cannot tell which is the real one. RomM keeps one save per game
+per slot and pairs what it says with the files on the device by game and slot, so two copies hide each other and the
+sync would quietly do nothing for that game.
+
+Grout leaves such a game out of the sync, says so, and does nothing to either copy:
+
+- **Sync Now** lists the games it skipped.
+- A sync before or after launching the game skips it, and **Sync save** in the Y menu says why.
+- Open the game's Game Options in Grout and choose **Resolve Saves**. It shows each copy with the folder it is in,
+  when it was last written, and whether it has changed since it was last synced with RomM. The copy marked "as last
+  synced" is the one that has not been played since RomM last sent it. Pick the right one: it is put in the folder of the
+  core the game runs on, and every other copy is moved to a `.backup` folder beside it. Nothing is deleted.
+
+The usual cause is a save downloaded into one core's folder before the game was given its core. Set the game's core
+before its first sync.
+
 ### Y menu: Sync save
 
 Once your device is registered, the Y menu on a game in the list has a **Sync save (Grout)** entry, whether or not Sync

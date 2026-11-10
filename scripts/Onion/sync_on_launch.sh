@@ -149,6 +149,7 @@ case "$MODE" in
             13) say "This game is not matched\nto a game in RomM." ;;
             14) say "A conflict needs you.\nResolve it in Grout > Sync." ;;
             15) say "Register this device in\nGrout (Settings > Save Sync)." ;;
+            17) say "This game has saves in two\ncore folders. In Grout, open\nits Game Options and pick\nResolve Saves." ;;
             *)  say "Sync failed.\nSee the Grout logs." ;;
         esac
         ;;

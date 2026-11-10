@@ -33,14 +33,18 @@ func GameCore(romPath string) string {
 	return keyValue(string(raw), "core")
 }
 
-// SaveFolderForRom is the folder under the save root that a game's saves are in
-// when it runs on a core of its own, or "" when it does not.
+// SaveFolderForRom is the folder under the save root that the core a game runs
+// on keeps its saves in, whether the game has a core of its own or uses its
+// system's default. It is "" when that cannot be worked out.
 //
 // Onion keeps each core's saves in a folder named for the core, so a game moved
 // to another core reads and writes a different folder from the rest of its
 // system. The name is the one in the core's info file.
 func SaveFolderForRom(romPath string) string {
 	core := GameCore(romPath)
+	if core == "" {
+		core = defaultCore(emulatorDirectoryFor(romPath))
+	}
 	if core == "" {
 		return ""
 	}

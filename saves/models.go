@@ -58,6 +58,9 @@ func (item *SyncItem) Resolve(action SyncAction) {
 type SyncResult struct {
 	Items     []SyncItem
 	SessionID int
+	// Duplicates are the games left out because their save is in more than one
+	// emulator's folder.
+	Duplicates []DuplicateSaves
 }
 
 type SyncReport struct {

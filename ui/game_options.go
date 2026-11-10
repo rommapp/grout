@@ -7,7 +7,9 @@ import (
 	"grout/romm"
 	"grout/saves"
 	"grout/settings"
+	"os"
 	"path/filepath"
+	"strings"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 	buttons "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool/constants"
@@ -74,6 +76,19 @@ func (s *GameOptionsScreen) Draw(input GameOptionsInput) (GameOptionsOutput, err
 		items = append(items, gameCoreItem(cores))
 	}
 
+	// Saves for this game in more than one emulator's folder: the sync leaves
+	// the game alone until the player says which is the right one.
+	var inDoubt []saves.DuplicateSaves
+	resolveText := localize("game_options_resolve_saves", "Resolve Saves")
+	if duplicates := saves.FindDuplicateSaves(saves.LocalSavesFor(config, input.Game.ID)); len(duplicates) > 0 {
+		inDoubt = duplicates
+		items = append([]gaba.ItemWithOptions{{
+			Item:           gaba.MenuItem{Text: resolveText},
+			Options:        []gaba.Option{{DisplayName: "", Value: "resolve_saves", Type: gaba.OptionTypeClickable}},
+			SelectedOption: 0,
+		}}, items...)
+	}
+
 	showQRText := localize("game_options_show_qr", "Show QR Code")
 	items = append(items, gaba.ItemWithOptions{
 		Item:           gaba.MenuItem{Text: showQRText},
@@ -107,6 +122,11 @@ func (s *GameOptionsScreen) Draw(input GameOptionsInput) (GameOptionsOutput, err
 			selectedItem := result.Items[result.Selected]
 			if selectedItem.Item.Text == showQRText {
 				output.Action = GameOptionsActionShowQR
+				return output, nil
+			}
+			if selectedItem.Item.Text == resolveText && len(inDoubt) > 0 {
+				s.resolveSaves(input.Host, inDoubt[0], romPath)
+				output.Action = GameOptionsActionSaved
 				return output, nil
 			}
 		}
@@ -281,4 +301,107 @@ func (s *GameOptionsScreen) offerToMoveSave(config *settings.Config, game romm.R
 		}
 		logger.Info("Moved the save to the new core's folder", "save", save.FilePath, "to", destDir)
 	}
+}
+
+// resolveSaves asks which copy of a game's save is the right one and keeps it.
+//
+// The sync cannot tell, so it is the player who says. Each copy is described by
+// the folder it is in, when it was last written, and whether it has changed
+// since it was last synced with RomM, which is usually the clue: the copy that
+// matches what RomM sent is the one that has not been played since.
+func (s *GameOptionsScreen) resolveSaves(host settings.Host, duplicates saves.DuplicateSaves, romPath string) {
+	logger := gaba.GetLogger()
+
+	options := make([]gaba.Option, 0, len(duplicates.Copies))
+	for i, copy := range duplicates.Copies {
+		label := localizeWith("resolve_saves_copy", "{{.Folder}}: {{.Modified}}, {{.Size}} KB",
+			map[string]any{"Folder": saves.FolderName(copy), "Modified": modifiedAt(copy), "Size": sizeKB(copy)})
+		if changed, known := saves.ChangedSinceSync(host.DeviceID, copy); known {
+			if changed {
+				label += " " + localize("resolve_saves_changed", "(played since last sync)")
+			} else {
+				label += " " + localize("resolve_saves_unchanged", "(as last synced)")
+			}
+		}
+		options = append(options, gaba.Option{DisplayName: label, Value: i})
+	}
+
+	result, err := gaba.OptionsList(
+		localize("resolve_saves_title", "Which Save Is Current?"),
+		gaba.OptionListSettings{
+			FooterHelpItems: OptionsListFooter(),
+			StatusBar:       StatusBar(),
+			UseSmallTitle:   true,
+		},
+		[]gaba.ItemWithOptions{{
+			Item:    gaba.MenuItem{Text: localize("resolve_saves_keep", "Use")},
+			Options: options,
+		}},
+	)
+	if err != nil {
+		if !errors.Is(err, gaba.ErrCancelled) {
+			logger.Error("Resolve saves screen error", "error", err)
+		}
+		return
+	}
+	if len(result.Items) == 0 || result.Items[0].SelectedOption < 0 || result.Items[0].SelectedOption >= len(options) {
+		return
+	}
+	keep := result.Items[0].SelectedOption
+	chosen := duplicates.Copies[keep]
+
+	// It goes where the game's core reads it, or stays in its own folder when
+	// that cannot be told.
+	folder := cfw.ActiveFirmware().SaveFolderForRom(romPath)
+	destDir := filepath.Dir(chosen.FilePath)
+	if folder != "" {
+		for _, copy := range duplicates.Copies {
+			if known := saves.FolderName(copy); strings.EqualFold(known, folder) {
+				destDir = filepath.Dir(copy.FilePath)
+			}
+		}
+	}
+
+	_, err = gaba.ConfirmationMessage(
+		localizeWith("resolve_saves_confirm", "Use the save from {{.From}} as this game's save?\nThe other copies are kept in backup folders.",
+			map[string]any{"From": saves.FolderName(chosen)}),
+		[]gaba.FooterHelpItem{
+			{ButtonName: "B", HelpText: localize("button_cancel", "Cancel")},
+			{ButtonName: "X", HelpText: localize("button_confirm", "Confirm")},
+		},
+		gaba.MessageOptions{ConfirmButton: buttons.VirtualButtonX},
+	)
+	if err != nil {
+		return
+	}
+
+	if err := saves.KeepSave(duplicates, keep, destDir); err != nil {
+		logger.Error("Failed to resolve the game's saves", "rom", duplicates.RomName, "error", err)
+		gaba.ConfirmationMessage(
+			localize("resolve_saves_failed", "Could not resolve the saves.\nSee the Grout logs."),
+			ContinueFooter(),
+			gaba.MessageOptions{},
+		)
+		return
+	}
+	logger.Info("Resolved the game's saves", "rom", duplicates.RomName, "kept", saves.FolderName(chosen), "in", destDir)
+	gaba.ConfirmationMessage(
+		localize("resolve_saves_done", "Done. Sync to bring it in line with RomM."),
+		ContinueFooter(),
+		gaba.MessageOptions{},
+	)
+}
+
+func modifiedAt(save saves.LocalSave) string {
+	if info, err := os.Stat(save.FilePath); err == nil {
+		return info.ModTime().Format("2006-01-02 15:04")
+	}
+	return "?"
+}
+
+func sizeKB(save saves.LocalSave) int64 {
+	if info, err := os.Stat(save.FilePath); err == nil {
+		return (info.Size() + 1023) / 1024
+	}
+	return 0
 }

@@ -195,3 +195,15 @@ func TestChangingTheCoreKeepsTheGamesOtherSettings(t *testing.T) {
 		t.Errorf("after clearing = %q", got)
 	}
 }
+
+func TestAGameOnTheSystemsDefaultCoreReadsTheDefaultCoresFolder(t *testing.T) {
+	_, rom := gbaCard(t)
+
+	if got := SaveFolderForRom(rom); got != "gpSP" {
+		t.Errorf("SaveFolderForRom = %q, want the folder of the default core", got)
+	}
+	SetGameCore(rom, "mgba_libretro")
+	if got := SaveFolderForRom(rom); got != "mGBA" {
+		t.Errorf("after choosing mGBA: %q", got)
+	}
+}

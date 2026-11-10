@@ -43,7 +43,23 @@ func resolveSaveSync(client *romm.Client, config *settings.Config, deviceID stri
 	logger := gaba.GetLogger()
 	logger.Debug("Starting save sync resolve (negotiate)", "deviceID", deviceID)
 
-	localSaves := ScanSaves(config)
+	resolvedRoms := roms
+	if resolvedRoms == nil {
+		resolvedRoms = ResolveLocalRoms(cfw.ScanRoms(*config))
+	}
+
+	// A game with a save in two emulators' folders cannot be told apart by the
+	// server, which pairs saves by game and slot, so only one copy is reported
+	// and nothing is done with the game until the player picks the right one.
+	localSaves, duplicates := collapseDuplicates(ScanSaves(config), func(romID int) string {
+		if rom, ok := resolvedRoms[romID]; ok {
+			return cfw.ActiveFirmware().SaveFolderForRom(rom.FilePath)
+		}
+		return ""
+	})
+	for _, dup := range duplicates {
+		logger.Warn("Game has saves in more than one folder; leaving it out of the sync", "romID", dup.RomID, "rom", dup.RomName, "copies", len(dup.Copies))
+	}
 	logger.Debug("Scanned local saves", "count", len(localSaves))
 
 	recordedSlots := loadRecordedSlots(deviceID)
@@ -87,10 +103,6 @@ func resolveSaveSync(client *romm.Client, config *settings.Config, deviceID stri
 			"file", op.FileName, "slot", slot, "reason", op.Reason)
 	}
 
-	resolvedRoms := roms
-	if resolvedRoms == nil {
-		resolvedRoms = ResolveLocalRoms(cfw.ScanRoms(*config))
-	}
 	cm := cache.GetCacheManager()
 
 	items := mapOperationsToItems(resp.Operations, localSaves, resolvedRoms, cm, config, recordedSlots, recordedHashes)
@@ -107,9 +119,10 @@ func resolveSaveSync(client *romm.Client, config *settings.Config, deviceID stri
 		items = append(items, discovered...)
 	}
 
+	items = withoutDuplicated(items, duplicates)
 	logger.Debug("Total sync items resolved", "count", len(items))
 
-	return SyncResult{Items: items, SessionID: resp.SessionID}, nil
+	return SyncResult{Items: items, SessionID: resp.SessionID, Duplicates: duplicates}, nil
 }
 
 // buildDiscoveryItems turns server saves for uncovered ROMs into download items.

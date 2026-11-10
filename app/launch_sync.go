@@ -39,6 +39,7 @@ const (
 	exitHeld          = 14 // a conflict or slot choice needs a manual sync
 	exitNoDevice      = 15 // this device is not registered with RomM
 	exitStateSetAside = 16 // a newer save came down and the resume state made way for it
+	exitSavesInDoubt  = 17 // the game has saves in more than one core folder
 )
 
 // launchResolveBudget bounds the read-only part of a launch sync. The game is
@@ -180,6 +181,9 @@ func runLaunchSync(request launchSync) int {
 		// Nothing has been written yet, so walking away is safe.
 		logger.Warn("Launch sync: gave up waiting for the server", "rom", romPath)
 		return exitUnreachable
+	}
+	if errors.Is(resolved.err, saves.ErrAmbiguousSaves) {
+		return exitSavesInDoubt
 	}
 	if errors.Is(resolved.err, saves.ErrRomNotMatched) {
 		logger.Info("Launch sync: nothing to do", "rom", romPath, "reason", resolved.err)
