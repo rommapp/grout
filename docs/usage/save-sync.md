@@ -189,11 +189,27 @@ resume from its old state. Pick **Reset game** from the game's Y menu once to st
 
 ### Games on a core of their own
 
-On Onion, a game can be given a core of its own (Y menu > Game core), and each core keeps its saves in a folder of its
-own: a GBA game on mGBA reads `saves/mGBA`, while the rest of the system's games, on gpSP, read `saves/gpSP`. When Grout
-downloads a save for a game that has none on the device yet, it puts it in the folder of that game's own core, read from
-the game's setting in `Roms/<system>/.game_config/`. Set the game's core before the first sync, or the save goes to the
-folder for the system's default core. A game with a save already on the device keeps using the folder that save is in.
+On Onion, a game can be given a core of its own, and each core keeps its saves in a folder of its own: a GBA game on
+mGBA reads `saves/mGBA`, while the rest of the system's games, on gpSP, read `saves/gpSP`. Grout syncs a game's save
+from whichever folder it is in, so games on different cores each go to RomM as their own save. Nothing is treated as
+"all mGBA".
+
+**Game Core** in a game's Game Options (press `Y` on a downloaded game in Grout) changes the core, the same as
+Onion's own Y menu does, so you can set it without leaving Grout. It lists the cores that are installed and keep their
+saves in a folder Grout syncs, marks the system's default, and appears only when there is more than one to choose. The
+choice is kept in `Roms/<system>/.game_config/<game>.cfg`, which Onion reads, and picking the default again removes it.
+
+Changing a game's core changes which save folder it reads, so:
+
+- If the game has a save in another core's folder and none in the new one, Grout offers to move it across. The
+  original is not deleted; it goes to a `.backup` folder beside it, named the way the backups before a download are.
+  Without the move, the game starts with no save under its new core.
+- Changing the core then starts a sync, which downloads the game's save from RomM into the new folder if you have not
+  moved one.
+
+When Grout downloads a save for a game that has none on the device yet, it puts it in the folder of that game's own
+core, so set the core before the first sync. A game with a save already on the device keeps using the folder that save
+is in. Deleting a game's ROM folder also deletes its core choice, which lives beside the ROM.
 
 ### Y menu: Sync save
 
