@@ -112,8 +112,9 @@ func launchLogLevel(configured settings.LogLevel) string {
 }
 
 // runLaunchSync syncs one game's save without bringing up the interface and
-// returns the process exit code. It never blocks a launch: every way it can
-// fail or have nothing to do is logged and left to the caller to ignore.
+// returns the process exit code. Every way it can fail or have nothing to do is
+// logged and left to the caller to ignore, and the caller limits how long it may
+// run, since the game is waiting behind it.
 func runLaunchSync(request launchSync) int {
 	romPath := request.romPath
 	logger := gaba.GetLogger()
@@ -154,8 +155,11 @@ func runLaunchSync(request launchSync) int {
 		logger.Error("Launch sync: cache unavailable", "error", err)
 		return exitError
 	}
+	// Left open if the lookup below is abandoned, since it is still using the
+	// cache and the process is about to end anyway.
+	closeCache := true
 	defer func() {
-		if cm := cache.GetCacheManager(); cm != nil {
+		if cm := cache.GetCacheManager(); cm != nil && closeCache {
 			cm.Close()
 		}
 	}()
@@ -187,7 +191,10 @@ func runLaunchSync(request launchSync) int {
 	select {
 	case resolved = <-done:
 	case <-time.After(launchResolveBudget):
-		// Nothing has been written yet, so walking away is safe.
+		// What the lookup does to the card is limited to putting identical extra
+		// copies of a save in a backup folder, which loses nothing, so walking
+		// away from it is safe. RomM expires the session left open.
+		closeCache = false
 		logger.Warn("Launch sync: gave up waiting for the server", "rom", romPath)
 		return exitUnreachable
 	}

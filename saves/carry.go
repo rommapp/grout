@@ -71,16 +71,9 @@ func CarrySave(save LocalSave, destDir string) error {
 	// The copy is the same save, so it keeps the save's own time.
 	os.Chtimes(dest, info.ModTime(), info.ModTime())
 
-	backupDir := filepath.Join(filepath.Dir(save.FilePath), ".backup")
-	ext := filepath.Ext(save.FileName)
-	base := strings.TrimSuffix(save.FileName, ext)
-	backup := filepath.Join(backupDir, fmt.Sprintf("%s [%s]%s", base, info.ModTime().Format("2006-01-02 15-04-05"), ext))
-	if err := os.MkdirAll(backupDir, 0755); err == nil {
-		err = os.Rename(save.FilePath, backup)
-	}
-	if _, stillThere := os.Stat(save.FilePath); stillThere == nil {
+	if _, err := putAway(save.FilePath, save.FileName); err != nil {
 		os.Remove(dest)
-		return fmt.Errorf("could not put the original at %s away", save.FilePath)
+		return fmt.Errorf("could not put the original at %s away: %w", save.FilePath, err)
 	}
 	return nil
 }

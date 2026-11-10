@@ -111,20 +111,27 @@ grep -q '^[[:space:]]*ssid=' "$WPA_CONF" 2>/dev/null || stop "No saved Wi-Fi net
 # Wi-Fi off: wpa_supplicant is not running.
 ps | grep -v grep | grep -q wpa_supplicant || stop "Wi-Fi is off." "wpa_supplicant is not running"
 
-# Runs a command, and stops it if it takes longer than the limit. Giving up on
-# an upload is harmless: nothing on the device changes, and the next sync
-# settles whatever RomM did or did not receive.
+# Runs a command, and stops it if it takes longer than the limit, in seconds. It
+# polls rather than sleeping in a helper, so nothing is left running once the
+# command is done. Giving up on a sync is safe: files are replaced atomically, so
+# the worst is a partly finished upload, and the next sync settles whatever RomM
+# did or did not receive.
 run_within() {
     limit="$1"
     shift
     "$@" > /dev/null 2>&1 &
     pid=$!
-    ( sleep "$limit"; kill "$pid" 2> /dev/null ) &
-    watcher=$!
+    waited_for=0
+    while kill -0 "$pid" 2> /dev/null; do
+        if [ "$waited_for" -ge "$limit" ]; then
+            kill "$pid" 2> /dev/null
+            break
+        fi
+        sleep 1
+        waited_for=$((waited_for + 1))
+    done
     wait "$pid" 2> /dev/null
-    code=$?
-    kill "$watcher" 2> /dev/null
-    return "$code"
+    return $?
 }
 
 has_ip() {
@@ -191,12 +198,14 @@ case "$MODE" in
         if [ "$SHUTTING_DOWN" -eq 1 ]; then
             run_within "${GROUT_SHUTDOWN_LIMIT:-15}" ./grout --sync-rom "$ROM" --upload-only
         else
-            ./grout --sync-rom "$ROM" --upload-only > /dev/null 2>&1
+            run_within "${GROUT_AFTER_LIMIT:-60}" ./grout --sync-rom "$ROM" --upload-only
         fi
         log "grout exited $? after $(($(uptime_seconds) - started))s"
         ;;
     *)
-        ./grout --sync-rom "$ROM" > /dev/null 2>&1
+        # Before a game: it must not keep the game waiting for long, whatever
+        # RomM or the network are doing.
+        run_within "${GROUT_LAUNCH_LIMIT:-45}" ./grout --sync-rom "$ROM"
         log "grout exited $? after $(($(uptime_seconds) - started))s"
         ;;
 esac

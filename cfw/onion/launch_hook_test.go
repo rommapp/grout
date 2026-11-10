@@ -273,3 +273,49 @@ func TestMenuEntryNeverTouchesAScriptThatIsNotGrouts(t *testing.T) {
 		t.Error("someone else's script was changed or removed")
 	}
 }
+
+// A launcher that hands over with exec never reaches lines written after it, so
+// no after-quit call is added to it, though the call before the game still is.
+func TestALauncherThatEndsInExecGetsNoAfterQuitCall(t *testing.T) {
+	emu := t.TempDir()
+	path := writeEmu(t, emu, "X", "#!/bin/sh\ncd /mnt/SDCARD/RetroArch\nexec ./retroarch -L core.so \"$1\"\n", 0755)
+
+	if _, err := setLaunchHook(emu, "/s.sh", true, true); err != nil {
+		t.Fatal(err)
+	}
+
+	got := read(t, path)
+	if !strings.Contains(got, `sh "/s.sh" "$1"`) {
+		t.Error("the call before the game is missing")
+	}
+	if strings.Contains(got, "--after") || strings.Contains(got, "grout_exit") {
+		t.Errorf("an after-quit call was added after an exec:\n%s", got)
+	}
+}
+
+// Onion's own GBA launcher has an exit inside a branch; it still returns to the
+// lines after it, so it is hooked on both sides.
+func TestAnExitInsideABranchDoesNotStopTheAfterQuitCall(t *testing.T) {
+	emu := t.TempDir()
+	launcher := "#!/bin/sh\nif [ -f x ]; then\n    if [ $? -eq 0 ]; then\n        :\n    else\n        exit 0\n    fi\nfi\ncd /mnt/SDCARD/RetroArch\n./retroarch -L core.so \"$1\"\n"
+	path := writeEmu(t, emu, "GBA", launcher, 0755)
+
+	if _, err := setLaunchHook(emu, "/s.sh", true, true); err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(read(t, path), "--after") {
+		t.Error("the GBA-style launcher lost its after-quit call")
+	}
+}
+
+func TestATopLevelExitAlsoStopsTheAfterQuitCall(t *testing.T) {
+	emu := t.TempDir()
+	path := writeEmu(t, emu, "X", "#!/bin/sh\n./retroarch \"$1\"\nexit 0\n", 0755)
+
+	setLaunchHook(emu, "/s.sh", true, true)
+
+	if strings.Contains(read(t, path), "--after") {
+		t.Error("an after-quit call was added after a top-level exit")
+	}
+}

@@ -60,8 +60,8 @@ func setAsideResumeState(statesDir, romPath string, now time.Time) (int, error) 
 			}
 			moved++
 		}
-		pruneSetAside(dir, name+".state.auto")
-		pruneSetAside(dir, name+".state.auto.png")
+		pruneSetAside(dir, name+".state.auto", stamp)
+		pruneSetAside(dir, name+".state.auto.png", stamp)
 	}
 
 	if len(failed) > 0 {
@@ -72,14 +72,27 @@ func setAsideResumeState(statesDir, romPath string, now time.Time) (int, error) 
 
 // pruneSetAside removes the oldest set-aside copies of one file past the
 // number kept. The names sort by time because the stamp does.
-func pruneSetAside(dir, base string) {
+//
+// The copy just made is never removed. The stamp is the time on the device, and a
+// device whose clock has been set back would otherwise find its newest copy
+// sorting as its oldest.
+func pruneSetAside(dir, base, fresh string) {
 	matches, err := filepath.Glob(filepath.Join(dir, escapeGlob(base)+"_*"))
 	if err != nil || len(matches) <= keptSetAsideStates {
 		return
 	}
 	sort.Strings(matches)
-	for _, old := range matches[:len(matches)-keptSetAsideStates] {
-		os.Remove(old)
+	excess := len(matches) - keptSetAsideStates
+	for _, old := range matches {
+		if excess == 0 {
+			break
+		}
+		if strings.HasSuffix(old, "_"+fresh) {
+			continue
+		}
+		if os.Remove(old) == nil {
+			excess--
+		}
 	}
 }
 

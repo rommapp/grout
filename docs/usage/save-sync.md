@@ -163,6 +163,9 @@ Grout only syncs when it can do so quickly, and otherwise gets out of the way:
 - **The game was synced in the last 10 minutes**, by a launch, by **Sync save** in the Y menu, by the upload after you
   quit it, or by **Sync Now** in Grout: the sync before launch is skipped, so relaunching a game you just played does
   not make you wait. **Sync save** in the Y menu and the upload after quitting always run.
+- **It is taking too long**: a sync before a game is stopped after 45 seconds, and the upload after a game after 60,
+  so a slow server or network cannot hold up your game or the menu for long. Anything unfinished is picked up by the
+  next sync.
 - **RomM does not answer in time**: the sync says so, and that the save may not have arrived, instead of reporting a
   bare failure. Run it again; if the upload did get through, RomM will say the saves are identical.
 - **The device is being powered off** (after quit only): the upload still runs, since there may be no other chance
@@ -217,6 +220,9 @@ core, so set the core before the first sync. A game with a save already on the d
 is in. Deleting a game's ROM folder also deletes its core choice, which lives beside the ROM.
 
 ### A game with a save in two folders
+
+This applies to firmwares where each core keeps its saves in a folder of its own and a game can be moved between cores,
+which is Onion for now. Elsewhere two folders can both be right, so nothing is changed.
 
 If the same game has a save file in more than one emulator's folder, for example one in `saves/gpSP` and one in
 `saves/mGBA` after trying the game on both cores, Grout cannot tell which is the real one. RomM keeps one save per game

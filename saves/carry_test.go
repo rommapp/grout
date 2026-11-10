@@ -104,3 +104,21 @@ func TestIfTheOriginalCannotBePutAwayTheCopyIsRemoved(t *testing.T) {
 		t.Error("the original is gone")
 	}
 }
+
+// Carrying the same unchanged save out of a folder twice must not overwrite the
+// first backup.
+func TestCarryingTheSameSaveTwiceKeepsBothBackups(t *testing.T) {
+	root := t.TempDir()
+	for i := 0; i < 2; i++ {
+		save := saveIn(t, root, "gpSP", "Game.srm", "progress")
+		os.Chtimes(save.FilePath, yesterday, yesterday)
+		if err := CarrySave(save, filepath.Join(root, "mGBA", string(rune('a'+i)))); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	backups, _ := filepath.Glob(filepath.Join(root, "gpSP", ".backup", "*"))
+	if len(backups) != 2 {
+		t.Errorf("%d backups kept, want 2: %v", len(backups), backups)
+	}
+}

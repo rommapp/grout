@@ -1,6 +1,8 @@
 package saves
 
 import (
+	"archive/zip"
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -121,5 +123,64 @@ func TestIfRomMsSaveCannotBeDownloadedNoLocalCopyIsTouched(t *testing.T) {
 		if data, _ := os.ReadFile(path); string(data) != want {
 			t.Errorf("%s now holds %q", path, data)
 		}
+	}
+}
+
+// A save kept as folders (a platform like PSP) is several folders, and taking
+// RomM's save must clear and back up all of them, as a sync does, not just the
+// first.
+func TestTakingRomMsSaveForASaveKeptAsFoldersReplacesAndBacksUpEveryFolder(t *testing.T) {
+	root := t.TempDir()
+	saveRoot := filepath.Join(root, "SAVEDATA")
+	for _, dir := range []string{"UCUS98751DATA00", "UCUS98751DATA01"} {
+		if err := os.MkdirAll(filepath.Join(saveRoot, dir), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(saveRoot, dir, "DATA.BIN"), []byte("old "+dir), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// RomM's save is one folder only.
+	var archive bytes.Buffer
+	zw := zip.NewWriter(&archive)
+	entry, _ := zw.Create("UCUS98751DATA00/DATA.BIN")
+	entry.Write([]byte("from RomM"))
+	zw.Close()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/api/saves/218/content":
+			w.Write(archive.Bytes())
+		case r.URL.Path == "/api/saves/218/downloaded":
+			w.Write([]byte("{}"))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	local := LocalSave{
+		RomID: 1, RomName: "Game", FSSlug: "psp", FileName: "UCUS98751.zip", IsDirectorySave: true,
+		FilePath:    filepath.Join(saveRoot, "UCUS98751DATA00"),
+		RelatedDirs: []string{filepath.Join(saveRoot, "UCUS98751DATA00"), filepath.Join(saveRoot, "UCUS98751DATA01")},
+	}
+	dup := DuplicateSaves{RomID: 1, RomName: "Game", Copies: []LocalSave{local}}
+	remote := &romm.Save{ID: 218, RomID: 1, FileName: "UCUS98751.zip", UpdatedAt: time.Now()}
+
+	err := UseRemoteSave(romm.NewClient(server.URL), &settings.Config{}, "device-1", dup, remote, saveRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if data, _ := os.ReadFile(filepath.Join(saveRoot, "UCUS98751DATA00", "DATA.BIN")); string(data) != "from RomM" {
+		t.Errorf("the first folder holds %q", data)
+	}
+	if _, err := os.Stat(filepath.Join(saveRoot, "UCUS98751DATA01")); !os.IsNotExist(err) {
+		t.Error("a folder RomM's save does not have was left behind, mixed in with the new save")
+	}
+	backups, _ := filepath.Glob(filepath.Join(saveRoot, "UCUS98751DATA00", ".backup", "*"))
+	backups2, _ := filepath.Glob(filepath.Join(saveRoot, ".backup", "*"))
+	if len(backups)+len(backups2) == 0 {
+		t.Error("no backup of the old save was made")
 	}
 }

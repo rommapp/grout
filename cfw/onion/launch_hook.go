@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"grout/files"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -129,8 +130,10 @@ func setLaunchHook(emuDir, script string, before, after bool) (int, error) {
 				}
 				lines = append(lines[:at], append([]string{beforeLine(script)}, lines[at:]...)...)
 			}
-			if after {
+			if after && !endsWithoutReturning(lines) {
 				lines = append(lines, afterLines(script)...)
+			} else if after {
+				slog.Default().Warn("Not adding the after-quit call: the launch script hands over with exec or exit", "script", path)
 			}
 			return lines
 		})
@@ -147,6 +150,25 @@ func setLaunchHook(emuDir, script string, before, after bool) (int, error) {
 		return changed, fmt.Errorf("could not update %d launch scripts: %s", len(failed), strings.Join(failed, "; "))
 	}
 	return changed, nil
+}
+
+// endsWithoutReturning reports whether a script hands control away with exec or
+// exit, so that nothing written after the emulator's command would ever run.
+//
+// An exec replaces the shell wherever it is. An exit only ends the script when it
+// is at the top level; one indented inside a branch, like the "cancelled" branch of
+// Onion's own GBA launcher, only runs if that branch is taken, and the emulator's
+// command comes after it.
+func endsWithoutReturning(lines []string) bool {
+	for _, line := range lines {
+		if strings.HasPrefix(strings.TrimSpace(line), "exec ") {
+			return true
+		}
+		if line == "exit" || strings.HasPrefix(line, "exit ") {
+			return true
+		}
+	}
+	return false
 }
 
 func withoutHook(lines []string) []string {

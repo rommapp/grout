@@ -57,11 +57,16 @@ func resolveSaveSync(client *romm.Client, config *settings.Config, deviceID stri
 		}
 		return ""
 	}
-	scanned, tidied := tidyIdenticalCopies(ScanSaves(config), liveFolder)
-	if tidied > 0 {
-		logger.Info("Put away extra copies of saves that were identical to the one in use", "copies", tidied)
+	localSaves := ScanSaves(config)
+	var duplicates []DuplicateSaves
+	if cfw.ActiveFirmware().KeepsSavesPerCore() {
+		var tidied int
+		localSaves, tidied = tidyIdenticalCopies(localSaves, liveFolder)
+		if tidied > 0 {
+			logger.Info("Put away extra copies of saves that were identical to the one in use", "copies", tidied)
+		}
+		localSaves, duplicates = collapseDuplicates(localSaves, liveFolder)
 	}
-	localSaves, duplicates := collapseDuplicates(scanned, liveFolder)
 	for _, dup := range duplicates {
 		logger.Warn("Game has saves in more than one folder; leaving it out of the sync", "romID", dup.RomID, "rom", dup.RomName, "copies", len(dup.Copies))
 	}
@@ -843,7 +848,16 @@ func ScanSaves(config *settings.Config) []LocalSave {
 
 	logger.Debug("Starting save scan", "baseSavePath", baseSavePath, "platformCount", len(emulatorMap))
 
-	for fsSlug, emulatorDirs := range emulatorMap {
+	// In a fixed order: which of a game's copies comes first decides what name
+	// and platform a save put in place for it is given.
+	slugs := make([]string, 0, len(emulatorMap))
+	for fsSlug := range emulatorMap {
+		slugs = append(slugs, fsSlug)
+	}
+	sort.Strings(slugs)
+
+	for _, fsSlug := range slugs {
+		emulatorDirs := emulatorMap[fsSlug]
 		rommFSSlug := fsSlug
 		if config != nil {
 			rommFSSlug = config.ResolveRommFSSlug(fsSlug)

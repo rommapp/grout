@@ -114,3 +114,29 @@ func TestSetAsideHandlesBracketsInGameNames(t *testing.T) {
 		t.Fatalf("moved=%d err=%v", moved, err)
 	}
 }
+
+// A device whose clock has been set back stamps its newest copy as the oldest.
+// That copy is the one that was just made, and pruning must not take it.
+func TestPruningNeverRemovesTheCopyJustSetAside(t *testing.T) {
+	states := t.TempDir()
+	dir := filepath.Join(states, "Gambatte")
+	auto := filepath.Join(dir, "Game.state.auto")
+
+	// Three older copies, stamped later than "now" by the device's clock.
+	for _, stamp := range []string{"20261201-100000", "20261202-100000", "20261203-100000"} {
+		touch(t, auto+"_"+stamp)
+	}
+	touch(t, auto)
+
+	if _, err := setAsideResumeState(states, "/roms/Game.gb", time.Date(2026, 11, 1, 10, 0, 0, 0, time.UTC)); err != nil {
+		t.Fatal(err)
+	}
+
+	if !exists(auto + "_20261101-100000") {
+		t.Error("the copy just set aside was pruned")
+	}
+	matches, _ := filepath.Glob(auto + "_*")
+	if len(matches) != keptSetAsideStates {
+		t.Errorf("%d copies kept, want %d: %v", len(matches), keptSetAsideStates, matches)
+	}
+}

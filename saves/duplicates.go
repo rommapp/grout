@@ -260,6 +260,22 @@ func UseRemoteSave(client *romm.Client, config *settings.Config, deviceID string
 		}
 	}
 
+	// A save kept as folders (a platform like PSP) is replaced exactly as a sync
+	// replaces it, from the copy's own description: which folders make it up is
+	// what the download clears and what the backup before it holds.
+	if len(duplicates.Copies) > 0 && duplicates.Copies[0].IsDirectorySave {
+		item := SyncItem{
+			LocalSave:  duplicates.Copies[0],
+			RemoteSave: remote,
+			Action:     ActionDownload,
+			TargetSlot: SlotName(remote.Slot),
+		}
+		if !download(client, config, deviceID, &item) {
+			return fmt.Errorf("could not download RomM's save")
+		}
+		return nil
+	}
+
 	// The name the emulator already uses for this game's save; a copy in the
 	// folder being filled is the one the download replaces. A game with no copy
 	// at all is named the way a sync would name a new one.

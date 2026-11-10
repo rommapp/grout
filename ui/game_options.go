@@ -81,7 +81,7 @@ func (s *GameOptionsScreen) Draw(input GameOptionsInput) (GameOptionsOutput, err
 	// the game alone until the player says which is the right one.
 	var inDoubt []saves.DuplicateSaves
 	resolveText := localize("game_options_resolve_saves", "Resolve Saves")
-	if duplicates := saves.FindDuplicateSaves(saves.LocalSavesFor(config, input.Game.ID)); len(duplicates) > 0 {
+	if duplicates := saves.FindDuplicateSaves(saves.LocalSavesFor(config, input.Game.ID)); len(duplicates) > 0 && cfw.ActiveFirmware().KeepsSavesPerCore() {
 		inDoubt = duplicates
 		items = append([]gaba.ItemWithOptions{{
 			Item:           gaba.MenuItem{Text: resolveText},
@@ -634,7 +634,7 @@ func (s *GameOptionsScreen) uploadLocalSave(config *settings.Config, host settin
 		tell(localize("force_no_local_save", "There is no save for this game\non this device."))
 		return
 	}
-	if len(saves.FindDuplicateSaves(local)) > 0 {
+	if len(saves.FindDuplicateSaves(local)) > 0 && cfw.ActiveFirmware().KeepsSavesPerCore() {
 		tell(localize("force_saves_in_two_places", "This game has saves in more\nthan one folder.\nPick one with Resolve Saves first."))
 		return
 	}
