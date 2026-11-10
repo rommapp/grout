@@ -5,6 +5,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"time"
 )
 
 type TokenExchangeRequest struct {
@@ -65,6 +66,23 @@ func (c *Client) ValidateConnection() error {
 	// the error. The status is what callers act on.
 	logResponseDebug("ValidateConnection: unexpected status", resp)
 	return statusError(resp.StatusCode, nil)
+}
+
+// ValidateConnectionRetrying checks the server is reachable, trying again after
+// each wait in delays while the failure is one retryIf accepts. A device that has
+// only just joined Wi-Fi often cannot look up a name for a few seconds, and
+// giving up on the first attempt reports a fault that is not there.
+func (c *Client) ValidateConnectionRetrying(delays []time.Duration, retryIf func(error) bool) error {
+	err := c.ValidateConnection()
+	for attempt, wait := range delays {
+		if err == nil || !retryIf(err) {
+			return err
+		}
+		slog.Default().Debug("Server not reachable yet, trying again", "attempt", attempt+1, "wait", wait, "error", err)
+		time.Sleep(wait)
+		err = c.ValidateConnection()
+	}
+	return err
 }
 
 func ExchangeToken(baseURL string, code string, insecureSkipVerify bool) (*TokenExchangeResponse, error) {

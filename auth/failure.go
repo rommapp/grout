@@ -16,6 +16,7 @@ const (
 	// is logged so the cause can be found later.
 	FailureUnknown Failure = iota
 	FailureHostname
+	FailureAddressLookup
 	FailureNetwork
 	FailureConnection
 	FailureTimeout
@@ -38,6 +39,8 @@ func Classify(err error) Failure {
 		return FailureInvalidCode
 	case errors.Is(err, romm.ErrInvalidHostname):
 		return FailureHostname
+	case errors.Is(err, romm.ErrDNSUnavailable):
+		return FailureAddressLookup
 	case errors.Is(err, romm.ErrNetworkUnreachable):
 		return FailureNetwork
 	case errors.Is(err, romm.ErrConnectionRefused):

@@ -14,6 +14,7 @@ import (
 
 var (
 	ErrInvalidHostname    = errors.New("invalid hostname")
+	ErrDNSUnavailable     = errors.New("could not look up the server address")
 	ErrNetworkUnreachable = errors.New("network unreachable")
 	ErrConnectionRefused  = errors.New("connection refused")
 	ErrTimeout            = errors.New("connection timeout")
@@ -94,7 +95,13 @@ func ClassifyError(err error) error {
 	if errors.As(err, &urlErr) {
 		var dnsErr *net.DNSError
 		if errors.As(urlErr.Err, &dnsErr) {
-			return fmt.Errorf("%w: %s", ErrInvalidHostname, dnsErr.Name)
+			// Only an answer that says the name does not exist means the name is
+			// wrong. A lookup that timed out, was refused, or had nowhere to go
+			// is a network that is not ready, which a moment usually fixes.
+			if dnsErr.IsNotFound {
+				return fmt.Errorf("%w: %s", ErrInvalidHostname, dnsErr.Name)
+			}
+			return fmt.Errorf("%w: %s", ErrDNSUnavailable, dnsErr.Name)
 		}
 
 		var opErr *net.OpError
@@ -126,4 +133,17 @@ func ClassifyError(err error) error {
 	slog.Default().Debug("ClassifyError: unclassified error", "error", err, "error_type", fmt.Sprintf("%T", err), "error_string", errMsg)
 
 	return err
+}
+
+// IsNotReadyYet reports whether an error is the kind a network that has only
+// just come up gives: the name could not be looked up, there is no route yet.
+// These fail at once and usually pass within seconds.
+func IsNotReadyYet(err error) bool {
+	return errors.Is(err, ErrDNSUnavailable) || errors.Is(err, ErrNetworkUnreachable) || errors.Is(err, ErrInvalidHostname)
+}
+
+// IsTransient reports whether an error is worth trying again after a wait: a
+// network that is not ready yet, or a host that was slow to answer.
+func IsTransient(err error) bool {
+	return IsNotReadyYet(err) || errors.Is(err, ErrTimeout)
 }
