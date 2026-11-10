@@ -56,3 +56,34 @@ func TestWhichSyncsTheSettingAsksFor(t *testing.T) {
 		}
 	}
 }
+
+func TestOnlyTheSyncAtGameStartStepsAsideForARecentSync(t *testing.T) {
+	cases := []struct {
+		name string
+		req  launchSync
+		want bool
+	}{
+		{"as the game starts", launchSync{romPath: "r"}, true},
+		{"after the game", launchSync{romPath: "r", uploadOnly: true}, false},
+		{"asked for by hand", launchSync{romPath: "r", now: true}, false},
+	}
+	for _, c := range cases {
+		if got := c.req.skipsWhenRecent(); got != c.want {
+			t.Errorf("%s: skipsWhenRecent = %v, want %v", c.name, got, c.want)
+		}
+	}
+}
+
+func TestLaunchSyncsNeverLogLessThanWhatTheyDid(t *testing.T) {
+	cases := map[settings.LogLevel]string{
+		settings.LogLevelError: "INFO",
+		"":                     "INFO",
+		settings.LogLevelInfo:  "INFO",
+		settings.LogLevelDebug: "DEBUG",
+	}
+	for configured, want := range cases {
+		if got := launchLogLevel(configured); got != want {
+			t.Errorf("launchLogLevel(%q) = %q, want %q", configured, got, want)
+		}
+	}
+}

@@ -160,6 +160,9 @@ Grout only syncs when it can do so quickly, and otherwise gets out of the way:
 - **Wi-Fi is on but no saved network is in range**: Grout waits up to 8 seconds for the device to join one, then
   skips the sync.
 - **RomM is unreachable**: the sync is skipped after 3 seconds.
+- **The game was synced in the last 10 minutes**, by a launch, by **Sync save** in the Y menu, by the upload after you
+  quit it, or by **Sync Now** in Grout: the sync before launch is skipped, so relaunching a game you just played does
+  not make you wait. **Sync save** in the Y menu and the upload after quitting always run.
 - **The device is being powered off**: the after-quit upload is skipped so shutdown is not held up. That session's
   save goes up the next time you launch the game.
 
@@ -167,6 +170,9 @@ Only the game being launched is synced. Anything that needs a decision from you 
 time you run **Sync Now**: conflicts, and games with saves in more than one server slot. Before a game, saves are
 uploaded and downloaded the same way as a normal sync, including the backup of a save before it is replaced. After
 quitting, saves are only ever uploaded, never downloaded.
+
+Launch syncs write a line to `logs/app.log` and to `logs/sync_on_launch.log` in Grout's folder on the card, with how
+long each step took. Grout's own log level is normally set to Error; launch syncs log what they did regardless.
 
 ### Resume states
 

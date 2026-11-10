@@ -89,6 +89,22 @@ func (r launchSync) wanted(mode settings.LaunchSyncMode) bool {
 	}
 }
 
+// skipsWhenRecent reports whether this sync should stand down because the game
+// was synced a moment ago. Only the sync run as a game starts does: one the
+// player asked for always runs, and so does the upload after a game, which
+// carries what was just played.
+func (r launchSync) skipsWhenRecent() bool { return !r.now && !r.uploadOnly }
+
+// launchLogLevel is the level a launch sync logs at. The default log level
+// keeps only errors, which would leave nothing to read when a sync does not do
+// what was expected, so a launch sync always logs at least what it did.
+func launchLogLevel(configured settings.LogLevel) string {
+	if configured == settings.LogLevelError || configured == "" {
+		return string(settings.LogLevelInfo)
+	}
+	return string(configured)
+}
+
 // runLaunchSync syncs one game's save without bringing up the interface and
 // returns the process exit code. It never blocks a launch: every way it can
 // fail or have nothing to do is logged and left to the caller to ignore.
@@ -107,7 +123,7 @@ func runLaunchSync(request launchSync) int {
 		logger.Error("Launch sync: no usable config", "error", err)
 		return exitError
 	}
-	gaba.SetRawLogLevel(string(config.LogLevel))
+	gaba.SetRawLogLevel(launchLogLevel(config.LogLevel))
 	os.Setenv(settings.RomStorageEnvVar, string(config.MuOSRomStorage))
 
 	if !request.wanted(config.SyncOnLaunch) {
@@ -119,6 +135,14 @@ func runLaunchSync(request launchSync) int {
 		return exitNoDevice
 	}
 	host := config.Hosts[0]
+
+	recent := saves.LoadRecentSyncs()
+	if request.skipsWhenRecent() {
+		if age, ok := recent.SyncedRecently(romPath, started); ok {
+			logger.Info("Launch sync: skipped, synced recently", "rom", romPath, "ago", age.Round(time.Second))
+			return exitDone
+		}
+	}
 
 	if err := cache.InitCacheManager(host, *config); err != nil {
 		logger.Error("Launch sync: cache unavailable", "error", err)
@@ -177,6 +201,13 @@ func runLaunchSync(request launchSync) int {
 		"reached_server", reached.Round(time.Millisecond),
 		"planned", planned.Round(time.Millisecond),
 		"elapsed", time.Since(started).Round(time.Millisecond))
+
+	if report.Errors == 0 {
+		recent.RecordRom(romPath, time.Now())
+		if err := recent.Save(time.Now()); err != nil {
+			logger.Warn("Launch sync: could not note that the game was synced", "error", err)
+		}
+	}
 
 	if report.Downloaded > 0 {
 		// The game would resume from a snapshot of the progress this save

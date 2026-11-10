@@ -3,6 +3,7 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"grout/romm"
 	"grout/saves"
@@ -105,6 +106,14 @@ func (s *SaveSyncScreen) executeSync(client *romm.Client, config *settings.Confi
 		s.withProgress(localize("save_sync_syncing", "Syncing saves..."), run)
 	} else {
 		run(nil)
+	}
+
+	// A sync of every game with nothing wrong means a launch right now has
+	// nothing to catch up on.
+	if report.Errors == 0 && config.SyncOnLaunch != settings.LaunchSyncOff {
+		if err := saves.RecordFullSync(time.Now()); err != nil {
+			gaba.GetLogger().Warn("Could not note that every game was synced", "error", err)
+		}
 	}
 
 	// The server can reject an upload because its own save moved on, which
