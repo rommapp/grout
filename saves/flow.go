@@ -145,6 +145,7 @@ func buildDiscoveryItems(uncovered map[int]cfw.LocalRomFile, savesByRom map[int]
 			RomName:     rom.RomName,
 			FSSlug:      rom.FSSlug,
 			RomFileName: rom.FileName,
+			RomPath:     rom.FilePath,
 			EmulatorDir: resolveDiscoveredSaveDirectory(rom, config),
 		}
 		if IsDirectorySavePlatform(ls.FSSlug) {
@@ -595,6 +596,7 @@ func resolveLocalSaveForDownload(op romm.SyncOperationSchema, resolvedRoms map[i
 		ls.RomName = rom.RomName
 		ls.FSSlug = rom.FSSlug
 		ls.RomFileName = rom.FileName
+		ls.RomPath = rom.FilePath
 	} else if cm != nil {
 		if roms, err := cm.GetGamesByIDs([]int{op.RomID}); err == nil && len(roms) > 0 {
 			ls.RomName = roms[0].Name
@@ -1477,6 +1479,9 @@ func download(client *romm.Client, config *settings.Config, deviceID string, ite
 	savePath := item.LocalSave.FilePath
 	if savePath == "" {
 		saveDir := item.LocalSave.EmulatorDir
+		if saveDir == "" && item.LocalSave.RomPath != "" {
+			saveDir = saveDirectoryForCore(item.LocalSave.FSSlug, item.LocalSave.RomPath, config)
+		}
 		if saveDir == "" {
 			saveDir = ResolveSaveDirectory(item.LocalSave.FSSlug, config)
 		}
@@ -1683,6 +1688,9 @@ func resolveDiscoveredSaveDirectory(rom cfw.LocalRomFile, config *settings.Confi
 	if rom.FilePath == "" {
 		return ""
 	}
+	if dir := saveDirectoryForCore(rom.FSSlug, rom.FilePath, config); dir != "" {
+		return dir
+	}
 	if dir := preferredSaveDirectory(rom.FSSlug, config); dir != "" {
 		return dir
 	}
@@ -1693,6 +1701,28 @@ func resolveDiscoveredSaveDirectory(rom cfw.LocalRomFile, config *settings.Confi
 	}
 
 	return cfw.GetSaveDirectoryForRomPath(effectiveFSSlug, rom.FilePath)
+}
+
+// saveDirectoryForCore is where a game's saves go when it runs on a core of its
+// own, which keeps them in a folder of its own. Only a folder the platform is
+// known to keep saves in counts, so a stray or unrecognised core name does not
+// send a save somewhere nothing will ever read it.
+func saveDirectoryForCore(fsSlug, romPath string, config *settings.Config) string {
+	folder := cfw.ActiveFirmware().SaveFolderForRom(romPath)
+	base := cfw.BaseSavePath()
+	if folder == "" || base == "" {
+		return ""
+	}
+	effective := fsSlug
+	if config != nil {
+		effective = config.ResolveFSSlug(fsSlug)
+	}
+	for _, known := range cfw.EmulatorFoldersForFSSlug(effective) {
+		if strings.EqualFold(known, folder) {
+			return filepath.Join(base, known)
+		}
+	}
+	return ""
 }
 
 // preferredSaveDirectory is where the firmware insists new saves go, such as
