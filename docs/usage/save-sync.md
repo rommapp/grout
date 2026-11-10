@@ -224,8 +224,15 @@ Grout leaves such a game out of the sync, says so, and does nothing to either co
 - A sync before or after launching the game skips it, and **Sync save** in the Y menu says why.
 - Open the game's Game Options in Grout and choose **Resolve Saves**. It shows each copy with the folder it is in,
   when it was last written, and whether it has changed since it was last synced with RomM. The copy marked "as last
-  synced" is the one that has not been played since RomM last sent it. Pick the right one: it is put in the folder of the
-  core the game runs on, and every other copy is moved to a `.backup` folder beside it. Nothing is deleted.
+  synced" is the one that has not been played since RomM last sent it. **RomM**'s own save is listed too, with its
+  date, and is selected to start with when it is newer than anything on the device. Pick the right one:
+  - A copy from the device is put in the folder of the core the game runs on, and every other copy is moved to a
+    `.backup` folder beside it. If RomM's save is newer than the copy you chose, Grout warns you, because the next sync
+    may send your copy over it.
+  - RomM's save is downloaded into the folder of the core the game runs on, the copy it replaces is backed up, and
+    every other copy is moved to a `.backup` folder. The game's old resume state is set aside, so it starts from the
+    save. If RomM cannot be reached, nothing on the device is touched.
+  Nothing is deleted.
 
 The usual cause is a save downloaded into one core's folder before the game was given its core. Set the game's core
 before its first sync.

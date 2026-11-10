@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"grout/files"
+	"grout/romm"
+	"grout/settings"
 )
 
 // DuplicateSaves is a game with a save in more than one emulator's folder, such
@@ -216,4 +218,76 @@ func undoPutAway(original, backup string) {
 	if original != "" && backup != "" {
 		os.Rename(backup, original)
 	}
+}
+
+// RemoteSaveFor is RomM's current save for a game, in the slot the player uses
+// for it, or nil when RomM has none.
+func RemoteSaveFor(client *romm.Client, config *settings.Config, deviceID string, romID int) (*romm.Save, error) {
+	remote, err := client.GetSaves(romm.SaveQuery{RomID: romID, DeviceID: deviceID})
+	if err != nil {
+		return nil, err
+	}
+	preferred := settings.DefaultSaveSlot
+	if config != nil {
+		preferred = config.GetSlotPreference(romID)
+	}
+	return SelectSaveForSlot(remote, preferred), nil
+}
+
+// UseRemoteSave makes RomM's save the game's save: it is downloaded into destDir,
+// the way a sync would download it, and every local copy is put away in a
+// .backup folder. Nothing is deleted.
+//
+// The download comes first and is the only thing that can fail before anything
+// local is touched, and it backs up the copy it replaces, so a failed download
+// leaves every local copy as it was.
+func UseRemoteSave(client *romm.Client, config *settings.Config, deviceID string, duplicates DuplicateSaves, remote *romm.Save, destDir string) error {
+	if remote == nil || len(duplicates.Copies) == 0 {
+		return fmt.Errorf("no save to use")
+	}
+
+	// The name the emulator already uses for this game's save; a copy in the
+	// folder being filled is the one the download replaces.
+	name := duplicates.Copies[0].FileName
+	for _, copy := range duplicates.Copies {
+		if filepath.Clean(filepath.Dir(copy.FilePath)) == filepath.Clean(destDir) {
+			name = copy.FileName
+		}
+	}
+	target := filepath.Join(destDir, name)
+
+	item := SyncItem{
+		LocalSave: LocalSave{
+			RomID:       duplicates.RomID,
+			RomName:     duplicates.RomName,
+			FSSlug:      duplicates.Copies[0].FSSlug,
+			FileName:    name,
+			FilePath:    target,
+			RomFileName: duplicates.Copies[0].RomFileName,
+			EmulatorDir: destDir,
+		},
+		RemoteSave: remote,
+		Action:     ActionDownload,
+		TargetSlot: SlotName(remote.Slot),
+	}
+	if !download(client, config, deviceID, &item) {
+		return fmt.Errorf("could not download RomM's save")
+	}
+
+	var failed []string
+	for _, copy := range duplicates.Copies {
+		if filepath.Clean(copy.FilePath) == filepath.Clean(target) {
+			continue // replaced by the download, which kept its own backup
+		}
+		if _, err := os.Stat(copy.FilePath); err != nil {
+			continue
+		}
+		if _, err := putAway(copy.FilePath, copy.FileName); err != nil {
+			failed = append(failed, err.Error())
+		}
+	}
+	if len(failed) > 0 {
+		return fmt.Errorf("RomM's save is in place but %d other copies could not be put away: %s", len(failed), strings.Join(failed, "; "))
+	}
+	return nil
 }
