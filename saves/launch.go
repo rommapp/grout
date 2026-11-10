@@ -38,7 +38,7 @@ type LaunchPlan struct {
 func ResolveRomOnLaunch(client *romm.Client, config *settings.Config, deviceID, romPath string, uploadOnly bool) (LaunchPlan, error) {
 	// Found before the server is asked anything: a negotiate that is never
 	// completed leaves a session open on the server.
-	resolved := ResolveLocalRoms(cfw.ScanRoms(*config))
+	resolved := ResolveLocalRoms(onlyRom(cfw.ScanRoms(*config), romPath))
 	romID, ok := FindRomByPath(resolved, romPath)
 	if !ok {
 		return LaunchPlan{}, ErrRomNotMatched
@@ -76,6 +76,22 @@ func ForLaunch(items []SyncItem, romID int) (kept []SyncItem, held int) {
 		kept = append(kept, item)
 	}
 	return kept, held
+}
+
+// onlyRom narrows a scan of the ROMs on the device to the one being launched.
+// Matching a ROM to RomM is a database lookup per file, which adds up over a
+// whole library on a handheld, and a launch sync needs only the one.
+func onlyRom(scan cfw.LocalRomScan, romPath string) cfw.LocalRomScan {
+	want := canonicalPath(romPath)
+	narrowed := cfw.LocalRomScan{}
+	for fsSlug, roms := range scan {
+		for _, rom := range roms {
+			if canonicalPath(rom.FilePath) == want {
+				narrowed[fsSlug] = append(narrowed[fsSlug], rom)
+			}
+		}
+	}
+	return narrowed
 }
 
 // UploadsOnly keeps just the uploads.

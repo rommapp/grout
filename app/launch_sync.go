@@ -95,6 +95,7 @@ func (r launchSync) wanted(mode settings.LaunchSyncMode) bool {
 func runLaunchSync(request launchSync) int {
 	romPath := request.romPath
 	logger := gaba.GetLogger()
+	started := time.Now()
 
 	if _, err := cfw.Active(); err != nil {
 		fmt.Fprintf(os.Stderr, "Cannot sync: %v\n", err)
@@ -131,9 +132,10 @@ func runLaunchSync(request launchSync) int {
 
 	probe := romm.NewClientFromHost(host, settings.ValidationTimeout)
 	if _, err := probe.GetHeartbeat(); err != nil {
-		logger.Info("Launch sync: server unreachable", "error", err)
+		logger.Info("Launch sync: server unreachable", "error", err, "elapsed", time.Since(started).Round(time.Millisecond))
 		return exitUnreachable
 	}
+	reached := time.Since(started)
 
 	client := romm.NewClientFromHost(host, config.ApiTimeout.Duration())
 
@@ -164,13 +166,17 @@ func runLaunchSync(request launchSync) int {
 		return exitUnreachable
 	}
 	plan := resolved.plan
+	planned := time.Since(started)
 
 	// From here on it runs to the end: a download interrupted partway is worse
 	// than one that makes the game wait.
 	report := saves.ExecuteSaveSync(client, config, host.DeviceID, plan.Items, plan.SessionID, nil)
 	logger.Info("Launch sync finished", "rom", romPath,
 		"uploaded", report.Uploaded, "downloaded", report.Downloaded,
-		"skipped", report.Skipped, "errors", report.Errors, "held", plan.Held)
+		"skipped", report.Skipped, "errors", report.Errors, "held", plan.Held,
+		"reached_server", reached.Round(time.Millisecond),
+		"planned", planned.Round(time.Millisecond),
+		"elapsed", time.Since(started).Round(time.Millisecond))
 
 	if report.Downloaded > 0 {
 		// The game would resume from a snapshot of the progress this save

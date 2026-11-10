@@ -30,14 +30,50 @@ cd "$APP_DIR/grout" || exit 0
 
 export PATH="/mnt/SDCARD/.tmp_update/bin:$PATH"
 
+LOG_DIR="$APP_DIR/grout/logs"
+LOG="$LOG_DIR/sync_on_launch.log"
+
+uptime_seconds() {
+    cut -d. -f1 "${GROUT_UPTIME_FILE:-/proc/uptime}" 2> /dev/null || echo 0
+}
+
+# A line in the log, for working out afterwards why a sync did not happen. The
+# device may have no clock, so the time since boot goes with it.
+log() {
+    mkdir -p "$LOG_DIR" 2> /dev/null
+    if [ -f "$LOG" ] && [ "$(wc -c < "$LOG")" -gt 100000 ]; then
+        tail -n 200 "$LOG" > "$LOG.tmp" && mv "$LOG.tmp" "$LOG"
+    fi
+    echo "up=$(uptime_seconds)s [$MODE] $*" >> "$LOG"
+}
+
+PANEL=0
+
+# While the player waits on a sync they asked for, a message that stays up.
+panel_on() {
+    [ "$MODE" = now ] || return 0
+    infoPanel --title "SYNC SAVE" --message "$1" --persistent &
+    PANEL=1
+}
+
+panel_off() {
+    [ "$PANEL" -eq 1 ] || return 0
+    touch /tmp/dismiss_info_panel
+    # Let the panel go before the next one is drawn over it.
+    sleep 1
+    PANEL=0
+}
+
 # Shows a message, but only when the player asked for the sync.
 say() {
     [ "$MODE" = now ] || return 0
+    panel_off
     infoPanel --title "SYNC SAVE" --message "$1" --auto
 }
 
 # Leaves quietly: before or after a game, say nothing; on request, say why.
 stop() {
+    log "stopped: $2"
     say "$1"
     exit 0
 }
@@ -58,39 +94,52 @@ case "$MODE" in
 esac
 
 WPA_CONF="${GROUT_WPA_CONF:-/appconfigs/wpa_supplicant.conf}"
-WAIT_SECONDS=8
 
 # No saved networks means there is nothing to join, however long we wait.
-grep -q '^[[:space:]]*ssid=' "$WPA_CONF" 2>/dev/null || stop "No saved Wi-Fi networks.\nAdd one in Onion's settings."
+grep -q '^[[:space:]]*ssid=' "$WPA_CONF" 2>/dev/null || stop "No saved Wi-Fi networks.\nAdd one in Onion's settings." "no saved networks"
 
 # Wi-Fi off: wpa_supplicant is not running.
-ps | grep -v grep | grep -q wpa_supplicant || stop "Wi-Fi is off."
+ps | grep -v grep | grep -q wpa_supplicant || stop "Wi-Fi is off." "wpa_supplicant is not running"
 
 has_ip() {
     ifconfig wlan0 2>/dev/null | grep -q 'inet addr:'
 }
 
-# wpa_supplicant joins a known network on its own once it sees one. Give it a
-# few seconds, which is also what a device that has just woken needs; if
-# nothing is joined by then, none of the known networks is here.
+# wpa_supplicant joins a known network on its own once it sees one, but a device
+# that has just started, or woken, takes a while to get there. A sync the player
+# asked for waits longest; before or after a game the wait is kept short unless
+# the device only just started, so that being away from every saved network
+# costs a few seconds, not half a minute.
+WAIT_SECONDS=8
+if [ "$MODE" = now ] || [ "$(uptime_seconds)" -lt 180 ]; then
+    WAIT_SECONDS=30
+fi
+
 waited=0
-while ! has_ip; do
-    [ "$waited" -ge "$WAIT_SECONDS" ] && stop "No saved Wi-Fi network\nis in range."
-    sleep 1
-    waited=$((waited + 1))
-done
+if ! has_ip; then
+    panel_on "Connecting to Wi-Fi..."
+    while ! has_ip; do
+        if [ "$waited" -ge "$WAIT_SECONDS" ]; then
+            stop "Wi-Fi did not connect\nin ${WAIT_SECONDS} seconds.\nTry again in a moment." "no IP on wlan0 after ${WAIT_SECONDS}s ($(ifconfig wlan0 2>&1 | head -3 | tr '\n' ' '))"
+        fi
+        sleep 1
+        waited=$((waited + 1))
+    done
+    panel_off
+fi
+log "connected after ${waited}s"
 
 export CFW=ONION
 export LD_LIBRARY_PATH="$APP_DIR/grout/lib:$LD_LIBRARY_PATH"
 
+started=$(uptime_seconds)
 case "$MODE" in
     now)
-        infoPanel --title "SYNC SAVE" --message "Syncing..." --persistent &
+        panel_on "Syncing..."
         ./grout --sync-rom "$ROM" --now > /dev/null 2>&1
         code=$?
-        touch /tmp/dismiss_info_panel
-        # Let the panel go before the next one is drawn over it.
-        sleep 1
+        panel_off
+        log "grout exited $code after $(($(uptime_seconds) - started))s"
         case "$code" in
             0)  say "Save is up to date." ;;
             10) say "Newer save downloaded." ;;
@@ -107,9 +156,11 @@ case "$MODE" in
         # After a game the save on the device is the newest there is, so only
         # send it.
         ./grout --sync-rom "$ROM" --upload-only > /dev/null 2>&1
+        log "grout exited $? after $(($(uptime_seconds) - started))s"
         ;;
     *)
         ./grout --sync-rom "$ROM" > /dev/null 2>&1
+        log "grout exited $? after $(($(uptime_seconds) - started))s"
         ;;
 esac
 exit 0

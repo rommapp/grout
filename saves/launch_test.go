@@ -94,3 +94,21 @@ func TestUploadsOnlyDropsEverythingElse(t *testing.T) {
 		t.Errorf("got %+v", got)
 	}
 }
+
+func TestOnlyRomKeepsJustTheGameBeingLaunched(t *testing.T) {
+	dir := t.TempDir()
+	tetris := filepath.Join(dir, "GB", "Tetris.gb")
+	scan := cfw.LocalRomScan{
+		"gb":  {{FilePath: tetris}, {FilePath: filepath.Join(dir, "GB", "Zelda.gb")}},
+		"gba": {{FilePath: filepath.Join(dir, "GBA", "Tetris.gba")}},
+	}
+
+	got := onlyRom(scan, filepath.Join(dir, "GB", "..", "GB", "Tetris.gb"))
+
+	if len(got) != 1 || len(got["gb"]) != 1 || got["gb"][0].FilePath != tetris {
+		t.Errorf("got %+v", got)
+	}
+	if len(onlyRom(scan, filepath.Join(dir, "GB", "Missing.gb"))) != 0 {
+		t.Error("matched a game that is not there")
+	}
+}
