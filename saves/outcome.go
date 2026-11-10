@@ -185,8 +185,8 @@ func describeDropped(dropped DroppedOp) Outcome {
 			"RomM's newest save is in",
 			"slot '" + SlotName(dropped.Op.Slot) + "'" + whenIn(dropped.Op) + ".",
 			"This device uses '" + dropped.LocalSlot + "'.",
-			"Pick the slot in Game",
-			"Options > Save Slot.",
+			"Game Options: Save Slot,",
+			"or Use RomM's Save.",
 		}}
 	case DropUnchangedSinceDownload:
 		return Outcome{OutcomeLeftAlone, []string{
@@ -194,6 +194,8 @@ func describeDropped(dropped DroppedOp) Outcome {
 			"RomM asked for an upload,",
 			"but this save is what was",
 			"last downloaded.",
+			"Game Options: Upload Local",
+			"Save sends it anyway.",
 		}}
 	case DropNotInstalled:
 		return Outcome{OutcomeLeftAlone, []string{"Nothing changed.", "This game is not on", "this device."}}

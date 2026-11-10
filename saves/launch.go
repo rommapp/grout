@@ -52,7 +52,21 @@ func ResolveRomOnLaunch(client *romm.Client, config *settings.Config, deviceID, 
 		return LaunchPlan{}, ErrRomNotMatched
 	}
 
+	// Local, so it is settled before the server is asked anything.
 	local := LocalSavesFor(config, romID)
+	if cfw.ActiveFirmware().KeepsSavesPerCore() {
+		local, _ = tidyIdenticalCopies(local, func(int) string {
+			return cfw.ActiveFirmware().SaveFolderForRom(romPath)
+		})
+	}
+	if duplicates := FindDuplicateSaves(local); len(duplicates) > 0 && cfw.ActiveFirmware().KeepsSavesPerCore() {
+		folders := make([]string, 0, len(duplicates[0].Copies))
+		for _, copy := range duplicates[0].Copies {
+			folders = append(folders, FolderName(copy))
+		}
+		gaba.GetLogger().Warn("Launch sync: the game has saves in more than one folder", "rom", romPath, "folders", folders)
+		return LaunchPlan{RomID: romID}, ErrAmbiguousSaves
+	}
 
 	result, err := resolveSaveSync(client, config, deviceID, map[int]cfw.LocalRomFile{romID: resolved[romID]})
 	if err != nil {
@@ -77,6 +91,10 @@ func ResolveRomOnLaunch(client *romm.Client, config *settings.Config, deviceID, 
 	gaba.GetLogger().Debug("Launch sync items", "romID", romID, "count", len(plan.Items), "held", plan.Held)
 	return plan, nil
 }
+
+// ErrAmbiguousSaves means the game has a save in more than one emulator's folder,
+// so there is no telling which is the one to sync.
+var ErrAmbiguousSaves = errors.New("saves in more than one folder")
 
 // ErrRomNotMatched means the game is not one RomM knows about, or is not on the
 // device where Grout looks for games.

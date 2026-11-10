@@ -207,7 +207,8 @@ on Launch is turned on. It syncs that one game right now and tells you what actu
   could not be read. Grout does not claim the saves match in that case.
 - **Nothing changed**, with the reason: RomM's newest save is in a different slot from the one this device uses, or
   RomM asked for an upload of a save that is exactly what was last downloaded.
-- **A conflict or a choice needs you**, **Wi-Fi is off**, or **RomM unreachable**.
+- **A conflict or a choice needs you**, **Wi-Fi is off**, **RomM unreachable**, or **the game has saves in two
+  folders**.
 
 A sync that did nothing is never reported as being up to date unless the two saves are the same. The same account
 of each launch sync, including what RomM said, is in `logs/app.log`. Grout's own **Sync Now** lists the games it left
@@ -251,6 +252,52 @@ Changing a game's core changes which save folder it reads, so:
 When Grout downloads a save for a game that has none on the device yet, it puts it in the folder of that game's own
 core, so set the core before the first sync. A game with a save already on the device keeps using the folder that save
 is in. Deleting a game's ROM folder also deletes its core choice, which lives beside the ROM.
+
+### A game with a save in two folders
+
+This applies to firmwares where each core keeps its saves in a folder of its own and a game can be moved between cores,
+which is Onion for now. Elsewhere two folders can both be right, so nothing is changed.
+
+If the same game has a save file in more than one emulator's folder, for example one in `saves/gpSP` and one in
+`saves/mGBA` after trying the game on both cores, Grout cannot tell which is the real one. RomM keeps one save per game
+per slot and pairs what it says with the files on the device by game and slot, so two copies hide each other and the
+sync would quietly do nothing for that game.
+
+If the copies are byte-for-byte the same, as the leftovers of switching a game between cores usually are, there is
+nothing to decide: Grout keeps the one in the folder of the core the game runs on and moves the others to a `.backup`
+folder beside them, and the sync goes ahead. Only copies that differ need you. Grout leaves such a game out of the
+sync, says so, and does nothing to either copy:
+
+- **Sync Now** lists the games it skipped.
+- A sync before or after launching the game skips it, and **Sync save** in the Y menu says why.
+- Open the game's Game Options in Grout and choose **Resolve Saves**. It shows each copy with the folder it is in,
+  when it was last written, and whether it has changed since it was last synced with RomM. The copy marked "as last
+  synced" is the one that has not been played since RomM last sent it. **RomM**'s own save is listed too, with its
+  date, and is selected to start with when it is newer than anything on the device. Pick the right one:
+  - A copy from the device is put in the folder of the core the game runs on, and every other copy is moved to a
+    `.backup` folder beside it. If RomM's save is newer than the copy you chose, Grout warns you, because the next sync
+    may send your copy over it.
+  - RomM's save is downloaded into the folder of the core the game runs on, the copy it replaces is backed up, and
+    every other copy is moved to a `.backup` folder. The game's old resume state is set aside, so it starts from the
+    save. If RomM cannot be reached, nothing on the device is touched.
+  Nothing is deleted.
+
+The usual cause is a save downloaded into one core's folder before the game was given its core. Set the game's core
+before its first sync.
+
+### Taking a side by hand
+
+Sync decides which save is newer. When you know better, a game's Game Options in Grout (press `Y` on a game) has two
+entries that decide for you, whichever is newer. Both show the dates involved and ask you to confirm with `X`, since
+`B` backs out and nothing is changed until you do.
+
+- **Use RomM's Save** replaces the game's save on the device with the newest save RomM has for it, in any slot. It is
+  downloaded into the folder of the core the game runs on, the save it replaces is kept in a `.backup` folder, the
+  game's old resume state is set aside so it starts from the save, and the game follows the slot the save was in.
+  If RomM cannot be reached, nothing on the device is touched.
+- **Upload Local Save** sends the device's save to RomM as the game's current save, even if RomM's is newer. RomM's
+  save will no longer be the latest, so use it when the save on the device is the one you want to keep. It will not
+  run while the game has saves in two folders; pick one with **Resolve Saves** first.
 
 ## Backup Retention
 

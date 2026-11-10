@@ -206,6 +206,13 @@ func (f *Firmware) SetGameCore(romPath, coreID string) error {
 	return f.setGameCore(romPath, coreID)
 }
 
+// KeepsSavesPerCore reports whether a game can be moved between cores that keep
+// their saves in folders of their own, which is what makes a save in two folders
+// something to settle rather than just how the card is laid out. Elsewhere two
+// folders can both be right, as when one is another program's view of the same
+// save.
+func (f *Firmware) KeepsSavesPerCore() bool { return f != nil && f.saveFolderForRom != nil }
+
 // SaveFolderForRom is the save folder, relative to the save root, that one game
 // uses because it runs on a core of its own, or "" when it uses the default.
 func (f *Firmware) SaveFolderForRom(romPath string) string {

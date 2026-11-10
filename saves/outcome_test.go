@@ -105,7 +105,7 @@ func TestNothingDoneBecauseRomMsNewestSaveIsInAnotherSlotIsNotUpToDate(t *testin
 		}},
 	})
 
-	mustSay(t, got, OutcomeOtherSlot, "Nothing changed", "slot 'boss'", when(romMTime), "uses 'autosave'", "Save Slot")
+	mustSay(t, got, OutcomeOtherSlot, "Nothing changed", "slot 'boss'", when(romMTime), "uses 'autosave'", "Save Slot", "Use RomM's Save")
 	if strings.Contains(got.Text(), "up to date") {
 		t.Errorf("called an unsynced game up to date:\n%s", got.Text())
 	}
@@ -114,7 +114,7 @@ func TestNothingDoneBecauseRomMsNewestSaveIsInAnotherSlotIsNotUpToDate(t *testin
 func TestAnUploadLeftBecauseTheSaveIsWhatWasLastDownloadedSaysSoAndHowToForceIt(t *testing.T) {
 	got := DescribeSync(SyncFacts{Dropped: []DroppedOp{{Reason: DropUnchangedSinceDownload}}})
 
-	mustSay(t, got, OutcomeLeftAlone, "asked for an upload", "last downloaded")
+	mustSay(t, got, OutcomeLeftAlone, "asked for an upload", "last downloaded", "Upload Local")
 }
 
 func TestAConflictOrSlotChoiceIsSaidToNeedThePlayer(t *testing.T) {

@@ -41,6 +41,7 @@ const (
 	exitHeld          = 14 // a conflict or slot choice needs a manual sync
 	exitNoDevice      = 15 // this device is not registered with RomM
 	exitStateSetAside = 16 // a newer save came down and the resume state made way for it
+	exitSavesInDoubt  = 17 // the game has saves in more than one core folder
 	exitOtherSlot     = 18 // RomM's newest save is in a slot the game is not using
 	exitLeftAlone     = 19 // one of RomM's instructions was set aside
 	exitFailed        = 20 // something went wrong
@@ -196,6 +197,9 @@ func runLaunchSync(request launchSync) int {
 		closeCache = false
 		logger.Warn("Launch sync: gave up waiting for the server", "rom", romPath)
 		return exitUnreachable
+	}
+	if errors.Is(resolved.err, saves.ErrAmbiguousSaves) {
+		return exitSavesInDoubt
 	}
 	if errors.Is(resolved.err, saves.ErrRomNotMatched) {
 		logger.Info("Launch sync: nothing to do", "rom", romPath, "reason", resolved.err)

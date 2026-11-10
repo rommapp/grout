@@ -67,6 +67,9 @@ func (item *SyncItem) Resolve(action SyncAction) {
 type SyncResult struct {
 	Items     []SyncItem
 	SessionID int
+	// Duplicates are the games left out because their save is in more than one
+	// emulator's folder.
+	Duplicates []DuplicateSaves
 	// Operations is everything RomM said, and Dropped the part of it that Grout
 	// did not act on. Together they are what a sync can honestly report.
 	Operations []romm.SyncOperationSchema

@@ -48,7 +48,28 @@ func resolveSaveSync(client *romm.Client, config *settings.Config, deviceID stri
 		resolvedRoms = ResolveLocalRoms(cfw.ScanRoms(*config))
 	}
 
+	// A game with a save in two emulators' folders cannot be told apart by the
+	// server, which pairs saves by game and slot, so only one copy is reported
+	// and nothing is done with the game until the player picks the right one.
+	liveFolder := func(romID int) string {
+		if rom, ok := resolvedRoms[romID]; ok {
+			return cfw.ActiveFirmware().SaveFolderForRom(rom.FilePath)
+		}
+		return ""
+	}
 	localSaves := ScanSaves(config)
+	var duplicates []DuplicateSaves
+	if cfw.ActiveFirmware().KeepsSavesPerCore() {
+		var tidied int
+		localSaves, tidied = tidyIdenticalCopies(localSaves, liveFolder)
+		if tidied > 0 {
+			logger.Info("Put away extra copies of saves that were identical to the one in use", "copies", tidied)
+		}
+		localSaves, duplicates = collapseDuplicates(localSaves, liveFolder)
+	}
+	for _, dup := range duplicates {
+		logger.Warn("Game has saves in more than one folder; leaving it out of the sync", "romID", dup.RomID, "rom", dup.RomName, "copies", len(dup.Copies))
+	}
 	logger.Debug("Scanned local saves", "count", len(localSaves))
 
 	recordedSlots := loadRecordedSlots(deviceID)
@@ -108,9 +129,10 @@ func resolveSaveSync(client *romm.Client, config *settings.Config, deviceID stri
 		items = append(items, discovered...)
 	}
 
+	items = withoutDuplicated(items, duplicates)
 	logger.Debug("Total sync items resolved", "count", len(items))
 
-	return SyncResult{Items: items, SessionID: resp.SessionID, Operations: resp.Operations, Dropped: dropped}, nil
+	return SyncResult{Items: items, SessionID: resp.SessionID, Duplicates: duplicates, Operations: resp.Operations, Dropped: dropped}, nil
 }
 
 // buildDiscoveryItems turns server saves for uncovered ROMs into download items.
@@ -826,7 +848,16 @@ func ScanSaves(config *settings.Config) []LocalSave {
 
 	logger.Debug("Starting save scan", "baseSavePath", baseSavePath, "platformCount", len(emulatorMap))
 
-	for fsSlug, emulatorDirs := range emulatorMap {
+	// In a fixed order: which of a game's copies comes first decides what name
+	// and platform a save put in place for it is given.
+	slugs := make([]string, 0, len(emulatorMap))
+	for fsSlug := range emulatorMap {
+		slugs = append(slugs, fsSlug)
+	}
+	sort.Strings(slugs)
+
+	for _, fsSlug := range slugs {
+		emulatorDirs := emulatorMap[fsSlug]
 		rommFSSlug := fsSlug
 		if config != nil {
 			rommFSSlug = config.ResolveRommFSSlug(fsSlug)
