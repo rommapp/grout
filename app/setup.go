@@ -50,6 +50,7 @@ func setup() SetupResult {
 	config = handleFirstLaunch(config, isFirstLaunch, logger)
 	config = applyConfig(config, isFirstLaunch, currentCFW, logger)
 	installSyncMenuEntry(config, logger)
+	reapplyRuntimeHook(config, logger)
 
 	if err := cache.InitCacheManager(config.Hosts[0], *config); err != nil {
 		logger.Error("Failed to initialize cache manager", "error", err)
@@ -452,5 +453,17 @@ func installSyncMenuEntry(config *settings.Config, logger *slog.Logger) {
 	}
 	if err := cfw.ActiveFirmware().InstallSyncMenuEntry(); err != nil {
 		logger.Warn("Could not add the Sync save menu entry", "error", err)
+	}
+}
+
+// reapplyRuntimeHook puts the frontend's runtime hook back if the player turned
+// it on and an update of the frontend has since replaced the file. It is the
+// same on every launch, so it changes nothing when the hook is already there.
+func reapplyRuntimeHook(config *settings.Config, logger *slog.Logger) {
+	if !config.CoverCoreOverrides {
+		return
+	}
+	if err := cfw.ActiveFirmware().SetRuntimeHook(true); err != nil {
+		logger.Warn("Could not restore the runtime hook", "error", err)
 	}
 }

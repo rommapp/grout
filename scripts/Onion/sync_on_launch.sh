@@ -9,6 +9,10 @@
 #   sync_on_launch.sh --after <rom>    once the game has been quit
 #   sync_on_launch.sh --now <rom>      because the player asked, with messages
 #
+# Onion's runtime calls it too when Cover Core Overrides is on, with
+# --from-runtime in front. That covers games whose launch.sh is skipped; the call
+# in launch.sh then stands down so a game is not synced twice.
+#
 # Before and after a game this must never get in the way of the game or the
 # menu, so every way out is exit 0 and nothing is shown. On request it says what
 # happened.
@@ -17,10 +21,21 @@
 # sync over.
 
 MODE=before
-case "$1" in
-    --after) MODE=after; shift ;;
-    --now) MODE=now; shift ;;
-esac
+FROM_RUNTIME=0
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --after) MODE=after ;;
+        --now) MODE=now ;;
+        --from-runtime) FROM_RUNTIME=1 ;;
+        *) break ;;
+    esac
+    shift
+done
+
+# Onion's runtime is already syncing this game.
+if [ "$FROM_RUNTIME" -eq 0 ] && [ "$MODE" != now ] && [ -f /tmp/.grout_runtime_hook ]; then
+    exit 0
+fi
 
 ROM="$1"
 [ -n "$ROM" ] || exit 0

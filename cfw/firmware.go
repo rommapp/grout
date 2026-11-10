@@ -110,6 +110,11 @@ type Firmware struct {
 	// run a command at launch have one.
 	launchHook func(before, after bool) (int, error)
 
+	// runtimeHook, when set, makes the frontend's own runtime call Grout's launch
+	// sync around every game, or takes the calls out. It reaches games the
+	// launch hook cannot.
+	runtimeHook func(enabled bool) error
+
 	// installSyncMenuEntry, when set, adds a "Sync save" entry to the
 	// frontend's per-game menu. Only firmwares with such a menu that other
 	// programs can extend have one.
@@ -136,6 +141,18 @@ func (f *Firmware) SetSyncOnLaunchHook(before, after bool) (int, error) {
 		return 0, nil
 	}
 	return f.launchHook(before, after)
+}
+
+// SupportsRuntimeHook reports whether the firmware's own runtime can be made to
+// call the launch sync, which covers games the launch hook cannot reach.
+func (f *Firmware) SupportsRuntimeHook() bool { return f != nil && f.runtimeHook != nil }
+
+// SetRuntimeHook adds or removes the runtime's calls to the launch sync.
+func (f *Firmware) SetRuntimeHook(enabled bool) error {
+	if !f.SupportsRuntimeHook() {
+		return nil
+	}
+	return f.runtimeHook(enabled)
 }
 
 // InstallSyncMenuEntry puts a "Sync save" entry in the frontend's per-game
@@ -418,6 +435,7 @@ var firmwares = map[CFW]*Firmware{
 		launchHook:           onion.SetLaunchHook,
 		setAsideResumeState:  onion.SetAsideResumeState,
 		installSyncMenuEntry: onion.InstallSyncSaveMenuEntry,
+		runtimeHook:          onion.SetRuntimeHook,
 		packaging:            Packaging{Asset: "Grout-Onion.zip", LaunchScript: "Grout/launch.sh", InstallDepth: 3},
 	},
 	Koriki: {

@@ -92,6 +92,11 @@ type Config struct {
 	// is in range: just before the frontend starts the game and, if asked,
 	// again once it is quit. Off by default, which is the zero value.
 	SyncOnLaunch LaunchSyncMode `json:"sync_on_launch,omitempty"`
+	// CoverCoreOverrides makes the frontend's own runtime call the launch sync,
+	// so games that run on a core of their own, which skip the emulator's
+	// launch script, are synced too. It edits a script Grout does not own, so
+	// it is off until asked for.
+	CoverCoreOverrides bool `json:"sync_cover_core_overrides,omitempty"`
 
 	PlatformsBinding map[string]string `json:"-"`
 }

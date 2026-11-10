@@ -77,6 +77,7 @@ func (s *SaveSyncSettingsScreen) drawRegistered(input SaveSyncSettingsInput) (Sa
 	output := SaveSyncSettingsOutput{Config: input.Config, Host: input.Host}
 	rows := saveSyncRows(input.Host)
 	syncedOnLaunch := input.Config.SyncOnLaunch
+	coveredOverrides := input.Config.CoverCoreOverrides
 
 	result, err := gaba.OptionsList(
 		localize("settings_save_sync", "Save Sync"),
@@ -105,6 +106,9 @@ func (s *SaveSyncSettingsScreen) drawRegistered(input SaveSyncSettingsInput) (Sa
 
 	if input.Config.SyncOnLaunch != syncedOnLaunch {
 		applySyncOnLaunch(input.Config)
+	}
+	if input.Config.CoverCoreOverrides != coveredOverrides {
+		applyCoverCoreOverrides(input.Config)
 	}
 
 	if result.Action != gaba.ListActionSelected || result.Selected >= len(rows) {
@@ -147,6 +151,16 @@ func saveSyncRows(host settings.Host) []settingRow {
 			get:     func(c settings.Config) any { return c.SyncOnLaunch },
 			set:     assign(func(c *settings.Config, v settings.LaunchSyncMode) { c.SyncOnLaunch = v }),
 			def:     settings.LaunchSyncOff,
+		})
+	}
+
+	if cfw.ActiveFirmware().SupportsRuntimeHook() {
+		rows = append(rows, settingRow{
+			key: "cover_core_overrides", label: localize("save_sync_cover_overrides", "Cover Core Overrides"),
+			options: trueFalse(),
+			get:     func(c settings.Config) any { return c.CoverCoreOverrides },
+			set:     assign(func(c *settings.Config, v bool) { c.CoverCoreOverrides = v }),
+			def:     false,
 		})
 	}
 
@@ -277,6 +291,32 @@ func askDeviceName(current string) (string, error) {
 		return "", err
 	}
 	return result.Text, nil
+}
+
+// applyCoverCoreOverrides puts the frontend's runtime in line with the setting.
+// If that fails the setting goes back off, so what the screen says is what the
+// device does.
+func applyCoverCoreOverrides(config *settings.Config) {
+	logger := gaba.GetLogger()
+
+	err := cfw.ActiveFirmware().SetRuntimeHook(config.CoverCoreOverrides)
+	if err == nil {
+		logger.Debug("Updated runtime hook", "enabled", config.CoverCoreOverrides)
+		return
+	}
+
+	logger.Error("Failed to update runtime hook", "enabled", config.CoverCoreOverrides, "error", err)
+	if config.CoverCoreOverrides {
+		config.CoverCoreOverrides = false
+		if saveErr := settings.SaveConfig(config); saveErr != nil {
+			logger.Error("Error saving save sync settings", "error", saveErr)
+		}
+	}
+	gaba.ConfirmationMessage(
+		localize("save_sync_cover_overrides_failed", "Could not change Onion's runtime.\nSee the Grout logs."),
+		ContinueFooter(),
+		gaba.MessageOptions{},
+	)
 }
 
 // launchSyncOptions offers when to sync a game's save around playing it.
