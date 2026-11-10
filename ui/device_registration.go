@@ -143,10 +143,10 @@ func saveSyncRows(host settings.Host) []settingRow {
 	if cfw.ActiveFirmware().SupportsSyncOnLaunch() {
 		rows = append(rows, settingRow{
 			key: "sync_on_launch", label: localize("save_sync_on_launch", "Sync on Launch"),
-			options: trueFalse(),
+			options: launchSyncOptions(),
 			get:     func(c settings.Config) any { return c.SyncOnLaunch },
-			set:     assign(func(c *settings.Config, v bool) { c.SyncOnLaunch = v }),
-			def:     false,
+			set:     assign(func(c *settings.Config, v settings.LaunchSyncMode) { c.SyncOnLaunch = v }),
+			def:     settings.LaunchSyncOff,
 		})
 	}
 
@@ -160,15 +160,16 @@ func saveSyncRows(host settings.Host) []settingRow {
 func applySyncOnLaunch(config *settings.Config) {
 	logger := gaba.GetLogger()
 
-	changed, err := cfw.ActiveFirmware().SetSyncOnLaunchHook(config.SyncOnLaunch)
+	mode := config.SyncOnLaunch
+	changed, err := cfw.ActiveFirmware().SetSyncOnLaunchHook(mode.BeforeLaunch(), mode.AfterQuit())
 	if err == nil {
-		logger.Debug("Updated launch hook", "enabled", config.SyncOnLaunch, "scripts", changed)
+		logger.Debug("Updated launch hook", "mode", mode, "scripts", changed)
 		return
 	}
 
-	logger.Error("Failed to update launch hook", "enabled", config.SyncOnLaunch, "error", err)
-	if config.SyncOnLaunch {
-		config.SyncOnLaunch = false
+	logger.Error("Failed to update launch hook", "mode", mode, "error", err)
+	if mode != settings.LaunchSyncOff {
+		config.SyncOnLaunch = settings.LaunchSyncOff
 		if saveErr := settings.SaveConfig(config); saveErr != nil {
 			logger.Error("Error saving save sync settings", "error", saveErr)
 		}
@@ -273,6 +274,15 @@ func askDeviceName(current string) (string, error) {
 		return "", err
 	}
 	return result.Text, nil
+}
+
+// launchSyncOptions offers when to sync a game's save around playing it.
+func launchSyncOptions() []gaba.Option {
+	return []gaba.Option{
+		{DisplayName: localize("save_sync_on_launch_off", "Off"), Value: settings.LaunchSyncOff},
+		{DisplayName: localize("save_sync_on_launch_before", "Before Launch"), Value: settings.LaunchSyncBefore},
+		{DisplayName: localize("save_sync_on_launch_both", "Before Launch & After Quit"), Value: settings.LaunchSyncBeforeAndAfter},
+	}
 }
 
 // backupLimitOptions offers how many old copies of a save to keep. Zero is no

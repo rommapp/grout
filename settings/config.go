@@ -88,9 +88,10 @@ type Config struct {
 	SaveDirectoryMappings map[string]string `json:"save_directory_mappings,omitempty"`
 	SlotPreferences       map[string]string `json:"-"`                           // Stored in save_slots.json, not config.json
 	SaveBackupLimit       int               `json:"save_backup_limit,omitempty"` // 0 = no limit, 5/10/15 = keep N most recent per game
-	// SyncOnLaunch syncs a game's save just before the frontend starts it,
-	// when a known network is in range. Off by default, so false is the zero value.
-	SyncOnLaunch bool `json:"sync_on_launch,omitempty"`
+	// SyncOnLaunch syncs a game's save around playing it, when a known network
+	// is in range: just before the frontend starts the game and, if asked,
+	// again once it is quit. Off by default, which is the zero value.
+	SyncOnLaunch LaunchSyncMode `json:"sync_on_launch,omitempty"`
 
 	PlatformsBinding map[string]string `json:"-"`
 }

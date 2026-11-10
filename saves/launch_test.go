@@ -74,3 +74,19 @@ func TestFindRomByPath(t *testing.T) {
 		}
 	}
 }
+
+func TestUploadsOnlyDropsEverythingElse(t *testing.T) {
+	items := []SyncItem{
+		{Action: ActionDownload},
+		{Action: ActionUpload, TargetSlot: "a"},
+		{Action: ActionSkip},
+		{Action: ActionConflict},
+		{Action: ActionUpload, TargetSlot: "b"},
+	}
+
+	got := UploadsOnly(items)
+
+	if len(got) != 2 || got[0].TargetSlot != "a" || got[1].TargetSlot != "b" {
+		t.Errorf("got %+v", got)
+	}
+}

@@ -11,8 +11,8 @@ import (
 )
 
 func main() {
-	if romPath, ok := syncRomArg(os.Args[1:]); ok {
-		os.Exit(runLaunchSync(romPath))
+	if request, ok := parseLaunchSync(os.Args[1:]); ok {
+		os.Exit(runLaunchSync(request))
 	}
 
 	defer cleanup()

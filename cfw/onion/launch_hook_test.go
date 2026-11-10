@@ -2,6 +2,7 @@ package onion
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -31,54 +32,95 @@ func read(t *testing.T, path string) string {
 	return string(data)
 }
 
-func TestInstallPutsTheHookRightAfterTheShebang(t *testing.T) {
+func TestBeforePutsTheHookRightAfterTheShebang(t *testing.T) {
 	emu := t.TempDir()
 	path := writeEmu(t, emu, "GB", gbLaunch, 0755)
 
-	changed, err := installLaunchHook(emu, "/mnt/SDCARD/App/Grout/sync_on_launch.sh")
+	changed, err := setLaunchHook(emu, "/mnt/SDCARD/App/Grout/sync_on_launch.sh", true, false)
 	if err != nil || changed != 1 {
 		t.Fatalf("changed=%d err=%v", changed, err)
 	}
 
-	lines := strings.Split(read(t, path), "\n")
+	got := read(t, path)
+	lines := strings.Split(got, "\n")
 	if lines[0] != "#!/bin/sh" {
 		t.Errorf("shebang moved: %q", lines[0])
 	}
-	if !strings.Contains(lines[1], launchHookMarker) || !strings.Contains(lines[1], `"$1"`) {
+	if !strings.Contains(lines[1], launchHookMarker) || !strings.Contains(lines[1], `sh "/mnt/SDCARD/App/Grout/sync_on_launch.sh" "$1"`) {
 		t.Errorf("hook not on line 2: %q", lines[1])
 	}
 	if lines[2] != "echo $0 $*" {
 		t.Errorf("original body disturbed: %q", lines[2])
 	}
+	if strings.Contains(got, "--after") {
+		t.Error("after-quit call installed without being asked for")
+	}
 }
 
-func TestInstallTwiceChangesNothingTheSecondTime(t *testing.T) {
+func TestAfterGoesAtTheEnd(t *testing.T) {
 	emu := t.TempDir()
 	path := writeEmu(t, emu, "GB", gbLaunch, 0755)
 
-	if _, err := installLaunchHook(emu, "/s.sh"); err != nil {
+	if _, err := setLaunchHook(emu, "/s.sh", true, true); err != nil {
 		t.Fatal(err)
 	}
+
+	lines := strings.Split(strings.TrimSuffix(read(t, path), "\n"), "\n")
+	n := len(lines)
+	if lines[n-4] != `./retroarch "$1"` {
+		t.Errorf("emulator command is no longer last before the hook: %q", lines[n-4])
+	}
+	if !strings.HasPrefix(lines[n-3], "grout_exit=$?") {
+		t.Errorf("exit code not captured straight after the emulator: %q", lines[n-3])
+	}
+	if !strings.Contains(lines[n-2], `--after "$1"`) {
+		t.Errorf("after call = %q", lines[n-2])
+	}
+	if !strings.HasPrefix(lines[n-1], `exit "$grout_exit"`) {
+		t.Errorf("exit code not handed back: %q", lines[n-1])
+	}
+}
+
+func TestChangingTheModeAddsAndDropsOnlyWhatChanged(t *testing.T) {
+	emu := t.TempDir()
+	path := writeEmu(t, emu, "GB", gbLaunch, 0755)
+
+	setLaunchHook(emu, "/s.sh", true, true)
+	changed, err := setLaunchHook(emu, "/s.sh", true, false)
+	if err != nil || changed != 1 {
+		t.Fatalf("changed=%d err=%v", changed, err)
+	}
+	got := read(t, path)
+	if strings.Contains(got, "--after") || strings.Contains(got, "grout_exit") {
+		t.Errorf("after-quit lines left behind:\n%s", got)
+	}
+	if n := strings.Count(got, launchHookMarker); n != 1 {
+		t.Errorf("%d marked lines, want 1", n)
+	}
+}
+
+func TestSettingTheSameModeTwiceChangesNothing(t *testing.T) {
+	emu := t.TempDir()
+	path := writeEmu(t, emu, "GB", gbLaunch, 0755)
+
+	setLaunchHook(emu, "/s.sh", true, true)
 	once := read(t, path)
 
-	changed, err := installLaunchHook(emu, "/s.sh")
+	changed, err := setLaunchHook(emu, "/s.sh", true, true)
 	if err != nil || changed != 0 {
 		t.Fatalf("changed=%d err=%v", changed, err)
 	}
 	if read(t, path) != once {
 		t.Error("second install rewrote the file")
 	}
-	if n := strings.Count(once, launchHookMarker); n != 1 {
-		t.Errorf("hook appears %d times", n)
-	}
 }
 
-func TestRemoveRestoresTheOriginalExactly(t *testing.T) {
+func TestTurningItOffRestoresTheOriginalExactly(t *testing.T) {
 	emu := t.TempDir()
 	path := writeEmu(t, emu, "GB", gbLaunch, 0755)
 
-	installLaunchHook(emu, "/s.sh")
-	changed, err := removeLaunchHook(emu)
+	setLaunchHook(emu, "/s.sh", true, true)
+	changed, err := setLaunchHook(emu, "/s.sh", false, false)
 	if err != nil || changed != 1 {
 		t.Fatalf("changed=%d err=%v", changed, err)
 	}
@@ -87,23 +129,22 @@ func TestRemoveRestoresTheOriginalExactly(t *testing.T) {
 	}
 }
 
-func TestInstallKeepsPermissionsAndLineEndings(t *testing.T) {
+func TestHookKeepsPermissionsAndLineEndings(t *testing.T) {
 	emu := t.TempDir()
 	crlf := strings.ReplaceAll(gbLaunch, "\n", "\r\n")
 	path := writeEmu(t, emu, "GBA", crlf, 0755)
 
-	installLaunchHook(emu, "/s.sh")
+	setLaunchHook(emu, "/s.sh", true, true)
 
 	info, _ := os.Stat(path)
 	if info.Mode().Perm() != 0755 {
 		t.Errorf("mode = %v", info.Mode().Perm())
 	}
-	got := read(t, path)
-	if strings.Contains(strings.ReplaceAll(got, "\r\n", ""), "\n") {
+	if strings.Contains(strings.ReplaceAll(read(t, path), "\r\n", ""), "\n") {
 		t.Error("mixed line endings")
 	}
 
-	removeLaunchHook(emu)
+	setLaunchHook(emu, "/s.sh", false, false)
 	if read(t, path) != crlf {
 		t.Error("CRLF file not restored")
 	}
@@ -113,16 +154,62 @@ func TestScriptWithoutShebangGetsTheHookOnTop(t *testing.T) {
 	emu := t.TempDir()
 	path := writeEmu(t, emu, "X", "echo hi\n", 0755)
 
-	installLaunchHook(emu, "/s.sh")
+	setLaunchHook(emu, "/s.sh", true, false)
 
 	if first := strings.SplitN(read(t, path), "\n", 2)[0]; !strings.Contains(first, launchHookMarker) {
 		t.Errorf("first line = %q", first)
 	}
 }
 
-func TestHookRunsTheScriptOnlyWhenItIsThere(t *testing.T) {
-	line := hookLine("/mnt/SDCARD/App/Grout/sync_on_launch.sh")
-	if !strings.HasPrefix(line, `if [ -f "/mnt/SDCARD/App/Grout/sync_on_launch.sh" ]; then sh `) || !strings.HasSuffix(line, "fi "+launchHookMarker) {
-		t.Errorf("line = %q", line)
+// The rewritten script is run for real: the sync script is a stub that records
+// how it was called, and the "emulator" exits with a chosen code.
+func TestPatchedScriptCallsTheSyncAroundTheGameAndKeepsItsExitCode(t *testing.T) {
+	if _, err := exec.LookPath("sh"); err != nil {
+		t.Skip("no sh")
+	}
+	dir := t.TempDir()
+	log := filepath.Join(dir, "calls")
+	stub := filepath.Join(dir, "sync_on_launch.sh")
+	stubBody := "echo \"$@\" >> " + log + "\n"
+	if err := os.WriteFile(stub, []byte(stubBody), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	emu := filepath.Join(dir, "Emu")
+	// The real scripts end on the emulator's command rather than an exit, so
+	// the game's status is the status of its last command.
+	game := "#!/bin/sh\necho playing >> " + log + "\n(exit 3)\n"
+	path := writeEmu(t, emu, "GB", game, 0755)
+
+	if _, err := setLaunchHook(emu, stub, true, true); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := exec.Command("sh", path, "/roms/Tetris.gb")
+	err := cmd.Run()
+	exitErr, ok := err.(*exec.ExitError)
+	if !ok || exitErr.ExitCode() != 3 {
+		t.Fatalf("exit = %v, want the game's 3", err)
+	}
+
+	want := "/roms/Tetris.gb\nplaying\n--after /roms/Tetris.gb\n"
+	if got := read(t, log); got != want {
+		t.Errorf("calls:\n%q\nwant:\n%q", got, want)
+	}
+}
+
+func TestMissingSyncScriptLetsTheGameStartAsBefore(t *testing.T) {
+	dir := t.TempDir()
+	log := filepath.Join(dir, "calls")
+	emu := filepath.Join(dir, "Emu")
+	path := writeEmu(t, emu, "GB", "#!/bin/sh\necho playing >> "+log+"\n", 0755)
+
+	setLaunchHook(emu, filepath.Join(dir, "not-installed.sh"), true, true)
+
+	if err := exec.Command("sh", path, "/roms/a.gb").Run(); err != nil {
+		t.Fatalf("launch failed: %v", err)
+	}
+	if got := read(t, log); got != "playing\n" {
+		t.Errorf("calls = %q", got)
 	}
 }

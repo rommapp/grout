@@ -21,7 +21,11 @@ import (
 // dropped from the run and shows up in the next manual sync as it always did.
 // Everything else the server asks for, uploads included, can be carried out
 // with ExecuteSaveSync.
-func ResolveRomOnLaunch(client *romm.Client, config *settings.Config, deviceID, romPath string) (SyncResult, error) {
+//
+// With uploadOnly it keeps nothing but uploads, for after a game has been
+// quit: the save on the device is then the newest there is, so a download
+// would only ever be the wrong answer.
+func ResolveRomOnLaunch(client *romm.Client, config *settings.Config, deviceID, romPath string, uploadOnly bool) (SyncResult, error) {
 	// Found before the server is asked anything: a negotiate that is never
 	// completed leaves a session open on the server.
 	resolved := ResolveLocalRoms(cfw.ScanRoms(*config))
@@ -36,6 +40,9 @@ func ResolveRomOnLaunch(client *romm.Client, config *settings.Config, deviceID, 
 	}
 
 	result.Items = ForLaunch(result.Items, romID)
+	if uploadOnly {
+		result.Items = UploadsOnly(result.Items)
+	}
 	gaba.GetLogger().Debug("Launch sync items", "romID", romID, "count", len(result.Items))
 	return result, nil
 }
@@ -51,6 +58,17 @@ func ForLaunch(items []SyncItem, romID int) []SyncItem {
 			continue
 		}
 		kept = append(kept, item)
+	}
+	return kept
+}
+
+// UploadsOnly keeps just the uploads.
+func UploadsOnly(items []SyncItem) []SyncItem {
+	var kept []SyncItem
+	for _, item := range items {
+		if item.Action == ActionUpload {
+			kept = append(kept, item)
+		}
 	}
 	return kept
 }

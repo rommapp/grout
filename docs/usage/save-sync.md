@@ -137,31 +137,36 @@ Your slot preferences are stored in `save_slots.json`, separate from the main co
 
 ## Sync on Launch
 
-Sync on Launch brings a game's save up to date automatically just before the game starts, so you are always playing
-the latest version without opening Grout first. It is **off by default**.
+Sync on Launch keeps a game's save up to date automatically as you play, so you are always playing the latest version
+without opening Grout first. It is **off by default**.
 
 **Supported on:** Onion (Miyoo Mini / Mini+). Other firmwares do not offer the setting.
 
-To turn it on, open **Save Sync** from Settings and set **Sync on Launch** to **True**. Grout adds one line to the
-top of each emulator's `Emu/*/launch.sh` so that Onion calls Grout's sync before the emulator starts. Turning the
-setting off removes those lines again. If an Onion update replaces the launch scripts, turn the setting off and
-on again to put them back.
+Open **Save Sync** from Settings and set **Sync on Launch** to one of:
 
-Before each launch Grout only syncs when it can do so quickly, and otherwise gets out of the way and starts the game:
+- **Off** - Nothing happens automatically.
+- **Before Launch** - The game's save is synced just before the game starts.
+- **Before Launch & After Quit** - As above, and when you quit the game its save is uploaded straight away, so it is
+  on your RomM server before you pick up another device.
+
+Grout adds a line to the top of each emulator's `Emu/*/launch.sh` (and, for after-quit, a few lines at the bottom) so
+that Onion calls Grout's sync around the game. Setting it back to **Off** removes those lines again. If an Onion
+update replaces the launch scripts, set it to Off and back on to put them back.
+
+Grout only syncs when it can do so quickly, and otherwise gets out of the way:
 
 - **No saved Wi-Fi networks** on the device: the sync is skipped immediately.
 - **Wi-Fi is off**: the sync is skipped. Grout never turns Wi-Fi on or off for you.
 - **Wi-Fi is on but no saved network is in range**: Grout waits up to 8 seconds for the device to join one, then
   skips the sync.
 - **RomM is unreachable**: the sync is skipped after 3 seconds.
+- **The device is being powered off**: the after-quit upload is skipped so shutdown is not held up. That session's
+  save goes up the next time you launch the game.
 
 Only the game being launched is synced. Anything that needs a decision from you is left alone and appears the next
-time you run **Sync Now**: conflicts, and games with saves in more than one server slot. Saves are uploaded and
-downloaded the same way as a normal sync, including the backup of a save before it is replaced.
-
-> [!NOTE]
-> The sync runs when a game starts, not when you quit it. Progress made in a session is uploaded the next time you
-> launch that game (or run **Sync Now**).
+time you run **Sync Now**: conflicts, and games with saves in more than one server slot. Before a game, saves are
+uploaded and downloaded the same way as a normal sync, including the backup of a save before it is replaced. After
+quitting, saves are only ever uploaded, never downloaded.
 
 ## Backup Retention
 

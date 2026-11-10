@@ -13,28 +13,48 @@ import (
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
 )
 
-// syncRomFlag asks for the one-shot sync a frontend's launch hook runs just
-// before it starts a game: grout --sync-rom <path to the rom>.
-const syncRomFlag = "--sync-rom"
+// syncRomFlag asks for the one-shot sync a frontend's launch hook runs around
+// a game: grout --sync-rom <path to the rom>, which brings the save up to date,
+// or grout --sync-rom <path> --upload-only, which only sends it, for after the
+// game has been quit.
+const (
+	syncRomFlag    = "--sync-rom"
+	uploadOnlyFlag = "--upload-only"
+)
 
 // launchResolveBudget bounds the read-only part of a launch sync. The game is
 // waiting behind it, and an unreachable server should cost seconds, not the
 // API timeout of every request.
 const launchResolveBudget = 20 * time.Second
 
-// syncRomArg returns the ROM named on the command line, if the launch sync
-// was asked for.
-func syncRomArg(args []string) (string, bool) {
-	if len(args) == 2 && args[0] == syncRomFlag && args[1] != "" {
-		return args[1], true
+// launchSync is a launch sync as asked for on the command line.
+type launchSync struct {
+	romPath    string
+	uploadOnly bool
+}
+
+// parseLaunchSync reads the command line, and reports whether it asked for a
+// launch sync at all.
+func parseLaunchSync(args []string) (launchSync, bool) {
+	if len(args) < 2 || args[0] != syncRomFlag || args[1] == "" {
+		return launchSync{}, false
 	}
-	return "", false
+	request := launchSync{romPath: args[1]}
+	switch {
+	case len(args) == 2:
+	case len(args) == 3 && args[2] == uploadOnlyFlag:
+		request.uploadOnly = true
+	default:
+		return launchSync{}, false
+	}
+	return request, true
 }
 
 // runLaunchSync syncs one game's save without bringing up the interface and
 // returns the process exit code. It never blocks a launch: every way it can
 // fail or have nothing to do is logged and left to the launch script to ignore.
-func runLaunchSync(romPath string) int {
+func runLaunchSync(request launchSync) int {
+	romPath := request.romPath
 	logger := gaba.GetLogger()
 
 	if _, err := cfw.Active(); err != nil {
@@ -50,8 +70,8 @@ func runLaunchSync(romPath string) int {
 	gaba.SetRawLogLevel(string(config.LogLevel))
 	os.Setenv(settings.RomStorageEnvVar, string(config.MuOSRomStorage))
 
-	if !config.SyncOnLaunch {
-		logger.Debug("Launch sync: turned off")
+	if request.uploadOnly && !config.SyncOnLaunch.AfterQuit() || !request.uploadOnly && !config.SyncOnLaunch.BeforeLaunch() {
+		logger.Debug("Launch sync: turned off", "mode", config.SyncOnLaunch, "uploadOnly", request.uploadOnly)
 		return 0
 	}
 	if len(config.Hosts) == 0 || config.Hosts[0].DeviceID == "" {
@@ -84,7 +104,7 @@ func runLaunchSync(romPath string) int {
 	}
 	done := make(chan resolution, 1)
 	go func() {
-		result, err := saves.ResolveRomOnLaunch(client, config, host.DeviceID, romPath)
+		result, err := saves.ResolveRomOnLaunch(client, config, host.DeviceID, romPath, request.uploadOnly)
 		done <- resolution{result, err}
 	}()
 

@@ -241,11 +241,11 @@ func TestSyncOnLaunchIsOffUntilTurnedOn(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadConfigFrom: %v", err)
 	}
-	if config.SyncOnLaunch {
+	if config.SyncOnLaunch != LaunchSyncOff || config.SyncOnLaunch.BeforeLaunch() || config.SyncOnLaunch.AfterQuit() {
 		t.Fatal("SyncOnLaunch defaults to on")
 	}
 
-	config.SyncOnLaunch = true
+	config.SyncOnLaunch = LaunchSyncBeforeAndAfter
 	path := filepath.Join(dir, "saved.json")
 	if err := SaveConfigTo(config, path); err != nil {
 		t.Fatalf("SaveConfigTo: %v", err)
@@ -254,7 +254,24 @@ func TestSyncOnLaunchIsOffUntilTurnedOn(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadConfigFrom: %v", err)
 	}
-	if !reloaded.SyncOnLaunch {
+	if reloaded.SyncOnLaunch != LaunchSyncBeforeAndAfter {
 		t.Error("SyncOnLaunch did not survive a save and load")
+	}
+}
+
+func TestLaunchSyncModeSaysWhichSidesItCovers(t *testing.T) {
+	cases := []struct {
+		mode          LaunchSyncMode
+		before, after bool
+	}{
+		{LaunchSyncOff, false, false},
+		{LaunchSyncBefore, true, false},
+		{LaunchSyncBeforeAndAfter, true, true},
+		{"something else", false, false},
+	}
+	for _, c := range cases {
+		if c.mode.BeforeLaunch() != c.before || c.mode.AfterQuit() != c.after {
+			t.Errorf("%q: before=%v after=%v", c.mode, c.mode.BeforeLaunch(), c.mode.AfterQuit())
+		}
 	}
 }
