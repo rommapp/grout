@@ -186,6 +186,12 @@ func withoutHook(lines []string) []string {
 // endings and permissions, and reports whether the content changed. A file
 // that comes out the same is not written.
 func editLaunchScript(path string, edit func([]string) []string) (bool, error) {
+	return editScript(path, func(lines []string) ([]string, error) { return edit(lines), nil }, nil)
+}
+
+// editScript is editLaunchScript for edits that can refuse, with an optional
+// check that the result is acceptable before it replaces the original.
+func editScript(path string, edit func([]string) ([]string, error), validate func(string) error) (bool, error) {
 	info, err := os.Stat(path)
 	if err != nil {
 		return false, err
@@ -203,12 +209,21 @@ func editLaunchScript(path string, edit func([]string) []string) (bool, error) {
 	trailing := strings.HasSuffix(text, "\n")
 	lines := strings.Split(strings.TrimSuffix(text, "\n"), "\n")
 
-	updated := strings.Join(edit(lines), newline)
+	edited, err := edit(lines)
+	if err != nil {
+		return false, err
+	}
+	updated := strings.Join(edited, newline)
 	if trailing {
 		updated += newline
 	}
 	if updated == string(original) {
 		return false, nil
+	}
+	if validate != nil {
+		if err := validate(updated); err != nil {
+			return false, err
+		}
 	}
 
 	return true, files.WriteFileAtomic(path, []byte(updated), info.Mode().Perm())

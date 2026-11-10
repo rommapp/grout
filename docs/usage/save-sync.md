@@ -287,9 +287,25 @@ When it downloads a newer save, it sets the game's resume state aside the same w
 **Reset game** in the same menu starts the game without its resume state, and the game's launch is synced first like
 any other.
 
-> [!NOTE]
-> Onion launches a game with a different core (Y menu > Game core) straight from RetroArch without going through the
-> emulator's `launch.sh`, so those games are not synced when they start. Use **Sync save** from the Y menu for them.
+### Games with their own core
+
+Onion launches a game that has a core of its own (Y menu > Game core) straight from RetroArch without going through
+the emulator's `launch.sh`, so the sync that Grout adds there never runs for those games. **Sync save** from the Y
+menu always works for them.
+
+To sync them automatically too, turn on **Cover Core Overrides** in Save Sync. It is **off by default** because it
+edits a file that belongs to Onion, `.tmp_update/runtime.sh`, adding a few lines around the command that starts a
+game. Grout is careful about it:
+
+- It only edits the file if the two lines it goes around are found exactly once, and otherwise tells you the Onion
+  version is not supported and changes nothing.
+- It checks that the edited script still parses before it replaces the original.
+- It keeps a copy of the original next to it as `runtime.sh.grout-backup`.
+- Turning the setting off removes exactly the lines it added.
+
+The change takes effect the next time the device restarts. Onion updates replace `runtime.sh`; Grout puts the lines
+back the next time it starts while the setting is on. If something ever goes wrong with Onion's frontend, copy
+`runtime.sh.grout-backup` over `runtime.sh` from a computer.
 
 > [!NOTE]
 > The sync runs when a game starts, not when you quit it, unless **Before Launch & After Quit** is selected. The
