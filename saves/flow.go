@@ -105,7 +105,7 @@ func resolveSaveSync(client *romm.Client, config *settings.Config, deviceID stri
 
 	cm := cache.GetCacheManager()
 
-	items := mapOperationsToItems(resp.Operations, localSaves, resolvedRoms, cm, config, recordedSlots, recordedHashes)
+	items, dropped := mapOperationsTracked(resp.Operations, localSaves, resolvedRoms, cm, config, recordedSlots, recordedHashes)
 
 	// Discovery fallback: the orchestrator only volunteers downloads for non-null-slot
 	// saves the device hasn't already synced, and never surfaces null-slot ("archival" /
@@ -122,7 +122,7 @@ func resolveSaveSync(client *romm.Client, config *settings.Config, deviceID stri
 	items = withoutDuplicated(items, duplicates)
 	logger.Debug("Total sync items resolved", "count", len(items))
 
-	return SyncResult{Items: items, SessionID: resp.SessionID, Duplicates: duplicates}, nil
+	return SyncResult{Items: items, SessionID: resp.SessionID, Duplicates: duplicates, Operations: resp.Operations, Dropped: dropped}, nil
 }
 
 // buildDiscoveryItems turns server saves for uncovered ROMs into download items.
@@ -358,7 +358,23 @@ func mapOperationsToItems(
 	recordedSlots map[saveKey]string,
 	recordedHashes map[saveKey]string,
 ) []SyncItem {
+	items, _ := mapOperationsTracked(ops, localSaves, resolvedRoms, cm, config, recordedSlots, recordedHashes)
+	return items
+}
+
+// mapOperationsTracked is mapOperationsToItems that also says which of RomM's
+// instructions it did not act on, and why, so the player can be told.
+func mapOperationsTracked(
+	ops []romm.SyncOperationSchema,
+	localSaves []LocalSave,
+	resolvedRoms map[int]cfw.LocalRomFile,
+	cm *cache.Manager,
+	config *settings.Config,
+	recordedSlots map[saveKey]string,
+	recordedHashes map[saveKey]string,
+) ([]SyncItem, []DroppedOp) {
 	logger := gaba.GetLogger()
+	var dropped []DroppedOp
 
 	type romSlotKey struct {
 		romID int
@@ -409,6 +425,7 @@ func mapOperationsToItems(
 			if !ok {
 				logger.Warn("Negotiate upload op has no local save in the reported slot",
 					"romID", op.RomID, "slot", slot, "file", op.FileName)
+				dropped = append(dropped, DroppedOp{Op: op, Reason: DropNoLocalSave})
 				continue
 			}
 			// Suppress a redundant promotion-upload: when the local save's content is
@@ -422,6 +439,7 @@ func mapOperationsToItems(
 				if localHash, err := saveContentHash(ls); err == nil && localHash == rec {
 					logger.Debug("Skipping upload: content unchanged since download (already on server)",
 						"romID", op.RomID, "slot", slot, "file", ls.FileName)
+					dropped = append(dropped, DroppedOp{Op: op, Reason: DropUnchangedSinceDownload})
 					continue
 				}
 			}
@@ -435,10 +453,12 @@ func mapOperationsToItems(
 		case "download":
 			if !installed[op.RomID] {
 				logger.Debug("Skipping download: ROM not downloaded locally", "romID", op.RomID, "file", op.FileName)
+				dropped = append(dropped, DroppedOp{Op: op, Reason: DropNotInstalled})
 				continue
 			}
 			if buildRemoteSaveStub(op) == nil {
 				logger.Error("Negotiate download op missing save identity (no save_id/server_updated_at)", "romID", op.RomID, "file", op.FileName)
+				dropped = append(dropped, DroppedOp{Op: op, Reason: DropNoIdentity})
 				continue
 			}
 			// grout keeps one save (one slot) per ROM. If the ROM already has a local
@@ -451,6 +471,7 @@ func mapOperationsToItems(
 				if opSlot != managedSlot {
 					logger.Debug("Skipping download: ROM's local save is in a different slot",
 						"romID", op.RomID, "opSlot", opSlot, "managedSlot", managedSlot, "file", op.FileName)
+					dropped = append(dropped, DroppedOp{Op: op, Reason: DropOtherSlot, LocalSlot: managedSlot})
 					continue
 				}
 			}
@@ -460,6 +481,7 @@ func mapOperationsToItems(
 			stub := buildRemoteSaveStub(op)
 			if stub == nil {
 				logger.Error("Negotiate conflict op missing save identity (no save_id/server_updated_at)", "romID", op.RomID, "file", op.FileName)
+				dropped = append(dropped, DroppedOp{Op: op, Reason: DropNoIdentity})
 				continue
 			}
 			slot := reportedOpSlot(op)
@@ -467,6 +489,7 @@ func mapOperationsToItems(
 			if !ok {
 				logger.Warn("Negotiate conflict op has no local save in the reported slot",
 					"romID", op.RomID, "slot", slot, "file", op.FileName)
+				dropped = append(dropped, DroppedOp{Op: op, Reason: DropNoLocalSave})
 				continue
 			}
 			items = append(items, SyncItem{
@@ -521,7 +544,7 @@ func mapOperationsToItems(
 		items = append(items, item)
 	}
 
-	return items
+	return items, dropped
 }
 
 // reportedOpSlot returns the slot a negotiate op is paired on, treating a nil/empty slot

@@ -237,13 +237,36 @@ Grout leaves such a game out of the sync, says so, and does nothing to either co
 The usual cause is a save downloaded into one core's folder before the game was given its core. Set the game's core
 before its first sync.
 
+### Taking a side by hand
+
+Sync decides which save is newer. When you know better, a game's Game Options in Grout (press `Y` on a game) has two
+entries that decide for you, whichever is newer. Both show the dates involved and ask you to confirm with `X`, since
+`B` backs out and nothing is changed until you do.
+
+- **Use RomM's Save** replaces the game's save on the device with the newest save RomM has for it, in any slot. It is
+  downloaded into the folder of the core the game runs on, the save it replaces is kept in a `.backup` folder, the
+  game's old resume state is set aside so it starts from the save, and the game follows the slot the save was in.
+  If RomM cannot be reached, nothing on the device is touched.
+- **Upload Local Save** sends the device's save to RomM as the game's current save, even if RomM's is newer. RomM's
+  save will no longer be the latest, so use it when the save on the device is the one you want to keep. It will not
+  run while the game has saves in two folders; pick one with **Resolve Saves** first.
+
 ### Y menu: Sync save
 
 Once your device is registered, the Y menu on a game in the list has a **Sync save (Grout)** entry, whether or not Sync
-on Launch is turned on. It syncs that one game right now and shows what happened: up to date, downloaded, uploaded,
-or why it could not (Wi-Fi off, no saved network in range, RomM unreachable, a conflict that needs a manual sync).
-Grout adds it the next time it starts after the device is registered. To remove it, delete
-`App/romscripts/Grout - Sync save.sh`; Grout will put it back the next time it starts.
+on Launch is turned on. It syncs that one game right now and tells you what actually happened:
+
+- **Took RomM's save**, with the date of RomM's save and of the one it replaced, which is kept as a backup.
+- **Sent this device's save to RomM**, with both dates when RomM said what it had.
+- **Already in sync**, said only when RomM's own checksum of its save matches the one on the device.
+- **Nothing changed**, with the reason: RomM's newest save is in a different slot from the one this device uses, or
+  RomM asked for an upload of a save that is exactly what was last downloaded.
+- **A conflict or a choice needs you**, **Wi-Fi is off**, **RomM unreachable**, or **the game has saves in two
+  folders**.
+
+A sync that did nothing is never reported as being up to date unless the two saves are the same. The same account
+of each launch sync, including what RomM said, is in `logs/app.log`. Grout's own **Sync Now** lists the games it left
+alone for the same reasons instead of saying everything is up to date.
 
 When it downloads a newer save, it sets the game's resume state aside the same way a launch sync does.
 

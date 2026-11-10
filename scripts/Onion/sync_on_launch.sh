@@ -47,6 +47,7 @@ log() {
     echo "up=$(uptime_seconds)s [$MODE] $*" >> "$LOG"
 }
 
+RESULT="$APP_DIR/grout/launch_sync_result.txt"
 PANEL=0
 
 # While the player waits on a sync they asked for, a message that stays up.
@@ -136,22 +137,25 @@ started=$(uptime_seconds)
 case "$MODE" in
     now)
         panel_on "Syncing..."
+        rm -f "$RESULT"
         ./grout --sync-rom "$ROM" --now > /dev/null 2>&1
         code=$?
         panel_off
         log "grout exited $code after $(($(uptime_seconds) - started))s"
-        case "$code" in
-            0)  say "Save is up to date." ;;
-            10) say "Newer save downloaded." ;;
-            16) say "Newer save downloaded.\nThe game will start from it,\nnot from its old resume state." ;;
-            11) say "Save uploaded." ;;
-            12) say "Could not reach RomM." ;;
-            13) say "This game is not matched\nto a game in RomM." ;;
-            14) say "A conflict needs you.\nResolve it in Grout > Sync." ;;
-            15) say "Register this device in\nGrout (Settings > Save Sync)." ;;
-            17) say "This game has saves in two\ncore folders. In Grout, open\nits Game Options and pick\nResolve Saves." ;;
-            *)  say "Sync failed.\nSee the Grout logs." ;;
-        esac
+        # Grout leaves a message saying what the sync did, when it got far enough
+        # to know. Otherwise all there is to go on is how it ended.
+        if [ -s "$RESULT" ]; then
+            say "$(sed ':a;N;$!ba;s/\n/\\n/g' "$RESULT")"
+        else
+            case "$code" in
+                12) say "Could not reach RomM." ;;
+                13) say "This game is not matched\nto a game in RomM." ;;
+                15) say "Register this device in\nGrout (Settings > Save Sync)." ;;
+                17) say "This game has saves in two\ncore folders. In Grout, open\nits Game Options and pick\nResolve Saves." ;;
+                0)  say "Grout did not report\nwhat happened.\nSee the Grout logs." ;;
+                *)  say "Sync failed.\nSee the Grout logs." ;;
+            esac
+        fi
         ;;
     after)
         # After a game the save on the device is the newest there is, so only

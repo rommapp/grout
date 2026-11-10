@@ -8,7 +8,9 @@ import (
 	"grout/romm"
 	"grout/saves"
 	"grout/settings"
+	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	gaba "github.com/BrandonKowalski/gabagool/v2/pkg/gabagool"
@@ -40,6 +42,9 @@ const (
 	exitNoDevice      = 15 // this device is not registered with RomM
 	exitStateSetAside = 16 // a newer save came down and the resume state made way for it
 	exitSavesInDoubt  = 17 // the game has saves in more than one core folder
+	exitOtherSlot     = 18 // RomM's newest save is in a slot the game is not using
+	exitLeftAlone     = 19 // one of RomM's instructions was set aside
+	exitFailed        = 20 // something went wrong
 )
 
 // launchResolveBudget bounds the read-only part of a launch sync. The game is
@@ -213,6 +218,7 @@ func runLaunchSync(request launchSync) int {
 		}
 	}
 
+	stateSetAside := false
 	if report.Downloaded > 0 {
 		// The game would resume from a snapshot of the progress this save
 		// replaces, and the new save would never be seen.
@@ -222,15 +228,63 @@ func runLaunchSync(request launchSync) int {
 			logger.Error("Launch sync: could not set the resume state aside", "rom", romPath, "error", err)
 		case moved > 0:
 			logger.Info("Launch sync: set the resume state aside for the newer save", "rom", romPath, "files", moved)
+			stateSetAside = true
+		}
+	}
+
+	outcome := saves.DescribeSync(saves.SyncFacts{
+		Ops: plan.Ops, Dropped: plan.Dropped, Held: plan.Held, Report: report,
+		Local: plan.Local, LocalWrote: plan.LocalWrote, StateSetAside: stateSetAside,
+	})
+	reportOutcome(logger, romPath, outcome, plan)
+	return exitCodeFor(outcome, stateSetAside)
+}
+
+// resultFile is where the message about the last sync is left, for the script
+// that started it to show. It sits beside the config.
+const resultFile = "launch_sync_result.txt"
+
+// reportOutcome puts what the sync did in the log, with what RomM said that led
+// to it, and leaves the message for the script to show.
+func reportOutcome(logger *slog.Logger, romPath string, outcome saves.Outcome, plan saves.LaunchPlan) {
+	for _, op := range plan.Ops {
+		slot, saveID := "", 0
+		if op.Slot != nil {
+			slot = *op.Slot
+		}
+		if op.SaveID != nil {
+			saveID = *op.SaveID
+		}
+		logger.Info("Launch sync: RomM said", "rom", romPath, "action", op.Action, "slot", slot, "saveID", saveID, "reason", op.Reason)
+	}
+	for _, drop := range plan.Dropped {
+		logger.Info("Launch sync: left an instruction alone", "rom", romPath, "action", drop.Op.Action, "reason", drop.Reason)
+	}
+	logger.Info("Launch sync: outcome", "rom", romPath, "what", strings.ReplaceAll(outcome.Text(), "\n", " / "))
+
+	if err := os.WriteFile(resultFile, []byte(outcome.Text()+"\n"), 0644); err != nil {
+		logger.Warn("Launch sync: could not leave the message for the script", "error", err)
+	}
+}
+
+// exitCodeFor is the exit status for a sync that ran.
+func exitCodeFor(outcome saves.Outcome, stateSetAside bool) int {
+	switch outcome.Kind {
+	case saves.OutcomeDownloaded:
+		if stateSetAside {
 			return exitStateSetAside
 		}
 		return exitDownloaded
-	}
-	if report.Uploaded > 0 {
+	case saves.OutcomeUploaded:
 		return exitUploaded
-	}
-	if plan.Held > 0 {
+	case saves.OutcomeNeedsYou:
 		return exitHeld
+	case saves.OutcomeOtherSlot:
+		return exitOtherSlot
+	case saves.OutcomeLeftAlone:
+		return exitLeftAlone
+	case saves.OutcomeFailed:
+		return exitFailed
 	}
 	return exitDone
 }

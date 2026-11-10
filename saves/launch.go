@@ -3,6 +3,7 @@ package saves
 import (
 	"errors"
 	"path/filepath"
+	"time"
 
 	"grout/cfw"
 	"grout/romm"
@@ -19,6 +20,13 @@ type LaunchPlan struct {
 	// Held counts the things left for the next manual sync because they need
 	// an answer: conflicts, and games with saves in several server slots.
 	Held int
+	// Ops is what RomM said about the game and Dropped the part of it that was
+	// not acted on; Local and LocalWrote are the device's saves for the game
+	// and when the newest was written, taken before anything changed.
+	Ops        []romm.SyncOperationSchema
+	Dropped    []DroppedOp
+	Local      []LocalSave
+	LocalWrote time.Time
 }
 
 // ResolveRomOnLaunch works out what bringing one game's save up to date would
@@ -45,7 +53,8 @@ func ResolveRomOnLaunch(client *romm.Client, config *settings.Config, deviceID, 
 	}
 
 	// Local, so it is settled before the server is asked anything.
-	if duplicates := FindDuplicateSaves(LocalSavesFor(config, romID)); len(duplicates) > 0 {
+	local := LocalSavesFor(config, romID)
+	if duplicates := FindDuplicateSaves(local); len(duplicates) > 0 {
 		folders := make([]string, 0, len(duplicates[0].Copies))
 		for _, copy := range duplicates[0].Copies {
 			folders = append(folders, FolderName(copy))
@@ -59,8 +68,18 @@ func ResolveRomOnLaunch(client *romm.Client, config *settings.Config, deviceID, 
 		return LaunchPlan{}, err
 	}
 
-	plan := LaunchPlan{SessionID: result.SessionID, RomID: romID}
+	plan := LaunchPlan{SessionID: result.SessionID, RomID: romID, Local: local, LocalWrote: NewestWrite(local)}
 	plan.Items, plan.Held = ForLaunch(result.Items, romID)
+	for _, op := range result.Operations {
+		if op.RomID == romID {
+			plan.Ops = append(plan.Ops, op)
+		}
+	}
+	for _, drop := range result.Dropped {
+		if drop.Op.RomID == romID {
+			plan.Dropped = append(plan.Dropped, drop)
+		}
+	}
 	if uploadOnly {
 		plan.Items = UploadsOnly(plan.Items)
 	}

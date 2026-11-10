@@ -22,6 +22,10 @@ type DuplicateSaves struct {
 	RomID   int
 	RomName string
 	Copies  []LocalSave
+	// FSSlug and RomFileName name the game's platform and ROM file, for putting
+	// a save in place when the game has no copy on the device to take them from.
+	FSSlug      string
+	RomFileName string
 }
 
 // FolderName is the name of the emulator folder a copy is in.
@@ -242,28 +246,43 @@ func RemoteSaveFor(client *romm.Client, config *settings.Config, deviceID string
 // local is touched, and it backs up the copy it replaces, so a failed download
 // leaves every local copy as it was.
 func UseRemoteSave(client *romm.Client, config *settings.Config, deviceID string, duplicates DuplicateSaves, remote *romm.Save, destDir string) error {
-	if remote == nil || len(duplicates.Copies) == 0 {
+	if remote == nil {
 		return fmt.Errorf("no save to use")
 	}
 
-	// The name the emulator already uses for this game's save; a copy in the
-	// folder being filled is the one the download replaces.
-	name := duplicates.Copies[0].FileName
-	for _, copy := range duplicates.Copies {
-		if filepath.Clean(filepath.Dir(copy.FilePath)) == filepath.Clean(destDir) {
-			name = copy.FileName
+	fsSlug, romFileName := duplicates.FSSlug, duplicates.RomFileName
+	if len(duplicates.Copies) > 0 {
+		if fsSlug == "" {
+			fsSlug = duplicates.Copies[0].FSSlug
+		}
+		if romFileName == "" {
+			romFileName = duplicates.Copies[0].RomFileName
 		}
 	}
-	target := filepath.Join(destDir, name)
+
+	// The name the emulator already uses for this game's save; a copy in the
+	// folder being filled is the one the download replaces. A game with no copy
+	// at all is named the way a sync would name a new one.
+	target := ""
+	name := ""
+	if len(duplicates.Copies) > 0 {
+		name = duplicates.Copies[0].FileName
+		for _, copy := range duplicates.Copies {
+			if filepath.Clean(filepath.Dir(copy.FilePath)) == filepath.Clean(destDir) {
+				name = copy.FileName
+			}
+		}
+		target = filepath.Join(destDir, name)
+	}
 
 	item := SyncItem{
 		LocalSave: LocalSave{
 			RomID:       duplicates.RomID,
 			RomName:     duplicates.RomName,
-			FSSlug:      duplicates.Copies[0].FSSlug,
+			FSSlug:      fsSlug,
 			FileName:    name,
 			FilePath:    target,
-			RomFileName: duplicates.Copies[0].RomFileName,
+			RomFileName: romFileName,
 			EmulatorDir: destDir,
 		},
 		RemoteSave: remote,
@@ -276,7 +295,7 @@ func UseRemoteSave(client *romm.Client, config *settings.Config, deviceID string
 
 	var failed []string
 	for _, copy := range duplicates.Copies {
-		if filepath.Clean(copy.FilePath) == filepath.Clean(target) {
+		if target != "" && filepath.Clean(copy.FilePath) == filepath.Clean(target) {
 			continue // replaced by the download, which kept its own backup
 		}
 		if _, err := os.Stat(copy.FilePath); err != nil {

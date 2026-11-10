@@ -90,6 +90,20 @@ func (s *GameOptionsScreen) Draw(input GameOptionsInput) (GameOptionsOutput, err
 		}}, items...)
 	}
 
+	// Taking a side by hand, whichever save is newer. Both are the player's call
+	// and both ask first.
+	useRommText := localize("game_options_use_romm", "Use RomM's Save")
+	uploadText := localize("game_options_upload_local", "Upload Local Save")
+	if input.Host.DeviceID != "" {
+		for _, text := range []string{useRommText, uploadText} {
+			items = append(items, gaba.ItemWithOptions{
+				Item:           gaba.MenuItem{Text: text},
+				Options:        []gaba.Option{{DisplayName: "", Value: text, Type: gaba.OptionTypeClickable}},
+				SelectedOption: 0,
+			})
+		}
+	}
+
 	showQRText := localize("game_options_show_qr", "Show QR Code")
 	items = append(items, gaba.ItemWithOptions{
 		Item:           gaba.MenuItem{Text: showQRText},
@@ -123,6 +137,15 @@ func (s *GameOptionsScreen) Draw(input GameOptionsInput) (GameOptionsOutput, err
 			selectedItem := result.Items[result.Selected]
 			if selectedItem.Item.Text == showQRText {
 				output.Action = GameOptionsActionShowQR
+				return output, nil
+			}
+			if input.Host.DeviceID != "" && (selectedItem.Item.Text == useRommText || selectedItem.Item.Text == uploadText) {
+				if selectedItem.Item.Text == useRommText {
+					s.useRommsSave(config, input.Host, input.Game, romPath)
+				} else {
+					s.uploadLocalSave(config, input.Host, input.Game)
+				}
+				output.Action = GameOptionsActionSaved
 				return output, nil
 			}
 			if selectedItem.Item.Text == resolveText && len(inDoubt) > 0 {
@@ -469,4 +492,173 @@ func sizeKB(save saves.LocalSave) int64 {
 		return (info.Size() + 1023) / 1024
 	}
 	return 0
+}
+
+// confirmWarning asks the player to be sure, on a button they do not press by
+// habit: B backs out and the confirm button is X, not the A that continues
+// everywhere else.
+func confirmWarning(message string) bool {
+	_, err := gaba.ConfirmationMessage(
+		message,
+		[]gaba.FooterHelpItem{
+			{ButtonName: "B", HelpText: localize("button_cancel", "Cancel")},
+			{ButtonName: "X", HelpText: localize("button_confirm_anyway", "I'm Sure")},
+		},
+		gaba.MessageOptions{ConfirmButton: buttons.VirtualButtonX},
+	)
+	return err == nil
+}
+
+func tell(message string) {
+	gaba.ConfirmationMessage(message, ContinueFooter(), gaba.MessageOptions{})
+}
+
+// useRommsSave replaces the game's save on the device with RomM's newest, in
+// whatever slot it is, whether or not RomM's is the newer of the two.
+func (s *GameOptionsScreen) useRommsSave(config *settings.Config, host settings.Host, game romm.Rom, romPath string) {
+	logger := gaba.GetLogger()
+	client := romm.NewClientFromHost(host, config.ApiTimeout.Duration())
+
+	var remote *romm.Save
+	var lookupErr error
+	gaba.ProcessMessage(
+		localize("resolve_saves_checking", "Checking RomM..."),
+		gaba.ProcessMessageOptions{ShowThemeBackground: true},
+		func() (any, error) {
+			remote, lookupErr = saves.NewestRemoteSave(client, host.DeviceID, game.ID)
+			return nil, nil
+		},
+	)
+	if lookupErr != nil {
+		logger.Error("Could not look up RomM's save", "game", game.Name, "error", lookupErr)
+		tell(localize("force_romm_unreachable", "Could not reach RomM.\nSee the Grout logs."))
+		return
+	}
+	if remote == nil {
+		tell(localize("force_romm_has_none", "RomM has no save for\nthis game."))
+		return
+	}
+
+	local := saves.LocalSavesFor(config, game.ID)
+	dup := saves.DuplicateSaves{RomID: game.ID, RomName: game.Name, Copies: local, FSSlug: game.PlatformFSSlug}
+	if romPath != "" {
+		dup.RomFileName = filepath.Base(romPath)
+	}
+
+	// It goes where the game's core reads it; a game with a save already keeps
+	// using the folder that save is in.
+	destDir := ""
+	if folder := cfw.ActiveFirmware().SaveFolderForRom(romPath); folder != "" {
+		destDir = filepath.Join(cfw.BaseSavePath(), folder)
+	}
+	if destDir == "" && len(local) > 0 {
+		destDir = filepath.Dir(local[0].FilePath)
+	}
+	if destDir == "" {
+		destDir = saves.ResolveSaveDirectory(game.PlatformFSSlug, config)
+	}
+	if destDir == "" {
+		tell(localize("force_no_folder", "Could not tell where this\ngame's save belongs."))
+		return
+	}
+
+	message := localizeWith("force_download_warning",
+		"Replace the save on this device with RomM's?\nRomM's: {{.Romm}}{{.Slot}}\n{{.Device}}\nThis ignores which is newer.\nThe current save is backed up.",
+		map[string]any{
+			"Romm":   remote.UpdatedAt.Local().Format("2006-01-02 15:04"),
+			"Slot":   forceSlotNote(remote),
+			"Device": deviceSaveLine(local),
+		})
+	if !confirmWarning(message) {
+		return
+	}
+
+	if err := saves.UseRemoteSave(client, config, host.DeviceID, dup, remote, destDir); err != nil {
+		logger.Error("Failed to use RomM's save", "game", game.Name, "error", err)
+		tell(localize("force_failed", "That did not work.\nSee the Grout logs."))
+		return
+	}
+	logger.Info("Took RomM's save by choice", "game", game.Name, "saveID", remote.ID, "slot", saves.SlotOf(remote), "in", destDir)
+
+	if saves.FollowSlot(config, game.ID, remote) {
+		if err := settings.SaveSlotPreferences(config); err != nil {
+			logger.Error("Error saving slot preferences", "error", err)
+		}
+	}
+	done := localize("force_download_done", "Took RomM's save.")
+	if romPath != "" {
+		if moved, err := cfw.ActiveFirmware().SetAsideResumeState(romPath); err != nil {
+			logger.Error("Could not set the resume state aside", "rom", romPath, "error", err)
+		} else if moved > 0 {
+			done += "\n" + localize("force_state_set_aside", "The old resume state was set aside.")
+		}
+	}
+	tell(done)
+}
+
+// uploadLocalSave sends the device's save to RomM as the game's current save,
+// whether or not RomM's is the newer of the two.
+func (s *GameOptionsScreen) uploadLocalSave(config *settings.Config, host settings.Host, game romm.Rom) {
+	logger := gaba.GetLogger()
+
+	local := saves.LocalSavesFor(config, game.ID)
+	if len(local) == 0 {
+		tell(localize("force_no_local_save", "There is no save for this game\non this device."))
+		return
+	}
+	if len(saves.FindDuplicateSaves(local)) > 0 {
+		tell(localize("force_saves_in_two_places", "This game has saves in more\nthan one folder.\nPick one with Resolve Saves first."))
+		return
+	}
+
+	client := romm.NewClientFromHost(host, config.ApiTimeout.Duration())
+	var remote *romm.Save
+	var lookupErr error
+	gaba.ProcessMessage(
+		localize("resolve_saves_checking", "Checking RomM..."),
+		gaba.ProcessMessageOptions{ShowThemeBackground: true},
+		func() (any, error) {
+			remote, lookupErr = saves.NewestRemoteSave(client, host.DeviceID, game.ID)
+			return nil, nil
+		},
+	)
+	if lookupErr != nil {
+		logger.Error("Could not look up RomM's save", "game", game.Name, "error", lookupErr)
+		tell(localize("force_romm_unreachable", "Could not reach RomM.\nSee the Grout logs."))
+		return
+	}
+
+	rommLine := localize("force_romm_none_yet", "RomM has no save yet.")
+	if remote != nil {
+		rommLine = localizeWith("force_romm_has", "RomM's: {{.When}}{{.Slot}}",
+			map[string]any{"When": remote.UpdatedAt.Local().Format("2006-01-02 15:04"), "Slot": forceSlotNote(remote)})
+	}
+	message := localizeWith("force_upload_warning",
+		"Replace RomM's save with the one on this device?\n{{.Device}}\n{{.Romm}}\nThis ignores which is newer.\nRomM's will no longer be the latest.",
+		map[string]any{"Device": deviceSaveLine(local), "Romm": rommLine})
+	if !confirmWarning(message) {
+		return
+	}
+
+	if err := saves.ForceUpload(client, config, host.DeviceID, local[0]); err != nil {
+		logger.Error("Failed to upload the save", "game", game.Name, "error", err)
+		tell(localize("force_failed", "That did not work.\nSee the Grout logs."))
+		return
+	}
+	logger.Info("Uploaded the device's save by choice", "game", game.Name, "file", local[0].FilePath)
+	tell(localize("force_upload_done", "Sent this device's save to RomM."))
+}
+
+func forceSlotNote(save *romm.Save) string {
+	if slot := saves.SlotOf(save); slot != "autosave" {
+		return ", slot '" + slot + "'"
+	}
+	return ""
+}
+
+func deviceSaveLine(local []saves.LocalSave) string {
+	if written := saves.NewestWrite(local); !written.IsZero() {
+		return localizeWith("force_device_has", "This device: {{.When}}", map[string]any{"When": written.Local().Format("2006-01-02 15:04")})
+	}
+	return localize("force_device_has_none", "This device has no save.")
 }
