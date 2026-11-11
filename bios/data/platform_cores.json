@@ -21,6 +21,9 @@
   "atari800": [
     "atari800_libretro"
   ],
+  "atari8bit": [
+    "atari800_libretro"
+  ],
   "atomiswave": [
     "flycast_libretro"
   ],

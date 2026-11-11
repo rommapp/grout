@@ -30,6 +30,7 @@ This table shows the mappings of RomM Fs Slug to the Anbernic stock OS platform 
 | Amstrad CPC                   | acpc                       | *(none)*                                        |
 | Arcade                        | arcade                     | MAME, FBNEO, HBMAME, PGM2, VARCADE              |
 | Arduboy                       | arduboy                    | *(none)*                                        |
+| Atari 8-bit                   | atari8bit                  | A800                                            |
 | Atari 800                     | atari800                   | A800                                            |
 | Atari 2600                    | atari2600                  | A2600                                           |
 | Atari 5200                    | atari5200                  | A5200                                           |

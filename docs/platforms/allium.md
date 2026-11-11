@@ -9,6 +9,8 @@ This table shows the mappings of RomM Fs Slug to Allium's platform folders.
 | Amstrad CPC                   | acpc                       | CPC                                             |
 | Arcade                        | arcade                     | ARCADE                                          |
 | Arduboy                       | arduboy                    | ARDUBOY                                         |
+| Atari 8-bit                   | atari8bit                  | *(none)*                                        |
+| Atari 800                     | atari800                   | *(none)*                                        |
 | Atari 2600                    | atari2600                  | ATARI                                           |
 | Atari 5200                    | atari5200                  | FIFTYTWOHUNDRED                                 |
 | Atari 7800                    | atari7800                  | SEVENTYEIGHTHUNDRED                             |
