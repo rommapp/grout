@@ -23,9 +23,9 @@ tasks:
     cmds:
       - rm -rf dist/muOS dist/Grout.muxapp
       - mkdir -p dist/muOS/Grout/lib
-      - cp build64/grout scripts/muOS/mux_launch.sh README.md LICENSE dist/muOS/Grout
+      - cp build64/grout scripts/muOS/mux_launch.sh scripts/muOS/mux_lang.ini README.md LICENSE dist/muOS/Grout
       - cp -R build64/lib/* dist/muOS/Grout/lib/
-      - cp -R scripts/muOS/resources dist/muOS/Grout/
+      - cp -R scripts/muOS/glyph dist/muOS/Grout/
       - chmod a+x dist/muOS/Grout/grout dist/muOS/Grout/mux_launch.sh
       - cd dist/muOS && zip -qr ../Grout.muxapp Grout
     silent: true

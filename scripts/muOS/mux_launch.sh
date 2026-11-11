@@ -1,7 +1,7 @@
 #!/bin/bash
-# HELP: Grout
+# HELP: A RomM Client for your retro doo-dad. Full documentation is available at grout.romm.app.
 # ICON: grout
-# GRID: grout
+# GRID: Grout
 
 . /opt/muos/script/var/func.sh
 echo app >/tmp/act_go
@@ -10,13 +10,13 @@ GOV_GO="/tmp/gov_go"
 [ -e "$GOV_GO" ] && cat "$GOV_GO" >"$(GET_VAR "device" "cpu/governor")"
 
 CUR_DIR="$(dirname "$0")"
-GROUT_ICON_PATH="${CUR_DIR}/resources/grout.png"
+GROUT_ICON_PATH="${CUR_DIR}/glyph/grout.svg"
 
 CURRENT_THEME_FILE="/opt/muos/config/theme/active"
 # If the config file doesn't exist, copy the icon to the active theme directory
 # MuOS version < 202601.0
 ICON_DIR=/opt/muos/share/theme/active/glyph/muxapp/
-cp "${GROUT_ICON_PATH}" "${ICON_DIR}/grout.png"
+cp "${GROUT_ICON_PATH}" "${ICON_DIR}/grout.svg"
 
 THEME=$(cat "$CURRENT_THEME_FILE")
 if [ -n "$THEME" ]; then
@@ -29,7 +29,7 @@ if [ -n "$THEME" ]; then
 
     for DIR in "${TARGETS[@]}"; do
         if [ -d "$DIR" ]; then
-            cp "$GROUT_ICON_PATH" "$DIR/grout.png"
+            cp "$GROUT_ICON_PATH" "$DIR/grout.svg"
             if [ $? -eq 0 ]; then
                 echo "Icon copied to $DIR"
             else
