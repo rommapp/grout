@@ -32,7 +32,7 @@ var platformNamesJSON []byte
 
 // cfwDocs lists the firmwares with a mapping page.
 var cfwDocs = []string{
-	"allium", "anbernic", "arkos", "batocera", "knulli", "koriki", "leaf", "minui",
+	"allium", "anbernic", "arkos", "banana", "batocera", "knulli", "koriki", "leaf", "minui",
 	"muos", "nextui", "onion", "rocknix", "spruce", "trimui",
 }
 

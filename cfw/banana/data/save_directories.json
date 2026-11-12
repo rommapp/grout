@@ -1,0 +1,10 @@
+{
+  "gb": ["Gambatte"],
+  "gba": ["gpSP"],
+  "gbc": ["Gambatte"],
+  "genesis": ["PicoDrive"],
+  "n64": ["Mupen64Plus-Next"],
+  "nes": ["FCEUmm"],
+  "psx": ["PCSX-ReARMed"],
+  "snes": ["Snes9x"]
+}

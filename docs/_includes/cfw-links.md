@@ -1,6 +1,7 @@
 [allium]: https://github.com/goweiwen/Allium
 [anbernic]: https://anbernic.com
 [arkos]: https://github.com/christianhaitian/arkos
+[banana]: https://github.com/JorreFog/BananaLinux
 [darkos]: https://github.com/christianhaitian/dArkOS
 [batocera]: https://batocera.org
 [knulli]: https://knulli.org

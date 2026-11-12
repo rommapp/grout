@@ -25,13 +25,14 @@ const (
 	MinUI    CFW = "MINUI"
 	Anbernic CFW = "ANBERNIC"
 	Leaf     CFW = "LEAF"
+	Banana   CFW = "BANANA"
 )
 
 // All lists every supported firmware. Conformance tests range over it.
 var All = []CFW{
 	NextUI, MuOS, Knulli, Spruce, ROCKNIX, Trimui,
 	Allium, Onion, Koriki, ArkOS, Batocera, MinUI,
-	Anbernic, Leaf,
+	Anbernic, Leaf, Banana,
 }
 
 // ErrUnsupported reports a firmware name grout does not recognise.

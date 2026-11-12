@@ -55,6 +55,7 @@ tasks:
       - task: package:muos
       - task: package:knulli
       - task: package:rocknix
+      - task: package:banana
       - task: package:trimui
       - task: package:arkos
       - task: package:batocera
