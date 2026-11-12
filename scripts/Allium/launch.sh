@@ -9,7 +9,7 @@ if [ -d "../../.update" ]; then
 fi
 
 export CFW=ALLIUM
-export IS_MIYOO=1
+export MENU_ON_L2=1
 export LD_LIBRARY_PATH=/mnt/SDCARD/Apps/Grout.pak/grout/lib:$LD_LIBRARY_PATH
 
 export SDL_VIDEODRIVER=mmiyoo

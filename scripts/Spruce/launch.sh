@@ -66,7 +66,7 @@ case "$PLATFORM" in
         export SDL_AUDIODRIVER=mmiyoo
         export EGL_VIDEODRIVER=mmiyoo
         export SDL_MMIYOO_DOUBLE_BUFFER=1
-        export IS_MIYOO=1
+        export MENU_ON_L2=1
         export SPRUCE_DEVICE="MIYOOMINI"
         export LD_LIBRARY_PATH="$CUR_DIR/grout/lib32/miyoo:$LD_LIBRARY_PATH"
         ./grout32
@@ -86,8 +86,8 @@ case "$PLATFORM" in
 # Powkiddy RGB30
 ############################################################
     "RGB30" )
-        # No Menu button on the RGB30: L2 stands in for it, as on the Miyoo handhelds.
-        export IS_MIYOO=1
+        # The RGB30 has no Menu button: its input mapping puts Menu on L2.
+        export MENU_ON_L2=1
         export LD_LIBRARY_PATH="$CUR_DIR/grout/lib64:$LD_LIBRARY_PATH"
         export SPRUCE_DEVICE="RGB30"
         ./grout64
