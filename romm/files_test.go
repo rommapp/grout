@@ -49,3 +49,29 @@ func TestRom_PlayableFilesFallsBackToAll(t *testing.T) {
 		t.Errorf("got %d files, want all 2 when none look playable", len(got))
 	}
 }
+
+// RomM lists what it found inside an archive, with hashes grout has no use for.
+// Older servers send no list, or null.
+func TestRomFile_ArchiveMemberNames(t *testing.T) {
+	var rom Rom
+	body := `{"files":[
+		{"id":1,"file_name":"Mario.zip","archive_members":[
+			{"name":"Super Mario Bros (USA).nes","size":40976,"crc_hash":"3337ec46","md5_hash":"811b027e","sha1_hash":"ea343f4e"}
+		]},
+		{"id":2,"file_name":"Zelda.zip","archive_members":null},
+		{"id":3,"file_name":"Metroid.nes"}
+	]}`
+	if err := json.Unmarshal([]byte(body), &rom); err != nil {
+		t.Fatal(err)
+	}
+
+	got := rom.Files[0].ArchiveMemberNames()
+	if len(got) != 1 || got[0] != "Super Mario Bros (USA).nes" {
+		t.Errorf("members = %v, want the one file inside the archive", got)
+	}
+	for _, file := range rom.Files[1:] {
+		if got := file.ArchiveMemberNames(); got != nil {
+			t.Errorf("%s: members = %v, want none", file.FileName, got)
+		}
+	}
+}

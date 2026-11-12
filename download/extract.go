@@ -15,15 +15,6 @@ import (
 	"grout/romm"
 )
 
-// IsArchive reports whether a rom arrived as an archive worth unpacking.
-func IsArchive(fileName string) bool {
-	switch strings.ToLower(filepath.Ext(fileName)) {
-	case ".zip", ".7z":
-		return true
-	}
-	return false
-}
-
 // ExtractMultiFile unpacks a game that arrived as a single archive holding
 // several files, and returns the path the frontend should point at.
 //
@@ -32,9 +23,16 @@ func IsArchive(fileName string) bool {
 func ExtractMultiFile(game romm.Rom, romDirectory string, progress *atomic.Float64) (string, error) {
 	archivePath := MultiFileArchivePath(game)
 	extractDir := filepath.Join(romDirectory, game.FsNameNoExt)
+	_, statErr := os.Stat(extractDir)
+	createdDir := os.IsNotExist(statErr)
 
 	if err := archive.Unzip(archivePath, extractDir, progress); err != nil {
 		os.Remove(archivePath)
+		// A half-unpacked folder would pass for the whole game. One that was
+		// there before holds what the user had, so it is left alone.
+		if createdDir {
+			os.RemoveAll(extractDir)
+		}
 		return "", fmt.Errorf("unpacking %s: %w", game.Name, err)
 	}
 

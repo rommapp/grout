@@ -1,3 +1,7 @@
+# Unreleased
+## Bug Fixes
+- Unpacked ROMs now show as downloaded: zipped games unpacked with Unzip Downloads, and multi-file games unpacked into their folder (#233, #312) - @pawndev
+
 # v5.4.0.0
 ## New Platform Support
 - **Leaf**: Initial support for the Leaf firmware (tested on the MLP1), with save, ROM and BIOS paths taken from the Leaf sources, and a library rescan after downloads (#302) - @pawndev
