@@ -19,6 +19,7 @@ Grout has been tested on the following devices running spruce:
 | TrimUI       | Brick     |
 | TrimUI       | Smart Pro |
 | GKD          | Pixel 2   |
+| Powkiddy     | RGB30     |
 
 ## Prerequisites
 

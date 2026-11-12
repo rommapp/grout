@@ -21,7 +21,7 @@ case "$ARCH" in
         ./grout64
         ;;
     armv7*|armhf)
-        export IS_MIYOO=1
+        export MENU_ON_L2=1
         export SDL_VIDEODRIVER=mmiyoo
         export SDL_AUDIODRIVER=mmiyoo
         export EGL_VIDEODRIVER=mmiyoo

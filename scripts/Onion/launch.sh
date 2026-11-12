@@ -9,7 +9,7 @@ if [ -d "../../.update" ]; then
 fi
 
 export CFW=ONION
-export IS_MIYOO=1
+export MENU_ON_L2=1
 export LD_LIBRARY_PATH=/mnt/SDCARD/App/Grout/grout/lib:$LD_LIBRARY_PATH
 
 export SDL_VIDEODRIVER=mmiyoo

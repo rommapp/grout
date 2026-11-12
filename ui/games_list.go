@@ -412,9 +412,9 @@ func gameListFooter(chrome listChrome) []gaba.FooterHelpItem {
 	items := []gaba.FooterHelpItem{FooterBack()}
 
 	if chrome.ShowBIOS {
-		// The Miyoo handhelds have no Menu button, so the shortcut sits on L2.
+		// Devices without a Menu button put it on L2, so show L2 instead.
 		name := localize("button_menu", "Menu")
-		if environment.IsMiyoo() {
+		if environment.MenuOnL2() {
 			name = "L2"
 		}
 		items = append(items, gaba.FooterHelpItem{ButtonName: name, HelpText: localize("button_bios", "BIOS")})
