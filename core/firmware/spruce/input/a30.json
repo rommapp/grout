@@ -1,0 +1,33 @@
+{
+  "keyboard_map": {
+    "101": 10,
+    "1073741903": 4,
+    "1073741904": 3,
+    "1073741905": 2,
+    "1073741906": 1,
+    "1073742048": 6,
+    "1073742049": 7,
+    "1073742050": 8,
+    "1073742052": 14,
+    "116": 12,
+    "13": 13,
+    "32": 5,
+    "9": 9
+  },
+  "controller_button_map": {},
+  "controller_hat_map": {},
+  "joystick_axis_map": {
+    "2": {
+      "positive_button": 11,
+      "negative_button": 0,
+      "threshold": 16000
+    },
+    "5": {
+      "positive_button": 15,
+      "negative_button": 0,
+      "threshold": 16000
+    }
+  },
+  "joystick_button_map": {},
+  "joystick_hat_map": {}
+}

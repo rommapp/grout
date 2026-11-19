@@ -1,0 +1,99 @@
+{
+    "Nintendo Game Boy Advance": {
+        "name": "Nintendo Game Boy Advance",
+        "namespace": "Nintendo",
+        "catalogue": "Nintendo Game Boy Advance",
+        "lookup": 0,
+        "default": "mgba",
+        "friendly": [
+            "nintendogba",
+            "nintendogameboyadvance",
+            "ningba",
+            "ngba",
+            "mgba",
+            "gbsp",
+            "gbahacks",
+            "gbadvance",
+            "gba",
+            "gameboyadvance"
+        ],
+        "libretro": {
+            "beetle gba": {
+                "name": "Beetle GBA",
+                "core": "mednafen_gba_libretro.so",
+                "extra": 1
+            },
+            "gpsp": {
+                "name": "gpSP",
+                "core": "gpsp_libretro.so"
+            },
+            "mgba": {
+                "name": "mGBA",
+                "core": "mgba_libretro.so"
+            },
+            "mgba rumble": {
+                "name": "mGBA Rumble",
+                "core": "mgba_rumble_libretro.so",
+                "extra": 1
+            },
+            "vba-m": {
+                "name": "VBA-M",
+                "core": "vbam_libretro.so",
+                "extra": 1
+            },
+            "vba-next": {
+                "name": "VBA-Next",
+                "core": "vba_next_libretro.so",
+                "extra": 1
+            }
+        }
+    },
+    "Nintendo DS": {
+        "name": "Nintendo DS",
+        "namespace": "Nintendo",
+        "catalogue": "Nintendo DS",
+        "lookup": 0,
+        "default": "drastic - standalone",
+        "runtime": "external",
+        "governor": "performance",
+        "friendly": [
+            "nintendonintendodsi",
+            "nintendodsi",
+            "nintendods",
+            "ninds",
+            "nds",
+            "dsi",
+            "ds"
+        ],
+        "libretro": {
+            "desmume 2015": {
+                "name": "DeSmuME 2015",
+                "core": "desmume2015_libretro.so",
+                "extra": 1
+            },
+            "melonds": {
+                "name": "melonDS",
+                "core": "melonds_libretro.so",
+                "extra": 1
+            },
+            "melonds-ds": {
+                "name": "melonDS-DS",
+                "core": "melondsds_libretro.so",
+                "extra": 1
+            }
+        },
+        "external": {
+            "drastic - standalone": {
+                "name": "Drastic - Standalone",
+                "core": "ext-drastic",
+                "launcher": "drastic.sh"
+            },
+            "drastic legacy - standalone": {
+                "name": "Drastic Legacy - Standalone",
+                "core": "ext-drastic-legacy",
+                "launcher": "drastic-legacy.sh",
+                "extra": 1
+            }
+        }
+    }
+}

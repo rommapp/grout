@@ -1,6 +1,0 @@
-{
-  "label": "Grout",
-  "icon": "/mnt/SDCARD/App/Grout/grout.png",
-  "launch": "launch.sh",
-  "description": "A RomM client for your retro doo-dad"
-}

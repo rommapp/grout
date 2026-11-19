@@ -48,6 +48,9 @@ jobs:
       - name: Package layering
         run: go run ./tools/archcheck -v
 
+      - name: Firmware matrix is current
+        run: go run ./tools/gen-firmware-matrix -check
+
   test:
     name: Build and test
     runs-on: ubuntu-latest
@@ -104,4 +107,5 @@ jobs:
             ./cmd/... \
             ./version \
             ./resources \
-            ./tools/archcheck
+            ./tools/archcheck \
+            ./tools/gen-firmware-matrix

@@ -1,0 +1,128 @@
+id = "knulli"
+name = "Knulli"
+maintained = "upstream"
+upstream = { repo = "github.com/knulli-cfw/knulli-linux", ref = "20260511" }
+
+[version]
+file = { value = "/usr/share/knulli/knulli.version", src = "package/system/knulli-system/knulli-system.mk" }
+
+[paths]
+card = { value = "/userdata", src = "package/system/knulli-configgen/configgen/configgen/batoceraPaths.py" }
+roms = { value = "{card}/roms", src = "package/system/knulli-configgen/configgen/configgen/batoceraPaths.py" }
+bios = { value = "{card}/bios", src = "package/system/knulli-configgen/configgen/configgen/batoceraPaths.py" }
+saves = { value = "{card}/saves", src = "package/system/knulli-configgen/configgen/configgen/batoceraPaths.py" }
+
+[rom_folders]
+style = { value = "plain", src = "package/emulationstation/knulli-es-system/knulli-es-system.py" }
+
+[saves]
+layout = { value = "per-emulator", src = "package/system/knulli-configgen/configgen/configgen/generators/libretro/libretroConfig.py" }
+naming = { value = "retroarch", src = "package/system/knulli-configgen/configgen/configgen/generators/libretro/libretroConfig.py" }
+
+[bios]
+default = { value = ["{bios}/{rel}"], src = "package/system/knulli-configgen/configgen/configgen/generators/libretro/libretroRetroarchCustom.py" }
+
+[art]
+naming = "es-suffix"
+cover = { value = "{rom_dir}/images", src = "package/emulationstation/knulli-es-system/roms/gba/gamelist.xml" }
+video = { value = "{rom_dir}/videos", src = "package/emulationstation/knulli-es-system/roms/gba/gamelist.xml" }
+manual = { value = "{rom_dir}/manuals", src = "board/fsoverlay/usr/share/emulationstation/hooks/preupdate-gamelists-scummvm.sh" }
+
+[gamelist]
+format = "emulationstation"
+launcher_entry = { gamelist = "{roms}/tools/gamelist.xml", path = "./Grout/Grout.sh" }
+
+[retroarch]
+config = { value = "{card}/system/configs/retroarch/retroarchcustom.cfg", src = "package/system/knulli-configgen/configgen/configgen/generators/libretro/libretroPaths.py" }
+overrides = { value = "{card}/system/configs/retroarch", src = "package/system/knulli-configgen/configgen/configgen/generators/libretro/libretroGenerator.py" }
+
+[platform_sources]
+roms = "package/emulationstation/knulli-es-system/es_systems.yml"
+saves = "package/system/knulli-configgen/configgen/configgen/generators/libretro/libretroConfig.py"
+
+[platforms]
+"3do" = { roms = ["3do"], saves = ["3do"] }
+"3ds" = { roms = ["3ds"], saves = ["3ds"] }
+acpc = { roms = ["amstradcpc"], saves = ["amstradcpc"] }
+amiga = { roms = ["amiga500", "amiga1200"], saves = ["amiga500", "amiga1200"] }
+arcade = { roms = ["mame", "fbneo", "neogeo"], saves = ["mame", "fbneo", "neogeo"] }
+arduboy = { roms = ["arduboy"], saves = ["arduboy"] }
+atari-st = { roms = ["atarist"], saves = ["atarist"] }
+atari2600 = { roms = ["atari2600"], saves = ["atari2600"] }
+atari5200 = { roms = ["atari5200"], saves = ["atari5200"] }
+atari7800 = { roms = ["atari7800"], saves = ["atari7800"] }
+atari800 = { roms = ["atari800"], saves = ["atari800"] }
+atari8bit = { roms = ["atari800"], saves = ["atari800"] }
+c128 = { roms = ["c128"], saves = ["c128"] }
+c64 = { roms = ["c64"], saves = ["c64"] }
+cave-story = { roms = ["cavestory"], saves = ["cavestory"] }
+colecovision = { roms = ["colecovision"], saves = ["colecovision"] }
+cpet = { roms = ["pet"], saves = ["pet"] }
+dc = { roms = ["dreamcast"], saves = ["dreamcast"] }
+dos = { roms = ["dos"], saves = ["dos"] }
+fairchild-channel-f = { roms = ["channelf"], saves = ["channelf"] }
+famicom = { roms = ["nes"], saves = ["nes"] }
+fds = { roms = ["fds"], saves = ["fds"] }
+g-and-w = { roms = ["gameandwatch"], saves = ["gameandwatch"] }
+galaksija = { roms = [], saves = [] }
+gamegear = { roms = ["gamegear"], saves = ["gamegear"] }
+gb = { roms = ["gb"], saves = ["gb"] }
+gba = { roms = ["gba"], saves = ["gba"] }
+gbc = { roms = ["gbc"], saves = ["gbc"] }
+genesis = { roms = ["megadrive"], saves = ["megadrive"] }
+intellivision = { roms = ["intellivision"], saves = ["intellivision"] }
+j2me = { roms = ["j2me"], saves = ["j2me"] }
+jaguar = { roms = ["jaguar"], saves = ["jaguar"] }
+lynx = { roms = ["lynx"], saves = ["lynx"] }
+mega-duck-slash-cougar-boy = { roms = ["megaduck"], saves = ["megaduck"] }
+msx = { roms = ["msx1", "msx2", "msx2+", "msxturbor"], saves = ["msx1", "msx2", "msx2+", "msxturbor"] }
+n64 = { roms = ["n64"], saves = ["n64"] }
+nds = { roms = ["nds"], saves = ["nds", "nds/advanced_drastic/saves"] }
+neo-geo-cd = { roms = ["neogeocd"], saves = ["neogeocd"] }
+neo-geo-pocket = { roms = ["ngp"], saves = ["ngp"] }
+neo-geo-pocket-color = { roms = ["ngpc"], saves = ["ngpc"] }
+neogeoaes = { roms = ["neogeo"], saves = ["neogeo"] }
+neogeomvs = { roms = ["neogeo"], saves = ["neogeo"] }
+nes = { roms = ["nes"], saves = ["nes"] }
+odyssey-2 = { roms = ["o2em"], saves = ["o2em"] }
+openbor = { roms = ["openbor"], saves = ["openbor"] }
+pc-8800-series = { roms = ["pc88"], saves = ["pc88"] }
+pc-9800-series = { roms = ["pc98"], saves = ["pc98"] }
+pc-fx = { roms = ["pcfx"], saves = ["pcfx"] }
+philips-cd-i = { roms = ["cdi"], saves = ["cdi"] }
+pico = { roms = ["pico8"], saves = ["pico8"] }
+pico-8 = { roms = ["pico8"], saves = ["pico8"] }
+pokemon-mini = { roms = ["pokemini"], saves = ["pokemini"] }
+ps2 = { roms = ["ps2"], saves = ["ps2"] }
+psp = { roms = ["psp"], saves = ["psp/SAVEDATA"] }
+psx = { roms = ["psx"], saves = ["psx"] }
+saturn = { roms = ["saturn"], saves = ["saturn", "saturn/yabasanshiro-sa"] }
+sega32 = { roms = ["sega32x"], saves = ["sega32x"] }
+segacd = { roms = ["segacd"], saves = ["segacd"] }
+sfam = { roms = ["snes"], saves = ["snes"] }
+sg1000 = { roms = ["sg1000"], saves = ["sg1000"] }
+sharp-x68000 = { roms = ["x68000"], saves = ["x68000"] }
+sms = { roms = ["mastersystem"], saves = ["mastersystem"] }
+snes = { roms = ["snes"], saves = ["snes"] }
+supergrafx = { roms = ["supergrafx"], saves = ["supergrafx"] }
+supervision = { roms = ["supervision"], saves = ["supervision"] }
+tg16 = { roms = ["pcengine"], saves = ["pcengine"] }
+tic-80 = { roms = ["tic80"], saves = ["tic80"] }
+turbografx-cd = { roms = ["pcenginecd"], saves = ["pcenginecd"] }
+vectrex = { roms = ["vectrex"], saves = ["vectrex"] }
+vic-20 = { roms = ["c20"], saves = ["c20"] }
+virtualboy = { roms = ["virtualboy"], saves = ["virtualboy"] }
+wonderswan = { roms = ["wswan"], saves = ["wswan"] }
+wonderswan-color = { roms = ["wswanc"], saves = ["wswanc"] }
+x1 = { roms = ["x1"], saves = ["x1"] }
+zx81 = { roms = ["zx81"], saves = ["zx81"] }
+zxs = { roms = ["zxspectrum"], saves = ["zxspectrum"] }
+
+[devices]
+default = "generic"
+
+[packaging]
+asset = "Grout-Knulli.zip"
+launch_script = "Grout/Grout.sh"
+install_depth = 2
+files = ["Grout.sh", "logo.png"]

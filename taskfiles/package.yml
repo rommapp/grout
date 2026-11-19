@@ -13,7 +13,7 @@ tasks:
     cmds:
       - rm -rf dist/Grout.pak
       - mkdir -p dist/Grout.pak/lib
-      - cp build64/grout scripts/NextUI/launch.sh README.md LICENSE pak.json dist/Grout.pak
+      - cp build64/grout core/firmware/nextui/scripts/launch.sh README.md LICENSE pak.json dist/Grout.pak
       - cp -R build64/lib/* dist/Grout.pak/lib/
       - mkdir -p dist/Grout.pak/lib/h700 && cp build64/lib-h700/* dist/Grout.pak/lib/h700/
       - chmod a+x dist/Grout.pak/grout dist/Grout.pak/launch.sh
@@ -23,9 +23,9 @@ tasks:
     cmds:
       - rm -rf dist/muOS dist/Grout.muxapp
       - mkdir -p dist/muOS/Grout/lib
-      - cp build64/grout scripts/muOS/mux_launch.sh scripts/muOS/mux_lang.ini README.md LICENSE dist/muOS/Grout
+      - cp build64/grout core/firmware/muos/scripts/mux_launch.sh core/firmware/muos/scripts/mux_lang.ini README.md LICENSE dist/muOS/Grout
       - cp -R build64/lib/* dist/muOS/Grout/lib/
-      - cp -R scripts/muOS/glyph dist/muOS/Grout/
+      - cp -R core/firmware/muos/scripts/glyph dist/muOS/Grout/
       - chmod a+x dist/muOS/Grout/grout dist/muOS/Grout/mux_launch.sh
       - cd dist/muOS && zip -qr ../Grout.muxapp Grout
     silent: true
@@ -34,7 +34,7 @@ tasks:
     cmds:
       - rm -rf dist/Knulli
       - mkdir -p dist/Knulli/Grout/lib
-      - cp build64/grout scripts/Knulli/Grout.sh scripts/Knulli/logo.png README.md LICENSE dist/Knulli/Grout
+      - cp build64/grout core/firmware/knulli/scripts/Grout.sh core/firmware/knulli/scripts/logo.png README.md LICENSE dist/Knulli/Grout
       - cp -R build64/lib/* dist/Knulli/Grout/lib/
       - chmod a+x dist/Knulli/Grout/grout dist/Knulli/Grout/Grout.sh
     silent: true
@@ -44,7 +44,7 @@ tasks:
       - rm -rf dist/Spruce
       - mkdir -p dist/Spruce/Grout/grout/lib64
       - mkdir -p dist/Spruce/Grout/grout/lib32/{miyoo,a30}
-      - cp scripts/Spruce/* README.md LICENSE dist/Spruce/Grout
+      - cp core/firmware/spruce/scripts/* README.md LICENSE dist/Spruce/Grout
       - cp build64/grout dist/Spruce/Grout/grout/grout64
       - cp build32/grout dist/Spruce/Grout/grout/grout32
       - cp -R build64/lib/* dist/Spruce/Grout/grout/lib64/
@@ -59,7 +59,7 @@ tasks:
     cmds:
       - rm -rf dist/Allium
       - mkdir -p dist/Allium/Grout.pak/grout/lib
-      - cp -R scripts/Allium/* dist/Allium/Grout.pak
+      - cp -R core/firmware/allium/scripts/* dist/Allium/Grout.pak
       - cp build32/grout README.md LICENSE dist/Allium/Grout.pak/grout
       - cp -R vendored/miyoo/* dist/Allium/Grout.pak/grout/lib/
     silent: true
@@ -68,7 +68,7 @@ tasks:
     cmds:
       - rm -rf dist/Onion
       - mkdir -p dist/Onion/Grout/grout/lib
-      - cp -R scripts/Onion/* dist/Onion/Grout
+      - cp -R core/firmware/onion/scripts/* dist/Onion/Grout
       - cp build32/grout README.md LICENSE dist/Onion/Grout/grout
       - cp -R vendored/miyoo/* dist/Onion/Grout/grout/lib/
     silent: true
@@ -77,8 +77,8 @@ tasks:
     cmds:
       - rm -rf dist/ROCKNIX
       - mkdir -p dist/ROCKNIX/Grout/lib
-      - cp scripts/ROCKNIX/Grout.sh dist/ROCKNIX/
-      - cp build64/grout scripts/ROCKNIX/logo.png README.md LICENSE dist/ROCKNIX/Grout/
+      - cp core/firmware/rocknix/scripts/Grout.sh dist/ROCKNIX/
+      - cp build64/grout core/firmware/rocknix/scripts/logo.png README.md LICENSE dist/ROCKNIX/Grout/
       - cp -R build64/lib/* dist/ROCKNIX/Grout/lib/
       - chmod a+x dist/ROCKNIX/Grout/grout dist/ROCKNIX/Grout.sh
     silent: true
@@ -89,8 +89,7 @@ tasks:
     cmds:
       - rm -rf dist/Leaf
       - mkdir -p {{.PAK}}/lib
-      - cp scripts/Leaf/launch.sh scripts/Leaf/pak.json build64/grout README.md LICENSE {{.PAK}}/
-      - cp scripts/ROCKNIX/logo.png {{.PAK}}/icon.png
+      - cp core/firmware/leaf/scripts/launch.sh core/firmware/leaf/scripts/pak.json core/firmware/leaf/scripts/icon.png build64/grout README.md LICENSE {{.PAK}}/
       - cp -R build64/lib/* {{.PAK}}/lib/
       - chmod a+x {{.PAK}}/grout {{.PAK}}/launch.sh
     silent: true

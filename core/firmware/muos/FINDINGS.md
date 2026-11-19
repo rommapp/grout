@@ -1,0 +1,69 @@
+# muOS findings
+
+Pinned upstream: github.com/MustardOS/internal 2606.0_Andromeda (db2a3bd08b718320e9f237ba3d8262373473f042). Paths below are relative to that ref unless they name the frontend repo.
+
+- upstream (second repo): muOS's C code lives in github.com/MustardOS/frontend, same tag 2606.0_Andromeda (876f00d5499a2f6a5e76e52c2b711b478980feb2). These facts are proven only there:
+  - Pickles saves to /run/muos/storage/pickles/sram/<core file without _libretro.so>/<rom folder>/<rom stem>.<ext> (retro/core/paths.h, retro/core/core.c core_content_save_prefix, retro/state/persistent.c).
+  - core.cfg holds five lines: core file, system, catalogue, lookup, tagged core (common/content/core/common.c write_cfg_file, common/content/content.h global_type).
+  - The mu- tag means Pickles, ext- means external, and no tag means RetroArch; the tag is matched case-insensitively (common/content/core/coredb.c).
+  - An unassigned folder is looked up in assign.json by its lowercased name with spaces, dashes, underscores and pluses removed (common/content/core/common.c automatic_assign_core).
+  - The user core.json wins over the bundled one (coredb.c coredb_load). internal script/system/assign.sh and script/system/catalogue.sh show the same order.
+  - With no storage choice, ROM storage is searched in the order USB, SD2, SD1 (common/storage/union.c union_init_mounts: usb, sdcard, rom). muos_rom_root uses this order.
+- saves.extra_folders_hook muos_pickles: v2 read libretro.json with cores under "cores". Upstream 2606.0_Andromeda ships share/info/manifest/core.json with cores under "libretro" (frontend common/content/core/coredb.c COREDB_FILE). libretro.json existed only in dev builds from 2026-09-20 to 2026-10-08. 2601.x and 2508.x ship neither file, so the hook returns nothing there, as v2 did. The port reads core.json only.
+- saves.extra_folders_hook muos_pickles, unassigned folders: v2 always assumed Pickles with the system default. Upstream uses the system's "runtime" field (default pickles) and looks the default id up in that runtime's group first (frontend coredb.c coredb_system_default_core). Systems with runtime "external" (Nintendo DS, PSP, Nintendo 3DS, ScummVM, OpenBOR and others in core.json) therefore do not prefer Pickles. The port follows upstream. Upstream also falls back to the first listed core when the default id is missing; that fallback is not ported, and such a folder gets no Pickles folders.
+- saves.extra_folders_hook muos_pickles, external core files: v2 added a Pickles folder for any core file. The port adds folders only for files ending in _libretro.so, because Pickles never runs external cores (ext-drastic and the like).
+- saves.label_hook muos_label: v2 removed "file/" and "/backup" anywhere in the path. The port removes only a leading "file/" and a trailing "/backup".
+- paths.roms hook muos_rom_root: muOS 2606.0 has no union mount. The unionfs binaries (bin/ufs) ship in 2508.4 through 2601.2 and are gone in 2606.0, and only a migration remnant mentions it (script/mux/track.sh). The hook keeps v2's /mnt/union/ROMS branch for those releases, so the fact needs no since/until. Mount points come from /opt/muos/device/config/storage/<rom|sdcard|usb>/mount (device/common/config/storage, script/var/config.sh GET_VAR), and ROMS is created per mount by script/device/storage.sh.
+- devices.inputs anbernic (muos_sdl_map_input): sdl_map is at /opt/muos/device/config/board/sdl_map (device/<board>/config/board/sdl_map, script/var/display.sh). The fixture uses rg35xx-plus's 2606.0 line, which matches v2's "now" line apart from added leftx, lefty and platform fields. No version range is needed; the hook handles both numberings.
+- devices.inputs trimui, trimui-smart-pro: upstream 2606.0 ships sdl_map files for tui-brick, tui-brick-pro and tui-spoon, each with its own button numbers, while v2 uses fixed trimui.json and trimui-smart-pro.json. Kept from v2. The owner may want TrimUI boards on muos_sdl_map_input too. The TrimUI Brick and Brick Pro both match "TRIMUI" and get trimui.json. The "TRIMUI Smart Pro" input name is not in the repo; script/control/gamecontrollerdb.sh names the PortMaster controller "TRIMUI Smart Pro Controller".
+- saves.naming: src is retroarch.default.cfg (sort_savefiles_enable, savefiles_in_content_dir false). The Pickles naming (ROM stem plus region extension) is proven only in frontend retro/state/persistent.c.
+- art: upstream catalogue.sh also creates grid, text, manual and overlay/* per system, and the frontend has info/video (common/base/options.h INFO_VID_PATH). v2 used box, preview and splash only, so no manual, video or grid key was added.
+- platforms system names: v2 had names that are not catalogue names in core.json. Upstream values written (share/info/manifest/core.json "catalogue"):
+  - dos "DOS" -> "PC DOS"
+  - fairchild-channel-f "Fairchild ChannelF" -> "Fairchild Channel F"
+  - fds "Nintendo FDS" -> "Nintendo Famicom Disk System"
+  - intellivision "Mattel - Intellivision" -> "Mattel Intellivision"
+  - lowres "Lowres NX" -> "LowRes NX"
+  - mega-duck-slash-cougar-boy "Mega Duck" -> "Mega Duck - Cougar Boy"
+  - msx "Microsoft - MSX" -> "Microsoft MSX"
+  - pc-8800-series (was pc-8000) "NEC PC-8000 - PC-8800 series" -> "NEC PC-8000 - PC-8800 Series"
+  - psp "Sony Playstation Portable" -> "Sony PlayStation Portable"
+  - psx "Sony Playstation" -> "Sony PlayStation"
+  - vectrex "GCE - Vectrex" -> "GCE Vectrex"
+  - wonderswan "Bandai WonderSwan" and wonderswan-color "Bandai WonderSwan-Color" -> both "Bandai WonderSwan Color" (one system with friendly ws and wsc)
+- platforms.pico: v2 had system "Sega Pico" and saves PicoDrive, Genesis Plus GX and Genesis Plus GX Wide, but its ROM folders pico8 and PICO-8 assign to PICO-8 upstream (core.json friendly). RomM's pico is PICO-8 (romm_platforms.toml [extra] pico-8 note). Upstream values written: system "PICO-8", saves ["pico8"] (script/device/bind.sh save/pico8). Upstream has a separate "Sega Pico" system (friendly segapico) with no RomM row here. An unassigned pico8 folder resolves upstream to the Pickles default core picante8 (core.json PICO-8 has no runtime field), so the Pickles folder ../pickles/sram/picante8/pico8 leads and the row's pico8 folder serves only the standalone emulator.
+- platforms.arcade: v2 had ROM folder "neogeo", which upstream assigns to SNK Neo Geo (core.json friendly). It was removed from arcade; neogeoaes and neogeomvs keep it.
+- platforms.atari-st, galaksija, pc-8800-series (was pc-8000): v2's first (download) folder "Atari ST-STE-TT-Falcon", "Galaksija Retro Computer" and "NEC PC-8000 - PC-8800 series" is not a friendly key, so muOS would not auto-assign it. Upstream keys "atarist", "galaksija" and "pc8000" were put first. v2's names are kept second.
+- platforms rom folders not auto-assigned upstream: 3do "The 3DO Company - 3DO", acpc "gx4000", famicom and nes "Nintendo NES-Famicom", fds "Nintendo FDS", g-and-w "Handheld Electronic - Game and Watch", genesis "Sega Mega Drive - Genesis", j2me "Java J2ME", odyssey-2 (was odyssey) "Magnavox Odyssey - VideoPac", segacd "Sega Mega CD - Sega CD", sfam and snes "Nintendo SNES - SFC", supergrafx "NEC PC Engine SuperGrafx", virtualboy "Nintendo Virtual Boy", zxs "Sinclair ZX Spectrum". None is a first entry. Kept from v2 because rows carry no src; they work only with a manual core assignment.
+- platforms saves, external emulators:
+  - openbor: v2 had four "file/OpenBOR<ver> (External)" folders; upstream binds file/OpenBOR-Ext (script/device/bind.sh). Written ["file/OpenBOR-Ext"].
+  - n64: v2's "file/Mupen64Plus (External - GLideN64)" and "(External - Rice)" were dropped; ext-mupen64plus uses file/Mupen64Plus (script/launch/ext-mupen64plus.sh, device/*/control/mupen64plus*-device.cfg), which the row already lists.
+  - saturn: v2's "file/YabaSanshiro (External - No BIOS)" was dropped; both YabaSanshiro variants use file/YabaSanshiro-Ext (script/launch/ext-yabasanshiro.sh).
+  - Proven and kept: file/PPSSPP-Ext and drastic-legacy/backup (bind.sh), nds drastic/backup (script/system/reset.sh creates save/drastic/backup), file/ScummVM-Ext (ext-scummvm.sh), pico8.
+  - No upstream source found, kept: dc and naomi "file/Flycast (External)" (ext-flycast.sh saves inside the emulator dir), amiga "file/Amiberry (External)", media-player FFPlay, MPV and Live TV, ports "file/External", onscripter.
+- platforms saves, RetroArch folder names that match no corename in share/emulator/retroarch/info/*.info for the system (RetroArch names folders after the core's library_name; .info corename is the closest upstream proxy, so these were kept for the owner to rule):
+  - acpc: CPC/GX4000 (Caprice), CPC (CrocoDS); upstream Caprice32, CrocoDS
+  - amiga: PUAE Xtreme
+  - arcade: FinalBurn Neo Amped, MAME 2000, MAME 2003, MAME 2003-Midway, MAME 2003-Xtreme, MAME 078 Plus, MAME 139, MAME 2010; upstream "FinalBurn Neo [AMPED]", "MAME 2000 (0.37b5)", "MAME 2003 (0.78)", "MAME 2003 Midway (0.78)", "MAME 2010 (0.139)"
+  - atari-st: HatariB; upstream hatariB
+  - atari5200: Atari 800; upstream Atari800
+  - c64: "VICE x64, fast" and "VICE x64sc, accurate"; upstream VICE x64 and VICE x64sc
+  - cbm-ii: VICE xcmb5x0; upstream VICE xcbm5x0
+  - dc and naomi: Flycast VL, Flycast Xtreme, Morpheuscast
+  - famicom and nes: bnes; upstream bnes/higan
+  - g-and-w: Handheld Electronic; upstream GW
+  - gba: mGBA Rumble
+  - gbc: FixGB; upstream fixGB
+  - lowres: Lowres NX; upstream lowresnx
+  - n64: ParaLLel N64; upstream ParaLLEl N64
+  - odyssey-2 (was odyssey): Odyssey2; upstream O2EM
+  - pc-8800-series (was pc-8000): QUASI8800; upstream QUASI88
+  - philips-cd-i: SAME_CDi; upstream "SAME CDi (Git)"
+  - sfam and snes: Supafaust, bsnes2014, bsnes-mercury, bSNES, Snes9x Next; upstream Beetle Supafaust, "bsnes 2014 Performance", "bsnes-mercury Performance"
+  - uzebox: Uzem; upstream uzem
+  - wonderswan and wonderswan-color: Beetle Cygne; upstream Beetle WonderSwan
+  - x1: X Millennium; upstream x1
+  - zx81: EightyOne; upstream 81
+- platforms not covered: upstream core.json has systems with no row here, among them Nintendo 3DS, Atari 800, Commodore Plus-4, Apple Macintosh, Sega Pico, SVI - ColecoVision - SG1000, Epoch Super Cassette Vision, Thomson MO-TO, Enterprise 128, Elektronika BK, Palm OS, Quake II, OpenLara, Pyxel, Game Music and Book Reader. None were added.
+- version: /opt/muos/config/system/version holds e.g. "2606.0_ANDROMEDA" (config/system/version). The card, bios, saves, catalogue and RetroArch paths are the same in 2508.4 (fd02589b) and 2601.2 (77dd7c27), so no fact carries since or until. main is already at 2612_SUPERNOVA (c29e6dc1), unreleased.
+- Slug fix: row `odyssey` renamed to `odyssey-2` (folder is Magnavox Odyssey - VideoPac with the o2em core; share/info/manifest/core.json; RomM aliases odyssey2 to odyssey-2). Row `pc-8000` renamed to `pc-8800-series` (NEC PC-8000 - PC-8800 Series, default quasi8800; share/info/manifest/core.json; RomM aliases pc88 to pc-8800-series). Before this, RomM games under those slugs fell back to a lowercase slug folder muOS never shows.

@@ -1,0 +1,141 @@
+id = "rocknix"
+name = "ROCKNIX"
+maintained = "upstream"
+upstream = { repo = "github.com/ROCKNIX/distribution", ref = "20261101" }
+
+[version]
+file = { value = "/etc/release", src = "scripts/image" }
+
+[paths]
+card = { value = "/storage", src = "projects/ROCKNIX/packages/ui/emulationstation/system.d/emustation.service" }
+roms = { value = "{card}/roms", src = "projects/ROCKNIX/packages/virtual/emulators/tmpfiles.d/rocknix-dirs.conf" }
+bios = { value = "{roms}/bios", src = "projects/ROCKNIX/packages/emulators/libretro/retroarch/sources/RK3566/retroarch.cfg" }
+saves = { value = "{roms}", src = "projects/ROCKNIX/packages/emulators/libretro/retroarch/sources/RK3566/retroarch.cfg" }
+
+[rom_folders]
+style = { value = "plain", src = "config/emulators/gba.conf" }
+
+[saves]
+layout = { value = "beside-roms", src = "projects/ROCKNIX/packages/emulators/libretro/retroarch/sources/RK3566/retroarch.cfg" }
+naming = { value = "retroarch", src = "projects/ROCKNIX/packages/emulators/libretro/retroarch/sources/RK3566/retroarch.cfg" }
+
+[bios]
+default = { value = ["{bios}/{rel}"], src = "projects/ROCKNIX/packages/emulators/libretro/retroarch/sources/RK3566/retroarch.cfg" }
+
+[art]
+naming = "es-suffix"
+cover = { value = "{rom_dir}/images", src = "projects/ROCKNIX/packages/misc/modules/sources/gamelist.xml" }
+
+[gamelist]
+format = "emulationstation"
+launcher_entry = { gamelist = "{roms}/ports/gamelist.xml", path = "./Grout.sh" }
+
+[retroarch]
+config = { value = "{card}/.config/retroarch/retroarch.cfg", src = "projects/ROCKNIX/packages/rocknix/sources/scripts/setsettings.sh" }
+overrides = { value = "{card}/.config/retroarch/config", src = "projects/ROCKNIX/packages/emulators/libretro/retroarch/sources/RK3566/retroarch.cfg" }
+
+[platform_sources]
+roms = "config/emulators"
+
+[platforms]
+"3do" = { roms = ["3do"] }
+"3ds" = { roms = ["3ds"] }
+acpc = { roms = ["amstradcpc"] }
+amiga = { roms = ["amiga"] }
+amiga-cd32 = { roms = ["amigacd32"] }
+arcade = { roms = ["arcade", "mame", "fbneo", "neogeo"] }
+arduboy = { roms = ["arduboy"] }
+atari-st = { roms = ["atarist"] }
+atari2600 = { roms = ["atari2600"] }
+atari5200 = { roms = ["atari5200"] }
+atari7800 = { roms = ["atari7800"] }
+atari800 = { roms = ["atari800"] }
+atari8bit = { roms = ["atari800"] }
+c128 = { roms = ["c128"] }
+c16 = { roms = ["c16"] }
+c64 = { roms = ["c64"] }
+cave-story = { roms = [] }
+colecovision = { roms = ["coleco"] }
+cpet = { roms = ["pet"] }
+dc = { roms = ["dreamcast"] }
+dos = { roms = ["pc"] }
+fairchild-channel-f = { roms = ["channelf"] }
+famicom = { roms = ["famicom"] }
+fds = { roms = ["fds"] }
+g-and-w = { roms = ["gameandwatch"] }
+galaksija = { roms = [] }
+gamegear = { roms = ["gamegear"] }
+gb = { roms = ["gb"] }
+gba = { roms = ["gba"] }
+gbc = { roms = ["gbc"] }
+genesis = { roms = ["megadrive"] }
+intellivision = { roms = ["intellivision"] }
+j2me = { roms = ["j2me"] }
+jaguar = { roms = ["atarijaguar"] }
+lynx = { roms = ["atarilynx"] }
+mega-duck-slash-cougar-boy = { roms = ["megaduck"] }
+msx = { roms = ["msx", "msx2"] }
+n64 = { roms = ["n64"] }
+nds = { roms = ["nds", "ndsiware"] }
+neo-geo-cd = { roms = ["neocd"] }
+neo-geo-pocket = { roms = ["ngp"] }
+neo-geo-pocket-color = { roms = ["ngpc"] }
+neogeoaes = { roms = ["neogeo"] }
+neogeomvs = { roms = ["neogeo"] }
+nes = { roms = ["nes"] }
+ngc = { roms = ["gamecube"] }
+odyssey-2 = { roms = ["odyssey"] }
+openbor = { roms = ["openbor"] }
+pc-8800-series = { roms = ["pc88"] }
+pc-9800-series = { roms = ["pc98"] }
+pc-fx = { roms = ["pcfx"] }
+philips-cd-i = { roms = ["cdi"] }
+pico = { roms = ["pico-8"] }
+pico-8 = { roms = ["pico-8"] }
+pokemon-mini = { roms = ["pokemini"] }
+ps2 = { roms = ["ps2"] }
+ps3 = { roms = ["ps3"] }
+psp = { roms = ["psp"] }
+psx = { roms = ["psx"] }
+saturn = { roms = ["saturn"] }
+sega32 = { roms = ["sega32x"] }
+segacd = { roms = ["segacd"] }
+sfam = { roms = ["snes"] }
+sg1000 = { roms = ["sg-1000"] }
+sharp-x68000 = { roms = ["x68000"] }
+sms = { roms = ["mastersystem"] }
+snes = { roms = ["snes"] }
+supergrafx = { roms = ["sgfx"] }
+supervision = { roms = ["supervision"] }
+tg16 = { roms = ["pcengine", "tg16"] }
+tic-80 = { roms = ["tic-80"] }
+turbografx-cd = { roms = ["pcenginecd", "tg16cd"] }
+vectrex = { roms = ["vectrex"] }
+vic-20 = { roms = ["vic20"] }
+vic20 = { roms = ["vic20"] }
+videopac = { roms = ["videopac"] }
+virtualboy = { roms = ["virtualboy"] }
+wii = { roms = ["wii", "wiiware"] }
+wiiu = { roms = ["wiiu"] }
+win = { roms = ["windows"] }
+windows = { roms = ["windows"] }
+wonderswan = { roms = ["wonderswan"] }
+wonderswan-color = { roms = ["wonderswancolor"] }
+x1 = { roms = ["x1"] }
+zx81 = { roms = ["zx81"] }
+zxs = { roms = ["zxspectrum"] }
+
+[devices]
+default = "generic"
+rules = [
+  { device = "rgds", file = "/sys/firmware/devicetree/base/compatible", contains = "anbernic,rg-ds" },
+]
+
+[devices.inputs]
+rgds = "rgds.json"
+
+[packaging]
+asset = "Grout-ROCKNIX.zip"
+launch_script = "Grout.sh"
+install_depth = 2
+files = ["Grout.sh", "logo.png"]

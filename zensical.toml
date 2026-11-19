@@ -35,6 +35,7 @@ nav = [
     { "Settings Reference" = "usage/settings.md" },
     { "Save Sync" = "usage/save-sync.md" },
     { "CFW Specific Info" = [
+      { "Firmware Matrix" = "firmware-matrix.md" },
       { "Allium" = "platforms/allium.md" },
       { "Anbernic Stock OS" = "platforms/anbernic.md" },
       { "ArkOS / dArkOS" = "platforms/arkos.md" },

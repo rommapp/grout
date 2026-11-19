@@ -22,6 +22,24 @@ tasks:
       - go run ./tools/archcheck -update
     silent: true
 
+  firmware-matrix:
+    desc: Regenerate docs/firmware-matrix.md from the firmware definitions
+    cmds:
+      - go run ./tools/gen-firmware-matrix
+    silent: true
+
+  check-firmware-matrix:
+    desc: Fail when docs/firmware-matrix.md is stale
+    cmds:
+      - go run ./tools/gen-firmware-matrix -check
+    silent: true
+
+  mkroot:
+    desc: Build a mock root for a firmware (pass --firmware <id> <dir>)
+    cmds:
+      - go run ./tools/mkroot {{.CLI_ARGS}}
+    silent: true
+
   hooks-setup:
     desc: Install git hooks for development
     cmds:

@@ -58,7 +58,7 @@ jobs:
           # Update the Leaf pak manifest, which ships as-is in Grout.pak
           jq --arg version "${{ steps.version.outputs.value }}" \
              '.version = $version' \
-             scripts/Leaf/pak.json > scripts/Leaf/pak.json.tmp && mv scripts/Leaf/pak.json.tmp scripts/Leaf/pak.json
+             core/firmware/leaf/scripts/pak.json > core/firmware/leaf/scripts/pak.json.tmp && mv core/firmware/leaf/scripts/pak.json.tmp core/firmware/leaf/scripts/pak.json
 
       - name: Commit pak.json changes
         if: ${{ inputs.beta == false }}
@@ -66,10 +66,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          if git diff --quiet pak.json scripts/Leaf/pak.json; then
+          if git diff --quiet pak.json core/firmware/leaf/scripts/pak.json; then
             echo "No changes to commit"
           else
-            git add pak.json scripts/Leaf/pak.json
+            git add pak.json core/firmware/leaf/scripts/pak.json
             git commit -m "Update pak.json to ${{ steps.version.outputs.value }}"
             git push
           fi

@@ -1,0 +1,30 @@
+id = "testfw"
+name = "Test firmware"
+maintained = "community"
+
+[paths]
+card = { value = "/mnt/SDCARD" }
+roms = { value = "{card}/Roms" }
+bios = { value = "{card}/Bios" }
+saves = { value = "{card}/Saves" }
+
+[packaging]
+asset = "testfw.zip"
+launch_script = "launch.sh"
+install_depth = 1
+
+[platforms]
+gba = { roms = ["GBA", "GBA Alt"], saves = ["GBA", "GBA2"] }
+psx = { roms = ["PSX"], saves = ["PSX"] }
+
+[devices]
+default = "generic"
+rules = [
+  { device = "envdev", env = "TESTFW_DEVICE", equals = "envdev" },
+  { device = "filedev", file = "/etc/testfw-device", contains = "filedev" },
+]
+
+[devices.inputs]
+generic = "test.json"
+envdev = "test.json"
+filedev = "test.json"

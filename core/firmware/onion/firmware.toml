@@ -1,0 +1,134 @@
+id = "onion"
+name = "Onion"
+maintained = "upstream"
+upstream = { repo = "github.com/OnionUI/Onion", ref = "v4.3.1-1" }
+
+[version]
+file = { value = "{card}/.tmp_update/onionVersion/version.txt", src = "Makefile" }
+
+[paths]
+card = { value = "/mnt/SDCARD", src = "src/common/system/settings.h" }
+roms = { value = "{card}/Roms", src = "src/playActivity/playActivityDB.h" }
+bios = { value = "{card}/BIOS", src = "static/configs/RetroArch/.retroarch/retroarch.cfg" }
+saves = { value = "{card}/Saves/CurrentProfile/saves", src = "static/configs/RetroArch/.retroarch/retroarch.cfg" }
+
+[rom_folders]
+style = { value = "plain", src = "static/packages/Emu/Nintendo - GBA (mGBA)/Emu/GBA/config.json" }
+
+[saves]
+layout = { value = "per-emulator", src = "static/configs/RetroArch/.retroarch/retroarch.cfg" }
+naming = { value = "retroarch", src = "static/configs/RetroArch/.retroarch/retroarch.cfg" }
+
+[bios]
+default = { value = ["{bios}/{rel}"], src = "static/configs/RetroArch/.retroarch/retroarch.cfg" }
+
+[art]
+naming = "plain"
+cover = { value = "{rom_dir}/Imgs", src = "static/packages/Emu/Nintendo - GBA (mGBA)/Emu/GBA/config.json" }
+
+[gamelist]
+format = "miyoo"
+
+[retroarch]
+config = { value = "{card}/RetroArch/.retroarch/retroarch.cfg", src = "src/common/system/settings.h" }
+overrides = { value = "{card}/Saves/CurrentProfile/config", src = "static/configs/RetroArch/.retroarch/retroarch.cfg" }
+
+[platform_sources]
+roms = "static/packages"
+saves = "static/configs/Saves/CurrentProfile/config"
+
+[platforms]
+"3do" = { roms = ["PANASONIC"], saves = ["Opera"] }
+"3ds" = { roms = [], saves = [] }
+acpc = { roms = ["CPC"], saves = ["crocods", "cap32"] }
+amiga = { roms = ["AMIGA"], saves = ["PUAE 2021", "PUAE", "P-UAE Xtreme Amped"] }
+arcade = { roms = ["ARCADE", "CPS1", "CPS2", "CPS3", "FBNEO"], saves = ["MAME 2003-Plus", "MAME 2003-Xtreme", "FB Alpha 2012 CPS-1", "FB Alpha 2012 CPS-2", "FB Alpha 2012 CPS-3", "FinalBurn Neo"] }
+arduboy = { roms = ["ARDUBOY"], saves = ["Arduous"] }
+atari-st = { roms = ["ATARIST"], saves = ["Hatari"] }
+atari2600 = { roms = ["ATARI"], saves = ["Stella 2014"] }
+atari5200 = { roms = ["FIFTYTWOHUNDRED"], saves = ["a5200", "Atari800"] }
+atari7800 = { roms = ["SEVENTYEIGHTHUNDRED"], saves = ["ProSystem"] }
+atari800 = { roms = ["EIGHTHUNDRED"], saves = ["Atari800"] }
+atari8bit = { roms = ["EIGHTHUNDRED"], saves = ["Atari800"] }
+c128 = { roms = [], saves = [] }
+c64 = { roms = ["COMMODORE"], saves = ["VICE x64"] }
+cave-story = { roms = [], saves = [] }
+colecovision = { roms = ["COLECO"], saves = ["blueMSX"] }
+cpet = { roms = [], saves = [] }
+dc = { roms = [], saves = [] }
+dos = { roms = ["DOS"], saves = ["DOSBox-pure"] }
+fairchild-channel-f = { roms = ["FAIRCHILD"], saves = ["FreeChaF"] }
+famicom = { roms = ["FC"], saves = ["FCEUmm", "Nestopia"] }
+fds = { roms = ["FDS"], saves = ["FCEUmm"] }
+g-and-w = { roms = ["GW"], saves = ["GW"] }
+galaksija = { roms = [], saves = [] }
+gamegear = { roms = ["GG"], saves = ["PicoDrive", "Gearsystem", "Genesis Plus GX"] }
+gb = { roms = ["GB"], saves = ["Gambatte", "TGB Dual"] }
+gba = { roms = ["GBA"], saves = ["mGBA", "gpSP", "Beetle GBA", "VBA-M"] }
+gbc = { roms = ["GBC"], saves = ["Gambatte", "TGB Dual"] }
+genesis = { roms = ["MD"], saves = ["PicoDrive", "Genesis Plus GX"] }
+intellivision = { roms = ["INTELLIVISION"], saves = ["FreeIntv"] }
+j2me = { roms = [], saves = [] }
+jaguar = { roms = ["JAGUAR"], saves = ["Virtual Jaguar"] }
+lynx = { roms = ["LYNX"], saves = ["Handy"] }
+mega-duck-slash-cougar-boy = { roms = ["MEGADUCK"], saves = ["SameDuck"] }
+msx = { roms = ["MSX"], saves = ["blueMSX"] }
+n64 = { roms = [], saves = [] }
+nds = { roms = ["NDS"], saves = [] }
+neo-geo-cd = { roms = ["NEOCD"], saves = ["NeoCD"] }
+neo-geo-pocket = { roms = ["NGP"], saves = ["Beetle NeoPop"] }
+neo-geo-pocket-color = { roms = ["NGP"], saves = ["Beetle NeoPop"] }
+neogeoaes = { roms = ["NEOGEO"], saves = ["FB Alpha 2012 Neo Geo"] }
+neogeomvs = { roms = ["NEOGEO"], saves = ["FB Alpha 2012 Neo Geo"] }
+nes = { roms = ["FC"], saves = ["FCEUmm", "Nestopia"] }
+odyssey-2 = { roms = ["ODYSSEY"], saves = ["O2EM"] }
+openbor = { roms = ["OPENBOR"], saves = [] }
+pc-8800-series = { roms = ["PCEIGHTYEIGHT"], saves = ["QUASI88"] }
+pc-9800-series = { roms = ["PCNINETYEIGHT"], saves = ["Neko Project II Kai", "Neko Project II"] }
+pc-fx = { roms = ["PCFX"], saves = ["Beetle PC-FX"] }
+philips-cd-i = { roms = [], saves = [] }
+pico = { roms = ["PICO"], saves = ["fake-08"] }
+pico-8 = { roms = ["PICO"], saves = ["fake-08"] }
+pokemon-mini = { roms = ["POKE"], saves = ["PokeMini"] }
+ports = { roms = ["PORTS"], saves = [] }
+ps2 = { roms = [], saves = [] }
+psp = { roms = [], saves = [] }
+psx = { roms = ["PS"], saves = ["PCSX-ReARMed"] }
+satellaview = { roms = ["SATELLAVIEW"], saves = ["Snes9x"] }
+saturn = { roms = [], saves = [] }
+scummvm = { roms = ["SCUMMVM"], saves = [] }
+sega32 = { roms = ["THIRTYTWOX"], saves = ["PicoDrive"] }
+segacd = { roms = ["SEGACD"], saves = ["PicoDrive", "Genesis Plus GX"] }
+sfam = { roms = ["SFC"], saves = ["Supafaust", "Snes9x", "Snes9x 2010", "Snes9x 2005", "Snes9x 2005 Plus", "ChimeraSNES"] }
+sg1000 = { roms = ["SEGASGONE"], saves = ["Gearsystem"] }
+sgb = { roms = ["SGB"], saves = ["mGBA"] }
+sharp-x68000 = { roms = ["X68000"], saves = ["PX68k"] }
+sms = { roms = ["MS"], saves = ["PicoDrive", "Gearsystem", "Genesis Plus GX"] }
+snes = { roms = ["SFC"], saves = ["Supafaust", "Snes9x", "Snes9x 2010", "Snes9x 2005", "Snes9x 2005 Plus", "ChimeraSNES"] }
+sufami-turbo = { roms = ["SUFAMI"], saves = ["Snes9x"] }
+supergrafx = { roms = ["SGFX"], saves = ["Beetle SuperGrafx"] }
+supervision = { roms = ["SUPERVISION"], saves = ["Potator"] }
+tg16 = { roms = ["PCE"], saves = ["Beetle PCE Fast", "Beetle PCE"] }
+tic-80 = { roms = ["TIC"], saves = ["TIC-80"] }
+turbografx-cd = { roms = ["PCECD"], saves = ["Beetle PCE Fast"] }
+vectrex = { roms = ["VECTREX"], saves = ["VecX"] }
+vic-20 = { roms = ["VIC20"], saves = ["VICE xvic"] }
+videopac-g7400 = { roms = ["VIDEOPAC"], saves = ["O2EM"] }
+virtualboy = { roms = ["VB"], saves = ["Beetle VB"] }
+wonderswan = { roms = ["WS"], saves = ["Beetle WonderSwan"] }
+wonderswan-color = { roms = ["WS"], saves = ["Beetle WonderSwan"] }
+x1 = { roms = ["XONE"], saves = ["x1"] }
+zx81 = { roms = ["ZXEIGHTYONE"], saves = ["EightyOne"] }
+zxs = { roms = ["ZXS"], saves = ["fuse"] }
+
+[devices]
+default = "miyoo"
+
+[devices.inputs]
+miyoo = "miyoo.json"
+
+[packaging]
+asset = "Grout-Onion.zip"
+launch_script = "Grout/launch.sh"
+install_depth = 3
+files = ["launch.sh", "config.json", "grout.png"]
