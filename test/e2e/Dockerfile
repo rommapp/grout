@@ -15,7 +15,7 @@ COPY . .
 
 # The workspace points at a sibling gabagool checkout that is not in the build
 # context, so build against the published module.
-RUN rm -f go.work go.work.sum && GOWORK=off go build -o /grout ./app
+RUN rm -f go.work go.work.sum && GOWORK=off go build -o /grout ./cmd/grout
 
 ENV GROUT_BINARY=/grout
 

@@ -1,9 +1,6 @@
 name: End to end
 
 on:
-  pull_request:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 jobs:

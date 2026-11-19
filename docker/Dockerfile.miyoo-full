@@ -186,9 +186,9 @@ RUN BUILD_TYPE="Dev"; \
     export CGO_LDFLAGS="-L/output/lib -L${SYSROOT}/usr/lib -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_gfx"; \
     export PKG_CONFIG_PATH="/output/lib/pkgconfig"; \
     if [ "$USE_LOCAL_GABAGOOL" = "true" ]; then \
-        go build -gcflags="all=-N -l" -ldflags "$LDFLAGS" -v -o grout ./app; \
+        go build -gcflags="all=-N -l" -ldflags "$LDFLAGS" -v -o grout ./cmd/grout; \
     else \
-        GOWORK=off go build -gcflags="all=-N -l" -ldflags "$LDFLAGS" -v -o grout ./app; \
+        GOWORK=off go build -gcflags="all=-N -l" -ldflags "$LDFLAGS" -v -o grout ./cmd/grout; \
     fi
 
 # Copy final binary to output

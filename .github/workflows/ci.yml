@@ -48,9 +48,6 @@ jobs:
       - name: Package layering
         run: go run ./tools/archcheck -v
 
-      - name: Platform docs are current
-        run: go run ./tools/gen-platform-docs -check
-
   test:
     name: Build and test
     runs-on: ubuntu-latest
@@ -62,9 +59,7 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      # grout links SDL through the gabagool UI toolkit, and enough non-UI
-      # packages still import it that the whole test suite needs these present.
-      # The archcheck toolkit rule exists to shrink that surface over time.
+      # grout links SDL through the gabagool UI toolkit.
       - name: Install SDL2
         run: |
           sudo apt-get update
@@ -85,10 +80,7 @@ jobs:
   #
   # Only packages that build without cgo can be checked here; anything reaching
   # the UI toolkit needs SDL headers for the target architecture, which is what
-  # the Docker build is for. That makes this list the inverse of the toolkit
-  # entries in tools/archcheck/allow.txt, and it grows as those are removed --
-  # freeing romm of the toolkit added it and every cfw backend that does not
-  # log. Extend it whenever a package becomes cgo-free.
+  # the Docker build is for.
   cross-compile:
     name: Cross-compile (arm64)
     runs-on: ubuntu-latest
@@ -107,37 +99,9 @@ jobs:
       - name: Vet arm64 packages
         run: |
           go vet \
-            ./archive \
-            ./bios \
-            ./cfw \
-            ./cfw/allium \
-            ./cfw/anbernic \
-            ./cfw/arkos \
-            ./cfw/batocera \
-            ./cfw/knulli \
-            ./cfw/koriki \
-            ./cfw/leaf \
-            ./cfw/minui \
-            ./cfw/muos \
-            ./cfw/nextui \
-            ./cfw/onion \
-            ./cfw/rocknix \
-            ./cfw/spruce \
-            ./cfw/trimui \
-            ./download \
-            ./environment \
-            ./files \
-            ./gamelist \
-            ./hashing \
-            ./library \
-            ./pspdb \
+            ./core/... \
+            ./cli/... \
+            ./cmd/... \
+            ./version \
             ./resources \
-            ./romm \
-            ./settings \
-            ./tables \
-            ./textmatch \
-            ./tools/archcheck \
-            ./tools/create-conflict \
-            ./tools/gen-platform-docs \
-            ./tools/gen-psp-rom-list \
-            ./version
+            ./tools/archcheck

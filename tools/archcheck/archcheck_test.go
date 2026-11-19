@@ -12,103 +12,58 @@ import (
 )
 
 func TestLayerOf(t *testing.T) {
-	tests := []struct {
-		path string
-		want Layer
-		ok   bool
-	}{
-		{"grout/library", Domain, true},
-		{"grout/cfw", Platform, true},
-		{"grout/cfw/muos", Platform, true},
-		{"grout/romm", Infra, true},
-		{"grout/cache", Infra, true},
-		{"grout/saves", Service, true},
-		{"grout/ui", UI, true},
-		{"grout/app", Cmd, true},
-
-		// The longest matching prefix wins, so a subpackage may differ from
-		// its parent. internal is the settings god-object heading for the
-		// domain; its leaf utilities are already pkg material.
-		{"grout/settings", Domain, true},
-		{"grout/files", Pkg, true},
-		{"grout/textmatch", Pkg, true},
-		{"grout/gamelist", Platform, true},
-
-		// A prefix must not match a longer package name by accident.
-		{"grout/uixyz", "", false},
-		{"grout/savesthing", "", false},
-
-		{"net/http", "", false},
-		{"github.com/beevik/etree", "", false},
+	cases := map[string]Layer{
+		"grout/core/config":        Core,
+		"grout/core/firmware/muos": Core,
+		"grout/ui":                 UI,
+		"grout/cli":                CLI,
+		"grout/cmd/grout":          Cmd,
+		"grout/version":            Pkg,
+		"grout/resources":          UI,
 	}
-
-	for _, tt := range tests {
-		got, ok := layerOf(tt.path)
-		if ok != tt.ok {
-			t.Errorf("layerOf(%q) ok = %v, want %v", tt.path, ok, tt.ok)
-			continue
-		}
-		if ok && got != tt.want {
-			t.Errorf("layerOf(%q) = %q, want %q", tt.path, got, tt.want)
+	for path, want := range cases {
+		got, ok := layerOf(path)
+		if !ok || got != want {
+			t.Errorf("layerOf(%q) = %q, %v; want %q", path, got, ok, want)
 		}
 	}
 }
 
-// The matrix must be a staircase: each layer may import everything below it,
-// which keeps the direction unambiguous. UI is the deliberate exception.
-func TestAllowedImports_IsAStaircase(t *testing.T) {
-	order := []Layer{Pkg, Domain, Platform, Infra, Service}
-
-	for i, from := range order {
-		for j, to := range order {
-			allowed := allowedImports[from][to]
-			want := j <= i
-			if allowed != want {
-				t.Errorf("%s importing %s = %v, want %v", from, to, allowed, want)
-			}
-		}
-	}
-
-	// UI reaches services and the domain but never infrastructure or the
-	// device, so a screen cannot open a database or build a firmware path.
-	for _, forbidden := range []Layer{Platform, Infra} {
-		if allowedImports[UI][forbidden] {
-			t.Errorf("ui must not be allowed to import %s", forbidden)
-		}
-	}
-	for _, permitted := range []Layer{Pkg, Domain, Service, UI} {
-		if !allowedImports[UI][permitted] {
-			t.Errorf("ui should be allowed to import %s", permitted)
-		}
-	}
-
-	// Nothing may import cmd, and cmd may import anything.
-	for from := range allowedImports {
-		if from != Cmd && allowedImports[from][Cmd] {
-			t.Errorf("%s must not be allowed to import cmd", from)
-		}
-	}
-	for _, to := range []Layer{Pkg, Domain, Platform, Infra, Service, UI, Cmd} {
-		if !allowedImports[Cmd][to] {
-			t.Errorf("cmd should be allowed to import %s", to)
+func TestLayerOfRejectsNonGroutAndNearMisses(t *testing.T) {
+	for _, path := range []string{"grout/uixyz", "grout/clix", "grout/coreutil", "net/http", "github.com/beevik/etree"} {
+		if l, ok := layerOf(path); ok {
+			t.Errorf("layerOf(%q) = %q, want no layer", path, l)
 		}
 	}
 }
 
-func TestMayUseToolkitAndHoldState(t *testing.T) {
-	for _, l := range []Layer{Pkg, Domain, Platform, Infra, Service} {
+func TestCoreMayNotImportFrontEnds(t *testing.T) {
+	for _, target := range []Layer{UI, CLI, Cmd} {
+		if allowedImports[Core][target] {
+			t.Errorf("core may import %s", target)
+		}
+	}
+}
+
+func TestFrontEndsMayNotImportEachOther(t *testing.T) {
+	if allowedImports[UI][CLI] || allowedImports[CLI][UI] {
+		t.Error("ui and cli may import each other")
+	}
+}
+
+func TestOnlyUIAndCmdUseToolkit(t *testing.T) {
+	for _, l := range []Layer{Pkg, Core, CLI} {
 		if mayUseToolkit(l) {
-			t.Errorf("%s must not be allowed the UI toolkit", l)
+			t.Errorf("%s may use toolkit", l)
 		}
+	}
+}
+
+func TestOnlyCmdHoldsGlobalState(t *testing.T) {
+	for _, l := range []Layer{Pkg, Core, UI, CLI} {
 		if mayHoldGlobalState(l) {
-			t.Errorf("%s must not be allowed package-level state", l)
+			t.Errorf("%s may hold package-level state", l)
 		}
-	}
-	if !mayUseToolkit(UI) || !mayUseToolkit(Cmd) {
-		t.Error("ui and cmd may use the toolkit")
-	}
-	if mayHoldGlobalState(UI) {
-		t.Error("only cmd may hold package-level state")
 	}
 	if !mayHoldGlobalState(Cmd) {
 		t.Error("cmd may hold package-level state")
@@ -280,11 +235,10 @@ func TestRootIdent(t *testing.T) {
 }
 
 // A package can break more than one rule at once. Reporting the toolkit import
-// must not stop the layer scan, or every gabagool-importing package (most of
-// the repo) goes unchecked.
+// must not stop the layer scan.
 func TestCheckImports_ReportsToolkitAndLayerTogether(t *testing.T) {
 	p := pkg{
-		ImportPath: "grout/cache",
+		ImportPath: "grout/core/store",
 		Imports: []string{
 			toolkitPrefix + "/pkg/gabagool", // sorts before grout/... as go list emits it
 			"grout/ui",
@@ -292,7 +246,7 @@ func TestCheckImports_ReportsToolkitAndLayerTogether(t *testing.T) {
 	}
 
 	var rules []string
-	for _, v := range checkImports(p, Infra) {
+	for _, v := range checkImports(p, Core) {
 		rules = append(rules, v.Rule)
 	}
 	slices.Sort(rules)
@@ -304,11 +258,11 @@ func TestCheckImports_ReportsToolkitAndLayerTogether(t *testing.T) {
 
 func TestCheckImports_AllowsPermittedEdges(t *testing.T) {
 	p := pkg{
-		ImportPath: "grout/saves",
-		Imports:    []string{"grout/cache", "grout/library", "grout/cfw", "net/http"},
+		ImportPath: "grout/cli",
+		Imports:    []string{"grout/core/config", "grout/core/romm", "grout/version", "net/http"},
 	}
-	if got := checkImports(p, Service); len(got) != 0 {
-		t.Errorf("expected no violations for a service importing infra, got %v", got)
+	if got := checkImports(p, CLI); len(got) != 0 {
+		t.Errorf("expected no violations for cli importing core, got %v", got)
 	}
 }
 

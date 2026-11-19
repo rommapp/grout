@@ -13,8 +13,7 @@ buildx86/
 dist/
 *.log
 build-miyoo/
-grout
-app/app
+/grout
 es_restart_request
 /save-sync-preview
 /gen-platform-docs

@@ -59,9 +59,9 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
              -X 'grout/version.BuildType=$BUILD_TYPE'"; \
     echo "=== Building grout for Miyoo Mini Plus (ARM32) ==="; \
     if [ "$USE_LOCAL_GABAGOOL" = "true" ]; then \
-        go build -ldflags "$LDFLAGS" -v -o grout ./app; \
+        go build -ldflags "$LDFLAGS" -v -o grout ./cmd/grout; \
     else \
-        GOWORK=off go build -ldflags "$LDFLAGS" -v -o grout ./app; \
+        GOWORK=off go build -ldflags "$LDFLAGS" -v -o grout ./cmd/grout; \
     fi
 
 CMD ["/bin/bash"]
