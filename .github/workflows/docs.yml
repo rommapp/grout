@@ -7,8 +7,7 @@ on:
       - main
     paths:
       - docs/**
-      - mkdocs.yml
-      - overrides/**
+      - zensical.toml
       - pyproject.toml
       - uv.lock
 
@@ -36,7 +35,7 @@ jobs:
       - uses: astral-sh/setup-uv@v4
 
       - name: Build docs
-        run: uv run mkdocs build
+        run: uv run zensical build --clean
 
       - uses: actions/upload-pages-artifact@v3
         with:

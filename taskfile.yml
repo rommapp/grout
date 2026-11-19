@@ -32,6 +32,11 @@ tasks:
       - docker image prune --filter "label={{.LABEL}}" -f >/dev/null 2>&1 || true
     silent: true
 
+  docs:
+    desc: Serve the docs locally with live reload
+    cmds:
+      - uv run zensical serve
+
   all:
     desc: Build and package for all platforms
     vars:

@@ -41,7 +41,7 @@ translations_todo/
 __pycache__/
 .venv
 
-# MkDocs build output
+# Docs build output
 site/
 
 /save_slots.json

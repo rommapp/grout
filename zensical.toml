@@ -1,0 +1,141 @@
+[project]
+site_name = "Grout"
+docs_dir = "docs"
+site_url = "https://grout.romm.app/"
+site_author = "RomM Team"
+site_description = "A RomM client for your retro doo-dad."
+repo_url = "https://github.com/rommapp/grout"
+repo_name = "rommapp/grout"
+edit_uri = "edit/main/docs/"
+copyright = "&copy; 2025 RomM Team"
+extra_css = ["resources/css/theme.css"]
+
+nav = [
+  { "Home" = "index.md" },
+  { "Quick Start" = [
+    "getting-started/index.md",
+    { "Allium" = "getting-started/install-allium.md" },
+    { "Anbernic Stock OS" = "getting-started/install-anbernic.md" },
+    { "ArkOS / dArkOS" = "getting-started/install-arkos.md" },
+    { "Batocera" = "getting-started/install-batocera.md" },
+    { "Knulli" = "getting-started/install-knulli.md" },
+    { "Leaf" = "getting-started/install-leaf.md" },
+    { "MinUI" = "getting-started/install-minui.md" },
+    { "muOS" = "getting-started/install-muos.md" },
+    { "NextUI" = "getting-started/install-nextui.md" },
+    { "Koriki" = "getting-started/install-koriki.md" },
+    { "Onion" = "getting-started/install-onion.md" },
+    { "ROCKNIX" = "getting-started/install-rocknix.md" },
+    { "spruce" = "getting-started/install-spruce.md" },
+    { "TrimUI" = "getting-started/install-trimui.md" },
+  ] },
+  { "Usage" = [
+    { "User Guide" = "usage/guide.md" },
+    { "Reference" = "usage/reference.md" },
+    { "Settings Reference" = "usage/settings.md" },
+    { "Save Sync" = "usage/save-sync.md" },
+    { "CFW Specific Info" = [
+      { "Allium" = "platforms/allium.md" },
+      { "Anbernic Stock OS" = "platforms/anbernic.md" },
+      { "ArkOS / dArkOS" = "platforms/arkos.md" },
+      { "Batocera" = "platforms/batocera.md" },
+      { "Knulli" = "platforms/knulli.md" },
+      { "Koriki" = "platforms/koriki.md" },
+      { "Leaf" = "platforms/leaf.md" },
+      { "MinUI" = "platforms/minui.md" },
+      { "muOS" = "platforms/muos.md" },
+      { "NextUI" = "platforms/nextui.md" },
+      { "Onion" = "platforms/onion.md" },
+      { "ROCKNIX" = "platforms/rocknix.md" },
+      { "spruce" = "platforms/spruce.md" },
+      { "TrimUI" = "platforms/trimui.md" },
+    ] },
+  ] },
+  { "Contributing" = [
+    "contributing/index.md",
+    { "Development Guide" = "contributing/development.md" },
+    { "Unverified Platform Mappings" = "platforms/unverified.md" },
+    { "State Machine Reference" = "contributing/state-machine.md" },
+    { "Kudos" = "contributing/kudos.md" },
+  ] },
+  { "FAQ" = "usage/faq.md" },
+]
+
+[project.theme]
+variant = "classic"
+language = "en"
+logo = "resources/img/isotipo.png"
+favicon = "resources/img/isotipo.png"
+custom_dir = "docs/.overrides"
+features = [
+  "content.code.annotation",
+  "content.code.copy",
+  "content.tabs.link",
+  "navigation.footer",
+  "navigation.indexes",
+  "navigation.instant",
+  "navigation.integrate",
+  "navigation.sections",
+  "navigation.tabs",
+  "navigation.tabs.sticky",
+  "navigation.top",
+  "navigation.tracking",
+  "search.highlight",
+  "search.suggest",
+  "toc.follow",
+  "toc.integrate",
+]
+
+[project.theme.palette]
+scheme = "slate"
+primary = "custom"
+accent = "custom"
+
+[project.plugins.glightbox]
+skip_classes = ["skip-lightbox"]
+
+[project.markdown_extensions.pymdownx.highlight]
+anchor_linenums = true
+
+[project.markdown_extensions.pymdownx.inlinehilite]
+
+[project.markdown_extensions.pymdownx.snippets]
+
+[project.markdown_extensions.admonition]
+
+[project.markdown_extensions.pymdownx.details]
+
+[project.markdown_extensions.pymdownx.superfences]
+custom_fences = [
+  { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" },
+]
+
+[project.markdown_extensions.pymdownx.quotes]
+callouts = true
+
+[project.markdown_extensions.pymdownx.mark]
+
+[project.markdown_extensions.pymdownx.tilde]
+
+[project.markdown_extensions.md_in_html]
+
+[project.markdown_extensions.attr_list]
+
+[project.markdown_extensions.tables]
+
+[project.markdown_extensions.pymdownx.emoji]
+emoji_index = "zensical.extensions.emoji.twemoji"
+emoji_generator = "zensical.extensions.emoji.to_svg"
+
+[project.extra]
+generator = false
+
+[[project.extra.social]]
+icon = "fontawesome/brands/github"
+link = "https://github.com/rommapp/grout"
+name = "rommapp/grout"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/discord"
+link = "https://discord.gg/P5HtHnhUDH"
+name = "RomM Discord"
