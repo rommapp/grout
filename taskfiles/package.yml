@@ -4,9 +4,9 @@ tasks:
 
   all:
     desc: Package for all platforms
-    deps: [ next, muos, knulli, spruce, rocknix, arkos, trimui, allium, onion, koriki, minui, batocera, batocera-x86, batocera-amd64, anbernic, leaf ]
+    deps: [ next, muos, knulli, spruce, rocknix, allium, onion, leaf ]
     cmds:
-      - echo "Packaging complete (17 platforms)"
+      - echo "Packaging complete (8 platforms)"
     silent: true
 
   next:
@@ -73,29 +73,6 @@ tasks:
       - cp -R vendored/miyoo/* dist/Onion/Grout/grout/lib/
     silent: true
 
-  koriki:
-    cmds:
-      - rm -rf dist/Koriki
-      - mkdir -p dist/Koriki/App/Grout/grout/lib
-      - mkdir -p dist/Koriki/.simplemenu/apps/Imgs
-      - cp scripts/Koriki/launch.sh README.md LICENSE dist/Koriki/App/Grout
-      - cp build32/grout dist/Koriki/App/Grout/grout/
-      - cp -R vendored/miyoo/* dist/Koriki/App/Grout/grout/lib/
-      - cp scripts/Koriki/Grout.sh dist/Koriki/.simplemenu/apps/Grout.sh
-      - cp scripts/Koriki/grout.png dist/Koriki/.simplemenu/apps/Imgs/Grout.png
-      - chmod a+x dist/Koriki/App/Grout/launch.sh dist/Koriki/.simplemenu/apps/Grout.sh
-    silent: true
-
-  arkos:
-    cmds:
-      - rm -rf dist/ArkOS
-      - mkdir -p dist/ArkOS/Grout/lib
-      - cp scripts/ArkOS/Grout.sh dist/ArkOS/
-      - cp build64/grout scripts/ROCKNIX/logo.png README.md LICENSE dist/ArkOS/Grout/
-      - cp -R build64/lib/* dist/ArkOS/Grout/lib/
-      - chmod a+x dist/ArkOS/Grout/grout dist/ArkOS/Grout.sh
-    silent: true
-
   rocknix:
     cmds:
       - rm -rf dist/ROCKNIX
@@ -104,71 +81,6 @@ tasks:
       - cp build64/grout scripts/ROCKNIX/logo.png README.md LICENSE dist/ROCKNIX/Grout/
       - cp -R build64/lib/* dist/ROCKNIX/Grout/lib/
       - chmod a+x dist/ROCKNIX/Grout/grout dist/ROCKNIX/Grout.sh
-    silent: true
-
-  trimui:
-    cmds:
-      - rm -rf dist/Trimui
-      - mkdir -p dist/Trimui/Grout/grout/lib
-      - cp scripts/Trimui/* README.md LICENSE dist/Trimui/Grout
-      - cp build64/grout dist/Trimui/Grout/grout
-      - cp -R build64/lib/* dist/Trimui/Grout/grout/lib/
-      - chmod a+x dist/Trimui/Grout/grout/grout dist/Trimui/Grout/launch.sh
-    silent: true
-
-  minui:
-    cmds:
-      - rm -rf dist/MinUI
-      - mkdir -p dist/MinUI/Grout.pak/lib64
-      - mkdir -p dist/MinUI/Grout.pak/lib32
-      - cp build64/grout dist/MinUI/Grout.pak/grout64
-      - cp build32/grout dist/MinUI/Grout.pak/grout32
-      - cp scripts/MinUI/launch.sh README.md LICENSE dist/MinUI/Grout.pak
-      - cp -R build64/lib/* dist/MinUI/Grout.pak/lib64/
-      - cp -R vendored/miyoo/* dist/MinUI/Grout.pak/lib32/
-      - chmod a+x dist/MinUI/Grout.pak/grout64 dist/MinUI/Grout.pak/grout32 dist/MinUI/Grout.pak/launch.sh
-    silent: true
-
-  batocera:
-    cmds:
-      - rm -rf dist/Batocera-arm64
-      - mkdir -p dist/Batocera-arm64/Grout/lib
-      - cp scripts/Batocera/Grout.sh dist/Batocera-arm64/
-      - cp build64/grout README.md LICENSE dist/Batocera-arm64/Grout/
-      - cp -R build64/lib/* dist/Batocera-arm64/Grout/lib/
-      - chmod a+x dist/Batocera-arm64/Grout/grout dist/Batocera-arm64/Grout.sh
-    silent: true
-
-  batocera-x86:
-    cmds:
-      - rm -rf dist/Batocera-x86
-      - mkdir -p dist/Batocera-x86/Grout/lib
-      - cp scripts/Batocera/Grout.sh dist/Batocera-x86/
-      - cp buildx86/grout README.md LICENSE dist/Batocera-x86/Grout/
-      - cp -R buildx86/lib/* dist/Batocera-x86/Grout/lib/
-      - chmod a+x dist/Batocera-x86/Grout/grout dist/Batocera-x86/Grout.sh
-    silent: true
-
-  batocera-amd64:
-    cmds:
-      - rm -rf dist/Batocera-amd64
-      - mkdir -p dist/Batocera-amd64/Grout/lib
-      - cp scripts/Batocera/Grout.sh dist/Batocera-amd64/
-      - cp build/grout README.md LICENSE dist/Batocera-amd64/Grout/
-      - cp -R build/lib/* dist/Batocera-amd64/Grout/lib/
-      - chmod a+x dist/Batocera-amd64/Grout/grout dist/Batocera-amd64/Grout.sh
-    silent: true
-
-  anbernic:
-    cmds:
-      - rm -rf dist/Anbernic
-      - mkdir -p dist/Anbernic/Roms/APPS/grout/lib
-      - mkdir -p dist/Anbernic/Roms/APPS/Imgs
-      - cp scripts/Anbernic/Grout.sh dist/Anbernic/Roms/APPS/
-      - cp scripts/Anbernic/Grout.png dist/Anbernic/Roms/APPS/Imgs/
-      - cp build64/grout README.md LICENSE dist/Anbernic/Roms/APPS/grout/
-      - cp -R build64/lib/* dist/Anbernic/Roms/APPS/grout/lib/
-      - chmod a+x dist/Anbernic/Roms/APPS/grout/grout dist/Anbernic/Roms/APPS/Grout.sh
     silent: true
 
   leaf:

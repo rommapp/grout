@@ -1,6 +1,6 @@
 # Vendored Miyoo Shared Libraries
 
-I've spend hours trying to find the provenance of these damn libraries.
+I've spent hours trying to find the provenance of these damn libraries.
 
 These were shamelessly cribbed from Spruce. 
 

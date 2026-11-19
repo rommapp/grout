@@ -2,9 +2,12 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
+
+	"github.com/spf13/cobra"
 )
 
 type Env struct {
@@ -14,22 +17,44 @@ type Env struct {
 	LogLevel *slog.LevelVar
 }
 
-const usage = `usage: grout <command>
+type exitError struct {
+	code int
+}
 
-commands:
-  status    report the config source and whether the RomM server supports save channels
-`
+func (e *exitError) Error() string {
+	return fmt.Sprintf("exit %d", e.code)
+}
 
 func Run(ctx context.Context, env Env, args []string) int {
-	if len(args) == 0 {
-		fmt.Fprint(env.Stderr, usage)
-		return ExitUsage
+	root := newRoot(env)
+	root.SetArgs(args)
+	err := root.ExecuteContext(ctx)
+	if err == nil {
+		return ExitOK
 	}
-	switch args[0] {
-	case "status":
-		return status(ctx, env, args[1:])
-	default:
-		fmt.Fprintf(env.Stderr, "grout: unknown command %q\n\n%s", args[0], usage)
-		return ExitUsage
+	var ee *exitError
+	if errors.As(err, &ee) {
+		return ee.code
 	}
+	fmt.Fprintf(env.Stderr, "grout: %v\n\n%s", err, root.UsageString())
+	return ExitUsage
+}
+
+func newRoot(env Env) *cobra.Command {
+	root := &cobra.Command{
+		Use:           "grout",
+		Short:         "RomM client for retro handhelds",
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		Args:          cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			fmt.Fprint(env.Stderr, cmd.UsageString())
+			return &exitError{code: ExitUsage}
+		},
+	}
+	root.CompletionOptions.DisableDefaultCmd = true
+	root.SetOut(env.Stdout)
+	root.SetErr(env.Stderr)
+	root.AddCommand(newStatusCmd(env))
+	return root
 }

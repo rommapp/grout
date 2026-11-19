@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"grout/core/config"
@@ -123,5 +124,29 @@ func TestStatusAppliesConfiguredLogLevel(t *testing.T) {
 	Run(context.Background(), Env{Dir: dir, Stdout: &out, Stderr: &errb, LogLevel: level}, []string{"status"})
 	if level.Level() != slog.LevelDebug {
 		t.Fatalf("level %v", level.Level())
+	}
+}
+
+func TestHelpExitsOK(t *testing.T) {
+	for _, args := range [][]string{{"--help"}, {"status", "--help"}, {"help", "status"}} {
+		var out, errb bytes.Buffer
+		code := Run(context.Background(), Env{Dir: t.TempDir(), Stdout: &out, Stderr: &errb}, args)
+		if code != ExitOK || !strings.Contains(out.String(), "status") {
+			t.Errorf("%v: code=%d out=%q err=%q", args, code, out.String(), errb.String())
+		}
+	}
+}
+
+func TestUnknownFlagIsUsage(t *testing.T) {
+	var out, errb bytes.Buffer
+	if Run(context.Background(), Env{Dir: t.TempDir(), Stdout: &out, Stderr: &errb}, []string{"status", "--nope"}) != ExitUsage || errb.Len() == 0 || out.Len() != 0 {
+		t.Fatalf("out=%q err=%q", out.String(), errb.String())
+	}
+}
+
+func TestNoCompletionCommand(t *testing.T) {
+	var out, errb bytes.Buffer
+	if Run(context.Background(), Env{Dir: t.TempDir(), Stdout: &out, Stderr: &errb}, []string{"completion", "bash"}) != ExitUsage {
+		t.Fatal("completion command is exposed")
 	}
 }

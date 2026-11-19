@@ -41,8 +41,6 @@ tasks:
         vars: { LOCAL: "{{.LOCAL}}" }
       - task: build:arm32
         vars: { LOCAL: "{{.LOCAL}}" }
-      - task: build:x86
-      - task: build:amd64
     cmds:
       - task: package:all
     silent: true
@@ -55,10 +53,6 @@ tasks:
       - task: package:muos
       - task: package:knulli
       - task: package:rocknix
-      - task: package:trimui
-      - task: package:arkos
-      - task: package:batocera
-      - task: package:anbernic
       - task: package:leaf
     silent: true
 
@@ -68,7 +62,6 @@ tasks:
       - task: build:arm32
       - task: package:allium
       - task: package:onion
-      - task: package:koriki
     silent: true
 
   all-universal:
@@ -77,5 +70,4 @@ tasks:
       - task: build:arm64
       - task: build:arm32
       - task: package:spruce
-      - task: package:minui
     silent: true

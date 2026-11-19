@@ -3,11 +3,12 @@ package cli
 import (
 	"context"
 	"encoding/json"
-	"flag"
 	"log/slog"
 
 	"grout/core/config"
 	"grout/core/romm"
+
+	"github.com/spf13/cobra"
 )
 
 type statusReport struct {
@@ -19,18 +20,25 @@ type statusReport struct {
 	Error         string `json:"error"`
 }
 
-func status(ctx context.Context, env Env, args []string) int {
-	fs := flag.NewFlagSet("status", flag.ContinueOnError)
-	fs.SetOutput(env.Stderr)
-	if err := fs.Parse(args); err != nil {
-		return ExitUsage
+func newStatusCmd(env Env) *cobra.Command {
+	return &cobra.Command{
+		Use:   "status",
+		Short: "Report the config source and whether the RomM server supports save channels",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var r statusReport
+			code := checkStatus(cmd.Context(), env.Dir, env.LogLevel, &r)
+			enc := json.NewEncoder(cmd.OutOrStdout())
+			enc.SetIndent("", "  ")
+			if err := enc.Encode(r); err != nil {
+				return err
+			}
+			if code != ExitOK {
+				return &exitError{code: code}
+			}
+			return nil
+		},
 	}
-	var r statusReport
-	code := checkStatus(ctx, env.Dir, env.LogLevel, &r)
-	enc := json.NewEncoder(env.Stdout)
-	enc.SetIndent("", "  ")
-	enc.Encode(r)
-	return code
 }
 
 func checkStatus(ctx context.Context, dir string, levels *slog.LevelVar, r *statusReport) int {

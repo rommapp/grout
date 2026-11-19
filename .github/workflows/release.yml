@@ -100,7 +100,7 @@ jobs:
           GROUT_VERSION: ${{ needs.prepare.outputs.version }}
 
       - name: Package ARM64 platforms
-        run: task package:next package:muos package:knulli package:rocknix package:arkos package:trimui package:batocera package:anbernic package:leaf
+        run: task package:next package:muos package:knulli package:rocknix package:leaf
 
       - name: Create distributions
         run: |
@@ -108,10 +108,6 @@ jobs:
           cd dist/muOS && zip -r Grout.muxapp Grout && mv Grout.muxapp ../Grout.muxapp && cd ../..
           cd dist/Knulli && zip -r ../Grout-Knulli.zip Grout && cd ../..
           cd dist/ROCKNIX && zip -r ../Grout-ROCKNIX.zip Grout.sh Grout && cd ../..
-          cd dist/ArkOS && zip -r ../Grout-ArkOS.zip Grout.sh Grout && cd ../..
-          cd dist/Trimui && zip -r ../Grout-Trimui.zip Grout && cd ../..
-          cd dist/Batocera-arm64 && zip -r ../Grout-Batocera-arm64.zip Grout.sh Grout && cd ../..
-          cd dist/Anbernic && zip -r ../Grout-Anbernic.zip Roms && cd ../..
           cd dist/Leaf && zip -r ../Grout-Leaf.zip Grout.pak && cd ../..
 
       - name: Upload artifacts
@@ -123,89 +119,9 @@ jobs:
             dist/Grout.muxapp
             dist/Grout-Knulli.zip
             dist/Grout-ROCKNIX.zip
-            dist/Grout-ArkOS.zip
-            dist/Grout-Trimui.zip
-            dist/Grout-Batocera-arm64.zip
-            dist/Grout-Anbernic.zip
             dist/Grout-Leaf.zip
             build64/grout
             build64/lib/**
-
-  build-amd64:
-    needs: prepare
-    runs-on: ubuntu-22.04
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref }}
-
-      - name: Install Task
-        uses: arduino/setup-task@v2
-        with:
-          version: 3.x
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and extract AMD64
-        run: task build:amd64
-        env:
-          GROUT_VERSION: ${{ needs.prepare.outputs.version }}
-
-      - name: Package Batocera AMD64
-        run: task package:batocera-amd64
-
-      - name: Create distribution
-        run: |
-          cd dist/Batocera-amd64 && zip -r ../Grout-Batocera-amd64.zip Grout.sh Grout
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: amd64-artifacts
-          path: |
-            dist/Grout-Batocera-amd64.zip
-
-  build-x86:
-    needs: prepare
-    runs-on: ubuntu-22.04
-    # linux/386 runs natively on the x86_64 runner (IA32 compat), so no QEMU is
-    # needed; emulating it through qemu-i386 is slow and prone to hanging.
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref }}
-
-      - name: Install Task
-        uses: arduino/setup-task@v2
-        with:
-          version: 3.x
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and extract x86
-        run: task build:x86
-        env:
-          GROUT_VERSION: ${{ needs.prepare.outputs.version }}
-
-      - name: Package Batocera x86
-        run: task package:batocera-x86
-
-      - name: Create distribution
-        run: |
-          cd dist/Batocera-x86 && zip -r ../Grout-Batocera-x86.zip Grout.sh Grout
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: x86-artifacts
-          path: |
-            dist/Grout-Batocera-x86.zip
 
   build-arm32:
     needs: prepare
@@ -234,13 +150,12 @@ jobs:
           GROUT_VERSION: ${{ needs.prepare.outputs.version }}
 
       - name: Package ARM32 platforms
-        run: task package:allium package:onion package:koriki
+        run: task package:allium package:onion
 
       - name: Create distributions
         run: |
           cd dist/Allium && zip -r ../Grout-Allium.zip Grout.pak && cd ../..
           cd dist/Onion && zip -r ../Grout-Onion.zip Grout && cd ../..
-          cd dist/Koriki && zip -r ../Grout-Koriki.zip .simplemenu App && cd ../..
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -249,7 +164,6 @@ jobs:
           path: |
             dist/Grout-Allium.zip
             dist/Grout-Onion.zip
-            dist/Grout-Koriki.zip
             build32/grout
   package-arm-universal:
     needs: [prepare, build-arm64, build-arm32]
@@ -273,12 +187,11 @@ jobs:
           merge-multiple: true
 
       - name: Package universal assets
-        run: task package:spruce package:minui
+        run: task package:spruce
 
       - name: Create distributions
         run: |
           cd dist/Spruce && zip -r Grout.spruce.zip Grout && mv Grout.spruce.zip ../Grout.spruce.zip && cd ../..
-          cd dist/MinUI && zip -r ../Grout-MinUI.zip Grout.pak && cd ../..
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -286,10 +199,9 @@ jobs:
           name: arm-universal-artifacts
           path: |
             dist/Grout.spruce.zip
-            dist/Grout-MinUI.zip
 
   release:
-    needs: [prepare, build-arm64, build-amd64, build-x86, build-arm32, package-arm-universal]
+    needs: [prepare, build-arm64, build-arm32, package-arm-universal]
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     steps:
@@ -315,16 +227,8 @@ jobs:
             **/Grout.spruce.zip
             **/Grout-Allium.zip
             **/Grout-Onion.zip
-            **/Grout-Koriki.zip
             **/Grout-Knulli.zip
-            **/Grout-ArkOS.zip
             **/Grout-ROCKNIX.zip
-            **/Grout-Trimui.zip
-            **/Grout-MinUI.zip
-            **/Grout-Batocera-arm64.zip
-            **/Grout-Batocera-x86.zip
-            **/Grout-Batocera-amd64.zip
-            **/Grout-Anbernic.zip
             **/Grout-Leaf.zip
             **/grout
           draft: false
@@ -396,16 +300,8 @@ jobs:
             "Grout-Knulli.zip"
             "Grout.spruce.zip"
             "Grout-ROCKNIX.zip"
-            "Grout-Trimui.zip"
             "Grout-Allium.zip"
             "Grout-Onion.zip"
-            "Grout-Koriki.zip"
-            "Grout-ArkOS.zip"
-            "Grout-MinUI.zip"
-            "Grout-Batocera-arm64.zip"
-            "Grout-Batocera-amd64.zip"
-            "Grout-Batocera-x86.zip"
-            "Grout-Anbernic.zip"
             "Grout-Leaf.zip"
           )
 

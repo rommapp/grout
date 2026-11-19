@@ -1,7 +1,0 @@
-{
-  "label": "Grout",
-  "icon": "grout.png",
-  "iconsel":"grout.png",
-  "launch": "launch.sh",
-  "description": "A RomM client for your retro doo-dad"
-}
