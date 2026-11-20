@@ -9,6 +9,9 @@ type Layer string
 const (
 	Pkg  Layer = "pkg"
 	Core Layer = "core"
+	Lib  Layer = "lib"
+	API  Layer = "api"
+	CAPI Layer = "capi"
 	UI   Layer = "ui"
 	CLI  Layer = "cli"
 	Cmd  Layer = "cmd"
@@ -17,21 +20,28 @@ const (
 var allowedImports = map[Layer]map[Layer]bool{
 	Pkg:  set(Pkg),
 	Core: set(Pkg, Core),
-	UI:   set(Pkg, Core, UI),
-	CLI:  set(Pkg, Core, CLI),
-	Cmd:  set(Pkg, Core, UI, CLI, Cmd),
+	Lib:  set(Pkg, Core),
+	API:  set(Pkg, Core, Lib),
+	CAPI: set(Pkg, API),
+	UI:   set(Pkg, Core, Lib, UI),
+	CLI:  set(Pkg, API, CLI),
+	Cmd:  set(Pkg, Core, Lib, API, CAPI, UI, CLI, Cmd),
 }
 
 var layerRules = []struct {
 	prefix string
 	layer  Layer
+	exact  bool
 }{
-	{"grout/core", Core},
-	{"grout/ui", UI},
-	{"grout/cli", CLI},
-	{"grout/cmd", Cmd},
-	{"grout/resources", UI},
-	{"grout/version", Pkg},
+	{"github.com/rommapp/grout", Lib, true},
+	{"github.com/rommapp/grout/api", API, false},
+	{"github.com/rommapp/grout/capi", CAPI, false},
+	{"github.com/rommapp/grout/core", Core, false},
+	{"github.com/rommapp/grout/ui", UI, false},
+	{"github.com/rommapp/grout/cli", CLI, false},
+	{"github.com/rommapp/grout/cmd", Cmd, false},
+	{"github.com/rommapp/grout/resources", UI, false},
+	{"github.com/rommapp/grout/version", Pkg, false},
 }
 
 // layerOf returns the layer for an import path, and whether it is a grout
@@ -40,7 +50,7 @@ func layerOf(importPath string) (Layer, bool) {
 	best := ""
 	var layer Layer
 	for _, rule := range layerRules {
-		if importPath != rule.prefix && !strings.HasPrefix(importPath, rule.prefix+"/") {
+		if importPath != rule.prefix && (rule.exact || !strings.HasPrefix(importPath, rule.prefix+"/")) {
 			continue
 		}
 		if len(rule.prefix) > len(best) {
@@ -57,7 +67,7 @@ func layerOf(importPath string) (Layer, bool) {
 // device. The e2e keyboard helper is Linux-only, so it only showed up here on
 // CI.
 func isExempt(importPath string) bool {
-	return strings.HasPrefix(importPath, "grout/tools/") || strings.HasPrefix(importPath, "grout/test/")
+	return strings.HasPrefix(importPath, "github.com/rommapp/grout/tools/") || strings.HasPrefix(importPath, "github.com/rommapp/grout/test/")
 }
 
 // toolkitPrefix is the UI toolkit. Importing it links SDL, so the package
@@ -66,8 +76,9 @@ const toolkitPrefix = "github.com/BrandonKowalski/gabagool/v2"
 
 func mayUseToolkit(l Layer) bool { return l == UI || l == Cmd }
 
-// mayHoldGlobalState is true only for the composition root.
-func mayHoldGlobalState(l Layer) bool { return l == Cmd }
+func mayHoldGlobalState(l Layer) bool { return l == Cmd || l == CAPI }
+
+func checksProcess(l Layer) bool { return l == Core || l == Lib || l == API || l == CAPI }
 
 func set(layers ...Layer) map[Layer]bool {
 	m := make(map[Layer]bool, len(layers))

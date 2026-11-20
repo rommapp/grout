@@ -5,7 +5,7 @@ import (
 	"slices"
 	"testing"
 
-	"grout/core/firmware/host"
+	"github.com/rommapp/grout/core/firmware/host"
 )
 
 func TestArchFolders(t *testing.T) {

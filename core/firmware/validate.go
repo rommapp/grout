@@ -25,6 +25,7 @@ type validator struct {
 	errs      []error
 	upstream  bool
 	versioned bool
+	host      bool
 }
 
 var (
@@ -37,7 +38,16 @@ var (
 )
 
 func Validate(d *Definition, known map[string]bool, reg Registry, inputs fs.FS) []error {
-	v := &validator{d: d, known: known, reg: reg, inputs: inputs, upstream: d.Maintained == "upstream"}
+	return validate(&validator{d: d, known: known, reg: reg, inputs: inputs})
+}
+
+func ValidateHost(d *Definition, known map[string]bool, reg Registry) []error {
+	return validate(&validator{d: d, known: known, reg: reg, host: true})
+}
+
+func validate(v *validator) []error {
+	d := v.d
+	v.upstream = d.Maintained == "upstream"
 	v.versioned = isSet(d.Version.File) || d.Version.Hook != ""
 	v.identity()
 	v.version()
@@ -51,7 +61,9 @@ func Validate(d *Definition, known map[string]bool, reg Registry, inputs fs.FS) 
 	v.platformSources()
 	v.platforms()
 	v.devices()
-	v.packaging()
+	if !v.host {
+		v.packaging()
+	}
 	return v.errs
 }
 
@@ -294,6 +306,7 @@ func (v *validator) devices() {
 			v.errorf("%s: file and hook are mutually exclusive", path)
 		case in.Hook != "":
 			v.nameHook(path, in.Hook, func(n string) bool { _, ok := v.reg.Input[n]; return ok })
+		case v.host:
 		default:
 			if _, err := fs.Stat(v.inputs, in.File); err != nil {
 				v.errorf("%s: input file %q does not exist", path, in.File)
@@ -436,7 +449,7 @@ func (v *validator) value(path string, f Fact, spec factSpec) {
 
 func (v *validator) template(path, tmpl string, allowed []string) {
 	for _, name := range Variables(tmpl) {
-		if !slices.Contains(allowed, name) {
+		if !slices.Contains(allowed, name) && !IsEnvVar(name) {
 			v.errorf("%s: template variable {%s} is not available here", path, name)
 		}
 	}

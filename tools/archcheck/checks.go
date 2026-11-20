@@ -6,6 +6,7 @@ import (
 	"go/parser"
 	"go/token"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -13,7 +14,7 @@ import (
 // violation is one broken rule, stable enough to list in allow.txt.
 type violation struct {
 	Rule    string   // layer, toolkit or global
-	Subject string   // the canonical subject, e.g. "grout/ui -> grout/cache"
+	Subject string   // the canonical subject, e.g. "github.com/rommapp/grout/ui -> grout/cache"
 	Detail  string   // one line for a person
 	Files   []string // where to look, relative to the repo root
 }
@@ -38,6 +39,7 @@ func check(pkgs []pkg) []violation {
 
 		violations = append(violations, checkImports(p, layer)...)
 		violations = append(violations, checkGlobals(p, layer)...)
+		violations = append(violations, checkProcess(p, layer)...)
 	}
 
 	sort.Slice(violations, func(i, j int) bool { return violations[i].Key() < violations[j].Key() })
@@ -49,8 +51,7 @@ func checkImports(p pkg, layer Layer) []violation {
 	var violations []violation
 
 	// Reported once per package, since the toolkit pulls in several
-	// subpackages and the fix is the same. Must not stop the layer checks:
-	// go list sorts imports, so github.com/... precedes every grout/... path.
+	// subpackages and the fix is the same. Must not stop the layer checks.
 	reportedToolkit := false
 
 	for _, imported := range p.Imports {
@@ -96,8 +97,8 @@ func checkGlobals(p pkg, layer Layer) []violation {
 	}
 
 	fset := token.NewFileSet()
-	files := make([]*ast.File, 0, len(p.GoFiles))
-	for _, name := range p.GoFiles {
+	files := make([]*ast.File, 0, len(p.sourceFiles()))
+	for _, name := range p.sourceFiles() {
 		f, err := parser.ParseFile(fset, filepath.Join(p.Dir, name), nil, 0)
 		if err != nil {
 			continue // a file we cannot parse is the compiler's problem, not ours
@@ -123,7 +124,7 @@ func checkGlobals(p pkg, layer Layer) []violation {
 		violations = append(violations, violation{
 			Rule:    "global",
 			Subject: p.ImportPath + "." + name,
-			Detail: fmt.Sprintf("%s (%s) mutates package-level %s; only cmd may hold process state",
+			Detail: fmt.Sprintf("%s (%s) mutates package-level %s; only cmd and capi may hold process state",
 				p.ImportPath, layer, name),
 		})
 	}
@@ -252,7 +253,7 @@ func filesImporting(p pkg, importPath string) []string {
 	fset := token.NewFileSet()
 	var found []string
 
-	for _, name := range p.GoFiles {
+	for _, name := range p.sourceFiles() {
 		full := filepath.Join(p.Dir, name)
 		f, err := parser.ParseFile(fset, full, nil, parser.ImportsOnly)
 		if err != nil {
@@ -281,4 +282,87 @@ func repoRoot() string {
 		cachedRoot, _ = filepath.Abs(".")
 	}
 	return cachedRoot
+}
+
+var forbiddenProcess = map[string][]string{
+	"os":        {"Exit", "Getenv", "LookupEnv", "Environ", "Setenv", "Unsetenv", "Clearenv", "Chdir", "Stdin", "Stdout", "Stderr"},
+	"fmt":       {"Print", "Printf", "Println"},
+	"log/slog":  {"Debug", "Info", "Warn", "Error", "Log", "LogAttrs", "DebugContext", "InfoContext", "WarnContext", "ErrorContext", "Default", "SetDefault", "SetLogLoggerLevel"},
+	"os/signal": {"Notify", "Ignore", "Reset"},
+	"log":       nil,
+	"flag":      nil,
+}
+
+func isForbiddenProcess(path, name string) bool {
+	names, ok := forbiddenProcess[path]
+	if !ok {
+		return false
+	}
+	return names == nil || slices.Contains(names, name)
+}
+
+func checkProcess(p pkg, layer Layer) []violation {
+	if !checksProcess(layer) {
+		return nil
+	}
+
+	fset := token.NewFileSet()
+	files := make([]*ast.File, 0, len(p.sourceFiles()))
+	for _, name := range p.sourceFiles() {
+		f, err := parser.ParseFile(fset, filepath.Join(p.Dir, name), nil, 0)
+		if err != nil {
+			continue
+		}
+		files = append(files, f)
+	}
+
+	var violations []violation
+	for _, use := range processUses(files) {
+		violations = append(violations, violation{
+			Rule:    "process",
+			Subject: p.ImportPath + " uses " + use,
+			Detail: fmt.Sprintf("%s (%s) uses %s; embeddable code must not act like it owns the process",
+				p.ImportPath, layer, use),
+		})
+	}
+	return violations
+}
+
+func processUses(files []*ast.File) []string {
+	seen := map[string]bool{}
+	for _, f := range files {
+		names := map[string]string{}
+		for _, spec := range f.Imports {
+			path := strings.Trim(spec.Path.Value, `"`)
+			name := path[strings.LastIndex(path, "/")+1:]
+			if spec.Name != nil {
+				name = spec.Name.Name
+			}
+			if name == "_" || name == "." {
+				continue
+			}
+			names[name] = path
+		}
+		ast.Inspect(f, func(n ast.Node) bool {
+			sel, ok := n.(*ast.SelectorExpr)
+			if !ok {
+				return true
+			}
+			id, ok := sel.X.(*ast.Ident)
+			if !ok {
+				return true
+			}
+			path, ok := names[id.Name]
+			if ok && id.Obj == nil && isForbiddenProcess(path, sel.Sel.Name) {
+				seen[path[strings.LastIndex(path, "/")+1:]+"."+sel.Sel.Name] = true
+			}
+			return true
+		})
+	}
+	uses := make([]string, 0, len(seen))
+	for u := range seen {
+		uses = append(uses, u)
+	}
+	sort.Strings(uses)
+	return uses
 }

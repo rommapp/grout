@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	"grout/core/romm"
-	"grout/core/store"
+	"github.com/rommapp/grout/core/romm"
+	"github.com/rommapp/grout/core/store"
 )
 
 func TestFold(t *testing.T) {

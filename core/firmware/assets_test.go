@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"grout/core/firmware/host"
+	"github.com/rommapp/grout/core/firmware/host"
 )
 
 func biosFW(t *testing.T, biosRoot, body string) *Firmware {
@@ -18,7 +18,7 @@ roms = { value = "{card}/Roms" }
 bios = { value = "`+biosRoot+`" }
 saves = { value = "{card}/Saves" }
 `+body)
-	f, err := resolveWith(d, &host.Fake{}, Overrides{}, Registry{})
+	f, err := ResolveWith(d, &host.Fake{}, Overrides{}, Registry{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -104,7 +104,7 @@ func TestInputMappingFileAndNone(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f, err := resolveWith(d, &host.Fake{}, Overrides{}, Registry{})
+	f, err := ResolveWith(d, &host.Fake{}, Overrides{}, Registry{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -136,7 +136,7 @@ default = "d"
 d = { hook = "x_input" }
 `)
 	reg := Registry{Input: map[string]InputHook{"x_input": func(host.Host) ([]byte, error) { return []byte("hooked"), nil }}}
-	hf, err := resolveWith(hd, &host.Fake{}, Overrides{}, reg)
+	hf, err := ResolveWith(hd, &host.Fake{}, Overrides{}, reg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -166,7 +166,7 @@ default = "generic"
 [devices.quirks]
 flip = { rotation = 90, disable_keyboard_joystick = true }
 `)
-	f, err := resolveWith(d, &host.Fake{}, Overrides{}, Registry{})
+	f, err := ResolveWith(d, &host.Fake{}, Overrides{}, Registry{})
 	if err != nil {
 		t.Fatal(err)
 	}

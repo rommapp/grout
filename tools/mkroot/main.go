@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"grout/test/mockroot"
+	"github.com/rommapp/grout/test/mockroot"
 )
 
 func main() {

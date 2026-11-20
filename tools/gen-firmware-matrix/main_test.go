@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"grout/core/firmware"
+	"github.com/rommapp/grout/core/firmware"
 )
 
 const minimal = `

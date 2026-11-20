@@ -1,4 +1,4 @@
-package library
+package fakeromm
 
 import (
 	"context"
@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"grout/core/romm"
+	"github.com/rommapp/grout/core/romm"
 )
 
 func TestFakeServerPagingAndUpdatedAfter(t *testing.T) {
-	f := newFakeServer(t)
+	f := New(t)
 	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	f.Platforms = []romm.Platform{{ID: 1, Slug: "gb"}, {ID: 2, Slug: "gba"}}
 	for i := 1; i <= 5; i++ {
@@ -41,25 +41,25 @@ func TestFakeServerPagingAndUpdatedAfter(t *testing.T) {
 		t.Fatalf("strict updated_after returned %+v", after.Items)
 	}
 
-	if f.romPages(1) != 3 {
-		t.Fatalf("romPages = %d", f.romPages(1))
+	if f.RomPages(1) != 3 {
+		t.Fatalf("romPages = %d", f.RomPages(1))
 	}
-	if len(f.callsTo("/api/roms")) != 3 {
-		t.Fatalf("calls = %+v", f.calls())
+	if len(f.CallsTo("/api/roms")) != 3 {
+		t.Fatalf("calls = %+v", f.Calls())
 	}
 }
 
 func TestFakeServerIdentifiersAndCollections(t *testing.T) {
-	f := newFakeServer(t)
+	f := New(t)
 	ctx := context.Background()
 	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	f.Platforms = []romm.Platform{{ID: 3}, {ID: 1}}
 	f.Roms = []romm.Rom{{ID: 7, PlatformID: 1}, {ID: 2, PlatformID: 1}}
-	f.Collections[romm.CollectionRegular] = []fakeCollection{
+	f.Collections[romm.CollectionRegular] = []Collection{
 		{ID: "10", Name: "a", RomIDs: []int{2}, UpdatedAt: base},
 		{ID: "11", Name: "b", RomIDs: []int{7}, UpdatedAt: base.Add(time.Hour)},
 	}
-	f.Collections[romm.CollectionVirtual] = []fakeCollection{{ID: "abc", Name: "v", RomIDs: []int{2}, UpdatedAt: base}}
+	f.Collections[romm.CollectionVirtual] = []Collection{{ID: "abc", Name: "v", RomIDs: []int{2}, UpdatedAt: base}}
 
 	ids, err := f.Client.RomIDs(ctx)
 	if err != nil || !reflect.DeepEqual(ids, []int{2, 7}) {
@@ -88,12 +88,12 @@ func TestFakeServerIdentifiersAndCollections(t *testing.T) {
 }
 
 func TestFakeServerFailureAndHook(t *testing.T) {
-	f := newFakeServer(t)
+	f := New(t)
 	ctx := context.Background()
 	f.Roms = []romm.Rom{{ID: 1, PlatformID: 5}}
-	f.setFailAfter(5, 2)
+	f.SetFailAfter(5, 2)
 	var seen []int
-	f.setBeforePage(func(platformID, offset int) { seen = append(seen, offset) })
+	f.SetBeforePage(func(platformID, offset int) { seen = append(seen, offset) })
 
 	if _, err := f.Client.Roms(ctx, romm.RomsQuery{PlatformID: 5, Limit: 1}); err != nil {
 		t.Fatal(err)
@@ -105,7 +105,7 @@ func TestFakeServerFailureAndHook(t *testing.T) {
 		t.Fatalf("hook saw %v", seen)
 	}
 
-	f.failPath("/api/platforms")
+	f.FailPath("/api/platforms")
 	if _, err := f.Client.Platforms(ctx); err == nil {
 		t.Fatal("forced path should fail")
 	}

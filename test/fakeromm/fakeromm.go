@@ -1,7 +1,8 @@
-package library
+package fakeromm
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"sort"
@@ -11,86 +12,114 @@ import (
 	"testing"
 	"time"
 
-	"grout/core/romm"
+	"github.com/rommapp/grout/core/romm"
 )
 
-type fakeCall struct {
+type Call struct {
 	Path  string
 	Query string
 }
 
-type fakeCollection struct {
+type Collection struct {
 	ID        string
 	Name      string
 	RomIDs    []int
 	UpdatedAt time.Time
 }
 
-type fakeServer struct {
-	*httptest.Server
+type Server struct {
+	srv    *httptest.Server
 	Client *romm.Client
 
 	mu          sync.Mutex
 	Platforms   []romm.Platform
 	Roms        []romm.Rom
-	Collections map[romm.CollectionKind][]fakeCollection
-	Calls       []fakeCall
+	Collections map[romm.CollectionKind][]Collection
 	Hidden      map[int]bool
 	OmitTotal   bool
+	calls       []Call
 	pageCounts  map[int]int
 
-	failAfter  map[int]int
-	failPaths  map[string]bool
-	beforePage func(platformID, offset int)
-	clock      time.Time
+	failAfter    map[int]int
+	failPaths    map[string]bool
+	beforePage   func(platformID, offset int)
+	Clock        time.Time
+	version      string
+	snapshots    bool
+	unauthorized bool
 }
 
-func newFakeServer(t *testing.T) *fakeServer {
+func New(t *testing.T) *Server {
 	t.Helper()
-	f := &fakeServer{
-		Collections: map[romm.CollectionKind][]fakeCollection{},
+	f := &Server{
+		Collections: map[romm.CollectionKind][]Collection{},
 		Hidden:      map[int]bool{},
 		pageCounts:  map[int]int{},
 		failAfter:   map[int]int{},
 		failPaths:   map[string]bool{},
+		version:     "5.0.0",
+		snapshots:   true,
 	}
-	f.Server = httptest.NewServer(http.HandlerFunc(f.serve))
-	t.Cleanup(f.Server.Close)
-	f.Client = romm.New(romm.Options{BaseURL: f.Server.URL})
+	f.srv = httptest.NewServer(http.HandlerFunc(f.serve))
+	t.Cleanup(f.srv.Close)
+	f.Client = romm.New(romm.Options{BaseURL: f.srv.URL})
 	return f
 }
 
-func (f *fakeServer) mutate(fn func()) {
+func (f *Server) URL() string {
+	return f.srv.URL
+}
+
+func (f *Server) Close() {
+	f.srv.Close()
+}
+
+func (f *Server) Mutate(fn func()) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	fn()
 }
 
-func (f *fakeServer) setFailAfter(platformID, n int) {
-	f.mutate(func() { f.failAfter[platformID] = n })
+func (f *Server) SetFailAfter(platformID, n int) {
+	f.Mutate(func() { f.failAfter[platformID] = n })
 }
 
-func (f *fakeServer) failPath(path string) {
-	f.mutate(func() { f.failPaths[path] = true })
+func (f *Server) ClearFailAfter(platformID int) {
+	f.Mutate(func() { delete(f.failAfter, platformID) })
 }
 
-func (f *fakeServer) setBeforePage(fn func(platformID, offset int)) {
-	f.mutate(func() { f.beforePage = fn })
+func (f *Server) FailPath(path string) {
+	f.Mutate(func() { f.failPaths[path] = true })
 }
 
-func (f *fakeServer) setClock(t time.Time) {
-	f.mutate(func() { f.clock = t })
+func (f *Server) SetBeforePage(fn func(platformID, offset int)) {
+	f.Mutate(func() { f.beforePage = fn })
 }
 
-func (f *fakeServer) calls() []fakeCall {
+func (f *Server) SetClock(t time.Time) {
+	f.Mutate(func() { f.Clock = t })
+}
+
+func (f *Server) SetHeartbeat(version string, snapshots bool) {
+	f.Mutate(func() {
+		f.version = version
+		f.snapshots = snapshots
+	})
+}
+
+func (f *Server) SetUnauthorized(v bool) {
+	f.Mutate(func() { f.unauthorized = v })
+}
+
+func (f *Server) Calls() []Call {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	return append([]fakeCall(nil), f.Calls...)
+	return append([]Call(nil), f.calls...)
 }
 
-func (f *fakeServer) callsTo(path string) []fakeCall {
-	var out []fakeCall
-	for _, c := range f.calls() {
+func (f *Server) CallsTo(path string) []Call {
+	var out []Call
+	for _, c := range f.Calls() {
 		if c.Path == path {
 			out = append(out, c)
 		}
@@ -98,10 +127,19 @@ func (f *fakeServer) callsTo(path string) []fakeCall {
 	return out
 }
 
-func (f *fakeServer) romPages(platformID int) int {
+func (f *Server) RomPages(platformID int) int {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return f.pageCounts[platformID]
+}
+
+func Roms(platformID, firstID, n int, at time.Time) []romm.Rom {
+	out := make([]romm.Rom, 0, n)
+	for i := 0; i < n; i++ {
+		id := firstID + i
+		out = append(out, romm.Rom{ID: id, PlatformID: platformID, Name: fmt.Sprintf("game %d", id), UpdatedAt: at})
+	}
+	return out
 }
 
 func writeJSON(w http.ResponseWriter, v any) {
@@ -120,14 +158,19 @@ func parseAfter(q string) (time.Time, bool) {
 	return t, true
 }
 
-func (f *fakeServer) serve(w http.ResponseWriter, r *http.Request) {
+func (f *Server) serve(w http.ResponseWriter, r *http.Request) {
 	f.mu.Lock()
-	f.Calls = append(f.Calls, fakeCall{Path: r.URL.Path, Query: r.URL.RawQuery})
+	f.calls = append(f.calls, Call{Path: r.URL.Path, Query: r.URL.RawQuery})
 	forced := f.failPaths[r.URL.Path]
-	clock := f.clock
+	clock := f.Clock
+	unauthorized := f.unauthorized
 	f.mu.Unlock()
 	if !clock.IsZero() {
 		w.Header().Set("Date", clock.UTC().Format(http.TimeFormat))
+	}
+	if unauthorized {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
 	}
 	if forced {
 		http.Error(w, "forced failure", http.StatusInternalServerError)
@@ -135,6 +178,14 @@ func (f *fakeServer) serve(w http.ResponseWriter, r *http.Request) {
 	}
 	q := r.URL.Query()
 	switch r.URL.Path {
+	case "/api/heartbeat":
+		f.mu.Lock()
+		body := map[string]any{
+			"SYSTEM":    map[string]any{"VERSION": f.version},
+			"SAVE_SYNC": map[string]any{"SNAPSHOTS": f.snapshots},
+		}
+		f.mu.Unlock()
+		writeJSON(w, body)
 	case "/api/platforms":
 		f.mu.Lock()
 		out := append([]romm.Platform{}, f.Platforms...)
@@ -178,7 +229,7 @@ func (f *fakeServer) serve(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (f *fakeServer) serveRoms(w http.ResponseWriter, platformIDs, updatedAfter, limitRaw, offsetRaw string, withTotal bool) {
+func (f *Server) serveRoms(w http.ResponseWriter, platformIDs, updatedAfter, limitRaw, offsetRaw string, withTotal bool) {
 	limit, _ := strconv.Atoi(limitRaw)
 	offset, _ := strconv.Atoi(offsetRaw)
 	want := map[int]bool{}
@@ -240,7 +291,7 @@ func (f *fakeServer) serveRoms(w http.ResponseWriter, platformIDs, updatedAfter,
 	writeJSON(w, body)
 }
 
-func (f *fakeServer) collectionID(kind romm.CollectionKind, id string) any {
+func collectionID(kind romm.CollectionKind, id string) any {
 	if kind == romm.CollectionVirtual {
 		return id
 	}
@@ -248,7 +299,7 @@ func (f *fakeServer) collectionID(kind romm.CollectionKind, id string) any {
 	return n
 }
 
-func (f *fakeServer) serveCollections(w http.ResponseWriter, kind romm.CollectionKind, updatedAfter string) {
+func (f *Server) serveCollections(w http.ResponseWriter, kind romm.CollectionKind, updatedAfter string) {
 	after, hasAfter := parseAfter(updatedAfter)
 	f.mu.Lock()
 	out := []map[string]any{}
@@ -261,7 +312,7 @@ func (f *fakeServer) serveCollections(w http.ResponseWriter, kind romm.Collectio
 			ids = []int{}
 		}
 		out = append(out, map[string]any{
-			"id":         f.collectionID(kind, c.ID),
+			"id":         collectionID(kind, c.ID),
 			"name":       c.Name,
 			"rom_ids":    ids,
 			"updated_at": c.UpdatedAt,
@@ -271,11 +322,11 @@ func (f *fakeServer) serveCollections(w http.ResponseWriter, kind romm.Collectio
 	writeJSON(w, out)
 }
 
-func (f *fakeServer) serveCollectionIDs(w http.ResponseWriter, kind romm.CollectionKind) {
+func (f *Server) serveCollectionIDs(w http.ResponseWriter, kind romm.CollectionKind) {
 	f.mu.Lock()
 	out := []any{}
 	for _, c := range f.Collections[kind] {
-		out = append(out, f.collectionID(kind, c.ID))
+		out = append(out, collectionID(kind, c.ID))
 	}
 	f.mu.Unlock()
 	writeJSON(w, out)

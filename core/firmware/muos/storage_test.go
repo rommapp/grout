@@ -3,7 +3,7 @@ package muos
 import (
 	"testing"
 
-	"grout/core/firmware/host"
+	"github.com/rommapp/grout/core/firmware/host"
 )
 
 func romRoot(t *testing.T, h *host.Fake, storage string) string {

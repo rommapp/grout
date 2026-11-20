@@ -5,10 +5,10 @@ import (
 	"reflect"
 	"testing"
 
-	"grout/core/config"
-	"grout/core/firmware"
-	"grout/core/firmware/host"
-	"grout/core/romm"
+	"github.com/rommapp/grout/core/config"
+	"github.com/rommapp/grout/core/firmware"
+	"github.com/rommapp/grout/core/firmware/host"
+	"github.com/rommapp/grout/core/romm"
 )
 
 func newPlatformsLibrary(t *testing.T, cfg *config.Config, fw *firmware.Firmware, ps ...romm.Platform) *Library {

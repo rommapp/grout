@@ -53,10 +53,10 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     else VERSION=$(jq -r '.version // "dev"' pak.json 2>/dev/null || echo "dev"); fi; \
     GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown"); \
     BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ); \
-    LDFLAGS="-X 'grout/version.Version=$VERSION' \
-             -X 'grout/version.GitCommit=$GIT_COMMIT' \
-             -X 'grout/version.BuildDate=$BUILD_DATE' \
-             -X 'grout/version.BuildType=$BUILD_TYPE'"; \
+    LDFLAGS="-X 'github.com/rommapp/grout/version.Version=$VERSION' \
+             -X 'github.com/rommapp/grout/version.GitCommit=$GIT_COMMIT' \
+             -X 'github.com/rommapp/grout/version.BuildDate=$BUILD_DATE' \
+             -X 'github.com/rommapp/grout/version.BuildType=$BUILD_TYPE'"; \
     echo "=== Building grout for Miyoo Mini Plus (ARM32) ==="; \
     if [ "$USE_LOCAL_GABAGOOL" = "true" ]; then \
         go build -ldflags "$LDFLAGS" -v -o grout ./cmd/grout; \

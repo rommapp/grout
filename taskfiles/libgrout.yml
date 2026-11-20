@@ -1,0 +1,64 @@
+version: '3'
+
+vars:
+  GO_VERSION:
+    sh: awk '$1 == "go" { print $2 }' go.mod
+  LIBGROUT_VERSION:
+    sh: jq -r '.version // "dev"' pak.json
+  LIBGROUT_OUT: build/libgrout
+
+tasks:
+
+  _linux:
+    internal: true
+    silent: true
+    cmds:
+      - rm -rf {{.LIBGROUT_OUT}}/{{.DIR}}
+      - mkdir -p {{.LIBGROUT_OUT}}/{{.DIR}}
+      - echo "Building libgrout {{.DIR}}..."
+      - docker buildx build --load --platform={{.PLATFORM}} --build-arg GO_VERSION={{.GO_VERSION}} --build-arg GROUT_VERSION={{if .GROUT_VERSION}}{{.GROUT_VERSION}}{{else}}{{.LIBGROUT_VERSION}}{{end}} --label {{.LABEL}} -t libgrout-{{.DIR}} -f docker/libgrout.Dockerfile .
+      - docker rm {{.CONTAINER_NAME}}-libgrout-{{.DIR}} >/dev/null 2>&1 || true
+      - docker create --name {{.CONTAINER_NAME}}-libgrout-{{.DIR}} --platform={{.PLATFORM}} libgrout-{{.DIR}} >/dev/null
+      - docker cp {{.CONTAINER_NAME}}-libgrout-{{.DIR}}:/out/libgrout.so {{.LIBGROUT_OUT}}/{{.DIR}}/libgrout.so
+      - docker cp {{.CONTAINER_NAME}}-libgrout-{{.DIR}}:/out/libgrout.h {{.LIBGROUT_OUT}}/{{.DIR}}/libgrout.h
+      - docker rm {{.CONTAINER_NAME}}-libgrout-{{.DIR}} >/dev/null
+      - echo "Built libgrout {{.DIR}}"
+
+  linux-arm64:
+    desc: Build libgrout for linux/arm64 against glibc 2.31
+    cmds:
+      - task: _linux
+        vars: { PLATFORM: linux/arm64, DIR: linux-arm64 }
+
+  linux-arm32:
+    desc: Build libgrout for linux/arm (armv7) against glibc 2.31
+    cmds:
+      - task: _linux
+        vars: { PLATFORM: linux/arm/v7, DIR: linux-arm }
+
+  android:
+    desc: Build libgrout for android arm64-v8a and armeabi-v7a
+    silent: true
+    cmds:
+      - rm -rf {{.LIBGROUT_OUT}}/android
+      - mkdir -p {{.LIBGROUT_OUT}}/android
+      - echo "Building libgrout android..."
+      - docker buildx build --load --platform=linux/amd64 --build-arg GO_VERSION={{.GO_VERSION}} --build-arg GROUT_VERSION={{if .GROUT_VERSION}}{{.GROUT_VERSION}}{{else}}{{.LIBGROUT_VERSION}}{{end}} --label {{.LABEL}} -t libgrout-android -f docker/libgrout-android.Dockerfile .
+      - docker rm {{.CONTAINER_NAME}}-libgrout-android >/dev/null 2>&1 || true
+      - docker create --name {{.CONTAINER_NAME}}-libgrout-android --platform=linux/amd64 libgrout-android >/dev/null
+      - docker cp {{.CONTAINER_NAME}}-libgrout-android:/out/. {{.LIBGROUT_OUT}}/android
+      - docker rm {{.CONTAINER_NAME}}-libgrout-android >/dev/null
+      - echo "Built libgrout android"
+
+  smoke:
+    desc: Build libgrout natively and run the C smoke test
+    cmds:
+      - scripts/libgrout-smoke.sh
+
+  all:
+    desc: Build libgrout for every target and run the smoke test
+    cmds:
+      - task: linux-arm64
+      - task: linux-arm32
+      - task: android
+      - task: smoke

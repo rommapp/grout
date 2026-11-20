@@ -9,7 +9,7 @@ import (
 
 	"golang.org/x/text/unicode/norm"
 
-	"grout/core/romm"
+	"github.com/rommapp/grout/core/romm"
 )
 
 const purgeBatch = 400

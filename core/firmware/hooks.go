@@ -1,11 +1,11 @@
 package firmware
 
 import (
-	"grout/core/firmware/host"
-	"grout/core/firmware/leaf"
-	"grout/core/firmware/muos"
-	"grout/core/firmware/nextui"
-	"grout/core/firmware/spruce"
+	"github.com/rommapp/grout/core/firmware/host"
+	"github.com/rommapp/grout/core/firmware/leaf"
+	"github.com/rommapp/grout/core/firmware/muos"
+	"github.com/rommapp/grout/core/firmware/nextui"
+	"github.com/rommapp/grout/core/firmware/spruce"
 )
 
 type Overrides struct {
@@ -57,4 +57,26 @@ var hooks = Registry{
 
 func Hooks() Registry {
 	return hooks
+}
+
+func MergeHooks(base, extra Registry) Registry {
+	return Registry{
+		Path:    mergeMap(base.Path, extra.Path),
+		Version: mergeMap(base.Version, extra.Version),
+		Naming:  mergeMap(base.Naming, extra.Naming),
+		Folders: mergeMap(base.Folders, extra.Folders),
+		Label:   mergeMap(base.Label, extra.Label),
+		Input:   mergeMap(base.Input, extra.Input),
+	}
+}
+
+func mergeMap[V any](base, extra map[string]V) map[string]V {
+	out := make(map[string]V, len(base)+len(extra))
+	for k, v := range base {
+		out[k] = v
+	}
+	for k, v := range extra {
+		out[k] = v
+	}
+	return out
 }

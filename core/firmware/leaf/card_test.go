@@ -7,7 +7,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"grout/core/firmware/host"
+	"github.com/rommapp/grout/core/firmware/host"
 )
 
 func dir() *fstest.MapFile {

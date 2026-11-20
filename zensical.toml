@@ -52,6 +52,10 @@ nav = [
       { "TrimUI" = "platforms/trimui.md" },
     ] },
   ] },
+  { "Library" = [
+    "library/index.md",
+    { "Contract Reference" = "library/contract.md" },
+  ] },
   { "Contributing" = [
     "contributing/index.md",
     { "Development Guide" = "contributing/development.md" },

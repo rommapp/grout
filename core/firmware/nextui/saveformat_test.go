@@ -5,7 +5,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"grout/core/firmware/host"
+	"github.com/rommapp/grout/core/firmware/host"
 )
 
 const settingsKey = "mnt/SDCARD/.userdata/shared/minuisettings.txt"

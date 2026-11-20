@@ -10,7 +10,7 @@ import (
 	"path"
 	"strings"
 
-	"grout/core/firmware/host"
+	"github.com/rommapp/grout/core/firmware/host"
 )
 
 type ScanResult struct {
@@ -67,7 +67,7 @@ func (l *Library) Scan(ctx context.Context, progress func(Progress)) (ScanResult
 		}
 		var files []localFile
 		for _, dir := range p.RomDirs {
-			found, skipped, err := walkRomDir(l.Firmware.Host, dir)
+			found, skipped, err := walkRomDir(l.log(), l.Firmware.Host, dir)
 			if err != nil {
 				return res, err
 			}
@@ -88,21 +88,21 @@ func (l *Library) Scan(ctx context.Context, progress func(Progress)) (ScanResult
 	return res, nil
 }
 
-func readRomDir(h host.Host, dir string, skipped *[]string) ([]fs.DirEntry, bool) {
+func readRomDir(log *slog.Logger, h host.Host, dir string, skipped *[]string) ([]fs.DirEntry, bool) {
 	entries, err := h.ReadDir(dir)
 	if err == nil {
 		return entries, true
 	}
 	if !errors.Is(err, fs.ErrNotExist) {
-		slog.Warn("scan: skipping unreadable folder", "path", dir, "error", err)
+		log.Warn("scan: skipping unreadable folder", "path", dir, "error", err)
 		*skipped = append(*skipped, dir)
 	}
 	return nil, false
 }
 
-func walkRomDir(h host.Host, dir string) ([]localFile, []string, error) {
+func walkRomDir(log *slog.Logger, h host.Host, dir string) ([]localFile, []string, error) {
 	var skipped []string
-	entries, ok := readRomDir(h, dir, &skipped)
+	entries, ok := readRomDir(log, h, dir, &skipped)
 	if !ok {
 		return nil, skipped, nil
 	}
@@ -122,7 +122,7 @@ func walkRomDir(h host.Host, dir string) ([]localFile, []string, error) {
 			continue
 		}
 		sub := path.Join(dir, e.Name())
-		children, ok := readRomDir(h, sub, &skipped)
+		children, ok := readRomDir(log, h, sub, &skipped)
 		if !ok {
 			continue
 		}

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"grout/core/firmware/host"
+	"github.com/rommapp/grout/core/firmware/host"
 )
 
 func locDef(extra string) string {
@@ -30,7 +30,7 @@ psx = { roms = ["Sony PlayStation (PS)"], saves = ["PS"] }
 
 func locFirmware(t *testing.T, def string, files fstest.MapFS, ov Overrides, reg Registry) *Firmware {
 	t.Helper()
-	f, err := resolveWith(mustParse(t, def), &host.Fake{Files: files}, ov, reg)
+	f, err := ResolveWith(mustParse(t, def), &host.Fake{Files: files}, ov, reg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -248,7 +248,7 @@ gba = { roms = ["GBA"], saves = [] }
 
 func TestResolveUnregisteredSaveHooks(t *testing.T) {
 	for _, line := range []string{`naming_hook = "n"`, `extra_folders_hook = "n"`, `label_hook = "n"`} {
-		_, err := resolveWith(mustParse(t, locDef(line)), &host.Fake{}, Overrides{}, Registry{})
+		_, err := ResolveWith(mustParse(t, locDef(line)), &host.Fake{}, Overrides{}, Registry{})
 		if err == nil || !strings.Contains(err.Error(), "not registered") {
 			t.Errorf("%s: %v", line, err)
 		}

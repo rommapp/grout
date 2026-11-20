@@ -109,3 +109,50 @@ jobs:
             ./resources \
             ./tools/archcheck \
             ./tools/gen-firmware-matrix
+
+  libgrout:
+    name: Build libgrout
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Smoke test
+        run: scripts/libgrout-smoke.sh
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build linux arm64
+        run: task libgrout:linux-arm64
+
+      - name: Build linux arm
+        run: task libgrout:linux-arm32
+
+      - name: Build android
+        run: task libgrout:android
+
+      - name: Check outputs
+        run: |
+          for dir in linux-arm64 linux-arm android/arm64-v8a android/armeabi-v7a; do
+            for f in libgrout.so libgrout.h; do
+              if [ ! -s "build/libgrout/$dir/$f" ]; then
+                echo "missing build/libgrout/$dir/$f"
+                exit 1
+              fi
+            done
+          done

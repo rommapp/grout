@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 
 	"github.com/spf13/cobra"
 )
@@ -14,19 +13,19 @@ type Env struct {
 	Dir      string
 	Stdout   io.Writer
 	Stderr   io.Writer
-	LogLevel *slog.LevelVar
-	Getenv   func(string) string
+	Firmware string
+	Environ  map[string]string
 }
 
 type exitError struct {
-	code int
+	code ExitCode
 }
 
 func (e *exitError) Error() string {
 	return fmt.Sprintf("exit %d", e.code)
 }
 
-func Run(ctx context.Context, env Env, args []string) int {
+func Run(ctx context.Context, env Env, args []string) ExitCode {
 	root := newRoot(env)
 	root.SetArgs(args)
 	err := root.ExecuteContext(ctx)
@@ -58,5 +57,7 @@ func newRoot(env Env) *cobra.Command {
 	root.SetErr(env.Stderr)
 	root.AddCommand(newStatusCmd(env))
 	root.AddCommand(newLibraryCmd(env))
+	root.AddCommand(newFirmwareCmd(env))
+	root.AddCommand(newCallCmd(env))
 	return root
 }

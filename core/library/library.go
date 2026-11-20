@@ -2,25 +2,28 @@ package library
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 
-	"grout/core/config"
-	"grout/core/firmware"
-	"grout/core/romm"
-	"grout/core/store"
+	"github.com/rommapp/grout/core/config"
+	"github.com/rommapp/grout/core/firmware"
+	"github.com/rommapp/grout/core/romm"
+	"github.com/rommapp/grout/core/store"
 )
 
+type Stage string
+
 const (
-	StagePlatforms   = "platforms"
-	StageGames       = "games"
-	StageCollections = "collections"
-	StagePurge       = "purge"
-	StageScan        = "scan"
+	StagePlatforms   Stage = "platforms"
+	StageGames       Stage = "games"
+	StageCollections Stage = "collections"
+	StagePurge       Stage = "purge"
+	StageScan        Stage = "scan"
 )
 
 type Progress struct {
-	Stage string
+	Stage Stage
 	Done  int
 	Total int
 }
@@ -30,6 +33,14 @@ type Library struct {
 	Client   *romm.Client
 	Config   *config.Config
 	Firmware *firmware.Firmware
+	Log      *slog.Logger
+}
+
+func (l *Library) log() *slog.Logger {
+	if l.Log == nil {
+		return slog.New(slog.DiscardHandler)
+	}
+	return l.Log
 }
 
 func New(s *store.Store, c *romm.Client, cfg *config.Config, fw *firmware.Firmware) *Library {

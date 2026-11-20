@@ -41,35 +41,52 @@ brew install sdl2 sdl2_image sdl2_ttf sdl2_gfx
 
 ### Exercising the library without a UI
 
-`grout library refresh [--full]` runs the RomM library refresh and the local ROM scan, then prints a JSON summary:
+Every CLI command opens Grout through the same JSON contract that embedding hosts call (see [Grout as a library](../library/index.md)), makes its call and prints the reply envelope exactly as a host would receive it.
+
+`grout library refresh [--full]` refreshes the library from RomM and scans the local ROM folders:
 
 ```json
 {
-  "firmware": "nextui",
-  "refresh": {
-    "platforms": 1,
-    "games": 2,
-    "collections": 0,
-    "deleted": 0,
-    "failed_platforms": [],
-    "collection_errors": [],
-    "purge_error": ""
-  },
-  "scan": { "files": 1, "matched": 1, "platforms": 1, "skipped_folders": [] },
-  "error": ""
+  "ok": true,
+  "result": {
+    "refresh": {
+      "platforms": 1,
+      "games": 2,
+      "collections": 0,
+      "deleted": 0,
+      "failed_platforms": [],
+      "collection_errors": [],
+      "purge_error": ""
+    },
+    "scan": { "files": 1, "matched": 1, "platforms": 1, "skipped_folders": [] }
+  }
 }
 ```
 
-`--full` ignores the stored cursors and fetches everything again. The command reads `settings.json` from the working
-directory, takes the firmware from `CFW`, and keeps its database at `.cache/library.db`.
+A failure replaces `result` with `error`, for example `{"ok": false, "error": {"code": "not_configured", "message": "no RomM host configured"}}`. A refresh that fails partway carries both. `--full` ignores the stored cursors and fetches everything again. The command uses the working directory as its data directory (`settings.json`, `.cache/library.db`, `logs/grout.log`) and takes the firmware from `CFW`.
 
-Exit codes: 0 success (including partial platform or collection failures, which are listed in the summary), 1 usage
-error, 2 the server, the platforms step, the library database or the scan failed, 4 the server lacks save channel
-snapshots, 5 no config, no host, or `CFW` names no known firmware.
+`grout status` reports whether the configured RomM server is reachable and supports save channel snapshots.
 
-To try it on a mock card, build one with `go run ./tools/mkroot --firmware nextui <dir>`, put the printed `CFW` and
-`GROUT_ROOT` lines in the environment, and run `go run ./cmd/grout library refresh` from a directory holding a
-`settings.json` that points at your RomM.
+`grout call <method> [json]` runs any contract method, for example `grout call library.games '{"search": "zelda", "limit": 10}'`. It is hidden from the help output and meant for testing.
+
+`grout firmware validate <file> --host` checks a host firmware definition against the host profile and prints `{"ok": true}` or a `bad_definition` error listing every problem.
+
+Exit codes:
+
+| Code | Meaning |
+|---|---|
+| 0 | Success, including partial platform or collection failures listed in the result |
+| 1 | Usage error or `bad_request` |
+| 2 | `server_unreachable`, `storage` or `internal` |
+| 3 | Reserved for save sync |
+| 4 | `server_too_old`: the server lacks save channel snapshots |
+| 5 | `not_configured` or `bad_definition` |
+| 6 | `unauthorized` |
+| 7 | `busy`: another refresh or scan is running |
+| 8 | `data_dir_locked`: another process has this data directory open |
+| 9 | `cancelled` |
+
+To try it on a mock card, build one with `go run ./tools/mkroot --firmware nextui <dir>`, put the printed `CFW` and `GROUT_ROOT` lines in the environment, and run `go run ./cmd/grout library refresh` from a directory holding a `settings.json` that points at your RomM.
 
 ## Project Structure
 

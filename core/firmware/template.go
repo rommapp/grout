@@ -28,6 +28,12 @@ func scanTemplate(tmpl string) []tmplPart {
 		for j < len(tmpl) && isVarChar(tmpl[j]) {
 			j++
 		}
+		if tmpl[i+1:min(j, len(tmpl))] == "env" && j+1 < len(tmpl) && tmpl[j] == '.' && isVarChar(tmpl[j+1]) {
+			j++
+			for j < len(tmpl) && isVarChar(tmpl[j]) {
+				j++
+			}
+		}
 		if j > i+1 && j < len(tmpl) && tmpl[j] == '}' {
 			if i > last {
 				parts = append(parts, tmplPart{text: tmpl[last:i]})
@@ -55,6 +61,34 @@ func Variables(tmpl string) []string {
 		}
 	}
 	return out
+}
+
+const envPrefix = "env."
+
+func IsEnvVar(name string) bool {
+	return strings.HasPrefix(name, envPrefix)
+}
+
+func ExpandEnv(tmpl string, vars map[string]string, getenv func(string) string) (string, error) {
+	merged := vars
+	for _, name := range Variables(tmpl) {
+		if !IsEnvVar(name) {
+			continue
+		}
+		key := strings.TrimPrefix(name, envPrefix)
+		v := getenv(key)
+		if v == "" {
+			return "", fmt.Errorf("environment variable %s is not set", key)
+		}
+		if len(merged) == len(vars) {
+			merged = make(map[string]string, len(vars)+1)
+			for k, x := range vars {
+				merged[k] = x
+			}
+		}
+		merged[name] = v
+	}
+	return Expand(tmpl, merged)
 }
 
 func Expand(tmpl string, vars map[string]string) (string, error) {

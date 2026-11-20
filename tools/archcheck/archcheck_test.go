@@ -13,13 +13,13 @@ import (
 
 func TestLayerOf(t *testing.T) {
 	cases := map[string]Layer{
-		"grout/core/config":        Core,
-		"grout/core/firmware/muos": Core,
-		"grout/ui":                 UI,
-		"grout/cli":                CLI,
-		"grout/cmd/grout":          Cmd,
-		"grout/version":            Pkg,
-		"grout/resources":          UI,
+		"github.com/rommapp/grout/core/config":        Core,
+		"github.com/rommapp/grout/core/firmware/muos": Core,
+		"github.com/rommapp/grout/ui":                 UI,
+		"github.com/rommapp/grout/cli":                CLI,
+		"github.com/rommapp/grout/cmd/grout":          Cmd,
+		"github.com/rommapp/grout/version":            Pkg,
+		"github.com/rommapp/grout/resources":          UI,
 	}
 	for path, want := range cases {
 		got, ok := layerOf(path)
@@ -30,7 +30,7 @@ func TestLayerOf(t *testing.T) {
 }
 
 func TestLayerOfRejectsNonGroutAndNearMisses(t *testing.T) {
-	for _, path := range []string{"grout/uixyz", "grout/clix", "grout/coreutil", "net/http", "github.com/beevik/etree"} {
+	for _, path := range []string{"github.com/rommapp/grout/uixyz", "github.com/rommapp/grout/clix", "github.com/rommapp/grout/coreutil", "net/http", "github.com/beevik/etree"} {
 		if l, ok := layerOf(path); ok {
 			t.Errorf("layerOf(%q) = %q, want no layer", path, l)
 		}
@@ -56,17 +56,6 @@ func TestOnlyUIAndCmdUseToolkit(t *testing.T) {
 		if mayUseToolkit(l) {
 			t.Errorf("%s may use toolkit", l)
 		}
-	}
-}
-
-func TestOnlyCmdHoldsGlobalState(t *testing.T) {
-	for _, l := range []Layer{Pkg, Core, UI, CLI} {
-		if mayHoldGlobalState(l) {
-			t.Errorf("%s may hold package-level state", l)
-		}
-	}
-	if !mayHoldGlobalState(Cmd) {
-		t.Error("cmd may hold package-level state")
 	}
 }
 
@@ -238,10 +227,10 @@ func TestRootIdent(t *testing.T) {
 // must not stop the layer scan.
 func TestCheckImports_ReportsToolkitAndLayerTogether(t *testing.T) {
 	p := pkg{
-		ImportPath: "grout/core/store",
+		ImportPath: "github.com/rommapp/grout/core/store",
 		Imports: []string{
 			toolkitPrefix + "/pkg/gabagool", // sorts before grout/... as go list emits it
-			"grout/ui",
+			"github.com/rommapp/grout/ui",
 		},
 	}
 
@@ -258,19 +247,19 @@ func TestCheckImports_ReportsToolkitAndLayerTogether(t *testing.T) {
 
 func TestCheckImports_AllowsPermittedEdges(t *testing.T) {
 	p := pkg{
-		ImportPath: "grout/cli",
-		Imports:    []string{"grout/core/config", "grout/core/romm", "grout/version", "net/http"},
+		ImportPath: "github.com/rommapp/grout/cli",
+		Imports:    []string{"github.com/rommapp/grout/api", "github.com/rommapp/grout/version", "net/http"},
 	}
 	if got := checkImports(p, CLI); len(got) != 0 {
-		t.Errorf("expected no violations for cli importing core, got %v", got)
+		t.Errorf("expected no violations for cli importing api, got %v", got)
 	}
 }
 
 // The allowlist key must not carry anything that changes when unrelated code
 // moves, or the file would churn and stop being reviewed.
 func TestViolationKey_IsStable(t *testing.T) {
-	a := violation{Rule: "layer", Subject: "grout/ui -> grout/cache", Detail: "one wording", Files: []string{"a.go"}}
-	b := violation{Rule: "layer", Subject: "grout/ui -> grout/cache", Detail: "another wording", Files: []string{"b.go", "c.go"}}
+	a := violation{Rule: "layer", Subject: "github.com/rommapp/grout/ui -> grout/cache", Detail: "one wording", Files: []string{"a.go"}}
+	b := violation{Rule: "layer", Subject: "github.com/rommapp/grout/ui -> grout/cache", Detail: "another wording", Files: []string{"b.go", "c.go"}}
 
 	if a.Key() != b.Key() {
 		t.Errorf("keys differ despite the same rule and subject: %q vs %q", a.Key(), b.Key())
@@ -294,9 +283,9 @@ func TestAllowFileRoundTrip(t *testing.T) {
 	}
 
 	want := []violation{
-		{Rule: "layer", Subject: "grout/ui -> grout/cache"},
-		{Rule: "toolkit", Subject: "grout/romm"},
-		{Rule: "global", Subject: "grout/cache.cacheManager"},
+		{Rule: "layer", Subject: "github.com/rommapp/grout/ui -> grout/cache"},
+		{Rule: "toolkit", Subject: "github.com/rommapp/grout/romm"},
+		{Rule: "global", Subject: "github.com/rommapp/grout/cache.cacheManager"},
 	}
 	if err := writeAllowFile(want); err != nil {
 		t.Fatalf("writeAllowFile: %v", err)
@@ -351,13 +340,239 @@ func TestReadAllowFile_MissingFileIsEmpty(t *testing.T) {
 }
 
 func TestIsExempt(t *testing.T) {
-	if !isExempt("grout/test/e2e/groutkeys") {
+	if !isExempt("github.com/rommapp/grout/test/e2e/groutkeys") {
 		t.Error("test helpers never ship and should be exempt")
 	}
-	if !isExempt("grout/tools/archcheck") {
+	if !isExempt("github.com/rommapp/grout/tools/archcheck") {
 		t.Error("developer tools should be exempt")
 	}
-	if isExempt("grout/ui") {
-		t.Error("grout/ui must not be exempt")
+	if isExempt("github.com/rommapp/grout/ui") {
+		t.Error("github.com/rommapp/grout/ui must not be exempt")
+	}
+}
+
+func TestLayerOfNewLayers(t *testing.T) {
+	cases := map[string]Layer{
+		"github.com/rommapp/grout":              Lib,
+		"github.com/rommapp/grout/api":          API,
+		"github.com/rommapp/grout/capi":         CAPI,
+		"github.com/rommapp/grout/core/library": Core,
+		"github.com/rommapp/grout/cli":          CLI,
+	}
+	for path, want := range cases {
+		got, ok := layerOf(path)
+		if !ok || got != want {
+			t.Errorf("layerOf(%q) = %q, %v; want %q", path, got, ok, want)
+		}
+	}
+}
+
+func TestLibIsMatchedExactly(t *testing.T) {
+	if l, ok := layerOf("github.com/rommapp/grout"); !ok || l != Lib {
+		t.Errorf("root = %q, %v", l, ok)
+	}
+	if l, ok := layerOf("github.com/rommapp/grout/nothing"); ok {
+		t.Errorf("unknown subpackage classified as %q", l)
+	}
+}
+
+func TestImportMatrix(t *testing.T) {
+	want := map[Layer][]Layer{
+		Pkg:  {Pkg},
+		Core: {Pkg, Core},
+		Lib:  {Pkg, Core},
+		API:  {Pkg, Core, Lib},
+		CAPI: {Pkg, API},
+		UI:   {Pkg, Core, Lib, UI},
+		CLI:  {Pkg, API, CLI},
+		Cmd:  {Pkg, Core, Lib, API, CAPI, UI, CLI, Cmd},
+	}
+	all := []Layer{Pkg, Core, Lib, API, CAPI, UI, CLI, Cmd}
+	for from, allowed := range want {
+		for _, to := range all {
+			if got := allowedImports[from][to]; got != slices.Contains(allowed, to) {
+				t.Errorf("%s importing %s = %v", from, to, got)
+			}
+		}
+	}
+}
+
+func TestOnlyCmdAndCAPIHoldGlobalState(t *testing.T) {
+	for _, l := range []Layer{Pkg, Core, Lib, API, UI, CLI} {
+		if mayHoldGlobalState(l) {
+			t.Errorf("%s may hold package-level state", l)
+		}
+	}
+	for _, l := range []Layer{Cmd, CAPI} {
+		if !mayHoldGlobalState(l) {
+			t.Errorf("%s may not hold package-level state", l)
+		}
+	}
+}
+
+func TestProcessRuleFlagsEachForbiddenUse(t *testing.T) {
+	cases := map[string]string{
+		"os.Exit":                `import "os"; func f() { os.Exit(1) }`,
+		"os.Getenv":              `import "os"; func f() { _ = os.Getenv("A") }`,
+		"os.LookupEnv":           `import "os"; func f() { os.LookupEnv("A") }`,
+		"os.Environ":             `import "os"; func f() { _ = os.Environ() }`,
+		"os.Setenv":              `import "os"; func f() { os.Setenv("A", "b") }`,
+		"os.Unsetenv":            `import "os"; func f() { os.Unsetenv("A") }`,
+		"os.Clearenv":            `import "os"; func f() { os.Clearenv() }`,
+		"os.Chdir":               `import "os"; func f() { os.Chdir("/") }`,
+		"os.Stdin":               `import "os"; var _ = os.Stdin`,
+		"os.Stdout":              `import "os"; var _ = os.Stdout`,
+		"os.Stderr":              `import "os"; var _ = os.Stderr`,
+		"log.Println":            `import "log"; func f() { log.Println("x") }`,
+		"log.Fatal":              `import "log"; func f() { log.Fatal("x") }`,
+		"fmt.Print":              `import "fmt"; func f() { fmt.Print("x") }`,
+		"fmt.Printf":             `import "fmt"; func f() { fmt.Printf("x") }`,
+		"fmt.Println":            `import "fmt"; func f() { fmt.Println("x") }`,
+		"slog.Debug":             `import "log/slog"; func f() { slog.Debug("x") }`,
+		"slog.Info":              `import "log/slog"; func f() { slog.Info("x") }`,
+		"slog.Warn":              `import "log/slog"; func f() { slog.Warn("x") }`,
+		"slog.Error":             `import "log/slog"; func f() { slog.Error("x") }`,
+		"slog.Log":               `import ("context"; "log/slog"); func f() { slog.Log(context.TODO(), slog.LevelInfo, "x") }`,
+		"slog.LogAttrs":          `import ("context"; "log/slog"); func f() { slog.LogAttrs(context.TODO(), slog.LevelInfo, "x") }`,
+		"slog.DebugContext":      `import ("context"; "log/slog"); func f() { slog.DebugContext(context.TODO(), "x") }`,
+		"slog.InfoContext":       `import ("context"; "log/slog"); func f() { slog.InfoContext(context.TODO(), "x") }`,
+		"slog.WarnContext":       `import ("context"; "log/slog"); func f() { slog.WarnContext(context.TODO(), "x") }`,
+		"slog.ErrorContext":      `import ("context"; "log/slog"); func f() { slog.ErrorContext(context.TODO(), "x") }`,
+		"slog.Default":           `import "log/slog"; func f() { _ = slog.Default() }`,
+		"slog.SetDefault":        `import "log/slog"; func f() { slog.SetDefault(nil) }`,
+		"slog.SetLogLoggerLevel": `import "log/slog"; func f() { slog.SetLogLoggerLevel(slog.LevelInfo) }`,
+		"signal.Notify":          `import "os/signal"; func f() { signal.Notify(nil) }`,
+		"signal.Ignore":          `import "os/signal"; func f() { signal.Ignore() }`,
+		"signal.Reset":           `import "os/signal"; func f() { signal.Reset() }`,
+		"flag.Parse":             `import "flag"; func f() { flag.Parse() }`,
+		"flag.String":            `import "flag"; func f() { flag.String("a", "", "") }`,
+	}
+	for want, body := range cases {
+		got := processUses(parseSrc(t, "package x\n"+body))
+		if !slices.Equal(got, []string{want}) {
+			t.Errorf("%s: uses = %v", want, got)
+		}
+	}
+}
+
+func TestProcessRuleAllowsInjectedUse(t *testing.T) {
+	src := `package x
+import ("fmt"; "log/slog"; "os")
+func f(l *slog.Logger) {
+	l.Warn("x")
+	_ = fmt.Sprintf("x")
+	_ = os.ReadFile
+	_ = slog.LevelInfo
+}`
+	if got := processUses(parseSrc(t, src)); len(got) != 0 {
+		t.Errorf("uses = %v", got)
+	}
+}
+
+func TestProcessRuleResolvesImportAliases(t *testing.T) {
+	aliased := `package x
+import l "log"
+func f() { l.Println("x") }`
+	if got := processUses(parseSrc(t, aliased)); !slices.Equal(got, []string{"log.Println"}) {
+		t.Errorf("aliased uses = %v", got)
+	}
+	local := `package x
+import "os"
+var _ = os.Getpid
+type exiter struct{}
+func (exiter) Exit() {}
+func f() {
+	os := exiter{}
+	os.Exit()
+}`
+	if got := processUses(parseSrc(t, local)); len(got) != 0 {
+		t.Errorf("local variable uses = %v", got)
+	}
+	param := `package x
+import "fmt"
+type printer struct{}
+func (printer) Println(...any) {}
+func f(fmt printer) { fmt.Println(1) }`
+	if got := processUses(parseSrc(t, param)); len(got) != 0 {
+		t.Errorf("parameter uses = %v", got)
+	}
+}
+
+func TestProcessRuleChecksCgoFiles(t *testing.T) {
+	dir := t.TempDir()
+	src := "package x\nimport \"os\"\nfunc f() { os.Exit(1) }\n"
+	if err := os.WriteFile(filepath.Join(dir, "c.go"), []byte(src), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	p := pkg{ImportPath: "github.com/rommapp/grout/capi", Dir: dir, CgoFiles: []string{"c.go"}}
+	got := checkProcess(p, CAPI)
+	if len(got) != 1 || got[0].Subject != p.ImportPath+" uses os.Exit" {
+		t.Errorf("got %v", got)
+	}
+}
+
+func TestProcessRuleIgnoresCLIAndCmd(t *testing.T) {
+	dir := t.TempDir()
+	src := "package x\nimport \"fmt\"\nfunc f() { fmt.Println(1) }\n"
+	if err := os.WriteFile(filepath.Join(dir, "x.go"), []byte(src), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	p := pkg{ImportPath: "github.com/rommapp/grout/cli", Dir: dir, GoFiles: []string{"x.go"}}
+	for _, l := range []Layer{CLI, Cmd, UI} {
+		if got := checkProcess(p, l); len(got) != 0 {
+			t.Errorf("%s flagged: %v", l, got)
+		}
+	}
+	for _, l := range []Layer{Core, Lib, API, CAPI} {
+		got := checkProcess(p, l)
+		if len(got) != 1 || got[0].Rule != "process" || got[0].Subject != p.ImportPath+" uses fmt.Println" {
+			t.Errorf("%s = %v", l, got)
+		}
+	}
+}
+
+func TestLoadPackagesSeesCgoFilesWithCgoDisabled(t *testing.T) {
+	t.Setenv("CGO_ENABLED", "0")
+	root := t.TempDir()
+	files := map[string]string{
+		"go.mod":        "module github.com/rommapp/grout\n\ngo 1.21\n",
+		"capi/plain.go": "package capi\n",
+		"capi/c.go":     "package capi\n\nimport \"C\"\nimport \"os\"\n\nfunc f() { os.Exit(1) }\n",
+	}
+	for name, body := range files {
+		full := filepath.Join(root, name)
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(full, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	pkgs, err := loadPackages(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var rules []string
+	for _, v := range check(pkgs) {
+		rules = append(rules, v.Key())
+	}
+	want := []string{"process github.com/rommapp/grout/capi uses os.Exit"}
+	if !slices.Equal(rules, want) {
+		t.Errorf("violations = %v, pkgs = %+v", rules, pkgs)
+	}
+}
+
+func TestGlobalViolationNamesCmdAndCAPI(t *testing.T) {
+	dir := t.TempDir()
+	src := "package p\n\nvar n int\n\nfunc f() { n++ }\n"
+	if err := os.WriteFile(filepath.Join(dir, "a.go"), []byte(src), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	vs := checkGlobals(pkg{ImportPath: "github.com/rommapp/grout/core/p", Dir: dir, GoFiles: []string{"a.go"}}, Core)
+	if len(vs) != 1 {
+		t.Fatalf("violations = %+v", vs)
+	}
+	if !strings.HasSuffix(vs[0].Detail, "only cmd and capi may hold process state") {
+		t.Fatalf("detail = %q", vs[0].Detail)
 	}
 }

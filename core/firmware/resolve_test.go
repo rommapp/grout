@@ -7,7 +7,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"grout/core/firmware/host"
+	"github.com/rommapp/grout/core/firmware/host"
 )
 
 func mustParse(t *testing.T, s string) *Definition {
@@ -153,18 +153,18 @@ saves = { value = "{card}/s" }
 	reg := Registry{Path: map[string]PathHook{"x_roms": func(h host.Host, vars map[string]string) (string, error) {
 		return vars["card"] + "/hooked/" + vars["muos_rom_storage"], nil
 	}}}
-	f, err := resolveWith(d, &host.Fake{}, Overrides{MuOSRomStorage: "sd2"}, reg)
+	f, err := ResolveWith(d, &host.Fake{}, Overrides{MuOSRomStorage: "sd2"}, reg)
 	if err != nil || f.Roms != "/c/hooked/sd2" {
 		t.Fatalf("%v %+v", err, f)
 	}
-	_, err = resolveWith(d, &host.Fake{}, Overrides{}, Registry{})
+	_, err = ResolveWith(d, &host.Fake{}, Overrides{}, Registry{})
 	if err == nil || !strings.Contains(err.Error(), "paths.roms") {
 		t.Fatalf("err=%v", err)
 	}
 	boom := Registry{Path: map[string]PathHook{"x_roms": func(host.Host, map[string]string) (string, error) {
 		return "", errors.New("boom")
 	}}}
-	if _, err = resolveWith(d, &host.Fake{}, Overrides{}, boom); err == nil {
+	if _, err = ResolveWith(d, &host.Fake{}, Overrides{}, boom); err == nil {
 		t.Fatal("hook error swallowed")
 	}
 }
@@ -191,5 +191,64 @@ func TestActiveFirmware(t *testing.T) {
 	}
 	if _, err = Active(get("nope")); err == nil {
 		t.Fatal("unknown accepted")
+	}
+}
+
+func TestResolveEnvCard(t *testing.T) {
+	d := mustParse(t, `
+id = "x"
+[paths]
+card = { value = "{env.ROOT}" }
+roms = { value = "{card}/Roms" }
+bios = { value = "{card}/Bios" }
+saves = { value = "{card}/Saves" }
+`)
+	f, err := Resolve(d, &host.Fake{Env: map[string]string{"ROOT": "/x"}}, Overrides{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f.Card != "/x" || f.Roms != "/x/Roms" {
+		t.Fatalf("%+v", f)
+	}
+}
+
+const envTemplateBase = `
+id = "x"
+[paths]
+card = { value = "/x" }
+roms = { value = "{card}/Roms" }
+bios = { value = "{card}/Bios" }
+saves = { value = "{card}/Saves" }
+`
+
+func TestResolveRequiresEnvInBiosRow(t *testing.T) {
+	d := mustParse(t, envTemplateBase+`
+[platforms]
+gba = { roms = ["GBA"], saves = ["GBA"], bios = ["{env.CANNOLI_BIOS}/{rel}"] }
+`)
+	_, err := Resolve(d, &host.Fake{}, Overrides{})
+	if err == nil || !strings.Contains(err.Error(), "environment variable CANNOLI_BIOS is not set") {
+		t.Fatalf("got %v", err)
+	}
+	f, err := Resolve(d, &host.Fake{Env: map[string]string{"CANNOLI_BIOS": "/b"}}, Overrides{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := f.BiosPaths("gba", "a.bin"); len(got) != 1 || got[0] != "/b/a.bin" {
+		t.Fatalf("%v", got)
+	}
+}
+
+func TestResolveRequiresEnvInArtTemplate(t *testing.T) {
+	d := mustParse(t, envTemplateBase+`
+[art]
+cover = { value = "{env.ART_ROOT}/{system}" }
+`)
+	_, err := Resolve(d, &host.Fake{}, Overrides{})
+	if err == nil || !strings.Contains(err.Error(), "environment variable ART_ROOT is not set") {
+		t.Fatalf("got %v", err)
+	}
+	if _, err := Resolve(d, &host.Fake{Env: map[string]string{"ART_ROOT": "/a"}}, Overrides{}); err != nil {
+		t.Fatal(err)
 	}
 }

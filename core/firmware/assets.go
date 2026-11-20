@@ -51,13 +51,13 @@ func (f *Firmware) BiosPaths(slug, rel string) []string {
 				for _, s := range saveFolders {
 					vars := cloneVars(base)
 					vars["save_folder"] = s
-					if v, err := Expand(t, vars); err == nil {
+					if v, err := ExpandEnv(t, vars, f.Host.Getenv); err == nil {
 						out = appendUnique(out, path.Clean(v))
 					}
 				}
 				continue
 			}
-			if v, err := Expand(t, base); err == nil {
+			if v, err := ExpandEnv(t, base, f.Host.Getenv); err == nil {
 				out = appendUnique(out, path.Clean(v))
 			}
 		}
@@ -130,7 +130,7 @@ func (f *Firmware) ArtDir(kind ArtKind, slug, romDir, platformName string) (stri
 		"rom_folder": path.Base(romDir),
 		"system":     system,
 	}
-	v, err := Expand(tmpl, vars)
+	v, err := ExpandEnv(tmpl, vars, f.Host.Getenv)
 	if err != nil {
 		return "", false
 	}

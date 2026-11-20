@@ -165,6 +165,46 @@ jobs:
             dist/Grout-Allium.zip
             dist/Grout-Onion.zip
             build32/grout
+  build-libgrout:
+    needs: prepare
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build libgrout
+        run: task libgrout:linux-arm64 libgrout:linux-arm32 libgrout:android
+        env:
+          GROUT_VERSION: ${{ needs.prepare.outputs.version }}
+
+      - name: Package libgrout
+        run: |
+          mkdir -p dist/libgrout
+          for target in linux-arm64 linux-arm android/arm64-v8a android/armeabi-v7a; do
+            name="libgrout-$(echo "$target" | tr '/' '-')"
+            tar -czf "dist/libgrout/$name.tar.gz" -C "build/libgrout/$target" libgrout.so libgrout.h
+          done
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: libgrout-artifacts
+          path: dist/libgrout/libgrout-*.tar.gz
+
   package-arm-universal:
     needs: [prepare, build-arm64, build-arm32]
     runs-on: ubuntu-22.04
@@ -201,7 +241,7 @@ jobs:
             dist/Grout.spruce.zip
 
   release:
-    needs: [prepare, build-arm64, build-arm32, package-arm-universal]
+    needs: [prepare, build-arm64, build-arm32, build-libgrout, package-arm-universal]
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     steps:
@@ -230,6 +270,7 @@ jobs:
             **/Grout-Knulli.zip
             **/Grout-ROCKNIX.zip
             **/Grout-Leaf.zip
+            **/libgrout-*.tar.gz
             **/grout
           draft: false
           prerelease: ${{ inputs.beta }}

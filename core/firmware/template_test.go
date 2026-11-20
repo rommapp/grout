@@ -32,3 +32,30 @@ func TestVariables(t *testing.T) {
 		t.Fatal("plain")
 	}
 }
+
+func TestVariablesListsEnvNames(t *testing.T) {
+	got := Variables("{env.CANNOLI_ROOT}/Roms/{card}")
+	if !slices.Equal(got, []string{"env.CANNOLI_ROOT", "card"}) {
+		t.Fatalf("%v", got)
+	}
+}
+
+func TestExpandEnvReadsGetenv(t *testing.T) {
+	getenv := func(k string) string {
+		if k == "CANNOLI_ROOT" {
+			return "/storage/emulated/0/Cannoli"
+		}
+		return ""
+	}
+	got, err := ExpandEnv("{env.CANNOLI_ROOT}/Roms", nil, getenv)
+	if err != nil || got != "/storage/emulated/0/Cannoli/Roms" {
+		t.Fatalf("%q %v", got, err)
+	}
+}
+
+func TestExpandEnvMissingIsError(t *testing.T) {
+	_, err := ExpandEnv("{env.CANNOLI_ROOT}/Roms", nil, func(string) string { return "" })
+	if err == nil || !strings.Contains(err.Error(), "environment variable CANNOLI_ROOT is not set") {
+		t.Fatalf("err=%v", err)
+	}
+}

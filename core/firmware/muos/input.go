@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"grout/core/firmware/host"
+	"github.com/rommapp/grout/core/firmware/host"
 )
 
 //go:embed input/anbernic.json

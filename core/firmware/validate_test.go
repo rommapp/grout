@@ -575,3 +575,31 @@ func TestValidateCollectsAllErrors(t *testing.T) {
 		t.Fatalf("want at least 5 errors, got %v", errs)
 	}
 }
+
+func TestValidateAllowsEnvVariablesInPaths(t *testing.T) {
+	d := valid(t)
+	d.Paths.Card = Fact{Value: "{env.ROOT}", Src: "sys/a"}
+	for _, e := range check(d) {
+		if strings.Contains(e.Error(), "template variable") {
+			t.Fatal(e)
+		}
+	}
+}
+
+func TestValidateHostSkipsPackagingAndInputFiles(t *testing.T) {
+	d := valid(t)
+	d.Packaging = Packaging{}
+	d.Devices.Inputs = map[string]Input{"trimui": {File: "missing.txt"}}
+	errs := check(d)
+	wantErr(t, errs, "packaging.asset")
+	wantErr(t, errs, "input file")
+	if errs := ValidateHost(d, knownForTest, Registry{}); len(errs) != 0 {
+		t.Fatal(errs)
+	}
+}
+
+func TestValidateHostKeepsSrcRule(t *testing.T) {
+	d := valid(t)
+	d.Paths.Roms.Src = ""
+	wantErr(t, ValidateHost(d, knownForTest, Registry{}), "paths.roms", "src")
+}

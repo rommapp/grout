@@ -8,12 +8,9 @@
 // SDL2 to compile, but `go list` only resolves the import graph, so this runs
 // on a bare CI machine with CGO_ENABLED=0.
 //
-// Three rules:
-//
 //   - layer:   an import must be permitted by the matrix in layers.go.
 //   - toolkit: only ui and cmd may import the gabagool UI toolkit. Anything
 //     else linking SDL needs a display to run its tests.
-//   - global:  only cmd may hold package-level mutable state.
 //
 // Known violations live in allow.txt, so the rules can be turned on before the
 // code satisfies them. archcheck fails both when a new violation appears and
@@ -44,7 +41,7 @@ func main() {
 	verbose := flag.Bool("v", false, "print a summary even when everything passes")
 	flag.Parse()
 
-	pkgs, err := loadPackages()
+	pkgs, err := loadPackages(".")
 	if err != nil {
 		fail(err)
 	}
@@ -185,14 +182,20 @@ type pkg struct {
 	Dir        string
 	Imports    []string
 	GoFiles    []string
+	CgoFiles   []string
 }
 
-func loadPackages() ([]pkg, error) {
+func (p pkg) sourceFiles() []string {
+	return append(append([]string{}, p.GoFiles...), p.CgoFiles...)
+}
+
+func loadPackages(dir string) ([]pkg, error) {
 	const format = `{{.ImportPath}}` + sep + `{{.Dir}}` + sep +
-		`{{join .Imports ","}}` + sep + `{{join .GoFiles ","}}`
+		`{{join .Imports ","}}` + sep + `{{join .GoFiles ","}}` + sep + `{{join .CgoFiles ","}}`
 
 	cmd := exec.Command("go", "list", "-f", format, "./...")
-	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), "CGO_ENABLED=1")
 	out, err := cmd.Output()
 	if err != nil {
 		if ee, ok := err.(*exec.ExitError); ok {
@@ -204,7 +207,7 @@ func loadPackages() ([]pkg, error) {
 	var pkgs []pkg
 	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
 		parts := strings.Split(line, sep)
-		if len(parts) != 4 {
+		if len(parts) != 5 {
 			continue
 		}
 		p := pkg{ImportPath: parts[0], Dir: parts[1]}
@@ -213,6 +216,9 @@ func loadPackages() ([]pkg, error) {
 		}
 		if parts[3] != "" {
 			p.GoFiles = strings.Split(parts[3], ",")
+		}
+		if parts[4] != "" {
+			p.CgoFiles = strings.Split(parts[4], ",")
 		}
 		if isExempt(p.ImportPath) {
 			continue

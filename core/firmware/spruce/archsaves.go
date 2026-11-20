@@ -3,7 +3,7 @@ package spruce
 import (
 	"runtime"
 
-	"grout/core/firmware/host"
+	"github.com/rommapp/grout/core/firmware/host"
 )
 
 var archCores = map[string]string{

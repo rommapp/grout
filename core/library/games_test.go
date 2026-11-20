@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	"grout/core/config"
-	"grout/core/romm"
+	"github.com/rommapp/grout/core/config"
+	"github.com/rommapp/grout/core/romm"
 )
 
 func gameRom(id, platform int, name, sortKey string, genres, regions []string) romm.Rom {

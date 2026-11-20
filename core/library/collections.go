@@ -4,7 +4,7 @@ import (
 	"context"
 	"sort"
 
-	"grout/core/romm"
+	"github.com/rommapp/grout/core/romm"
 )
 
 type CollectionRow struct {

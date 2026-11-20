@@ -6,6 +6,7 @@ includes:
   build: ./taskfiles/build.yml
   code: ./taskfiles/code.yml
   deploy: ./taskfiles/deploy.yml
+  libgrout: ./taskfiles/libgrout.yml
   i18n: ./taskfiles/i18n.yml
   media: ./taskfiles/media.yml
   package: ./taskfiles/package.yml

@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"grout/core/firmware"
-	"grout/core/firmware/host"
+	"github.com/rommapp/grout/core/firmware"
+	"github.com/rommapp/grout/core/firmware/host"
 )
 
 type Options struct {

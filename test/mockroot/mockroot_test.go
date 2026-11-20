@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"grout/core/firmware"
-	"grout/core/firmware/host"
+	"github.com/rommapp/grout/core/firmware"
+	"github.com/rommapp/grout/core/firmware/host"
 )
 
 func envLookup(env map[string]string) func(string) string {

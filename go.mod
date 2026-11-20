@@ -1,4 +1,4 @@
-module grout
+module github.com/rommapp/grout
 
 go 1.26.0
 

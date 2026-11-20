@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"grout/core/firmware"
+	"github.com/rommapp/grout/core/firmware"
 )
 
 const defaultOut = "docs/firmware-matrix.md"

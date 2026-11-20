@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	"grout/core/config"
-	"grout/core/romm"
+	"github.com/rommapp/grout/core/config"
+	"github.com/rommapp/grout/core/romm"
 )
 
 func newCollectionsLibrary(t *testing.T, cfg *config.Config, cols ...romm.Collection) *Library {

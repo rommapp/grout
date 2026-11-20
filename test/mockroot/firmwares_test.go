@@ -6,8 +6,8 @@ import (
 	"runtime"
 	"testing"
 
-	"grout/core/firmware"
-	"grout/core/firmware/host"
+	"github.com/rommapp/grout/core/firmware"
+	"github.com/rommapp/grout/core/firmware/host"
 )
 
 func TestFirmwareMockRoots(t *testing.T) {

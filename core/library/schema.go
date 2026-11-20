@@ -1,6 +1,6 @@
 package library
 
-import "grout/core/store"
+import "github.com/rommapp/grout/core/store"
 
 func Tables() []store.Table {
 	return []store.Table{

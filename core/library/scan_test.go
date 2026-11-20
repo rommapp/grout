@@ -1,20 +1,22 @@
 package library
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
 	"io/fs"
+	"log/slog"
 	"reflect"
 	"strings"
 	"syscall"
 	"testing"
 	"testing/fstest"
 
-	"grout/core/config"
-	"grout/core/firmware"
-	"grout/core/firmware/host"
-	"grout/core/romm"
+	"github.com/rommapp/grout/core/config"
+	"github.com/rommapp/grout/core/firmware"
+	"github.com/rommapp/grout/core/firmware/host"
+	"github.com/rommapp/grout/core/romm"
 )
 
 const romRoot = "mnt/SDCARD/Roms/"
@@ -285,5 +287,31 @@ func TestScanResultSkippedFoldersEncodesEmpty(t *testing.T) {
 	}
 	if !strings.Contains(string(b), `"skipped_folders":[]`) {
 		t.Fatalf("json = %s", b)
+	}
+}
+
+func TestScanLogsUnreadableFolderToLibraryLogger(t *testing.T) {
+	bad := "/" + romRoot + "Game Boy (GB)"
+	h := &brokenHost{
+		Fake:   &host.Fake{Files: fstest.MapFS{romRoot + "Game Boy (GB)/Tetris.gb": {Data: []byte("x")}}},
+		broken: map[string]bool{bad: true},
+	}
+	def, err := firmware.Load("nextui")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fw, err := firmware.Resolve(def, h, firmware.Overrides{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := &config.Config{DirectoryMappings: mappings("gb")}
+	l := newPlatformsLibrary(t, cfg, fw, romm.Platform{ID: 1, Slug: "gb", FSSlug: "gb", Name: "GB", RomCount: 1})
+	var buf bytes.Buffer
+	l.Log = slog.New(slog.NewTextHandler(&buf, nil))
+
+	mustScan(t, l)
+
+	if !strings.Contains(buf.String(), "scan: skipping unreadable folder") {
+		t.Fatalf("log = %q", buf.String())
 	}
 }

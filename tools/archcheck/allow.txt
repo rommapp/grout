@@ -1,8 +1,10 @@
 # Known layering violations, tolerated until the refactor removes them.
 #
 # archcheck fails when a violation appears that is not listed here, and also
-# when an entry here no longer applies -- so this file can only shrink, and a
-# fix cannot silently leave dead weight behind.
+# when an entry here no longer applies, so this file can only shrink and a fix
+# cannot silently leave dead weight behind.
 #
 # Regenerate with: go run ./tools/archcheck -update
 # Do not add entries by hand without a reason; each line is a known defect.
+
+# An import that goes against the layer matrix in layers.go.
