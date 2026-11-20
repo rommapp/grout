@@ -39,7 +39,6 @@ saves = "static/configs/Saves/CurrentProfile/config"
 
 [platforms]
 "3do" = { roms = ["PANASONIC"], saves = ["Opera"] }
-"3ds" = { roms = [], saves = [] }
 acpc = { roms = ["CPC"], saves = ["crocods", "cap32"] }
 amiga = { roms = ["AMIGA"], saves = ["PUAE 2021", "PUAE", "P-UAE Xtreme Amped"] }
 arcade = { roms = ["ARCADE", "CPS1", "CPS2", "CPS3", "FBNEO"], saves = ["MAME 2003-Plus", "MAME 2003-Xtreme", "FB Alpha 2012 CPS-1", "FB Alpha 2012 CPS-2", "FB Alpha 2012 CPS-3", "FinalBurn Neo"] }
@@ -50,30 +49,23 @@ atari5200 = { roms = ["FIFTYTWOHUNDRED"], saves = ["a5200", "Atari800"] }
 atari7800 = { roms = ["SEVENTYEIGHTHUNDRED"], saves = ["ProSystem"] }
 atari800 = { roms = ["EIGHTHUNDRED"], saves = ["Atari800"] }
 atari8bit = { roms = ["EIGHTHUNDRED"], saves = ["Atari800"] }
-c128 = { roms = [], saves = [] }
 c64 = { roms = ["COMMODORE"], saves = ["VICE x64"] }
-cave-story = { roms = [], saves = [] }
 colecovision = { roms = ["COLECO"], saves = ["blueMSX"] }
-cpet = { roms = [], saves = [] }
-dc = { roms = [], saves = [] }
 dos = { roms = ["DOS"], saves = ["DOSBox-pure"] }
 fairchild-channel-f = { roms = ["FAIRCHILD"], saves = ["FreeChaF"] }
 famicom = { roms = ["FC"], saves = ["FCEUmm", "Nestopia"] }
 fds = { roms = ["FDS"], saves = ["FCEUmm"] }
 g-and-w = { roms = ["GW"], saves = ["GW"] }
-galaksija = { roms = [], saves = [] }
 gamegear = { roms = ["GG"], saves = ["PicoDrive", "Gearsystem", "Genesis Plus GX"] }
 gb = { roms = ["GB"], saves = ["Gambatte", "TGB Dual"] }
 gba = { roms = ["GBA"], saves = ["mGBA", "gpSP", "Beetle GBA", "VBA-M"] }
 gbc = { roms = ["GBC"], saves = ["Gambatte", "TGB Dual"] }
 genesis = { roms = ["MD"], saves = ["PicoDrive", "Genesis Plus GX"] }
 intellivision = { roms = ["INTELLIVISION"], saves = ["FreeIntv"] }
-j2me = { roms = [], saves = [] }
 jaguar = { roms = ["JAGUAR"], saves = ["Virtual Jaguar"] }
 lynx = { roms = ["LYNX"], saves = ["Handy"] }
 mega-duck-slash-cougar-boy = { roms = ["MEGADUCK"], saves = ["SameDuck"] }
 msx = { roms = ["MSX"], saves = ["blueMSX"] }
-n64 = { roms = [], saves = [] }
 nds = { roms = ["NDS"], saves = [] }
 neo-geo-cd = { roms = ["NEOCD"], saves = ["NeoCD"] }
 neo-geo-pocket = { roms = ["NGP"], saves = ["Beetle NeoPop"] }
@@ -86,16 +78,12 @@ openbor = { roms = ["OPENBOR"], saves = [] }
 pc-8800-series = { roms = ["PCEIGHTYEIGHT"], saves = ["QUASI88"] }
 pc-9800-series = { roms = ["PCNINETYEIGHT"], saves = ["Neko Project II Kai", "Neko Project II"] }
 pc-fx = { roms = ["PCFX"], saves = ["Beetle PC-FX"] }
-philips-cd-i = { roms = [], saves = [] }
 pico = { roms = ["PICO"], saves = ["fake-08"] }
 pico-8 = { roms = ["PICO"], saves = ["fake-08"] }
 pokemon-mini = { roms = ["POKE"], saves = ["PokeMini"] }
 ports = { roms = ["PORTS"], saves = [] }
-ps2 = { roms = [], saves = [] }
-psp = { roms = [], saves = [] }
 psx = { roms = ["PS"], saves = ["PCSX-ReARMed"] }
 satellaview = { roms = ["SATELLAVIEW"], saves = ["Snes9x"] }
-saturn = { roms = [], saves = [] }
 scummvm = { roms = ["SCUMMVM"], saves = [] }
 sega32 = { roms = ["THIRTYTWOX"], saves = ["PicoDrive"] }
 segacd = { roms = ["SEGACD"], saves = ["PicoDrive", "Genesis Plus GX"] }

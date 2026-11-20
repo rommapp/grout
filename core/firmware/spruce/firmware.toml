@@ -35,8 +35,6 @@ roms = "Roms"
 saves = "spruce/scripts/emu/lib/core_mappings.sh"
 
 [platforms]
-"3do" = { roms = [], saves = [] }
-"3ds" = { roms = [], saves = [] }
 acpc = { roms = ["CPC"], saves = ["Caprice32", "CrocoDS"] }
 amiga = { roms = ["AMIGA"], saves = ["UAE4ARM", "PUAE 2021"] }
 arcade = { roms = ["ARCADE", "CPS1", "CPS2", "CPS3", "FBNEO", "MAME2003PLUS", "NAOMI"], saves = ["FinalBurn Neo", "FB Alpha 2012", "MAME 2003-Plus", "Flycast", "Flycast Xtreme", "Flycast 2021", "Flycast 2024"] }
@@ -47,18 +45,14 @@ atari5200 = { roms = ["FIFTYTWOHUNDRED"], saves = ["a5200"] }
 atari7800 = { roms = ["SEVENTYEIGHTHUNDRED"], saves = ["ProSystem"] }
 atari800 = { roms = ["EIGHTHUNDRED"], saves = ["Atari800"] }
 atari8bit = { roms = ["EIGHTHUNDRED"], saves = ["Atari800"] }
-c128 = { roms = [], saves = [] }
 c64 = { roms = ["COMMODORE"], saves = ["VICE x64"] }
-cave-story = { roms = [], saves = [] }
 colecovision = { roms = ["COLECO"], saves = ["blueMSX", "Gearcoleco"] }
-cpet = { roms = [], saves = [] }
 dc = { roms = ["DC"], saves = ["Flycast", "Flycast Xtreme", "Flycast 2021", "Flycast 2024"] }
 dos = { roms = ["DOS"], saves = ["DOSBox"] }
 fairchild-channel-f = { roms = ["FAIRCHILD"], saves = ["FreeChaF"] }
 famicom = { roms = ["FC"], saves = ["FCEUmm", "Nestopia", "QuickNES"] }
 fds = { roms = ["FDS"], saves = ["FCEUmm", "Nestopia"] }
 g-and-w = { roms = ["GW"], saves = ["GW"] }
-galaksija = { roms = [], saves = [] }
 gamegear = { roms = ["GG"], saves = ["Genesis Plus GX", "Gearsystem", "PicoDrive"] }
 gb = { roms = ["GB", "SGB"], saves = ["Gambatte", "armGBA", "mGBA", "PokeDaisy"] }
 gba = { roms = ["GBA"], saves = ["armGBA", "gpSP", "mGBA", "PokeDaisy"] }
@@ -80,14 +74,10 @@ neogeomvs = { roms = ["NEOGEO"], saves = ["FB Alpha 2012", "FinalBurn Neo"] }
 nes = { roms = ["FC"], saves = ["FCEUmm", "Nestopia", "QuickNES"] }
 odyssey-2 = { roms = ["ODYSSEY"], saves = ["O2EM"] }
 openbor = { roms = ["OPENBOR"], saves = [] }
-pc-8000 = { roms = [], saves = [] }
 pc-9800-series = { roms = ["PC98"], saves = ["Neko Project II"] }
-pc-fx = { roms = [], saves = [] }
-philips-cd-i = { roms = [], saves = [] }
 pico = { roms = ["PICO8", "FAKE08"], saves = ["fake-08-32", "fake-08-64"] }
 pico-8 = { roms = ["PICO8", "FAKE08"], saves = ["fake-08-32", "fake-08-64"] }
 pokemon-mini = { roms = ["POKE"], saves = ["PokeMini"] }
-ps2 = { roms = [], saves = [] }
 psp = { roms = ["PSP"], saves = ["../.config/ppsspp/PSP/SAVEDATA"] }
 psx = { roms = ["PS"], saves = ["PCSX-ReARMed-64", "PCSX-ReARMed-32", "SwanStation", "DuckSwanStation Xtreme Amped"] }
 satellaview = { roms = ["SATELLAVIEW"], saves = ["Snes9x"] }
@@ -112,8 +102,6 @@ videopac-g7400 = { roms = ["VIDEOPAC"], saves = ["O2EM"] }
 virtualboy = { roms = ["VB"], saves = ["Beetle VB"] }
 wonderswan = { roms = ["WS"], saves = ["Beetle WonderSwan"] }
 wonderswan-color = { roms = ["WSC"], saves = ["Beetle WonderSwan"] }
-x1 = { roms = [], saves = [] }
-zx81 = { roms = [], saves = [] }
 zxs = { roms = ["ZXS"], saves = ["Fuse"] }
 
 [devices]

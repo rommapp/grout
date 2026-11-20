@@ -36,12 +36,8 @@ func (f *Firmware) RomDirs(slug string) []string {
 	if v, ok := f.Overrides.RomFolders[slug]; ok && v != "" {
 		return []string{path.Join(f.Roms, v)}
 	}
-	row, ok := f.Rows()[slug]
-	if !ok {
-		return []string{path.Join(f.Roms, strings.ToLower(slug))}
-	}
 	var out []string
-	for _, r := range row.Roms {
+	for _, r := range f.Rows()[slug].Roms {
 		out = append(out, path.Join(f.Roms, r))
 	}
 	return out

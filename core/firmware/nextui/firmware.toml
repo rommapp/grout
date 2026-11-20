@@ -35,104 +35,44 @@ roms = "skeleton/EXTRAS/Roms"
 saves = "skeleton/EXTRAS/Saves"
 
 [platforms]
-"3do" = { roms = [], saves = [] }
-"3ds" = { roms = ["Nintendo 3DS (3DS)"], saves = ["3DS"] }
 acpc = { roms = ["Amstrad CPC (CPC)"], saves = ["CPC"] }
 amiga = { roms = ["Amiga (PUAE)"], saves = ["PUAE"] }
 arcade = { roms = ["Arcade (FBN)"], saves = ["FBN"] }
-arduboy = { roms = [], saves = [] }
-atari-st = { roms = [], saves = [] }
 atari2600 = { roms = ["Atari 2600 (A2600)"], saves = ["A2600"] }
 atari5200 = { roms = ["Atari 5200 (A5200)"], saves = ["A5200"] }
 atari7800 = { roms = ["Atari 7800 (A7800)"], saves = ["A7800"] }
-atari800 = { roms = [], saves = [] }
-atari8bit = { roms = [], saves = [] }
 c-plus-4 = { roms = ["Commodore Plus4 (PLUS4)"], saves = ["PLUS4"] }
 c128 = { roms = ["Commodore 128 (C128)"], saves = ["C128"] }
 c64 = { roms = ["Commodore 64 (C64)"], saves = ["C64"] }
-cave-story = { roms = [], saves = [] }
-cbm-ii = { roms = [], saves = [] }
-chailove = { roms = [], saves = [] }
-chip-8 = { roms = [], saves = [] }
 colecovision = { roms = ["Colecovision (COLECO)"], saves = ["COLECO"] }
 cpet = { roms = ["Commodore PET (PET)"], saves = ["PET"] }
-dc = { roms = ["Sega Dreamcast (DC)"], saves = ["DC"] }
 doom = { roms = ["Doom (PRBOOM)"], saves = ["PRBOOM"] }
-dos = { roms = [], saves = [] }
-fairchild-channel-f = { roms = [], saves = [] }
 famicom = { roms = ["Nintendo Entertainment System (FC)"], saves = ["FC"] }
 fds = { roms = ["Famicom Disk System (FDS)"], saves = ["FDS"] }
-g-and-w = { roms = [], saves = [] }
-galaksija = { roms = [], saves = [] }
 gamegear = { roms = ["Sega Game Gear (GG)"], saves = ["GG"] }
 gb = { roms = ["Game Boy (GB)"], saves = ["GB"] }
 gba = { roms = ["Game Boy Advance (GBA)", "Game Boy Advance (MGBA)"], saves = ["GBA", "MGBA"] }
 gbc = { roms = ["Game Boy Color (GBC)"], saves = ["GBC"] }
 genesis = { roms = ["Sega Genesis (MD)"], saves = ["MD"] }
-intellivision = { roms = [], saves = [] }
-j2me = { roms = [], saves = [] }
-jaguar = { roms = [], saves = [] }
-karaoke = { roms = [], saves = [] }
-lowres = { roms = [], saves = [] }
-lua = { roms = [], saves = [] }
 lynx = { roms = ["Atari Lynx (LYNX)"], saves = ["LYNX"] }
-media-player = { roms = [], saves = [] }
-mega-duck-slash-cougar-boy = { roms = [], saves = [] }
 msx = { roms = ["Microsoft MSX (MSX)"], saves = ["MSX"] }
-n64 = { roms = ["Nintendo 64 (N64)"], saves = ["N64"] }
-naomi = { roms = [], saves = [] }
-nds = { roms = ["Nintendo DS (NDS)"], saves = ["NDS"] }
-neo-geo-cd = { roms = [], saves = [] }
 neo-geo-pocket = { roms = ["Neo Geo Pocket (NGP)"], saves = ["NGP"] }
 neo-geo-pocket-color = { roms = ["Neo Geo Pocket Color (NGPC)"], saves = ["NGPC"] }
-neogeoaes = { roms = [], saves = [] }
-neogeomvs = { roms = [], saves = [] }
 nes = { roms = ["Nintendo Entertainment System (FC)"], saves = ["FC"] }
-odyssey = { roms = [], saves = [] }
-onscripter = { roms = [], saves = [] }
-openbor = { roms = [], saves = [] }
-pc-8000 = { roms = [], saves = [] }
-pc-9800-series = { roms = [], saves = [] }
-pc-fx = { roms = [], saves = [] }
-philips-cd-i = { roms = [], saves = [] }
 pico = { roms = ["Pico-8 (P8)"], saves = ["P8"] }
 pico-8 = { roms = ["Pico-8 (P8)"], saves = ["P8"] }
 pokemon-mini = { roms = ["Pokémon mini (PKM)"], saves = ["PKM"] }
-ports = { roms = [], saves = [] }
-ps2 = { roms = ["Sony PlayStation 2 (PS2)"], saves = ["PS2"] }
-psp = { roms = ["Sony PlayStation Portable (PSP)"], saves = ["PSP"] }
 psx = { roms = ["Sony PlayStation (PS)"], saves = ["PS"] }
-quake = { roms = [], saves = [] }
-rpg-maker = { roms = [], saves = [] }
-saturn = { roms = [], saves = [] }
-scummvm = { roms = [], saves = [] }
 sega32 = { roms = ["Sega 32X (32X)"], saves = ["32X"] }
 segacd = { roms = ["Sega CD (SEGACD)"], saves = ["SEGACD"] }
 sfam = { roms = ["Super Nintendo Entertainment System (SFC)", "Super Nintendo Entertainment System (SUPA)"], saves = ["SFC", "SUPA"] }
 sg1000 = { roms = ["Sega SG-1000 (SG1000)"], saves = ["SG1000"] }
 sgb = { roms = ["Super Game Boy (SGB)"], saves = ["SGB"] }
-sharp-x68000 = { roms = [], saves = [] }
 sms = { roms = ["Sega Master System (SMS)"], saves = ["SMS"] }
 snes = { roms = ["Super Nintendo Entertainment System (SFC)", "Super Nintendo Entertainment System (SUPA)"], saves = ["SFC", "SUPA"] }
-supergrafx = { roms = [], saves = [] }
-supervision = { roms = [], saves = [] }
 tg16 = { roms = ["TurboGrafx-16 (PCE)"], saves = ["PCE"] }
-ti-83 = { roms = [], saves = [] }
-tic-80 = { roms = [], saves = [] }
-turbografx-cd = { roms = [], saves = [] }
-uzebox = { roms = [], saves = [] }
-vectrex = { roms = [], saves = [] }
-vemulator = { roms = [], saves = [] }
 vic-20 = { roms = ["Commodore VIC20 (VIC)"], saves = ["VIC"] }
-vircon-32 = { roms = [], saves = [] }
 virtualboy = { roms = ["Virtual Boy (VB)"], saves = ["VB"] }
-wasm-4 = { roms = [], saves = [] }
-wolfenstein-3d = { roms = [], saves = [] }
-wonderswan = { roms = ["WS"], saves = ["WS"] }
-wonderswan-color = { roms = ["WSC"], saves = ["WSC"] }
-x1 = { roms = [], saves = [] }
-zx81 = { roms = [], saves = [] }
-zxs = { roms = [], saves = [] }
 
 [devices]
 default = "generic"

@@ -58,7 +58,7 @@ func TestTag(t *testing.T) {
 	}
 }
 
-func TestRomDirsOverrideAndFallbacks(t *testing.T) {
+func TestRomDirsOverrideAndRows(t *testing.T) {
 	f := locFirmware(t, locDef(""), nil, Overrides{RomFolders: map[string]string{"psx": "Custom PS"}}, Registry{})
 	if got := f.RomDirs("psx"); !reflect.DeepEqual(got, []string{"/mnt/SDCARD/Roms/Custom PS"}) {
 		t.Fatalf("override: %v", got)
@@ -70,7 +70,7 @@ func TestRomDirsOverrideAndFallbacks(t *testing.T) {
 	if got := f.RomDirs("3do"); got != nil {
 		t.Fatalf("empty roms: %v", got)
 	}
-	if got := f.RomDirs("NES"); !reflect.DeepEqual(got, []string{"/mnt/SDCARD/Roms/nes"}) {
+	if got := f.RomDirs("nes"); got != nil {
 		t.Fatalf("no row: %v", got)
 	}
 }

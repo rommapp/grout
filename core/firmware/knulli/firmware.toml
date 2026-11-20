@@ -64,7 +64,6 @@ fairchild-channel-f = { roms = ["channelf"], saves = ["channelf"] }
 famicom = { roms = ["nes"], saves = ["nes"] }
 fds = { roms = ["fds"], saves = ["fds"] }
 g-and-w = { roms = ["gameandwatch"], saves = ["gameandwatch"] }
-galaksija = { roms = [], saves = [] }
 gamegear = { roms = ["gamegear"], saves = ["gamegear"] }
 gb = { roms = ["gb"], saves = ["gb"] }
 gba = { roms = ["gba"], saves = ["gba"] }

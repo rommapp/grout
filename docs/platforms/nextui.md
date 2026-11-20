@@ -24,7 +24,6 @@ This table shows the mappings of RomM Fs Slug to NextUI's platform folders.
 | Commodore PET                 | cpet                       | Commodore PET (PET)                             |
 | Commodore VIC-20              | vic-20                     | Commodore VIC20 (VIC)                           |
 | DOS                           | dos                        | *(none)*                                        |
-| Dreamcast                     | dc                         | Sega Dreamcast (DC)                             |
 | Fairchild Channel F           | fairchild-channel-f        | *(none)*                                        |
 | Family Computer               | famicom                    | Nintendo Entertainment System (FC)              |
 | Family Computer Disk System   | fds                        | Famicom Disk System (FDS)                       |
@@ -42,9 +41,6 @@ This table shows the mappings of RomM Fs Slug to NextUI's platform folders.
 | Neo Geo MVS                   | neogeomvs                  | *(none)*                                        |
 | Neo Geo Pocket                | neo-geo-pocket             | Neo Geo Pocket (NGP)                            |
 | Neo Geo Pocket Color          | neo-geo-pocket-color       | Neo Geo Pocket Color (NGPC)                     |
-| Nintendo 3DS                  | 3ds                        | Nintendo 3DS (3DS)                              |
-| Nintendo 64                   | n64                        | Nintendo 64 (N64)                               |
-| Nintendo DS                   | nds                        | Nintendo DS (NDS)                               |
 | Nintendo Entertainment System | nes                        | Nintendo Entertainment System (FC)              |
 | Odyssey                       | odyssey                    | *(none)*                                        |
 | OpenBOR                       | openbor                    | *(none)*                                        |
@@ -56,8 +52,6 @@ This table shows the mappings of RomM Fs Slug to NextUI's platform folders.
 | PICO-8                        | pico                       | Pico-8 (P8)                                     |
 | PICO-8                        | pico-8                     | Pico-8 (P8)                                     |
 | PlayStation                   | psx                        | Sony PlayStation (PS)                           |
-| PlayStation 2                 | ps2                        | Sony PlayStation 2 (PS2)                        |
-| PlayStation Portable          | psp                        | Sony PlayStation Portable (PSP)                 |
 | Pokemon Mini                  | pokemon-mini               | Pokemon mini (PKM)                              |
 | Sega 32X                      | sega32                     | Sega 32X (32X)                                  |
 | Sega CD                       | segacd                     | Sega CD (SEGACD)                                |
@@ -76,7 +70,5 @@ This table shows the mappings of RomM Fs Slug to NextUI's platform folders.
 | TurboGrafx-CD                 | turbografx-cd              | *(none)*                                        |
 | Vectrex                       | vectrex                    | *(none)*                                        |
 | Virtual Boy                   | virtualboy                 | Virtual Boy (VB)                                |
-| WonderSwan                    | wonderswan                 | WS                                              |
-| WonderSwan Color              | wonderswan-color           | WSC                                             |
 | ZX Spectrum                   | zxs                        | *(none)*                                        |
 | ZX81                          | zx81                       | *(none)*                                        |

@@ -42,12 +42,12 @@ roms = "share/info/manifest/core.json"
 saves = "share/emulator/retroarch/info"
 
 [platforms]
-"3do" = { roms = ["3do", "The 3DO Company - 3DO"], saves = ["file/Opera"], system = "The 3DO Company - 3DO" }
-acpc = { roms = ["cpc", "gx4000", "Amstrad"], saves = ["file/CPC/GX4000 (Caprice)", "file/CPC (CrocoDS)"], system = "Amstrad" }
-amiga = { roms = ["amiga", "Commodore Amiga"], saves = ["file/PUAE 2021", "file/Amiberry (External)", "file/PUAE", "file/PUAE Xtreme", "file/UAE4ARM"], system = "Commodore Amiga" }
+"3do" = { roms = ["3do"], saves = ["file/Opera"], system = "The 3DO Company - 3DO" }
+acpc = { roms = ["cpc", "Amstrad"], saves = ["file/CPC/GX4000 (Caprice)", "file/CPC (CrocoDS)"], system = "Amstrad" }
+amiga = { roms = ["amiga", "Commodore Amiga"], saves = ["file/PUAE 2021", "file/PUAE", "file/PUAE Xtreme", "file/UAE4ARM"], system = "Commodore Amiga" }
 arcade = { roms = ["arcade", "mame", "cps1", "cps2", "cps3", "fba", "fbneo", "Arcade"], saves = ["file/FinalBurn Neo Amped", "file/FB Alpha 2012 CPS-1", "file/FB Alpha 2012 CPS-2", "file/FB Alpha 2012 CPS-3", "file/FB Alpha 2012 Neo Geo", "file/FB Alpha 2012", "file/FinalBurn Neo", "file/MAME 2000", "file/MAME 2003", "file/MAME 2003-Midway", "file/MAME 2003-Plus", "file/MAME 2003-Xtreme", "file/MAME 078 Plus", "file/MAME 139", "file/MAME 2010", "file/MAME"], system = "Arcade" }
 arduboy = { roms = ["Arduboy"], saves = ["file/Ardens", "file/Arduous"], system = "Arduboy" }
-atari-st = { roms = ["atarist", "Atari ST-STE-TT-Falcon"], saves = ["file/Hatari", "file/HatariB"], system = "Atari ST-STE-TT-Falcon" }
+atari-st = { roms = ["atarist"], saves = ["file/Hatari", "file/HatariB"], system = "Atari ST-STE-TT-Falcon" }
 atari2600 = { roms = ["a2600", "atari", "Atari 2600"], saves = ["file/Stella", "file/Stella 2014"], system = "Atari 2600" }
 atari5200 = { roms = ["a5200", "Atari 5200"], saves = ["file/a5200", "file/Atari 800"], system = "Atari 5200" }
 atari7800 = { roms = ["a7800", "Atari 7800"], saves = ["file/ProSystem"], system = "Atari 7800" }
@@ -59,49 +59,46 @@ chailove = { roms = [], saves = ["file/ChaiLove"], system = "ChaiLove" }
 chip-8 = { roms = [], saves = ["file/JAXE"], system = "CHIP-8" }
 colecovision = { roms = ["ColecoVision"], saves = ["file/Gearcoleco", "file/blueMSX"], system = "ColecoVision" }
 cpet = { roms = ["Commodore PET"], saves = ["file/VICE xpet"], system = "Commodore PET" }
-dc = { roms = ["dc", "dreamcast", "Sega Dreamcast"], saves = ["file/Flycast VL", "file/Flycast (External)", "file/Flycast", "file/Flycast Xtreme", "file/Morpheuscast"], system = "Sega Dreamcast" }
+dc = { roms = ["dc", "dreamcast", "Sega Dreamcast"], saves = ["file/Flycast VL", "file/Flycast", "file/Flycast Xtreme", "file/Morpheuscast"], system = "Sega Dreamcast" }
 doom = { roms = [], saves = ["file/PrBoom"], system = "Doom" }
 dos = { roms = ["dos", "DOS"], saves = ["file/DOSBox-pure"], system = "PC DOS" }
 fairchild-channel-f = { roms = ["channelf", "Fairchild ChannelF"], saves = ["file/FreeChaF"], system = "Fairchild Channel F" }
-famicom = { roms = ["fc", "nes", "Nintendo NES-Famicom"], saves = ["file/FCEUmm", "file/bnes", "file/Mesen", "file/Nestopia", "file/QuickNES"], system = "Nintendo NES - Famicom" }
-fds = { roms = ["fds", "Nintendo FDS"], saves = ["file/FCEUmm", "file/Mesen", "file/Nestopia"], system = "Nintendo Famicom Disk System" }
-g-and-w = { roms = ["gw", "Handheld Electronic - Game and Watch"], saves = ["file/Handheld Electronic"], system = "Handheld Electronic - Game and Watch" }
-galaksija = { roms = ["galaksija", "Galaksija Retro Computer"], saves = ["file/galaksija"], system = "Galaksija Retro Computer" }
+famicom = { roms = ["fc", "nes"], saves = ["file/FCEUmm", "file/bnes", "file/Mesen", "file/Nestopia", "file/QuickNES"], system = "Nintendo NES - Famicom" }
+fds = { roms = ["fds"], saves = ["file/FCEUmm", "file/Mesen", "file/Nestopia"], system = "Nintendo Famicom Disk System" }
+g-and-w = { roms = ["gw"], saves = ["file/Handheld Electronic"], system = "Handheld Electronic - Game and Watch" }
+galaksija = { roms = ["galaksija"], saves = ["file/galaksija"], system = "Galaksija Retro Computer" }
 gamegear = { roms = ["gg", "Sega Game Gear"], saves = ["file/PicoDrive", "file/Gearsystem", "file/Genesis Plus GX"], system = "Sega Game Gear" }
 gb = { roms = ["gb", "Nintendo Game Boy"], saves = ["file/Gambatte", "file/DoubleCherryGB", "file/fixGB", "file/Gearboy", "file/mGBA", "file/SameBoy", "file/TGB Dual", "file/VBA-M"], system = "Nintendo Game Boy" }
 gba = { roms = ["gba", "Nintendo Game Boy Advance"], saves = ["file/gpSP", "file/mGBA Rumble", "file/mGBA", "file/Beetle GBA", "file/VBA-M", "file/VBA Next"], system = "Nintendo Game Boy Advance" }
 gbc = { roms = ["gbc", "Nintendo Game Boy Color"], saves = ["file/Gambatte", "file/DoubleCherryGB", "file/FixGB", "file/Gearboy", "file/mGBA", "file/SameBoy", "file/TGB Dual", "file/VBA-M"], system = "Nintendo Game Boy Color" }
-genesis = { roms = ["genesis", "md", "nomad", "Sega Mega Drive - Genesis"], saves = ["file/Genesis Plus GX", "file/Genesis Plus GX Wide", "file/PicoDrive"], system = "Sega Mega Drive - Genesis" }
+genesis = { roms = ["genesis", "md", "nomad"], saves = ["file/Genesis Plus GX", "file/Genesis Plus GX Wide", "file/PicoDrive"], system = "Sega Mega Drive - Genesis" }
 intellivision = { roms = ["intv", "Mattel - Intellivision"], saves = ["file/FreeIntv"], system = "Mattel Intellivision" }
-j2me = { roms = ["j2me", "java", "Java J2ME"], saves = ["file/FreeJ2ME"], system = "Java J2ME" }
+j2me = { roms = ["j2me", "java"], saves = ["file/FreeJ2ME"], system = "Java J2ME" }
 jaguar = { roms = ["jaguar", "Atari Jaguar"], saves = ["file/Virtual Jaguar"], system = "Atari Jaguar" }
 karaoke = { roms = [], saves = ["file/PocketCDG"], system = "Karaoke" }
 lowres = { roms = [], saves = ["file/Lowres NX"], system = "LowRes NX" }
 lua = { roms = [], saves = ["file/Lutro"], system = "Lua Engine" }
 lynx = { roms = ["lynx", "Atari Lynx"], saves = ["file/Handy", "file/Beetle Lynx"], system = "Atari Lynx" }
-media-player = { roms = [], saves = ["file/FFPlay", "file/MPV", "file/Live TV"], system = "Media Player" }
 mega-duck-slash-cougar-boy = { roms = ["megaduck", "Mega Duck"], saves = ["file/SameDuck"], system = "Mega Duck - Cougar Boy" }
 msx = { roms = ["msx", "msx2", "Microsoft - MSX"], saves = ["file/blueMSX", "file/fMSX"], system = "Microsoft MSX" }
 n64 = { roms = ["n64", "Nintendo N64"], saves = ["file/Mupen64Plus-Next", "file/Mupen64Plus", "file/ParaLLel N64"], system = "Nintendo N64" }
-naomi = { roms = [], saves = ["file/Flycast VL", "file/Flycast (External)", "file/Flycast", "file/Flycast Xtreme", "file/Morpheuscast"], system = "Sega Atomiswave Naomi" }
+naomi = { roms = [], saves = ["file/Flycast VL", "file/Flycast", "file/Flycast Xtreme", "file/Morpheuscast"], system = "Sega Atomiswave Naomi" }
 nds = { roms = ["ds", "nds", "Nintendo DS"], saves = ["drastic/backup", "drastic-legacy/backup"], system = "Nintendo DS" }
 neo-geo-cd = { roms = ["neocd", "SNK Neo Geo CD"], saves = ["file/NeoCD"], system = "SNK Neo Geo CD" }
 neo-geo-pocket = { roms = ["ngp", "SNK Neo Geo Pocket - Color"], saves = ["file/Beetle NeoPop", "file/RACE"], system = "SNK Neo Geo Pocket - Color" }
 neo-geo-pocket-color = { roms = ["ngpc", "SNK Neo Geo Pocket - Color"], saves = ["file/Beetle NeoPop", "file/RACE"], system = "SNK Neo Geo Pocket - Color" }
 neogeoaes = { roms = ["neogeo", "SNK Neo Geo"], saves = ["file/FinalBurn Neo", "file/FB Alpha 2012 Neo Geo", "file/Geolith"], system = "SNK Neo Geo" }
 neogeomvs = { roms = ["neogeo", "SNK Neo Geo"], saves = ["file/FinalBurn Neo", "file/FB Alpha 2012 Neo Geo", "file/Geolith"], system = "SNK Neo Geo" }
-nes = { roms = ["nes", "fc", "Nintendo NES-Famicom"], saves = ["file/FCEUmm", "file/bnes", "file/Mesen", "file/Nestopia", "file/QuickNES"], system = "Nintendo NES - Famicom" }
-odyssey-2 = { roms = ["odyssey2", "Magnavox Odyssey - VideoPac"], saves = ["file/Odyssey2"], system = "Magnavox Odyssey - VideoPac" }
-onscripter = { roms = [], saves = ["file/Onscripter", "file/Onscripter-Yuri"], system = "Onscripter" }
+nes = { roms = ["nes", "fc"], saves = ["file/FCEUmm", "file/bnes", "file/Mesen", "file/Nestopia", "file/QuickNES"], system = "Nintendo NES - Famicom" }
+odyssey-2 = { roms = ["odyssey2"], saves = ["file/Odyssey2"], system = "Magnavox Odyssey - VideoPac" }
 openbor = { roms = ["openbor", "OpenBOR"], saves = ["file/OpenBOR-Ext"], system = "OpenBOR" }
-pc-8800-series = { roms = ["pc8000", "NEC PC-8000 - PC-8800 series"], saves = ["file/QUASI8800"], system = "NEC PC-8000 - PC-8800 Series" }
+pc-8800-series = { roms = ["pc8000"], saves = ["file/QUASI8800"], system = "NEC PC-8000 - PC-8800 Series" }
 pc-9800-series = { roms = ["NEC PC98"], saves = ["file/Neko Project II Kai", "file/Neko Project II"], system = "NEC PC98" }
 pc-fx = { roms = ["NEC PC-FX"], saves = ["file/Beetle PC-FX"], system = "NEC PC-FX" }
 philips-cd-i = { roms = ["cdi", "Philips CDi"], saves = ["file/SAME_CDi"], system = "Philips CDi" }
 pico = { roms = ["pico8", "PICO-8"], saves = ["pico8"], system = "PICO-8" }
 pico-8 = { roms = ["pico8", "PICO-8"], saves = ["pico8"], system = "PICO-8" }
 pokemon-mini = { roms = ["poke", "pokemini", "Nintendo Pokemon Mini"], saves = ["file/PokeMini"], system = "Nintendo Pokemon Mini" }
-ports = { roms = [], saves = ["file/External"], system = "External - Ports" }
 psp = { roms = ["psp", "Sony Playstation Portable"], saves = ["file/PPSSPP-Ext", "file/PPSSPP"], system = "Sony PlayStation Portable" }
 psx = { roms = ["ps", "ps1", "psx", "Sony Playstation"], saves = ["file/PCSX-ReARMed", "file/Beetle PSX", "file/DuckStation", "file/SwanStation"], system = "Sony PlayStation" }
 quake = { roms = [], saves = ["file/TyrQuake"], system = "Quake" }
@@ -109,13 +106,13 @@ rpg-maker = { roms = [], saves = ["file/EasyRPG Player"], system = "RPG Maker 20
 saturn = { roms = ["saturn", "Sega Saturn"], saves = ["file/YabaSanshiro-Ext", "file/Beetle Saturn", "file/YabaSanshiro", "file/Yabause"], system = "Sega Saturn" }
 scummvm = { roms = [], saves = ["file/ScummVM-Ext", "file/ScummVM"], system = "ScummVM" }
 sega32 = { roms = ["sega32x", "Sega 32X"], saves = ["file/PicoDrive"], system = "Sega 32X" }
-segacd = { roms = ["segacd", "mdcd", "Sega Mega CD - Sega CD"], saves = ["file/Genesis Plus GX", "file/Genesis Plus GX Wide", "file/PicoDrive"], system = "Sega Mega CD - Sega CD" }
-sfam = { roms = ["sfc", "snes", "sufami", "Nintendo SNES - SFC"], saves = ["file/Snes9x", "file/Supafaust", "file/bsnes", "file/bsnes2014", "file/bsnes-mercury", "file/bSNES", "file/ChimeraSNES", "file/Mesen-S", "file/Snes9x 2002", "file/Snes9x 2005", "file/Snes9x 2005 Plus", "file/Snes9x 2010", "file/Snes9x Next"], system = "Nintendo SNES - SFC" }
+segacd = { roms = ["segacd", "mdcd"], saves = ["file/Genesis Plus GX", "file/Genesis Plus GX Wide", "file/PicoDrive"], system = "Sega Mega CD - Sega CD" }
+sfam = { roms = ["sfc", "snes", "sufami"], saves = ["file/Snes9x", "file/Supafaust", "file/bsnes", "file/bsnes2014", "file/bsnes-mercury", "file/bSNES", "file/ChimeraSNES", "file/Mesen-S", "file/Snes9x 2002", "file/Snes9x 2005", "file/Snes9x 2005 Plus", "file/Snes9x 2010", "file/Snes9x Next"], system = "Nintendo SNES - SFC" }
 sg1000 = { roms = ["sg1000", "Sega SG-1000"], saves = ["file/Genesis Plus GX", "file/blueMSX", "file/Gearsystem"], system = "Sega SG-1000" }
 sharp-x68000 = { roms = ["x68000", "x68k", "Sharp X68000"], saves = ["file/PX68k"], system = "Sharp X68000" }
 sms = { roms = ["ms", "sms", "Sega Master System"], saves = ["file/SMS Plus GX", "file/Gearsystem", "file/Genesis Plus GX", "file/PicoDrive"], system = "Sega Master System" }
-snes = { roms = ["snes", "sfc", "Nintendo SNES - SFC"], saves = ["file/Snes9x", "file/Supafaust", "file/bsnes", "file/bsnes2014", "file/bsnes-mercury", "file/bSNES", "file/ChimeraSNES", "file/Mesen-S", "file/Snes9x 2002", "file/Snes9x 2005", "file/Snes9x 2005 Plus", "file/Snes9x 2010", "file/Snes9x Next"], system = "Nintendo SNES - SFC" }
-supergrafx = { roms = ["supergrafx", "NEC PC Engine SuperGrafx"], saves = ["file/Beetle SuperGrafx", "file/Geargrafx", "file/Beetle PCE"], system = "NEC PC Engine SuperGrafx" }
+snes = { roms = ["snes", "sfc"], saves = ["file/Snes9x", "file/Supafaust", "file/bsnes", "file/bsnes2014", "file/bsnes-mercury", "file/bSNES", "file/ChimeraSNES", "file/Mesen-S", "file/Snes9x 2002", "file/Snes9x 2005", "file/Snes9x 2005 Plus", "file/Snes9x 2010", "file/Snes9x Next"], system = "Nintendo SNES - SFC" }
+supergrafx = { roms = ["supergrafx"], saves = ["file/Beetle SuperGrafx", "file/Geargrafx", "file/Beetle PCE"], system = "NEC PC Engine SuperGrafx" }
 supervision = { roms = ["supervision", "Watara Supervision"], saves = ["file/Potator"], system = "Watara Supervision" }
 tg16 = { roms = ["pce", "tg16", "turbografx", "NEC PC Engine"], saves = ["file/Beetle PCE Fast", "file/Beetle PCE"], system = "NEC PC Engine" }
 ti-83 = { roms = [], saves = ["file/Numero"], system = "Texas Instruments TI-83" }
@@ -126,14 +123,14 @@ vectrex = { roms = ["vectrex", "GCE - Vectrex"], saves = ["file/vecx"], system =
 vemulator = { roms = [], saves = ["file/VeMUlator"], system = "VeMUlator" }
 vic-20 = { roms = ["Commodore VIC-20"], saves = ["file/VICE xvic"], system = "Commodore VIC-20" }
 vircon-32 = { roms = [], saves = ["file/Vircon32"], system = "Vircon32" }
-virtualboy = { roms = ["vb", "Nintendo Virtual Boy"], saves = ["file/Beetle VB"], system = "Nintendo Virtual Boy" }
+virtualboy = { roms = ["vb"], saves = ["file/Beetle VB"], system = "Nintendo Virtual Boy" }
 wasm-4 = { roms = [], saves = ["file/WASM-4"], system = "WASM-4" }
 wolfenstein-3d = { roms = [], saves = ["file/ECWolf"], system = "Wolfenstein 3D" }
 wonderswan = { roms = ["ws", "Bandai WonderSwan"], saves = ["file/Beetle Cygne"], system = "Bandai WonderSwan Color" }
 wonderswan-color = { roms = ["wsc", "Bandai WonderSwan-Color"], saves = ["file/Beetle Cygne"], system = "Bandai WonderSwan Color" }
 x1 = { roms = ["x1", "Sharp X1"], saves = ["file/X Millennium"], system = "Sharp X1" }
 zx81 = { roms = ["zx81", "Sinclair ZX 81"], saves = ["file/EightyOne"], system = "Sinclair ZX 81" }
-zxs = { roms = ["spectrum", "Sinclair ZX Spectrum"], saves = ["file/Fuse"], system = "Sinclair ZX Spectrum" }
+zxs = { roms = ["spectrum"], saves = ["file/Fuse"], system = "Sinclair ZX Spectrum" }
 
 [devices]
 default = "anbernic"

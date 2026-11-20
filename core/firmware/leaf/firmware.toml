@@ -31,91 +31,51 @@ roms = "config/retroarch/mlp1/systems.json"
 saves = "config/retroarch/mlp1/cores.json"
 
 [platforms]
-"3do" = { roms = [], saves = [] }
-"3ds" = { roms = [], saves = [] }
-acpc = { roms = [], saves = [] }
 amiga = { roms = ["AMIGA"], saves = ["PUAE 2021", "PUAE"], bios = ["{bios}/puae/{name}"] }
 arcade = { roms = ["ARCADE", "MAME", "MAME2003", "MAME2010"], saves = ["FinalBurn Neo", "MAME 2003-Plus", "FB Alpha 2012", "MAME", "MAME 2010"], bios = ["{bios}/{name}", "{bios}/{rel}"] }
-arduboy = { roms = [], saves = [] }
-atari-st = { roms = [], saves = [] }
 atari2600 = { roms = ["ATARI2600", "A2600"], saves = ["Stella 2014"] }
-atari5200 = { roms = [], saves = [] }
 atari7800 = { roms = ["A7800", "ATARI7800"], saves = ["ProSystem"] }
-atari800 = { roms = [], saves = [] }
-atari8bit = { roms = [], saves = [] }
-c128 = { roms = [], saves = [] }
-c64 = { roms = [], saves = [] }
-cave-story = { roms = [], saves = [] }
 colecovision = { roms = ["COLECO", "COLECOVISION"], saves = [] }
-cpet = { roms = [], saves = [] }
 cps1 = { roms = ["ARCADE"], saves = ["FinalBurn Neo", "MAME 2003-Plus", "FB Alpha 2012"], bios = ["{bios}/{name}", "{bios}/{rel}"] }
 cps2 = { roms = ["ARCADE"], saves = ["FinalBurn Neo", "MAME 2003-Plus", "FB Alpha 2012"], bios = ["{bios}/{name}", "{bios}/{rel}"] }
 cps3 = { roms = ["ARCADE"], saves = ["FinalBurn Neo", "MAME 2003-Plus", "FB Alpha 2012"], bios = ["{bios}/{name}", "{bios}/{rel}"] }
 dc = { roms = ["DC", "DREAMCAST"], saves = ["Flycast", "FlyCast Fast UMRK"] }
 dos = { roms = ["DOS"], saves = ["DOSBox-pure"] }
-fairchild-channel-f = { roms = [], saves = [] }
 famicom = { roms = ["NES", "FC", "FAMICOM"], saves = ["FCEUmm"] }
 fds = { roms = ["FDS"], saves = ["FCEUmm"] }
 g-and-w = { roms = ["GW"], saves = ["Game & Watch"] }
-galaksija = { roms = [], saves = [] }
 gamegear = { roms = ["GG"], saves = ["Genesis Plus GX", "PicoDrive"] }
 gb = { roms = ["GB"], saves = ["Gambatte", "mGBA"] }
 gba = { roms = ["GBA"], saves = ["mGBA", "gpSP"] }
 gbc = { roms = ["GBC"], saves = ["Gambatte", "mGBA"] }
 genesis = { roms = ["GENESIS", "MD", "MEGADRIVE"], saves = ["Genesis Plus GX", "PicoDrive"] }
-intellivision = { roms = [], saves = [] }
-j2me = { roms = [], saves = [] }
-jaguar = { roms = [], saves = [] }
 lynx = { roms = ["LYNX"], saves = ["Handy"] }
-mega-duck-slash-cougar-boy = { roms = [], saves = [] }
-msx = { roms = [], saves = [] }
 n64 = { roms = ["N64"], saves = ["Mupen64Plus-Next"] }
 nds = { roms = ["NDS"], saves = [], bios = ["{bios}/NDS/{name}"] }
-neo-geo-cd = { roms = [], saves = [] }
 neo-geo-pocket = { roms = ["NGP"], saves = ["Beetle NeoPop"] }
 neo-geo-pocket-color = { roms = ["NGPC"], saves = ["Beetle NeoPop"] }
 neogeoaes = { roms = ["NEOGEO"], saves = ["FinalBurn Neo", "FB Alpha 2012"], bios = ["{bios}/{name}", "{bios}/{rel}"] }
 neogeomvs = { roms = ["NEOGEO"], saves = ["FinalBurn Neo", "FB Alpha 2012"], bios = ["{bios}/{name}", "{bios}/{rel}"] }
 nes = { roms = ["NES", "FC", "FAMICOM"], saves = ["FCEUmm"] }
-odyssey = { roms = [], saves = [] }
-openbor = { roms = [], saves = [] }
-pc-8000 = { roms = [], saves = [] }
 pc-9800-series = { roms = ["PC98"], saves = ["Neko Project II kai"] }
-pc-fx = { roms = [], saves = [] }
-philips-cd-i = { roms = [], saves = [] }
-pico = { roms = [], saves = [] }
 pico-8 = { roms = ["PICO8"], saves = ["fake-08"] }
 pokemon-mini = { roms = ["POKEMINI"], saves = ["PokeMini"] }
 ports = { roms = ["PORTS"], saves = [] }
-ps2 = { roms = [], saves = [] }
 psp = { roms = ["PSP"], saves = [] }
 psx = { roms = ["PSX", "PS", "PS1"], saves = ["PCSX-ReARMed", "SwanStation"] }
-satellaview = { roms = [], saves = [] }
 saturn = { roms = ["SATURN"], saves = ["YabaSanshiro"], bios = ["{bios}/SATURN/{name}", "{bios}/{rel}"] }
-scummvm = { roms = [], saves = [] }
 sega32 = { roms = ["32X", "SEGA32X", "MD32X"], saves = ["PicoDrive"] }
 segacd = { roms = ["SEGACD", "MEGACD"], saves = ["Genesis Plus GX", "PicoDrive"] }
 sfam = { roms = ["SNES", "SFC"], saves = ["Snes9x"] }
-sg1000 = { roms = [], saves = [] }
 sgb = { roms = ["GB"], saves = ["Gambatte", "mGBA"] }
-sharp-x68000 = { roms = [], saves = [] }
 sms = { roms = ["MS", "SMS"], saves = ["Genesis Plus GX", "PicoDrive"] }
 snes = { roms = ["SNES", "SFC"], saves = ["Snes9x"] }
-sufami-turbo = { roms = [], saves = [] }
-supergrafx = { roms = [], saves = [] }
-supervision = { roms = [], saves = [] }
 tg16 = { roms = ["PCE", "TG16"], saves = ["Beetle PCE Fast"] }
-tic-80 = { roms = [], saves = [] }
 turbografx-cd = { roms = ["PCECD"], saves = ["Beetle PCE Fast"] }
 vectrex = { roms = ["VECTREX"], saves = [] }
-vic-20 = { roms = [], saves = [] }
-videopac = { roms = [], saves = [] }
 virtualboy = { roms = ["VB"], saves = [] }
 wonderswan = { roms = ["WS"], saves = ["Beetle WonderSwan"] }
 wonderswan-color = { roms = ["WSC"], saves = ["Beetle WonderSwan"] }
-x1 = { roms = [], saves = [] }
-zx81 = { roms = [], saves = [] }
-zxs = { roms = [], saves = [] }
 
 [devices]
 default = "mlp1"
