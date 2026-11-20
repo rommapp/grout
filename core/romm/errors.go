@@ -22,3 +22,13 @@ func IsUnauthorized(err error) bool {
 	var se *StatusError
 	return errors.As(err, &se) && (se.Code == http.StatusUnauthorized || se.Code == http.StatusForbidden)
 }
+
+func IsNotFound(err error) bool {
+	var se *StatusError
+	return errors.As(err, &se) && se.Code == http.StatusNotFound
+}
+
+func IsRateLimited(err error) bool {
+	var se *StatusError
+	return errors.As(err, &se) && se.Code == http.StatusTooManyRequests
+}

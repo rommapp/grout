@@ -1,6 +1,7 @@
 package romm
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -40,6 +41,10 @@ func New(o Options) *Client {
 }
 
 func (c *Client) send(ctx context.Context, method, path string, query url.Values, body io.Reader, contentType string) (*http.Response, error) {
+	return c.do(ctx, method, path, query, body, contentType, true)
+}
+
+func (c *Client) do(ctx context.Context, method, path string, query url.Values, body io.Reader, contentType string, withAuth bool) (*http.Response, error) {
 	target := c.baseURL + path
 	if len(query) > 0 {
 		target += "?" + query.Encode()
@@ -48,7 +53,7 @@ func (c *Client) send(ctx context.Context, method, path string, query url.Values
 	if err != nil {
 		return nil, err
 	}
-	if c.authHeader != "" {
+	if withAuth && c.authHeader != "" {
 		req.Header.Set("Authorization", c.authHeader)
 	}
 	if contentType != "" {
@@ -81,4 +86,42 @@ func (c *Client) getJSONHeader(ctx context.Context, path string, query url.Value
 		return nil, fmt.Errorf("romm: decoding %s: %w", path, err)
 	}
 	return resp.Header, nil
+}
+
+func (c *Client) postJSON(ctx context.Context, path string, in, out any) error {
+	return c.sendJSON(ctx, http.MethodPost, path, in, out, true)
+}
+
+func (c *Client) putJSON(ctx context.Context, path string, in, out any) error {
+	return c.sendJSON(ctx, http.MethodPut, path, in, out, true)
+}
+
+func (c *Client) postJSONNoAuth(ctx context.Context, path string, in, out any) error {
+	return c.sendJSON(ctx, http.MethodPost, path, in, out, false)
+}
+
+func (c *Client) sendJSON(ctx context.Context, method, path string, in, out any, withAuth bool) error {
+	var body io.Reader
+	contentType := ""
+	if in != nil {
+		b, err := json.Marshal(in)
+		if err != nil {
+			return fmt.Errorf("romm: encoding %s: %w", path, err)
+		}
+		body = bytes.NewReader(b)
+		contentType = "application/json"
+	}
+	resp, err := c.do(ctx, method, path, nil, body, contentType, withAuth)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if out == nil {
+		_, _ = io.Copy(io.Discard, resp.Body)
+		return nil
+	}
+	if err := json.NewDecoder(resp.Body).Decode(out); err != nil {
+		return fmt.Errorf("romm: decoding %s: %w", path, err)
+	}
+	return nil
 }

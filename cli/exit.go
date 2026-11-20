@@ -29,9 +29,9 @@ func exitFor(c api.Code) ExitCode {
 		return ExitTooOld
 	case api.CodeNotConfigured, api.CodeBadDefinition:
 		return ExitNotConfigured
-	case api.CodeUnauthorized:
+	case api.CodeUnauthorized, api.CodeInvalidCode:
 		return ExitUnauthorized
-	case api.CodeBusy:
+	case api.CodeBusy, api.CodeRateLimited:
 		return ExitBusy
 	case api.CodeDataDirLocked:
 		return ExitLocked

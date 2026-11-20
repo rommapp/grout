@@ -28,6 +28,8 @@ const (
 	CodeCancelled         Code = "cancelled"
 	CodeStorage           Code = "storage"
 	CodeInternal          Code = "internal"
+	CodeInvalidCode       Code = "invalid_code"
+	CodeRateLimited       Code = "rate_limited"
 )
 
 type Error struct {
@@ -78,6 +80,8 @@ func codeFor(ctx context.Context, err error, fallback Code) Code {
 		return CodeCancelled
 	case romm.IsUnauthorized(err):
 		return CodeUnauthorized
+	case romm.IsRateLimited(err):
+		return CodeRateLimited
 	case isTransport(err):
 		return CodeServerUnreachable
 	case isStorage(err):

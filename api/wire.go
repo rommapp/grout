@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/rommapp/grout"
+	"github.com/rommapp/grout/core/auth"
 	"github.com/rommapp/grout/core/config"
 	"github.com/rommapp/grout/core/library"
 	"github.com/rommapp/grout/core/romm"
@@ -50,6 +51,27 @@ const (
 	LogLevelError LogLevel = "ERROR"
 )
 
+type PairOutcome string
+
+const (
+	PairOutcomeApproved PairOutcome = "approved"
+	PairOutcomeDenied   PairOutcome = "denied"
+	PairOutcomeExpired  PairOutcome = "expired"
+	PairOutcomeFailed   PairOutcome = "failed"
+)
+
+func PairOutcomes() []PairOutcome {
+	return []PairOutcome{PairOutcomeApproved, PairOutcomeDenied, PairOutcomeExpired, PairOutcomeFailed}
+}
+
+func DownloadedGamesModes() []DownloadedGamesMode {
+	return []DownloadedGamesMode{DownloadedGamesDoNothing, DownloadedGamesMark, DownloadedGamesFilter}
+}
+
+func LogLevels() []LogLevel {
+	return []LogLevel{LogLevelDebug, LogLevelInfo, LogLevelError}
+}
+
 type StatusResult struct {
 	ConfigSource  string `json:"config_source"`
 	Host          string `json:"host"`
@@ -63,6 +85,10 @@ type HostInfo struct {
 	Port               int    `json:"port"`
 	Username           string `json:"username"`
 	HasToken           bool   `json:"has_token"`
+	TokenName          string `json:"token_name"`
+	TokenExpiresAt     string `json:"token_expires_at"`
+	DeviceID           string `json:"device_id"`
+	DeviceName         string `json:"device_name"`
 	InsecureSkipVerify bool   `json:"insecure_skip_verify"`
 }
 
@@ -194,6 +220,43 @@ type GameStateResult struct {
 	State GameState `json:"state"`
 }
 
+type PairStartArgs struct {
+	DeviceName string `json:"device_name"`
+}
+
+type PairStartResult struct {
+	UserCode        string `json:"user_code"`
+	VerificationURL string `json:"verification_url"`
+	ExpiresAt       string `json:"expires_at"`
+}
+
+type PairWaitResult struct {
+	Outcome        PairOutcome `json:"outcome"`
+	Username       string      `json:"username"`
+	DeviceID       string      `json:"device_id"`
+	TokenExpiresAt string      `json:"token_expires_at"`
+}
+
+type ExchangeCodeArgs struct {
+	Code string `json:"code"`
+}
+
+type ExchangeCodeResult struct {
+	Username       string   `json:"username"`
+	DeviceID       string   `json:"device_id"`
+	TokenExpiresAt string   `json:"token_expires_at"`
+	Scopes         []string `json:"scopes"`
+}
+
+type DeviceRegisterArgs struct {
+	Name string `json:"name"`
+}
+
+type DeviceRegisterResult struct {
+	DeviceID string `json:"device_id"`
+	Name     string `json:"name"`
+}
+
 func nonNil[T any](s []T) []T {
 	if s == nil {
 		return []T{}
@@ -221,10 +284,10 @@ func toSettings(c config.Config) Settings {
 		ShowRegularCollections: c.ShowRegularCollections,
 		ShowSmartCollections:   c.ShowSmartCollections,
 		ShowVirtualCollections: c.ShowVirtualCollections,
-		DownloadedGames:        DownloadedGamesMode(c.DownloadedGames),
+		DownloadedGames:        toDownloadedGamesMode(c.DownloadedGames),
 		APITimeout:             seconds(c.ApiTimeout),
 		DownloadTimeout:        seconds(c.DownloadTimeout),
-		LogLevel:               LogLevel(c.LogLevel),
+		LogLevel:               toLogLevel(c.LogLevel),
 		PlatformOrder:          nonNil(append([]string(nil), c.PlatformOrder...)),
 	}
 	for _, h := range c.Hosts {
@@ -234,6 +297,10 @@ func toSettings(c config.Config) Settings {
 			Port:               h.Port,
 			Username:           h.Username,
 			HasToken:           h.Token != "",
+			TokenName:          h.TokenName,
+			TokenExpiresAt:     h.TokenExpiresAt,
+			DeviceID:           h.DeviceID,
+			DeviceName:         h.DeviceName,
 			InsecureSkipVerify: h.InsecureSkipVerify,
 		})
 	}
@@ -389,4 +456,86 @@ func (q GamesQuery) query() (library.Query, error) {
 		}
 	}
 	return out, nil
+}
+
+func toDownloadedGamesMode(m config.DownloadedGamesMode) DownloadedGamesMode {
+	switch m {
+	case config.DownloadedGamesModeMark:
+		return DownloadedGamesMark
+	case config.DownloadedGamesModeFilter:
+		return DownloadedGamesFilter
+	}
+	return DownloadedGamesDoNothing
+}
+
+func (m DownloadedGamesMode) mode() (config.DownloadedGamesMode, error) {
+	switch m {
+	case DownloadedGamesDoNothing:
+		return config.DownloadedGamesModeDoNothing, nil
+	case DownloadedGamesMark:
+		return config.DownloadedGamesModeMark, nil
+	case DownloadedGamesFilter:
+		return config.DownloadedGamesModeFilter, nil
+	}
+	return "", badRequest(fmt.Errorf("unknown downloaded games mode %q", m))
+}
+
+func toLogLevel(l config.LogLevel) LogLevel {
+	switch l {
+	case config.LogLevelDebug:
+		return LogLevelDebug
+	case config.LogLevelError:
+		return LogLevelError
+	}
+	return LogLevelInfo
+}
+
+func (l LogLevel) level() (config.LogLevel, error) {
+	switch l {
+	case LogLevelDebug:
+		return config.LogLevelDebug, nil
+	case LogLevelInfo:
+		return config.LogLevelInfo, nil
+	case LogLevelError:
+		return config.LogLevelError, nil
+	}
+	return "", badRequest(fmt.Errorf("unknown log level %q", l))
+}
+
+func toPairOutcome(o auth.Outcome) PairOutcome {
+	switch o {
+	case auth.OutcomeApproved:
+		return PairOutcomeApproved
+	case auth.OutcomeDenied:
+		return PairOutcomeDenied
+	case auth.OutcomeExpired:
+		return PairOutcomeExpired
+	}
+	return PairOutcomeFailed
+}
+
+func toPairStart(p grout.PairPending) PairStartResult {
+	return PairStartResult{
+		UserCode:        p.UserCode,
+		VerificationURL: p.VerificationURL,
+		ExpiresAt:       p.ExpiresAt.UTC().Format(time.RFC3339),
+	}
+}
+
+func toPairWait(r grout.PairResult) PairWaitResult {
+	return PairWaitResult{
+		Outcome:        toPairOutcome(r.Outcome),
+		Username:       r.Username,
+		DeviceID:       r.DeviceID,
+		TokenExpiresAt: r.ExpiresAt,
+	}
+}
+
+func toExchange(r grout.LoginResult) ExchangeCodeResult {
+	return ExchangeCodeResult{
+		Username:       r.Username,
+		DeviceID:       r.DeviceID,
+		TokenExpiresAt: r.ExpiresAt,
+		Scopes:         nonNil(r.Scopes),
+	}
 }

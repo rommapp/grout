@@ -18,6 +18,10 @@ const (
 	DownloadedGamesModeFilter    DownloadedGamesMode = "filter"
 )
 
+func DownloadedGamesModes() []DownloadedGamesMode {
+	return []DownloadedGamesMode{DownloadedGamesModeDoNothing, DownloadedGamesModeMark, DownloadedGamesModeFilter}
+}
+
 type CollectionView string
 
 const (
@@ -32,6 +36,10 @@ const (
 	LogLevelInfo  LogLevel = "INFO"
 	LogLevelError LogLevel = "ERROR"
 )
+
+func LogLevels() []LogLevel {
+	return []LogLevel{LogLevelDebug, LogLevelInfo, LogLevelError}
+}
 
 type RomStorage string
 

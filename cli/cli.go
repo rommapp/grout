@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/rommapp/grout/api"
+
 	"github.com/spf13/cobra"
 )
 
@@ -15,6 +17,7 @@ type Env struct {
 	Stderr   io.Writer
 	Firmware string
 	Environ  map[string]string
+	Client   api.ClientSpec
 }
 
 type exitError struct {
@@ -58,6 +61,7 @@ func newRoot(env Env) *cobra.Command {
 	root.AddCommand(newStatusCmd(env))
 	root.AddCommand(newLibraryCmd(env))
 	root.AddCommand(newFirmwareCmd(env))
+	root.AddCommand(newAuthCmds(env)...)
 	root.AddCommand(newCallCmd(env))
 	return root
 }

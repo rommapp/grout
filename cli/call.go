@@ -38,12 +38,17 @@ func print(env Env, raw []byte) ExitCode {
 	return exitFor(codeOfEnvelope(raw))
 }
 
-func invoke(ctx context.Context, env Env, method string, args []byte) ExitCode {
-	s, err := api.Open(ctx, api.OpenOptions{
+func openOptions(env Env) api.OpenOptions {
+	return api.OpenOptions{
 		DataDir:  env.Dir,
 		Firmware: api.FirmwareSpec{ID: env.Firmware},
 		Env:      env.Environ,
-	})
+		Client:   env.Client,
+	}
+}
+
+func invoke(ctx context.Context, env Env, method string, args []byte) ExitCode {
+	s, err := api.Open(ctx, openOptions(env))
 	if err != nil {
 		return print(env, api.ErrorEnvelope(err))
 	}

@@ -67,6 +67,8 @@ A failure replaces `result` with `error`, for example `{"ok": false, "error": {"
 
 `grout status` reports whether the configured RomM server is reachable and supports save channel snapshots.
 
+`grout pair [--name <device name>]` signs this device in by device pairing. It prints the `auth.pair_start` envelope with the code to enter or scan, waits, then prints the `auth.pair_wait` envelope, as two JSON documents. `--name` defaults to the computer's hostname. `grout login --code <code>` signs in with a pairing code made in RomM, and `grout logout` forgets the token.
+
 `grout call <method> [json]` runs any contract method, for example `grout call library.games '{"search": "zelda", "limit": 10}'`. It is hidden from the help output and meant for testing.
 
 `grout firmware validate <file> --host` checks a host firmware definition against the host profile and prints `{"ok": true}` or a `bad_definition` error listing every problem.
@@ -81,8 +83,8 @@ Exit codes:
 | 3 | Reserved for save sync |
 | 4 | `server_too_old`: the server lacks save channel snapshots |
 | 5 | `not_configured` or `bad_definition` |
-| 6 | `unauthorized` |
-| 7 | `busy`: another refresh or scan is running |
+| 6 | `unauthorized` or `invalid_code`, or a pairing that was denied or expired |
+| 7 | `busy` (another refresh, scan or pairing wait is running) or `rate_limited` |
 | 8 | `data_dir_locked`: another process has this data directory open |
 | 9 | `cancelled` |
 

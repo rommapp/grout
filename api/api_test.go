@@ -96,11 +96,26 @@ func TestVersion(t *testing.T) {
 	}
 }
 
+func TestCodesIncludesNewCodesLast(t *testing.T) {
+	got := Codes()
+	if len(got) != 13 || got[11] != "invalid_code" || got[12] != "rate_limited" {
+		t.Fatalf("codes = %v", got)
+	}
+}
+
+func TestPairOutcomesListed(t *testing.T) {
+	want := []PairOutcome{"approved", "denied", "expired", "failed"}
+	if got := PairOutcomes(); !reflect.DeepEqual(got, want) {
+		t.Fatalf("outcomes = %v", got)
+	}
+}
+
 func TestCodesListsEveryCode(t *testing.T) {
 	want := []Code{
 		"not_configured", "bad_definition", "server_unreachable", "unauthorized", "server_too_old",
 		"busy", "data_dir_locked", "bad_request", "cancelled", "storage", "internal",
 	}
+	want = append(want, "invalid_code", "rate_limited")
 	if got := Codes(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("codes = %v", got)
 	}

@@ -45,9 +45,12 @@ The options for `grout_open`:
 {
   "data_dir": "/data/user/0/dev.example/files/grout",
   "firmware": { "definition": "<the text of your firmware.toml>" },
-  "env": { "CANNOLI_ROOT": "/storage/emulated/0/Cannoli" }
+  "env": { "CANNOLI_ROOT": "/storage/emulated/0/Cannoli" },
+  "client": { "name": "cannoli", "version": "2.3.0" }
 }
 ```
+
+`client` names your app to RomM: it is recorded on the device, so the user's device list shows the app they actually run. It defaults to Grout's own name and version.
 
 `firmware` takes either `"id"`, naming one of Grout's built-in firmwares such as `"muos"`, or `"definition"`, holding a complete definition. `env` provides the values the definition reads. Grout never reads the process environment. The name `GROUT_ROOT` is reserved: when set, Grout treats it as the root of a mock card and resolves every firmware path under it, so hosts should not pass it.
 
@@ -65,6 +68,15 @@ The options for `grout_open`:
 - Load one Go shared library per process. The library cannot be unloaded.
 - Grout's own code never exits the process, never installs signal handlers, and never writes to stdout or stderr. It logs to `logs/grout.log` in the data directory.
 - The Go runtime inside `libgrout.so` does install signal handlers (for example SIGSEGV, SIGBUS and SIGPIPE) when the library loads. It chains to any handler already installed, so load `libgrout.so` after the host's own crash reporter or runtime has set up its handlers. A handler a host installs after loading Grout must use `SA_ONSTACK` and chain to the previous handler, or a fault inside Grout becomes a crash instead of an `internal` error. On Android, load it from Java or Kotlin with `System.loadLibrary` after the app has started, as the example below does.
+
+## Signing in
+
+Set the server first with `settings.set_host` (`root_uri`, and `port` or `insecure_skip_verify` if needed). Calling it again with the same server keeps the user signed in; pointing it at a different server signs them out. Then sign in one of two ways:
+
+- **Pairing on the device (recommended).** Call `auth.pair_start` with a name for the device, then show the returned `user_code` and a QR code of `verification_url`. Call `auth.pair_wait`, which returns when the user approves or denies the device in RomM's web UI or the code expires. If the user backs out, cancel the `auth.pair_wait` call with `grout_cancel`. Pairing also registers the device for save sync.
+- **A pairing code from RomM.** The user makes a code in RomM's web UI and types it on the device; call `auth.exchange_code` with it. Codes expire after a minute. If the result has an empty `device_id`, call `device.register` before using save sync.
+
+`auth.logout` forgets the token on this device. `settings.get` shows who is signed in (`username`), whether a token is stored and when it expires.
 
 ## Choosing the data directory
 
@@ -180,11 +192,13 @@ Every failure is an envelope with one of these codes:
 | `server_unreachable` | RomM could not be reached, or answered with something that is not RomM. |
 | `unauthorized` | RomM rejected the credentials. |
 | `server_too_old` | The RomM server does not support save channel snapshots. |
-| `busy` | A refresh or scan is already running on this handle. |
+| `busy` | A refresh or scan, or an `auth.pair_wait`, is already running on this handle. |
 | `data_dir_locked` | Another handle or process has this data directory open. |
 | `bad_request` | Unknown method, bad arguments, an unknown or closed handle, or a duplicate in-flight `call_id`. |
 | `cancelled` | The call was cancelled. |
 | `storage` | The local database or a local file failed. |
 | `internal` | A bug in Grout. The handle stays usable. |
+| `invalid_code` | The pairing code is unknown, already used or expired. |
+| `rate_limited` | RomM is limiting requests from this device; wait a minute. |
 
-The [contract reference](contract.md) lists which codes each method returns. A host should handle `busy` (try later), `cancelled`, `unauthorized` (ask the user to log in again), `server_too_old`, `not_configured` (set a host first) and `data_dir_locked`. Everything else can be shown to the user as-is, using `message`.
+The [contract reference](contract.md) lists which codes each method returns. A host should handle `busy` (try later), `rate_limited` (wait a minute), `invalid_code` (ask for a new code), `cancelled`, `unauthorized` (ask the user to log in again), `server_too_old`, `not_configured` (set a host first) and `data_dir_locked`. Everything else can be shown to the user as-is, using `message`.

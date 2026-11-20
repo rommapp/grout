@@ -12,13 +12,20 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/rommapp/grout/core/auth"
 	"github.com/rommapp/grout/core/config"
 	"github.com/rommapp/grout/core/firmware"
 	"github.com/rommapp/grout/core/firmware/host"
 	"github.com/rommapp/grout/core/library"
 	"github.com/rommapp/grout/core/romm"
 	"github.com/rommapp/grout/core/store"
+	"github.com/rommapp/grout/version"
 )
+
+type Client struct {
+	Name    string
+	Version string
+}
 
 type Options struct {
 	DataDir            string
@@ -28,6 +35,8 @@ type Options struct {
 	Host               host.Host
 	Hooks              firmware.Registry
 	Logger             *slog.Logger
+	Client             Client
+	Timing             auth.Timing
 }
 
 type Grout struct {
@@ -35,6 +44,9 @@ type Grout struct {
 	lock    *os.File
 	logFile *os.File
 	log     *slog.Logger
+	level   *slog.LevelVar
+	client  Client
+	timing  auth.Timing
 	fw      *firmware.Firmware
 	store   *store.Store
 
@@ -55,6 +67,10 @@ type Grout struct {
 	src   config.Source
 
 	writer sync.Mutex
+
+	pairMu  sync.Mutex
+	pending *pairing
+	waiting bool
 }
 
 var errClosed = errors.New("grout is closed")
@@ -73,7 +89,7 @@ func Open(ctx context.Context, o Options) (*Grout, error) {
 	if err != nil {
 		return nil, err
 	}
-	g := &Grout{dataDir: o.DataDir, lock: lock}
+	g := &Grout{dataDir: o.DataDir, lock: lock, client: clientIdentity(o.Client), timing: o.Timing}
 	g.root, g.cancel = context.WithCancel(context.Background())
 	g.idle = sync.NewCond(&g.life)
 	g.released = make(chan struct{})
@@ -95,7 +111,9 @@ func (g *Grout) open(o Options) error {
 
 	g.log = o.Logger
 	if g.log == nil {
-		if err := g.openLog(cfg.LogLevel.Slog()); err != nil {
+		g.level = new(slog.LevelVar)
+		g.level.Set(cfg.LogLevel.Slog())
+		if err := g.openLog(g.level); err != nil {
 			return err
 		}
 	}
@@ -130,7 +148,17 @@ func (g *Grout) open(o Options) error {
 	return nil
 }
 
-func (g *Grout) openLog(level slog.Level) error {
+func clientIdentity(c Client) Client {
+	if c.Name == "" {
+		c.Name = "grout"
+	}
+	if c.Version == "" {
+		c.Version = version.Version
+	}
+	return c
+}
+
+func (g *Grout) openLog(level slog.Leveler) error {
 	dir := filepath.Join(g.dataDir, "logs")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return newError(CodeStorage, fmt.Errorf("creating %s: %w", dir, err))
@@ -268,6 +296,10 @@ func (g *Grout) settings() (*config.Config, config.Source) {
 }
 
 func (g *Grout) update(change func(c *config.Config) error) error {
+	return g.updateThen(change, nil)
+}
+
+func (g *Grout) updateThen(change func(c *config.Config) error, saved func(c *config.Config)) error {
 	g.setMu.Lock()
 	defer g.setMu.Unlock()
 	cur, _ := g.settings()
@@ -281,6 +313,9 @@ func (g *Grout) update(change func(c *config.Config) error) error {
 	g.cfgMu.Lock()
 	g.cfg, g.src = next, config.SourceSettings
 	g.cfgMu.Unlock()
+	if saved != nil {
+		saved(next)
+	}
 	return nil
 }
 

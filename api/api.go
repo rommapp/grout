@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/rommapp/grout"
+	"github.com/rommapp/grout/core/auth"
 	"github.com/rommapp/grout/core/firmware"
 	"github.com/rommapp/grout/version"
 )
@@ -16,11 +17,18 @@ type FirmwareSpec struct {
 	Definition string `json:"definition,omitempty"`
 }
 
+type ClientSpec struct {
+	Name    string `json:"name"`
+	Version string `json:"version"`
+}
+
 type OpenOptions struct {
 	DataDir  string            `json:"data_dir"`
 	Firmware FirmwareSpec      `json:"firmware"`
+	Client   ClientSpec        `json:"client,omitempty"`
 	Env      map[string]string `json:"env,omitempty"`
 	Logger   *slog.Logger      `json:"-"`
+	timing   auth.Timing
 }
 
 type VersionInfo struct {
@@ -39,6 +47,8 @@ func Open(ctx context.Context, o OpenOptions) (*Server, error) {
 		FirmwareID: o.Firmware.ID,
 		Env:        o.Env,
 		Logger:     o.Logger,
+		Client:     grout.Client{Name: o.Client.Name, Version: o.Client.Version},
+		Timing:     o.timing,
 	}
 	if o.Firmware.Definition != "" {
 		opts.FirmwareDefinition = []byte(o.Firmware.Definition)

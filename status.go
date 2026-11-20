@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/rommapp/grout/core/auth"
 	"github.com/rommapp/grout/core/config"
 	"github.com/rommapp/grout/core/romm"
 )
@@ -23,6 +24,7 @@ func (g *Grout) Status(ctx context.Context) (Status, error) {
 		return Status{}, err
 	}
 	defer end()
+	g.log.Debug("checking server status")
 	cfg, src := g.settings()
 	st, _, err := connect(ctx, cfg, src)
 	return st, err
@@ -32,7 +34,7 @@ func connect(ctx context.Context, cfg *config.Config, src config.Source) (Status
 	st := Status{ConfigSource: src.String()}
 	client := newClient(cfg)
 	if client == nil {
-		return st, nil, newError(CodeNotConfigured, errors.New("no RomM host configured"))
+		return st, nil, newError(CodeNotConfigured, errNoHost)
 	}
 	st.Host = cfg.Hosts[0].URL()
 	hb, err := client.Heartbeat(ctx)
@@ -62,14 +64,42 @@ func (g *Grout) SetHost(h config.Host) error {
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
 		return newError(CodeBadRequest, fmt.Errorf("host url %q must be an http or https url", h.RootURI))
 	}
-	return g.update(func(c *config.Config) error {
+	h.TokenExpiresAt = auth.NormalizeExpiry(h.TokenExpiresAt)
+	moved := false
+	err = g.update(func(c *config.Config) error {
 		if len(c.Hosts) == 0 {
 			c.Hosts = []config.Host{h}
+			moved = true
 		} else {
-			c.Hosts[0] = h
+			old := c.Hosts[0]
+			moved = old.URL() != h.URL()
+			c.Hosts[0] = mergeHost(old, h, moved)
 		}
 		return nil
 	})
+	if err == nil && moved {
+		g.pairMu.Lock()
+		g.pending = nil
+		g.pairMu.Unlock()
+	}
+	return err
+}
+
+func mergeHost(old, h config.Host, moved bool) config.Host {
+	h.ClientDeviceID = old.ClientDeviceID
+	switch {
+	case !moved && h.Token == "":
+		h.Token = old.Token
+		h.TokenName = old.TokenName
+		h.TokenExpiresAt = old.TokenExpiresAt
+		h.Username = old.Username
+		h.DeviceID = old.DeviceID
+		h.DeviceName = old.DeviceName
+		h.DeviceClientVersion = old.DeviceClientVersion
+	case moved && (h.Token == "" || h.Token == old.Token):
+		clearSignIn(&h)
+	}
+	return h
 }
 
 func (g *Grout) SetDirectoryMapping(fsSlug string, m *config.DirectoryMapping) error {

@@ -8,8 +8,10 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/rommapp/grout/api"
 	"github.com/rommapp/grout/cli"
 	"github.com/rommapp/grout/core/firmware"
+	"github.com/rommapp/grout/version"
 
 	_ "github.com/BrandonKowalski/certifiable"
 )
@@ -40,5 +42,5 @@ func run() int {
 			environ[k] = v
 		}
 	}
-	return int(cli.Run(ctx, cli.Env{Dir: dir, Stdout: os.Stdout, Stderr: os.Stderr, Firmware: fw, Environ: environ}, os.Args[1:]))
+	return int(cli.Run(ctx, cli.Env{Dir: dir, Stdout: os.Stdout, Stderr: os.Stderr, Firmware: fw, Environ: environ, Client: api.ClientSpec{Name: "grout", Version: version.Version}}, os.Args[1:]))
 }

@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
+	"time"
 
 	"github.com/rommapp/grout"
 	"github.com/rommapp/grout/core/config"
@@ -34,6 +36,12 @@ var methods = []method{
 	{"library.collections", libraryCollections},
 	{"library.collection_platforms", libraryCollectionPlatforms},
 	{"library.game_state", libraryGameState},
+	{"auth.pair_start", authPairStart},
+	{"auth.pair_wait", authPairWait},
+	{"auth.exchange_code", authExchangeCode},
+	{"auth.logout", authLogout},
+	{"device.register", deviceRegister},
+	{"settings.update", settingsUpdate},
 }
 
 func Methods() []string {
@@ -281,4 +289,155 @@ func libraryGameState(ctx context.Context, s *Server, args []byte, _ func(Event)
 		return nil, err
 	}
 	return GameStateResult{State: toGameState(st)}, nil
+}
+
+func authPairStart(ctx context.Context, s *Server, args []byte, _ func(Event)) (any, error) {
+	a, err := decodeArgs[PairStartArgs](args)
+	if err != nil {
+		return nil, err
+	}
+	p, err := s.g.PairStart(ctx, a.DeviceName)
+	if err != nil {
+		return nil, err
+	}
+	return toPairStart(p), nil
+}
+
+func authPairWait(ctx context.Context, s *Server, args []byte, _ func(Event)) (any, error) {
+	if err := noArgs(args); err != nil {
+		return nil, err
+	}
+	r, err := s.g.PairWait(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return toPairWait(r), nil
+}
+
+func authExchangeCode(ctx context.Context, s *Server, args []byte, _ func(Event)) (any, error) {
+	a, err := decodeArgs[ExchangeCodeArgs](args)
+	if err != nil {
+		return nil, err
+	}
+	r, err := s.g.ExchangeCode(ctx, a.Code)
+	if err != nil {
+		return nil, err
+	}
+	return toExchange(r), nil
+}
+
+func authLogout(_ context.Context, s *Server, args []byte, _ func(Event)) (any, error) {
+	if err := noArgs(args); err != nil {
+		return nil, err
+	}
+	if err := s.g.Logout(); err != nil {
+		return nil, err
+	}
+	return toSettings(s.g.Settings()), nil
+}
+
+func deviceRegister(ctx context.Context, s *Server, args []byte, _ func(Event)) (any, error) {
+	a, err := decodeArgs[DeviceRegisterArgs](args)
+	if err != nil {
+		return nil, err
+	}
+	d, err := s.g.RegisterDevice(ctx, a.Name)
+	if err != nil {
+		return nil, err
+	}
+	return DeviceRegisterResult{DeviceID: d.DeviceID, Name: d.Name}, nil
+}
+
+const maxWireSeconds = math.MaxInt64 / int64(time.Second)
+
+func settingField[T any](fields map[string]json.RawMessage, name string, set func(T) error) error {
+	raw, ok := fields[name]
+	if !ok {
+		return nil
+	}
+	delete(fields, name)
+	if bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
+		return badRequest(fmt.Errorf("%s must not be null", name))
+	}
+	var v T
+	if err := json.Unmarshal(raw, &v); err != nil {
+		return badRequest(fmt.Errorf("invalid %s: %w", name, err))
+	}
+	return set(v)
+}
+
+func timeoutField(fields map[string]json.RawMessage, name string, dst **time.Duration) error {
+	return settingField(fields, name, func(v int64) error {
+		if v > maxWireSeconds || v < -maxWireSeconds {
+			return badRequest(fmt.Errorf("%s is out of range", name))
+		}
+		d := time.Duration(v) * time.Second
+		*dst = &d
+		return nil
+	})
+}
+
+func decodeSettingsPatch(args []byte) (grout.SettingsPatch, error) {
+	var p grout.SettingsPatch
+	fields := map[string]json.RawMessage{}
+	if trimmed := bytes.TrimSpace(args); len(trimmed) > 0 && !bytes.Equal(trimmed, []byte("null")) {
+		dec := json.NewDecoder(bytes.NewReader(trimmed))
+		if err := dec.Decode(&fields); err != nil {
+			return p, badRequest(fmt.Errorf("invalid arguments: %w", err))
+		}
+		if _, err := dec.Token(); !errors.Is(err, io.EOF) {
+			return p, badRequest(errors.New("invalid arguments: trailing data after the argument object"))
+		}
+	}
+	steps := []func() error{
+		func() error {
+			return settingField(fields, "show_regular_collections", func(v bool) error { p.ShowRegularCollections = &v; return nil })
+		},
+		func() error {
+			return settingField(fields, "show_smart_collections", func(v bool) error { p.ShowSmartCollections = &v; return nil })
+		},
+		func() error {
+			return settingField(fields, "show_virtual_collections", func(v bool) error { p.ShowVirtualCollections = &v; return nil })
+		},
+		func() error {
+			return settingField(fields, "downloaded_games", func(v DownloadedGamesMode) error {
+				m, err := v.mode()
+				p.DownloadedGames = &m
+				return err
+			})
+		},
+		func() error { return timeoutField(fields, "api_timeout", &p.APITimeout) },
+		func() error { return timeoutField(fields, "download_timeout", &p.DownloadTimeout) },
+		func() error {
+			return settingField(fields, "log_level", func(v LogLevel) error {
+				l, err := v.level()
+				p.LogLevel = &l
+				return err
+			})
+		},
+		func() error {
+			return settingField(fields, "platform_order", func(v []string) error { p.PlatformOrder = &v; return nil })
+		},
+	}
+	for _, step := range steps {
+		if err := step(); err != nil {
+			return p, err
+		}
+	}
+	for name := range fields {
+		return p, badRequest(fmt.Errorf("invalid arguments: unknown field %q", name))
+	}
+	return p, nil
+}
+
+func settingsUpdate(_ context.Context, s *Server, args []byte, _ func(Event)) (any, error) {
+	p, err := decodeSettingsPatch(args)
+	if err != nil {
+		return nil, err
+	}
+	c, err := s.g.UpdateSettings(p)
+	if err != nil {
+		return nil, err
+	}
+	return toSettings(c), nil
 }

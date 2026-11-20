@@ -33,6 +33,8 @@ const (
 	CodeCancelled         = grout.CodeCancelled
 	CodeStorage           = grout.CodeStorage
 	CodeInternal          = grout.CodeInternal
+	CodeInvalidCode       = grout.CodeInvalidCode
+	CodeRateLimited       = grout.CodeRateLimited
 )
 
 func Codes() []Code {
@@ -48,6 +50,8 @@ func Codes() []Code {
 		CodeCancelled,
 		CodeStorage,
 		CodeInternal,
+		CodeInvalidCode,
+		CodeRateLimited,
 	}
 }
 

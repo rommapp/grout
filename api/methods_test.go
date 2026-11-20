@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rommapp/grout/core/auth"
 	"github.com/rommapp/grout/core/config"
 	"github.com/rommapp/grout/core/library"
 	"github.com/rommapp/grout/core/romm"
@@ -32,6 +33,63 @@ var tableMethods = []string{
 	"library.collections",
 	"library.collection_platforms",
 	"library.game_state",
+	"auth.pair_start",
+	"auth.pair_wait",
+	"auth.exchange_code",
+	"auth.logout",
+	"device.register",
+	"settings.update",
+}
+
+var pairWaitKeys = []string{"outcome", "username", "device_id", "token_expires_at"}
+
+func checkLoggedOutSettings(t *testing.T, raw json.RawMessage) {
+	t.Helper()
+	wantKeys(t, "settings", raw, settingsKeys...)
+	if !strings.Contains(string(raw), `"has_token":false`) {
+		t.Fatalf("settings = %s", raw)
+	}
+}
+
+func approvedReply(token string) fakeromm.TokenReply {
+	return fakeromm.TokenReply{Token: romm.DeviceToken{
+		AccessToken: token,
+		DeviceID:    "dev-9",
+		Scopes:      romm.Scopes,
+		ExpiresAt:   "2027-01-01T00:00:00Z",
+	}}
+}
+
+func exchangeToken() romm.ClientToken {
+	return romm.ClientToken{
+		ID:        4,
+		Name:      "living room",
+		Scopes:    romm.Scopes,
+		ExpiresAt: "2027-02-01T00:00:00Z",
+		DeviceID:  "dev-3",
+		RawToken:  "raw-1",
+	}
+}
+
+func instantOptions(t *testing.T, dataDir string) OpenOptions {
+	t.Helper()
+	o := testOpenOptions(t, dataDir)
+	o.timing = auth.Timing{Sleep: func(ctx context.Context, d time.Duration) error { return ctx.Err() }}
+	return o
+}
+
+func hostServer(t *testing.T, srv *fakeromm.Server, o OpenOptions) *Server {
+	t.Helper()
+	if err := config.Save(o.DataDir, &config.Config{}); err != nil {
+		t.Fatal(err)
+	}
+	s, err := Open(context.Background(), o)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { s.Close() })
+	mustOK(t, s, "settings.set_host", fmt.Sprintf(`{"root_uri":%q}`, srv.URL()))
+	return s
 }
 
 func fixtureServer(t *testing.T) *fakeromm.Server {
@@ -53,7 +111,12 @@ func connectedServer(t *testing.T, srv *fakeromm.Server) *Server {
 	if err := config.Save(dir, &config.Config{ShowRegularCollections: true}); err != nil {
 		t.Fatal(err)
 	}
-	s := openServer(t, dir)
+	o := instantOptions(t, dir)
+	s, err := Open(context.Background(), o)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { s.Close() })
 	mustOK(t, s, "settings.set_host", fmt.Sprintf(`{"root_uri":%q,"token":"secret-token"}`, srv.URL()))
 	mustOK(t, s, "settings.set_directory_mapping", `{"fs_slug":"gba","slug":"gba","enabled":true}`)
 	mustOK(t, s, "settings.set_directory_mapping", `{"fs_slug":"snes","slug":"snes","enabled":true}`)
@@ -121,7 +184,7 @@ var settingsKeys = []string{
 	"show_virtual_collections", "downloaded_games", "api_timeout", "download_timeout", "log_level", "platform_order",
 }
 
-var hostKeys = []string{"display_name", "root_uri", "port", "username", "has_token", "insecure_skip_verify"}
+var hostKeys = []string{"display_name", "root_uri", "port", "username", "has_token", "token_name", "token_expires_at", "device_id", "device_name", "insecure_skip_verify"}
 
 var platformKeys = []string{"id", "slug", "fs_slug", "name", "rom_count", "enabled", "proposed", "rom_dirs"}
 
@@ -148,6 +211,8 @@ func TestEveryMethodRoundTrip(t *testing.T) {
 		t.Fatalf("methods = %v", got)
 	}
 	srv := fixtureServer(t)
+	srv.SetTokenReplies(approvedReply("tok-1"))
+	srv.AddExchangeCode("ABCD2345", exchangeToken())
 	s := connectedServer(t, srv)
 
 	cases := map[string]struct {
@@ -212,10 +277,45 @@ func TestEveryMethodRoundTrip(t *testing.T) {
 			}
 		}},
 	}
+	cases["auth.pair_start"] = struct {
+		args  string
+		check func(t *testing.T, raw json.RawMessage)
+	}{`{"device_name":"slot"}`, func(t *testing.T, raw json.RawMessage) {
+		wantKeys(t, "pair start", raw, "user_code", "verification_url", "expires_at")
+	}}
+	cases["auth.pair_wait"] = struct {
+		args  string
+		check func(t *testing.T, raw json.RawMessage)
+	}{"", func(t *testing.T, raw json.RawMessage) {
+		wantKeys(t, "pair wait", raw, pairWaitKeys...)
+	}}
+	cases["auth.exchange_code"] = struct {
+		args  string
+		check func(t *testing.T, raw json.RawMessage)
+	}{`{"code":"ABCD2345"}`, func(t *testing.T, raw json.RawMessage) {
+		wantKeys(t, "exchange", raw, "username", "device_id", "token_expires_at", "scopes")
+	}}
+	cases["device.register"] = struct {
+		args  string
+		check func(t *testing.T, raw json.RawMessage)
+	}{`{"name":"slot"}`, func(t *testing.T, raw json.RawMessage) {
+		wantKeys(t, "device", raw, "device_id", "name")
+	}}
+	cases["settings.update"] = struct {
+		args  string
+		check func(t *testing.T, raw json.RawMessage)
+	}{`{"show_regular_collections":true,"show_smart_collections":false,"show_virtual_collections":false,"downloaded_games":"mark","api_timeout":30,"download_timeout":600,"log_level":"INFO","platform_order":["gba"]}`, checkSettings}
+	cases["auth.logout"] = struct {
+		args  string
+		check func(t *testing.T, raw json.RawMessage)
+	}{"", checkLoggedOutSettings}
 	if len(cases) != len(tableMethods) {
 		t.Fatalf("cases = %d", len(cases))
 	}
-	for _, m := range tableMethods {
+	order := slices.Clone(tableMethods)
+	order = slices.DeleteFunc(order, func(m string) bool { return m == "auth.logout" })
+	order = append(order, "auth.logout")
+	for _, m := range order {
 		c, ok := cases[m]
 		if !ok {
 			t.Fatalf("no case for %s", m)
@@ -361,4 +461,159 @@ func TestCallAfterCloseIsBadRequest(t *testing.T) {
 		t.Fatal(err)
 	}
 	wantError(t, call(t, s, "library.platforms", ""), CodeBadRequest)
+}
+
+func TestOpenOptionsClientReachesPairStart(t *testing.T) {
+	srv := fakeromm.New(t)
+	dir := t.TempDir()
+	raw := fmt.Sprintf(`{"data_dir":%q,"firmware":{"id":"testfw"},"client":{"name":"slot","version":"1.4.0"},"env":{"GROUT_ROOT":%q}}`, dir, t.TempDir())
+	o, err := DecodeOpenOptions([]byte(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+	o.timing = instantOptions(t, dir).timing
+	s := hostServer(t, srv, o)
+	mustOK(t, s, "auth.pair_start", `{"device_name":"slot"}`)
+	reqs := srv.InitRequests()
+	if len(reqs) != 1 || reqs[0].Client != "slot" || reqs[0].ClientVersion != "1.4.0" {
+		t.Fatalf("init requests = %+v", reqs)
+	}
+}
+
+func TestAuthMethodsRoundTrip(t *testing.T) {
+	srv := fakeromm.New(t)
+	srv.SetTokenReplies(approvedReply("tok-1"))
+	s := hostServer(t, srv, instantOptions(t, t.TempDir()))
+
+	start := mustOK(t, s, "auth.pair_start", `{"device_name":"slot"}`)
+	wantKeys(t, "pair start", start, "user_code", "verification_url", "expires_at")
+	var expires string
+	if err := json.Unmarshal(field(t, start, "expires_at"), &expires); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := time.Parse(time.RFC3339, expires); err != nil {
+		t.Fatalf("expires_at = %q", expires)
+	}
+	wait := mustOK(t, s, "auth.pair_wait", "")
+	wantKeys(t, "pair wait", wait, pairWaitKeys...)
+	if string(field(t, wait, "outcome")) != `"approved"` || string(field(t, wait, "device_id")) != `"dev-9"` {
+		t.Fatalf("pair wait = %s", wait)
+	}
+
+	wantError(t, call(t, s, "auth.exchange_code", `{"code":"WRONG234"}`), CodeInvalidCode)
+
+	reg := mustOK(t, s, "device.register", `{"name":"slot"}`)
+	wantKeys(t, "device", reg, "device_id", "name")
+	if string(field(t, reg, "name")) != `"slot"` {
+		t.Fatalf("device = %s", reg)
+	}
+
+	out := mustOK(t, s, "auth.logout", "")
+	checkLoggedOutSettings(t, out)
+}
+
+func TestPairWaitDeniedIsAResult(t *testing.T) {
+	srv := fakeromm.New(t)
+	srv.SetTokenReplies(fakeromm.TokenReply{State: romm.PairDenied})
+	s := hostServer(t, srv, instantOptions(t, t.TempDir()))
+	mustOK(t, s, "auth.pair_start", `{"device_name":"slot"}`)
+	wait := mustOK(t, s, "auth.pair_wait", "")
+	if string(field(t, wait, "outcome")) != `"denied"` {
+		t.Fatalf("pair wait = %s", wait)
+	}
+}
+
+func TestSettingsUpdatePartialAndNullRejected(t *testing.T) {
+	srv := fakeromm.New(t)
+	s := hostServer(t, srv, instantOptions(t, t.TempDir()))
+	before := mustOK(t, s, "settings.get", "")
+	after := mustOK(t, s, "settings.update", `{"show_regular_collections":true}`)
+	var b, a map[string]json.RawMessage
+	if err := json.Unmarshal(before, &b); err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(after, &a); err != nil {
+		t.Fatal(err)
+	}
+	for k, v := range a {
+		same := string(v) == string(b[k])
+		if k == "show_regular_collections" {
+			if string(v) != "true" {
+				t.Fatalf("show_regular_collections = %s", v)
+			}
+			continue
+		}
+		if !same {
+			t.Fatalf("%s changed from %s to %s", k, b[k], v)
+		}
+	}
+	wantError(t, call(t, s, "settings.update", `{"log_level":null}`), CodeBadRequest)
+	wantError(t, call(t, s, "settings.update", `{"api_timeout":0}`), CodeBadRequest)
+	wantError(t, call(t, s, "settings.update", `{"bogus":1}`), CodeBadRequest)
+	wantError(t, call(t, s, "settings.update", `{"log_level":"LOUD"}`), CodeBadRequest)
+	wantError(t, call(t, s, "settings.update", `{"downloaded_games":"nope"}`), CodeBadRequest)
+	wantError(t, call(t, s, "settings.update", `[1]`), CodeBadRequest)
+	got := mustOK(t, s, "settings.update", `{"api_timeout":45,"log_level":"DEBUG","downloaded_games":"filter","platform_order":["snes","gba"]}`)
+	if string(field(t, got, "api_timeout")) != "45" || string(field(t, got, "log_level")) != `"DEBUG"` ||
+		string(field(t, got, "downloaded_games")) != `"filter"` || string(field(t, got, "platform_order")) != `["snes","gba"]` {
+		t.Fatalf("settings = %s", got)
+	}
+}
+
+func TestSettingsHostInfoNewFieldsNoToken(t *testing.T) {
+	srv := fakeromm.New(t)
+	srv.SetTokenReplies(approvedReply("tok-secret-1"))
+	s := hostServer(t, srv, instantOptions(t, t.TempDir()))
+	mustOK(t, s, "auth.pair_start", `{"device_name":"slot"}`)
+	mustOK(t, s, "auth.pair_wait", "")
+	raw := mustOK(t, s, "settings.get", "")
+	host := items(t, field(t, raw, "hosts"))[0]
+	wantKeys(t, "host", host, hostKeys...)
+	if string(field(t, host, "token_name")) != `"slot"` || string(field(t, host, "device_id")) != `"dev-9"` ||
+		string(field(t, host, "device_name")) != `"slot"` || string(field(t, host, "token_expires_at")) != `"2027-01-01T00:00:00Z"` ||
+		string(field(t, host, "has_token")) != "true" {
+		t.Fatalf("host = %s", host)
+	}
+	if strings.Contains(string(raw), "tok-secret-1") || strings.Contains(string(raw), `"token"`) {
+		t.Fatalf("settings leaks token: %s", raw)
+	}
+}
+
+func TestWireEnumListsAreHandled(t *testing.T) {
+	for _, m := range DownloadedGamesModes() {
+		c, err := m.mode()
+		if err != nil || toDownloadedGamesMode(c) != m {
+			t.Fatalf("mode %q", m)
+		}
+	}
+	for _, l := range LogLevels() {
+		c, err := l.level()
+		if err != nil || toLogLevel(c) != l {
+			t.Fatalf("level %q", l)
+		}
+	}
+	for _, o := range auth.Outcomes() {
+		if !slices.Contains(PairOutcomes(), toPairOutcome(o)) || string(toPairOutcome(o)) != string(o) {
+			t.Fatalf("outcome %q", o)
+		}
+	}
+}
+
+func TestPairWaitFailedIsServerUnreachable(t *testing.T) {
+	srv := fakeromm.New(t)
+	srv.FailTimes("/api/auth/device/token", 3)
+	s := hostServer(t, srv, instantOptions(t, t.TempDir()))
+	mustOK(t, s, "auth.pair_start", `{"device_name":"slot"}`)
+	noResult(t, callRaw(t, s, "auth.pair_wait", nil, nil), CodeServerUnreachable)
+}
+
+func TestSetHostSameURLKeepsToken(t *testing.T) {
+	srv := fakeromm.New(t)
+	s := hostServer(t, srv, instantOptions(t, t.TempDir()))
+	mustOK(t, s, "settings.set_host", fmt.Sprintf(`{"root_uri":%q,"token":"secret-token"}`, srv.URL()))
+	raw := mustOK(t, s, "settings.set_host", fmt.Sprintf(`{"display_name":"Den","root_uri":%q,"insecure_skip_verify":true}`, srv.URL()))
+	host := items(t, field(t, raw, "hosts"))[0]
+	if string(field(t, host, "has_token")) != "true" || string(field(t, host, "display_name")) != `"Den"` {
+		t.Fatalf("host = %s", host)
+	}
 }
