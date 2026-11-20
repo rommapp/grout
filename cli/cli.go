@@ -15,6 +15,7 @@ type Env struct {
 	Stdout   io.Writer
 	Stderr   io.Writer
 	LogLevel *slog.LevelVar
+	Getenv   func(string) string
 }
 
 type exitError struct {
@@ -56,5 +57,6 @@ func newRoot(env Env) *cobra.Command {
 	root.SetOut(env.Stdout)
 	root.SetErr(env.Stderr)
 	root.AddCommand(newStatusCmd(env))
+	root.AddCommand(newLibraryCmd(env))
 	return root
 }

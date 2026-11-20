@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 
 	"grout/core/config"
@@ -42,38 +43,56 @@ func newStatusCmd(env Env) *cobra.Command {
 }
 
 func checkStatus(ctx context.Context, dir string, levels *slog.LevelVar, r *statusReport) int {
-	cfg, src, err := config.Load(dir)
-	r.ConfigSource = src.String()
+	sess, code, err := connect(ctx, dir, levels)
+	r.ConfigSource = sess.src.String()
+	r.Host = sess.hostURL
+	r.ServerVersion = sess.hb.System.Version
+	r.Snapshots = sess.hb.SaveSync.Snapshots
 	if err != nil {
 		r.Error = err.Error()
-		return ExitNotConfigured
+		return code
 	}
+	r.Ready = true
+	return ExitOK
+}
+
+type session struct {
+	cfg     *config.Config
+	src     config.Source
+	hostURL string
+	client  *romm.Client
+	hb      romm.Heartbeat
+}
+
+func connect(ctx context.Context, dir string, levels *slog.LevelVar) (*session, int, error) {
+	s := &session{}
+	cfg, src, err := config.Load(dir)
+	s.src = src
+	if err != nil {
+		return s, ExitNotConfigured, err
+	}
+	s.cfg = cfg
 	if levels != nil {
 		levels.Set(cfg.LogLevel.Slog())
 	}
 	if len(cfg.Hosts) == 0 {
-		r.Error = "no RomM host configured"
-		return ExitNotConfigured
+		return s, ExitNotConfigured, errors.New("no RomM host configured")
 	}
 	host := cfg.Hosts[0]
-	r.Host = host.URL()
-	client := romm.New(romm.Options{
+	s.hostURL = host.URL()
+	s.client = romm.New(romm.Options{
 		BaseURL:            host.URL(),
 		AuthHeader:         host.AuthHeader(),
 		InsecureSkipVerify: host.InsecureSkipVerify,
 		Timeout:            cfg.ApiTimeout.Duration(),
 	})
-	hb, err := client.Heartbeat(ctx)
+	hb, err := s.client.Heartbeat(ctx)
 	if err != nil {
-		r.Error = err.Error()
-		return ExitServer
+		return s, ExitServer, err
 	}
-	r.ServerVersion = hb.System.Version
-	r.Snapshots = hb.SaveSync.Snapshots
+	s.hb = hb
 	if err := hb.RequireSnapshots(); err != nil {
-		r.Error = err.Error()
-		return ExitTooOld
+		return s, ExitTooOld, err
 	}
-	r.Ready = true
-	return ExitOK
+	return s, ExitOK, nil
 }

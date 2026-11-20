@@ -38,7 +38,7 @@ func run() int {
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	return cli.Run(ctx, cli.Env{Dir: dir, Stdout: os.Stdout, Stderr: os.Stderr, LogLevel: level}, os.Args[1:])
+	return cli.Run(ctx, cli.Env{Dir: dir, Stdout: os.Stdout, Stderr: os.Stderr, LogLevel: level, Getenv: os.Getenv}, os.Args[1:])
 }
 
 func openLog(dir string) (*os.File, error) {

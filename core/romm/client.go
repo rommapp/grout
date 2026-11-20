@@ -67,13 +67,18 @@ func (c *Client) send(ctx context.Context, method, path string, query url.Values
 }
 
 func (c *Client) getJSON(ctx context.Context, path string, query url.Values, out any) error {
+	_, err := c.getJSONHeader(ctx, path, query, out)
+	return err
+}
+
+func (c *Client) getJSONHeader(ctx context.Context, path string, query url.Values, out any) (http.Header, error) {
 	resp, err := c.send(ctx, http.MethodGet, path, query, nil, "")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer resp.Body.Close()
 	if err := json.NewDecoder(resp.Body).Decode(out); err != nil {
-		return fmt.Errorf("romm: decoding %s: %w", path, err)
+		return nil, fmt.Errorf("romm: decoding %s: %w", path, err)
 	}
-	return nil
+	return resp.Header, nil
 }

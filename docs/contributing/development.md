@@ -39,6 +39,38 @@ brew install sdl2 sdl2_image sdl2_ttf sdl2_gfx
       `go run ./tools/mkroot --firmware <id> [--device <device>] <dir>`, which prints the lines to put in `.env`.
 5. Run / Debug `app/grout.go`, making sure to reference the `.env` file in your run configuration.
 
+### Exercising the library without a UI
+
+`grout library refresh [--full]` runs the RomM library refresh and the local ROM scan, then prints a JSON summary:
+
+```json
+{
+  "firmware": "nextui",
+  "refresh": {
+    "platforms": 1,
+    "games": 2,
+    "collections": 0,
+    "deleted": 0,
+    "failed_platforms": [],
+    "collection_errors": [],
+    "purge_error": ""
+  },
+  "scan": { "files": 1, "matched": 1, "platforms": 1, "skipped_folders": [] },
+  "error": ""
+}
+```
+
+`--full` ignores the stored cursors and fetches everything again. The command reads `settings.json` from the working
+directory, takes the firmware from `CFW`, and keeps its database at `.cache/library.db`.
+
+Exit codes: 0 success (including partial platform or collection failures, which are listed in the summary), 1 usage
+error, 2 the server, the platforms step, the library database or the scan failed, 4 the server lacks save channel
+snapshots, 5 no config, no host, or `CFW` names no known firmware.
+
+To try it on a mock card, build one with `go run ./tools/mkroot --firmware nextui <dir>`, put the printed `CFW` and
+`GROUT_ROOT` lines in the environment, and run `go run ./cmd/grout library refresh` from a directory holding a
+`settings.json` that points at your RomM.
+
 ## Project Structure
 
 The codebase is laid out fairly well. It attempts to keep everything grouped by feature / function / domain.
