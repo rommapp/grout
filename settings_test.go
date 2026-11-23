@@ -145,3 +145,106 @@ func TestUpdateSettingsLogLevelMatchesSavedUnderConcurrency(t *testing.T) {
 		}
 	}
 }
+
+func TestUpdateSettingsArtFields(t *testing.T) {
+	g := openTest(t)
+	got, err := g.UpdateSettings(SettingsPatch{
+		DownloadArt:                  ptr(true),
+		UnzipDownloads:               ptr(true),
+		ArtKind:                      ptr(config.ArtKindMixImageV2),
+		DownloadArtScreenshotPreview: ptr(true),
+		DownloadSplashArt:            ptr(config.ArtKindTitle),
+		AdditionalDownloads: &AdditionalDownloadsPatch{
+			Marquee:   ptr(config.ArtKindLogo),
+			Thumbnail: ptr(config.ArtKindMarquee),
+			Video:     ptr(true),
+			Bezel:     ptr(true),
+			Manual:    ptr(true),
+			BoxBack:   ptr(true),
+			Fanart:    ptr(true),
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := config.AdditionalDownloads{Marquee: config.ArtKindLogo, Thumbnail: config.ArtKindMarquee, Video: true, Bezel: true, Manual: true, BoxBack: true, Fanart: true}
+	if !got.DownloadArt || !got.UnzipDownloads || got.ArtKind != config.ArtKindMixImageV2 || !got.DownloadArtScreenshotPreview ||
+		got.DownloadSplashArt != config.ArtKindTitle || got.AdditionalDownloads != want {
+		t.Fatalf("settings = %+v", got)
+	}
+	if after := g.Settings(); !reflect.DeepEqual(after, got) {
+		t.Fatalf("saved = %+v", after)
+	}
+	for _, k := range config.CoverArtKinds() {
+		if _, err := g.UpdateSettings(SettingsPatch{ArtKind: ptr(k)}); err != nil {
+			t.Fatalf("art kind %q: %v", k, err)
+		}
+	}
+	for _, k := range config.SplashArtKinds() {
+		if _, err := g.UpdateSettings(SettingsPatch{DownloadSplashArt: ptr(k), AdditionalDownloads: &AdditionalDownloadsPatch{Thumbnail: ptr(k)}}); err != nil {
+			t.Fatalf("splash kind %q: %v", k, err)
+		}
+	}
+	for _, k := range config.MarqueeArtKinds() {
+		if _, err := g.UpdateSettings(SettingsPatch{AdditionalDownloads: &AdditionalDownloadsPatch{Marquee: ptr(k)}}); err != nil {
+			t.Fatalf("marquee kind %q: %v", k, err)
+		}
+	}
+
+	before := g.Settings()
+	for name, p := range map[string]SettingsPatch{
+		"art kind none":       {ArtKind: ptr(config.ArtKindNone)},
+		"art kind marquee":    {ArtKind: ptr(config.ArtKindMarquee)},
+		"art kind unknown":    {ArtKind: ptr(config.ArtKind("Poster"))},
+		"splash box2d":        {DownloadSplashArt: ptr(config.ArtKindBox2D)},
+		"splash logo":         {DownloadSplashArt: ptr(config.ArtKindLogo)},
+		"thumbnail logo":      {AdditionalDownloads: &AdditionalDownloadsPatch{Thumbnail: ptr(config.ArtKindLogo)}},
+		"thumbnail unknown":   {AdditionalDownloads: &AdditionalDownloadsPatch{Thumbnail: ptr(config.ArtKind("Poster"))}},
+		"marquee title":       {AdditionalDownloads: &AdditionalDownloadsPatch{Marquee: ptr(config.ArtKindTitle)}},
+		"marquee default":     {AdditionalDownloads: &AdditionalDownloadsPatch{Marquee: ptr(config.ArtKindDefault)}},
+		"valid with bad mate": {DownloadArt: ptr(false), ArtKind: ptr(config.ArtKindVideo)},
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := g.UpdateSettings(p)
+			wantCode(t, err, CodeBadRequest)
+			if after := g.Settings(); !reflect.DeepEqual(after, before) {
+				t.Fatalf("settings changed: %+v", after)
+			}
+		})
+	}
+}
+
+func TestAdditionalDownloadsPatchIsPartial(t *testing.T) {
+	g := openTest(t)
+	start := config.AdditionalDownloads{Marquee: config.ArtKindMarquee, Thumbnail: config.ArtKindTitle, Video: true, Manual: true}
+	if _, err := g.UpdateSettings(SettingsPatch{AdditionalDownloads: &AdditionalDownloadsPatch{
+		Marquee: ptr(start.Marquee), Thumbnail: ptr(start.Thumbnail), Video: ptr(true), Manual: ptr(true),
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	got, err := g.UpdateSettings(SettingsPatch{AdditionalDownloads: &AdditionalDownloadsPatch{Video: ptr(false), Fanart: ptr(true)}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := start
+	want.Video = false
+	want.Fanart = true
+	if got.AdditionalDownloads != want {
+		t.Fatalf("additional = %+v, want %+v", got.AdditionalDownloads, want)
+	}
+	got, err = g.UpdateSettings(SettingsPatch{AdditionalDownloads: &AdditionalDownloadsPatch{Marquee: ptr(config.ArtKindNone)}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want.Marquee = config.ArtKindNone
+	if got.AdditionalDownloads != want {
+		t.Fatalf("additional = %+v, want %+v", got.AdditionalDownloads, want)
+	}
+	got, err = g.UpdateSettings(SettingsPatch{ShowSmartCollections: ptr(true)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.AdditionalDownloads != want {
+		t.Fatalf("untouched additional = %+v, want %+v", got.AdditionalDownloads, want)
+	}
+}

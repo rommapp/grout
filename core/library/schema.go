@@ -112,5 +112,14 @@ func Tables() []store.Table {
 			`CREATE INDEX idx_local_files_platform_basename ON local_files(platform_id, basename COLLATE NOCASE)`,
 			`CREATE INDEX idx_local_files_game ON local_files(game_id)`,
 		}},
+		{Name: "downloads", DDL: []string{
+			`CREATE TABLE downloads (
+				game_id INTEGER PRIMARY KEY,
+				platform_id INTEGER NOT NULL,
+				file_id INTEGER NOT NULL DEFAULT 0,
+				launch_path TEXT NOT NULL,
+				fetched_at TEXT NOT NULL
+			)`,
+		}},
 	}
 }

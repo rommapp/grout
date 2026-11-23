@@ -14,6 +14,7 @@ saves = { value = "{card}/save", src = "script/device/bind.sh" }
 
 [rom_folders]
 style = { value = "plain", src = "script/system/assign.sh" }
+multi_layout = "muos_hidden_layout"
 
 [saves]
 layout = { value = "per-emulator", src = "share/emulator/retroarch/retroarch.default.cfg" }

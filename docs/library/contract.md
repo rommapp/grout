@@ -28,7 +28,15 @@ Long calls report progress through the event callback while they run. Each event
 { "call_id": 7, "type": "progress", "stage": "games", "done": 120, "total": 450 }
 ```
 
-`type` is always `progress` in protocol `1`. `stage` is one of `platforms`, `games`, `purge`, `collections` and `scan`, in that order. A refresh without a scan stops after `collections`.
+`type` is always `progress` in protocol `1`. For `library.refresh` and `library.scan`, `stage` is one of `platforms`, `games`, `purge`, `collections` and `scan`, in that order. A refresh without a scan stops after `collections`.
+
+The fetch methods use the stages `download`, `extract`, `art` and `bios`. Events that report a transfer also carry byte counts:
+
+```json
+{ "call_id": 9, "type": "progress", "stage": "download", "done": 0, "total": 1, "bytes_done": 1048576, "bytes_total": 734003200 }
+```
+
+Every `download` event carries `bytes_done` and `bytes_total`. `bios` events carry them only while a file is transferring. `bytes_total` is `0` when the size is not known. Transfer events arrive at most every 100 ms, plus one when each file finishes. No other stage carries byte counts.
 
 ## Error codes
 
@@ -39,7 +47,7 @@ Long calls report progress through the event callback while they run. Each event
 | `server_unreachable` | RomM could not be reached, or it answered with something that is not RomM. |
 | `unauthorized` | RomM rejected the credentials. |
 | `server_too_old` | The RomM server does not support save channel snapshots. |
-| `busy` | A refresh or scan, or an `auth.pair_wait`, is already running on this handle. |
+| `busy` | A refresh, scan or download is running and the call cannot run alongside it, the same game or platform BIOS is already downloading, or an `auth.pair_wait` is already running on this handle. |
 | `data_dir_locked` | Another handle or process has this data directory open. |
 | `bad_request` | Unknown method, bad arguments, an unknown or closed handle, or a duplicate in-flight `call_id`. |
 | `cancelled` | The call was cancelled with `grout_cancel` or by `grout_close`. |
@@ -47,6 +55,8 @@ Long calls report progress through the event callback while they run. Each event
 | `internal` | A bug in Grout. The handle stays usable. |
 | `invalid_code` | The pairing code is unknown, already used or expired. |
 | `rate_limited` | RomM is limiting requests from this device. Wait a minute and try again. |
+| `bad_archive` | A downloaded archive is corrupt or unsafe (an entry pointing outside its folder, duplicate names, or more than 64 GiB or 100000 entries). Nothing was placed. |
+| `missing_on_server` | RomM has the game in its database but not on its disk. Nothing was placed. `fetch.bios` skips a BIOS file in that state and reports it `unchecked`. |
 
 ## Value sets
 
@@ -57,6 +67,11 @@ Long calls report progress through the event callback while they run. Each event
 | Collection `kind` | `regular`, `smart`, `virtual` |
 | `downloaded_games` | `do_nothing`, `mark`, `filter` |
 | `log_level` | `DEBUG`, `INFO`, `ERROR` |
+| Art `kind` | `cover`, `preview`, `splash`, `video`, `manual`, `bezel`, `marquee`, `thumbnail`, `boxback`, `fanart` |
+| BIOS `check` | `verified`, `mismatched`, `unchecked` |
+| `art_kind` | `Default`, `Box2D`, `Box3D`, `Miximage`, `Miximage_v2` |
+| `download_splash_art`, `additional_downloads.thumbnail` | `""` (none), `Marquee`, `Title` |
+| `additional_downloads.marquee` | `""` (none), `Marquee`, `Logo` |
 | Pairing `outcome` | `approved`, `denied`, `expired` (a pairing that fails returns the `server_unreachable` error instead) |
 
 ## Shared shapes
@@ -74,7 +89,13 @@ Long calls report progress through the event callback while they run. Each event
   "api_timeout": 30,
   "download_timeout": 3600,
   "log_level": "ERROR",
-  "platform_order": []
+  "platform_order": [],
+  "download_art": true,
+  "unzip_downloads": false,
+  "art_kind": "Default",
+  "download_art_screenshot_preview": false,
+  "download_splash_art": "",
+  "additional_downloads": { "marquee": "", "video": false, "thumbnail": "", "bezel": false, "manual": false, "boxback": false, "fanart": false }
 }
 ```
 
@@ -85,6 +106,22 @@ Timeouts are whole seconds. The token is never returned; `has_token` says whethe
 ```json
 { "id": 4, "slug": "gba", "fs_slug": "gba", "name": "Game Boy Advance", "rom_count": 120, "enabled": true, "proposed": false, "rom_dirs": ["/mnt/SDCARD/Roms/GBA"] }
 ```
+
+**BiosFile**
+
+```json
+{ "firmware_id": 3, "file_name": "dc_boot.bin", "paths": ["/run/muos/storage/bios/dc/dc_boot.bin"], "check": "verified", "is_verified": true, "present": true }
+```
+
+`paths` are every place the firmware definition puts the file. `present` is true when a file exists at all of them. `check` compares the download with the hash RomM stored for the uploaded file, so it proves the transfer arrived intact; `is_verified` is RomM's own flag that the file matches a known good dump.
+
+**ArtResult**
+
+```json
+{ "written": [{ "kind": "cover", "path": "/userdata/roms/gba/images/Game.png" }], "failed": ["video"] }
+```
+
+`failed` lists the art kinds the settings asked for that could not be fetched or written. Kinds the firmware has no folder for, or the game has no source for, appear in neither list.
 
 **GamesQuery**
 
@@ -256,10 +293,60 @@ Errors: `not_configured` (no host or no token), `bad_request` (empty name, or th
 
 ### `settings.update`
 
-Arguments: any of `{ "show_regular_collections", "show_smart_collections", "show_virtual_collections", "downloaded_games", "api_timeout", "download_timeout", "log_level", "platform_order" }`. A field that is absent stays as it is. A field set to `null` is `bad_request`.
+Arguments: any of `{ "show_regular_collections", "show_smart_collections", "show_virtual_collections", "downloaded_games", "api_timeout", "download_timeout", "log_level", "platform_order", "download_art", "unzip_downloads", "art_kind", "download_art_screenshot_preview", "download_splash_art", "additional_downloads" }`. A field that is absent stays as it is. `additional_downloads` is an object holding any of `marquee`, `video`, `thumbnail`, `bezel`, `manual`, `boxback` and `fanart`; keys left out stay as they are. A field set to `null` is `bad_request`.
 
-Limits: `api_timeout` 1 to 300 seconds; `download_timeout` 1 second to 24 hours; `platform_order` has no duplicates; `downloaded_games` and `log_level` take the values listed under Value sets. A `log_level` change applies to the log file immediately.
+Limits: `api_timeout` 1 to 300 seconds; `download_timeout` 1 second to 24 hours; `platform_order` has no duplicates; `downloaded_games`, `log_level` and the art kind fields take the values listed under Value sets. A `log_level` change applies to the log file immediately.
 
 Result: Settings.
 
 Errors: `bad_request`, `storage`.
+
+### `library.game_files`
+
+Arguments: `{ "game_id" }`.
+
+Result: `[{ "id", "file_name", "size_bytes", "category" }]`, the game's playable files sorted by name. Offer these as versions when a game has more than one, and pass the chosen `id` to `fetch.game`.
+
+Errors: `bad_request` for a missing or unknown game; `cancelled`; `storage`.
+
+### `fetch.game`
+
+Arguments: `{ "game_id", "file_id" }`. `file_id` is optional and picks one version of a `single` or `nested` game; without it Grout takes the first playable file. A `multi` game always downloads whole, and passing `file_id` for one is `bad_request`.
+
+Downloads the game into the platform's ROM folder: the folder from the user's directory mapping, else the first of the firmware's folders that exists on the card, else the first it lists. Multi-file games are unpacked into their own folder, laid out the way the firmware expects. With `unzip_downloads` on, a single-file game that arrives as a zip or 7z is unpacked. Every file is written under a hidden `.grout-` name and renamed into place, so a failed or cancelled download leaves nothing half-written; a scan removes any `.grout-` leftovers. Downloading a game again replaces files of the same name and keeps everything else in its folder, such as saves stored beside the ROM.
+
+When `download_art` is on, the art the settings ask for follows. Art failures never fail the call. If the call is cancelled after the game is on the card, the game is kept and recorded, the call succeeds, and the art is skipped.
+
+Result: `{ "game_id", "file_id", "rom_dir", "launch_path", "placed": [string], "art": ArtResult }`. `launch_path` is the file to launch: the playlist for a multi-disc game when there is one, else the game's folder.
+
+Events: `progress` with stages `download`, `extract` and `art`.
+
+Errors: `not_configured`, `bad_request` (unknown game, a platform with no ROM folder on this firmware, a `file_id` that is not one of the game's files, a `file_id` for a `multi` game, or a game with no files), `bad_archive`, `missing_on_server`, `server_unreachable` (including a transfer that broke off), `unauthorized`, `server_too_old`, `rate_limited`, `busy`, `cancelled`, `storage`.
+
+### `fetch.art`
+
+Arguments: `{ "game_id" }`. Fetches the art missing for a game already on the card. Art that is already there is left alone and not reported.
+
+Result: ArtResult.
+
+Events: `progress` with stage `art`.
+
+Errors: `not_configured`, `bad_request` (unknown game, or a game not on the card), `server_unreachable`, `unauthorized`, `server_too_old`, `rate_limited`, `busy`, `cancelled`, `storage`.
+
+### `fetch.bios`
+
+Arguments: `{ "platform_id" }`. Downloads every BIOS file the user uploaded to RomM for the platform and places each where the firmware definition says. A file whose hash does not match RomM's is not placed. A file RomM lists but cannot serve is skipped and reported `unchecked`.
+
+Result: `{ "files": [BiosFile] }`. On an error, only the error is returned; call `library.bios` to see what is on the card.
+
+Events: `progress` with stage `bios`.
+
+Errors: `not_configured`, `bad_request` (unknown platform), `server_unreachable`, `unauthorized`, `server_too_old`, `rate_limited`, `busy`, `cancelled`, `storage`.
+
+### `library.bios`
+
+Arguments: `{ "platform_id" }`. Lists the BIOS files RomM has for the platform and whether each is on the card. Does not download anything and can run alongside a download.
+
+Result: `[BiosFile]`, with `check` always `unchecked`.
+
+Errors: `not_configured`, `bad_request` (unknown platform), `server_unreachable`, `unauthorized`, `server_too_old`, `rate_limited`, `cancelled`.

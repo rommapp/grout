@@ -66,6 +66,18 @@ const (
 	ArtKindVideo      ArtKind = "Video"
 )
 
+func CoverArtKinds() []ArtKind {
+	return []ArtKind{ArtKindDefault, ArtKindBox2D, ArtKindBox3D, ArtKindMixImage, ArtKindMixImageV2}
+}
+
+func SplashArtKinds() []ArtKind {
+	return []ArtKind{ArtKindNone, ArtKindMarquee, ArtKindTitle}
+}
+
+func MarqueeArtKinds() []ArtKind {
+	return []ArtKind{ArtKindNone, ArtKindMarquee, ArtKindLogo}
+}
+
 func (l LogLevel) Slog() slog.Level {
 	switch l {
 	case LogLevelDebug:

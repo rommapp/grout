@@ -37,3 +37,12 @@ func TestMergeHooksExtraWins(t *testing.T) {
 		t.Fatal(v)
 	}
 }
+
+func TestMergeHooksLayout(t *testing.T) {
+	m := MergeHooks(Hooks(), Registry{Layout: map[string]LayoutHook{
+		"x_layout": func(string, []byte) (string, []byte, bool) { return "x", nil, false },
+	}})
+	if m.Layout["muos_hidden_layout"] == nil || m.Layout["x_layout"] == nil {
+		t.Fatal(m.Layout)
+	}
+}

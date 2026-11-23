@@ -7,6 +7,7 @@ import (
 	"github.com/rommapp/grout"
 	"github.com/rommapp/grout/core/auth"
 	"github.com/rommapp/grout/core/config"
+	"github.com/rommapp/grout/core/fetch"
 	"github.com/rommapp/grout/core/library"
 	"github.com/rommapp/grout/core/romm"
 )
@@ -108,6 +109,40 @@ type Settings struct {
 	DownloadTimeout        int                         `json:"download_timeout"`
 	LogLevel               LogLevel                    `json:"log_level"`
 	PlatformOrder          []string                    `json:"platform_order"`
+
+	DownloadArt                  bool                `json:"download_art"`
+	UnzipDownloads               bool                `json:"unzip_downloads"`
+	ArtKind                      config.ArtKind      `json:"art_kind"`
+	DownloadArtScreenshotPreview bool                `json:"download_art_screenshot_preview"`
+	DownloadSplashArt            config.ArtKind      `json:"download_splash_art"`
+	AdditionalDownloads          AdditionalDownloads `json:"additional_downloads"`
+}
+
+type AdditionalDownloads struct {
+	Marquee   config.ArtKind `json:"marquee"`
+	Video     bool           `json:"video"`
+	Thumbnail config.ArtKind `json:"thumbnail"`
+	Bezel     bool           `json:"bezel"`
+	Manual    bool           `json:"manual"`
+	BoxBack   bool           `json:"boxback"`
+	Fanart    bool           `json:"fanart"`
+}
+
+type FetchGameArgs struct {
+	GameID int `json:"game_id"`
+	FileID int `json:"file_id,omitempty"`
+}
+
+type GameIDArgs struct {
+	GameID int `json:"game_id"`
+}
+
+type PlatformIDArgs struct {
+	PlatformID int `json:"platform_id"`
+}
+
+type FetchBiosResult struct {
+	Files []fetch.BiosFile `json:"files"`
 }
 
 type HostArgs struct {
@@ -289,6 +324,21 @@ func toSettings(c config.Config) Settings {
 		DownloadTimeout:        seconds(c.DownloadTimeout),
 		LogLevel:               toLogLevel(c.LogLevel),
 		PlatformOrder:          nonNil(append([]string(nil), c.PlatformOrder...)),
+
+		DownloadArt:                  c.DownloadArt,
+		UnzipDownloads:               c.UnzipDownloads,
+		ArtKind:                      c.ArtKind,
+		DownloadArtScreenshotPreview: c.DownloadArtScreenshotPreview,
+		DownloadSplashArt:            c.DownloadSplashArt,
+		AdditionalDownloads: AdditionalDownloads{
+			Marquee:   c.AdditionalDownloads.Marquee,
+			Video:     c.AdditionalDownloads.Video,
+			Thumbnail: c.AdditionalDownloads.Thumbnail,
+			Bezel:     c.AdditionalDownloads.Bezel,
+			Manual:    c.AdditionalDownloads.Manual,
+			BoxBack:   c.AdditionalDownloads.BoxBack,
+			Fanart:    c.AdditionalDownloads.Fanart,
+		},
 	}
 	for _, h := range c.Hosts {
 		out.Hosts = append(out.Hosts, HostInfo{
@@ -374,11 +424,11 @@ func toGameState(s library.DownloadState) GameState {
 	return GameStateNotDownloaded
 }
 
-func toGameKind(k string) GameKind {
+func toGameKind(k library.GameKind) GameKind {
 	switch k {
-	case "multi":
+	case library.KindMulti:
 		return GameKindMulti
-	case "nested":
+	case library.KindNested:
 		return GameKindNested
 	}
 	return GameKindSingle

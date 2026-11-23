@@ -26,6 +26,8 @@ type LabelHook func(saveFolder string) string
 
 type InputHook func(h host.Host) ([]byte, error)
 
+type LayoutHook func(fsName string, m3u []byte) (folder string, playlist []byte, beside bool)
+
 type Registry struct {
 	Path    map[string]PathHook
 	Version map[string]VersionHook
@@ -33,6 +35,7 @@ type Registry struct {
 	Folders map[string]FoldersHook
 	Label   map[string]LabelHook
 	Input   map[string]InputHook
+	Layout  map[string]LayoutHook
 }
 
 var hooks = Registry{
@@ -53,6 +56,9 @@ var hooks = Registry{
 	Input: map[string]InputHook{
 		"muos_sdl_map_input": muos.SDLMapInput,
 	},
+	Layout: map[string]LayoutHook{
+		"muos_hidden_layout": muos.HiddenLayout,
+	},
 }
 
 func Hooks() Registry {
@@ -67,6 +73,7 @@ func MergeHooks(base, extra Registry) Registry {
 		Folders: mergeMap(base.Folders, extra.Folders),
 		Label:   mergeMap(base.Label, extra.Label),
 		Input:   mergeMap(base.Input, extra.Input),
+		Layout:  mergeMap(base.Layout, extra.Layout),
 	}
 }
 

@@ -20,7 +20,10 @@ type RefreshResult struct {
 	Scan    *library.ScanResult
 }
 
-var errBusy = errors.New("a refresh or scan is already running")
+var (
+	errBusy     = errors.New("a refresh, scan or download is running")
+	errFetching = errors.New("this item is already downloading")
+)
 
 func (g *Grout) beginWrite(ctx context.Context) (context.Context, func(), error) {
 	ctx, end, err := g.begin(ctx)
@@ -33,6 +36,33 @@ func (g *Grout) beginWrite(ctx context.Context) (context.Context, func(), error)
 	}
 	return ctx, func() {
 		g.writer.Unlock()
+		end()
+	}, nil
+}
+
+func (g *Grout) beginFetch(ctx context.Context, key string) (context.Context, func(), error) {
+	ctx, end, err := g.begin(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !g.writer.TryRLock() {
+		end()
+		return nil, nil, newError(CodeBusy, errBusy)
+	}
+	g.fetchMu.Lock()
+	if g.fetching[key] {
+		g.fetchMu.Unlock()
+		g.writer.RUnlock()
+		end()
+		return nil, nil, newError(CodeBusy, errFetching)
+	}
+	g.fetching[key] = true
+	g.fetchMu.Unlock()
+	return ctx, func() {
+		g.fetchMu.Lock()
+		delete(g.fetching, key)
+		g.fetchMu.Unlock()
+		g.writer.RUnlock()
 		end()
 	}, nil
 }

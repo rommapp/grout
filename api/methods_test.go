@@ -1,9 +1,15 @@
 package api
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/png"
 	"reflect"
 	"slices"
 	"sort"
@@ -39,6 +45,11 @@ var tableMethods = []string{
 	"auth.logout",
 	"device.register",
 	"settings.update",
+	"fetch.game",
+	"fetch.art",
+	"fetch.bios",
+	"library.bios",
+	"library.game_files",
 }
 
 var pairWaitKeys = []string{"outcome", "username", "device_id", "token_expires_at"}
@@ -107,11 +118,17 @@ func fixtureServer(t *testing.T) *fakeromm.Server {
 
 func connectedServer(t *testing.T, srv *fakeromm.Server) *Server {
 	t.Helper()
+	return connectedServerWith(t, srv, "testfw")
+}
+
+func connectedServerWith(t *testing.T, srv *fakeromm.Server, firmwareID string) *Server {
+	t.Helper()
 	dir := t.TempDir()
 	if err := config.Save(dir, &config.Config{ShowRegularCollections: true}); err != nil {
 		t.Fatal(err)
 	}
 	o := instantOptions(t, dir)
+	o.Firmware.ID = firmwareID
 	s, err := Open(context.Background(), o)
 	if err != nil {
 		t.Fatal(err)
@@ -182,6 +199,7 @@ func wantEachKeys(t *testing.T, what string, raw json.RawMessage, n int, want ..
 var settingsKeys = []string{
 	"hosts", "directory_mappings", "show_regular_collections", "show_smart_collections",
 	"show_virtual_collections", "downloaded_games", "api_timeout", "download_timeout", "log_level", "platform_order",
+	"download_art", "unzip_downloads", "art_kind", "download_art_screenshot_preview", "download_splash_art", "additional_downloads",
 }
 
 var hostKeys = []string{"display_name", "root_uri", "port", "username", "has_token", "token_name", "token_expires_at", "device_id", "device_name", "insecure_skip_verify"}
@@ -210,7 +228,7 @@ func TestEveryMethodRoundTrip(t *testing.T) {
 	if got := Methods(); !reflect.DeepEqual(got, tableMethods) {
 		t.Fatalf("methods = %v", got)
 	}
-	srv := fixtureServer(t)
+	srv := biosServer(t)
 	srv.SetTokenReplies(approvedReply("tok-1"))
 	srv.AddExchangeCode("ABCD2345", exchangeToken())
 	s := connectedServer(t, srv)
@@ -305,6 +323,36 @@ func TestEveryMethodRoundTrip(t *testing.T) {
 		args  string
 		check func(t *testing.T, raw json.RawMessage)
 	}{`{"show_regular_collections":true,"show_smart_collections":false,"show_virtual_collections":false,"downloaded_games":"mark","api_timeout":30,"download_timeout":600,"log_level":"INFO","platform_order":["gba"]}`, checkSettings}
+	cases["fetch.game"] = struct {
+		args  string
+		check func(t *testing.T, raw json.RawMessage)
+	}{`{"game_id":1}`, func(t *testing.T, raw json.RawMessage) {
+		wantKeys(t, "fetch.game", raw, "game_id", "file_id", "rom_dir", "launch_path", "placed", "art")
+	}}
+	cases["fetch.art"] = struct {
+		args  string
+		check func(t *testing.T, raw json.RawMessage)
+	}{`{"game_id":1}`, func(t *testing.T, raw json.RawMessage) {
+		wantKeys(t, "fetch.art", raw, "written", "failed")
+	}}
+	cases["fetch.bios"] = struct {
+		args  string
+		check func(t *testing.T, raw json.RawMessage)
+	}{`{"platform_id":1}`, func(t *testing.T, raw json.RawMessage) {
+		wantKeys(t, "fetch.bios", raw, "files")
+	}}
+	cases["library.bios"] = struct {
+		args  string
+		check func(t *testing.T, raw json.RawMessage)
+	}{`{"platform_id":1}`, func(t *testing.T, raw json.RawMessage) {
+		wantEachKeys(t, "bios file", raw, 1, "firmware_id", "file_name", "paths", "check", "is_verified", "present")
+	}}
+	cases["library.game_files"] = struct {
+		args  string
+		check func(t *testing.T, raw json.RawMessage)
+	}{`{"game_id":1}`, func(t *testing.T, raw json.RawMessage) {
+		wantEachKeys(t, "game file", raw, 1, "id", "file_name", "size_bytes", "category")
+	}}
 	cases["auth.logout"] = struct {
 		args  string
 		check func(t *testing.T, raw json.RawMessage)
@@ -616,4 +664,291 @@ func TestSetHostSameURLKeepsToken(t *testing.T) {
 	if string(field(t, host, "has_token")) != "true" || string(field(t, host, "display_name")) != `"Den"` {
 		t.Fatalf("host = %s", host)
 	}
+}
+
+func downloadServer(t *testing.T) *fakeromm.Server {
+	t.Helper()
+	srv := fixtureServer(t)
+	srv.Content = map[int][]byte{}
+	srv.Assets = map[string][]byte{}
+	for i := range srv.Roms {
+		r := &srv.Roms[i]
+		body := []byte(fmt.Sprintf("rom data %d", r.ID))
+		r.FSName = fmt.Sprintf("game%d.gba", r.ID)
+		r.FSNameNoExt = fmt.Sprintf("game%d", r.ID)
+		r.FSExtension = "gba"
+		r.HasSimpleSingleFile = true
+		r.Files = []romm.RomFile{{ID: 100 + r.ID, FileName: r.FSName, FileSizeBytes: int64(len(body))}}
+		srv.Content[r.ID] = body
+	}
+	return srv
+}
+
+func refreshed(t *testing.T, srv *fakeromm.Server) *Server {
+	t.Helper()
+	s := connectedServer(t, srv)
+	mustOK(t, s, "library.refresh", "")
+	return s
+}
+
+func TestFetchGameMethod(t *testing.T) {
+	s := refreshed(t, downloadServer(t))
+	raw := mustOK(t, s, "fetch.game", `{"game_id":1}`)
+	wantKeys(t, "fetch.game", raw, "game_id", "file_id", "rom_dir", "launch_path", "placed", "art")
+	wantKeys(t, "art", field(t, raw, "art"), "written", "failed")
+	if string(field(t, raw, "game_id")) != "1" || string(field(t, raw, "file_id")) != "101" {
+		t.Fatalf("result = %s", raw)
+	}
+	if len(items(t, field(t, raw, "placed"))) != 1 {
+		t.Fatalf("placed = %s", field(t, raw, "placed"))
+	}
+	art := field(t, raw, "art")
+	if string(field(t, art, "written")) != "[]" || string(field(t, art, "failed")) != "[]" {
+		t.Fatalf("art = %s", art)
+	}
+	if string(field(t, mustOK(t, s, "library.game_state", `{"game_id":1}`), "state")) != `"downloaded"` {
+		t.Fatal("game not downloaded")
+	}
+	raw = mustOK(t, s, "fetch.game", `{"game_id":2,"file_id":102}`)
+	if string(field(t, raw, "file_id")) != "102" {
+		t.Fatalf("result = %s", raw)
+	}
+}
+
+func TestFetchGameArgsValidated(t *testing.T) {
+	s := refreshed(t, downloadServer(t))
+	for _, args := range []string{``, `{}`, `{"game_id":0}`, `{"game_id":-3}`, `{"game_id":1,"file_id":-1}`} {
+		wantError(t, call(t, s, "fetch.game", args), CodeBadRequest)
+	}
+	wantError(t, call(t, s, "fetch.game", `{"game_id":1,"bogus":1}`), CodeBadRequest)
+	wantError(t, call(t, s, "fetch.art", `{}`), CodeBadRequest)
+	wantError(t, call(t, s, "fetch.bios", `{"platform_id":0}`), CodeBadRequest)
+	wantError(t, call(t, s, "library.bios", `{}`), CodeBadRequest)
+	wantError(t, call(t, s, "library.game_files", `{"game_id":0}`), CodeBadRequest)
+	wantError(t, call(t, s, "fetch.game", `{"game_id":999}`), CodeBadRequest)
+}
+
+func zipBody(t *testing.T, names ...string) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	for _, n := range names {
+		f, err := zw.Create(n)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.Write([]byte("data " + n)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
+}
+
+func coverPNG(t *testing.T) []byte {
+	t.Helper()
+	var b bytes.Buffer
+	if err := png.Encode(&b, image.NewRGBA(image.Rect(0, 0, 8, 8))); err != nil {
+		t.Fatal(err)
+	}
+	return b.Bytes()
+}
+
+func TestFetchGameEvents(t *testing.T) {
+	srv := downloadServer(t)
+	const cover = "/assets/romm/resources/roms/1/cover/small.png"
+	body := zipBody(t, "disc1.bin", "disc2.bin")
+	r := &srv.Roms[0]
+	r.FSName, r.FSNameNoExt, r.FSExtension = "Game v1.2", "Game v1.2", ""
+	r.HasSimpleSingleFile, r.HasMultipleFiles = false, true
+	r.PathCoverSmall = cover
+	r.Files = []romm.RomFile{{ID: 101, FileName: "disc1.bin", FileSizeBytes: 15}, {ID: 102, FileName: "disc2.bin", FileSizeBytes: 15}}
+	srv.Content[1] = body
+	srv.Assets[cover] = coverPNG(t)
+	s := connectedServerWith(t, srv, "knulli")
+	mustOK(t, s, "library.refresh", "")
+	mustOK(t, s, "settings.update", `{"unzip_downloads":true}`)
+	mustOK(t, s, "settings.update", `{"download_art":true}`)
+	var events []Event
+	raw := callRaw(t, s, "fetch.game", []byte(`{"game_id":1}`), func(e Event) { events = append(events, e) })
+	if r := decode(t, raw); !r.OK {
+		t.Fatalf("reply = %s", raw)
+	}
+	var order []string
+	for _, e := range events {
+		if len(order) == 0 || order[len(order)-1] != string(e.Stage) {
+			order = append(order, string(e.Stage))
+		}
+		if e.Stage == library.StageDownload && (e.BytesDone == nil || e.BytesTotal == nil) {
+			t.Fatalf("download event without bytes: %+v", e)
+		}
+		if e.Stage != library.StageDownload && e.Stage != library.StageBios && (e.BytesDone != nil || e.BytesTotal != nil) {
+			t.Fatalf("event %+v carries bytes", e)
+		}
+	}
+	if !reflect.DeepEqual(order, []string{"download", "extract", "art"}) {
+		t.Fatalf("stage order = %v", order)
+	}
+	last := events[len(events)-1]
+	if last.Stage != library.StageArt {
+		t.Fatalf("last event = %+v", last)
+	}
+	var done *Event
+	for i := range events {
+		if events[i].Stage == library.StageDownload {
+			done = &events[i]
+		}
+	}
+	if *done.BytesDone != int64(len(body)) {
+		t.Fatalf("final download event = %+v", done)
+	}
+	b, _ := json.Marshal(*done)
+	if !strings.Contains(string(b), fmt.Sprintf(`"bytes_done":%d`, len(body))) || !strings.Contains(string(b), `"bytes_total"`) {
+		t.Fatalf("event json = %s", b)
+	}
+}
+
+func TestEventBytesOmittedForCounts(t *testing.T) {
+	b, _ := json.Marshal(Event{Type: EventProgress, Stage: library.StageGames, Done: 3, Total: 9})
+	if string(b) != `{"type":"progress","stage":"games","done":3,"total":9}` {
+		t.Fatalf("event = %s", b)
+	}
+	var got []Event
+	emit := progress(func(e Event) { got = append(got, e) })
+	emit(library.Progress{Stage: library.StageGames, Done: 1, Total: 2, BytesDone: 5, BytesTotal: 6})
+	emit(library.Progress{Stage: library.StageArt, Done: 1, Total: 2})
+	emit(library.Progress{Stage: library.StageBios, Done: 1, Total: 2, BytesDone: 5, BytesTotal: 6})
+	emit(library.Progress{Stage: library.StageDownload, Done: 1, Total: 2, BytesDone: 5})
+	if got[0].BytesDone != nil || got[1].BytesDone != nil {
+		t.Fatalf("count events carry bytes: %+v", got)
+	}
+	if got[2].BytesDone == nil || *got[2].BytesTotal != 6 || got[3].BytesTotal == nil || *got[3].BytesTotal != 0 {
+		t.Fatalf("byte events = %+v", got[2:])
+	}
+}
+
+func TestFetchArtMethod(t *testing.T) {
+	s := refreshed(t, downloadServer(t))
+	wantError(t, call(t, s, "fetch.art", `{"game_id":1}`), CodeBadRequest)
+	mustOK(t, s, "fetch.game", `{"game_id":1}`)
+	raw := mustOK(t, s, "fetch.art", `{"game_id":1}`)
+	wantKeys(t, "fetch.art", raw, "written", "failed")
+}
+
+func biosServer(t *testing.T) *fakeromm.Server {
+	t.Helper()
+	srv := downloadServer(t)
+	body := []byte("gba bios bytes")
+	sum := md5.Sum(body)
+	srv.FirmwareList = []romm.Firmware{{ID: 5, PlatformID: 1, FileName: "gba_bios.bin", SizeBytes: int64(len(body)), MD5: hex.EncodeToString(sum[:]), IsVerified: true}}
+	srv.FirmwareContent = map[int][]byte{5: body}
+	return srv
+}
+
+func TestFetchBiosMethod(t *testing.T) {
+	s := refreshed(t, biosServer(t))
+	var events []Event
+	raw := callRaw(t, s, "fetch.bios", []byte(`{"platform_id":1}`), func(e Event) { events = append(events, e) })
+	r := decode(t, raw)
+	if !r.OK {
+		t.Fatalf("reply = %s", raw)
+	}
+	wantKeys(t, "fetch.bios", r.Result, "files")
+	files := items(t, field(t, r.Result, "files"))
+	if len(files) != 1 {
+		t.Fatalf("files = %s", r.Result)
+	}
+	wantKeys(t, "bios file", files[0], "firmware_id", "file_name", "paths", "check", "is_verified", "present")
+	if string(field(t, files[0], "present")) != "true" || string(field(t, files[0], "check")) != `"verified"` {
+		t.Fatalf("file = %s", files[0])
+	}
+	sawBios := false
+	for _, e := range events {
+		if e.Stage == library.StageBios {
+			sawBios = true
+		}
+	}
+	if !sawBios {
+		t.Fatalf("events = %+v", events)
+	}
+	wantError(t, call(t, s, "fetch.bios", `{"platform_id":42}`), CodeBadRequest)
+}
+
+func TestFetchBiosErrorHasNoResult(t *testing.T) {
+	srv := biosServer(t)
+	srv.FailPath(romm.FirmwareContentPath(5, "gba_bios.bin"))
+	s := refreshed(t, srv)
+	noResult(t, callRaw(t, s, "fetch.bios", []byte(`{"platform_id":1}`), nil), CodeServerUnreachable)
+}
+
+func TestLibraryBiosMethod(t *testing.T) {
+	s := refreshed(t, biosServer(t))
+	raw := mustOK(t, s, "library.bios", `{"platform_id":1}`)
+	files := items(t, raw)
+	if len(files) != 1 || string(field(t, files[0], "present")) != "false" {
+		t.Fatalf("bios = %s", raw)
+	}
+	mustOK(t, s, "fetch.bios", `{"platform_id":1}`)
+	files = items(t, mustOK(t, s, "library.bios", `{"platform_id":1}`))
+	if string(field(t, files[0], "present")) != "true" {
+		t.Fatalf("bios = %s", files[0])
+	}
+	empty := mustOK(t, s, "library.bios", `{"platform_id":2}`)
+	if string(empty) != "[]" {
+		t.Fatalf("empty bios = %s", empty)
+	}
+}
+
+func TestLibraryGameFilesMethod(t *testing.T) {
+	srv := downloadServer(t)
+	s := refreshed(t, srv)
+	raw := mustOK(t, s, "library.game_files", `{"game_id":1}`)
+	files := items(t, raw)
+	if len(files) != 1 {
+		t.Fatalf("files = %s", raw)
+	}
+	wantKeys(t, "game file", files[0], "id", "file_name", "size_bytes", "category")
+	if string(field(t, files[0], "file_name")) != `"game1.gba"` {
+		t.Fatalf("file = %s", files[0])
+	}
+	wantError(t, call(t, s, "library.game_files", `{"game_id":999}`), CodeBadRequest)
+}
+
+func TestSettingsUpdateArtFields(t *testing.T) {
+	s := refreshed(t, downloadServer(t))
+	got := mustOK(t, s, "settings.update", `{"download_art":true,"unzip_downloads":true,"art_kind":"Box3D","download_art_screenshot_preview":true,"download_splash_art":"Title","additional_downloads":{"marquee":"Logo","video":true,"thumbnail":"Marquee","bezel":true,"manual":true,"boxback":true,"fanart":true}}`)
+	for k, want := range map[string]string{
+		"download_art": "true", "unzip_downloads": "true", "art_kind": `"Box3D"`,
+		"download_art_screenshot_preview": "true", "download_splash_art": `"Title"`,
+	} {
+		if string(field(t, got, k)) != want {
+			t.Fatalf("%s = %s, want %s", k, field(t, got, k), want)
+		}
+	}
+	ad := field(t, got, "additional_downloads")
+	wantKeys(t, "additional_downloads", ad, "marquee", "video", "thumbnail", "bezel", "manual", "boxback", "fanart")
+	if string(field(t, ad, "marquee")) != `"Logo"` || string(field(t, ad, "thumbnail")) != `"Marquee"` || string(field(t, ad, "boxback")) != "true" {
+		t.Fatalf("additional_downloads = %s", ad)
+	}
+	got = mustOK(t, s, "settings.update", `{"additional_downloads":{"video":false}}`)
+	ad = field(t, got, "additional_downloads")
+	if string(field(t, ad, "video")) != "false" || string(field(t, ad, "marquee")) != `"Logo"` {
+		t.Fatalf("partial additional_downloads = %s", ad)
+	}
+	wantError(t, call(t, s, "settings.update", `{"additional_downloads":{"bogus":true}}`), CodeBadRequest)
+	wantError(t, call(t, s, "settings.update", `{"additional_downloads":null}`), CodeBadRequest)
+	wantError(t, call(t, s, "settings.update", `{"additional_downloads":{"video":null}}`), CodeBadRequest)
+	wantError(t, call(t, s, "settings.update", `{"additional_downloads":{"marquee":"Nope"}}`), CodeBadRequest)
+	wantError(t, call(t, s, "settings.update", `{"art_kind":"Nope"}`), CodeBadRequest)
+	wantError(t, call(t, s, "settings.update", `{"download_splash_art":"Logo"}`), CodeBadRequest)
+	wantError(t, call(t, s, "settings.update", `{"download_art":null}`), CodeBadRequest)
+}
+
+func TestSettingsGetReportsArtFields(t *testing.T) {
+	s := refreshed(t, downloadServer(t))
+	raw := mustOK(t, s, "settings.get", "")
+	wantKeys(t, "settings", raw, settingsKeys...)
+	wantKeys(t, "additional_downloads", field(t, raw, "additional_downloads"), "marquee", "video", "thumbnail", "bezel", "manual", "boxback", "fanart")
 }

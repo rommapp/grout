@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
+	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/rommapp/grout/core/firmware/host"
@@ -33,15 +35,17 @@ const playableCount = `(SELECT COUNT(*) FROM game_files gf WHERE gf.game_id = g.
 const haveCount = `(SELECT COUNT(*) FROM game_files gf WHERE gf.game_id = g.id AND gf.playable = 1
 	AND EXISTS (SELECT 1 FROM local_files lf WHERE lf.game_id = g.id AND lf.basename = gf.file_name COLLATE NOCASE))`
 
-const stateExpr = `CASE g.kind
-	WHEN 'multi' THEN CASE WHEN EXISTS (SELECT 1 FROM local_files lf WHERE lf.game_id = g.id AND lf.basename LIKE '%.m3u') THEN 2 ELSE 0 END
+const stateExpr = `CASE WHEN EXISTS (SELECT 1 FROM downloads d WHERE d.game_id = g.id) THEN 2 ELSE CASE g.kind
+	WHEN 'multi' THEN CASE WHEN EXISTS (SELECT 1 FROM local_files lf WHERE lf.game_id = g.id) THEN 2 ELSE 0 END
 	WHEN 'single' THEN CASE WHEN ` + haveCount + ` > 0 THEN 2 ELSE 0 END
 	ELSE CASE
 		WHEN ` + haveCount + ` = 0 THEN 0
 		WHEN ` + haveCount + ` = ` + playableCount + ` THEN 2
 		ELSE 1
 	END
-END`
+END END`
+
+const stagingPrefix = ".grout-"
 
 func (l *Library) Scan(ctx context.Context, progress func(Progress)) (ScanResult, error) {
 	res := ScanResult{SkippedFolders: []string{}}
@@ -67,6 +71,9 @@ func (l *Library) Scan(ctx context.Context, progress func(Progress)) (ScanResult
 		}
 		var files []localFile
 		for _, dir := range p.RomDirs {
+			if w, ok := l.Firmware.Host.(host.Writable); ok {
+				sweepStaging(l.log(), w, dir)
+			}
 			found, skipped, err := walkRomDir(l.log(), l.Firmware.Host, dir)
 			if err != nil {
 				return res, err
@@ -78,6 +85,9 @@ func (l *Library) Scan(ctx context.Context, progress func(Progress)) (ScanResult
 		if err != nil {
 			return res, err
 		}
+		if err := l.pruneDownloads(ctx, p.ID); err != nil {
+			return res, err
+		}
 		res.Files += len(files)
 		res.Matched += matched
 		res.Platforms++
@@ -86,6 +96,74 @@ func (l *Library) Scan(ctx context.Context, progress func(Progress)) (ScanResult
 		progress(Progress{Stage: StageScan, Done: len(all), Total: len(all)})
 	}
 	return res, nil
+}
+
+func sweepStaging(log *slog.Logger, w host.Writable, dir string) {
+	real, err := w.Real(dir)
+	if err != nil {
+		return
+	}
+	entries, err := os.ReadDir(real)
+	if err != nil {
+		return
+	}
+	remove := func(p string) {
+		if err := os.RemoveAll(p); err != nil {
+			log.Warn("scan: removing staging leftover", "path", p, "error", err)
+		}
+	}
+	for _, e := range entries {
+		full := filepath.Join(real, e.Name())
+		if strings.HasPrefix(e.Name(), stagingPrefix) {
+			remove(full)
+			continue
+		}
+		if !e.IsDir() {
+			continue
+		}
+		subs, err := os.ReadDir(full)
+		if err != nil {
+			continue
+		}
+		for _, sub := range subs {
+			if strings.HasPrefix(sub.Name(), stagingPrefix) {
+				remove(filepath.Join(full, sub.Name()))
+			}
+		}
+	}
+}
+
+func (l *Library) pruneDownloads(ctx context.Context, platformID int) error {
+	rows, err := l.Store.DB.QueryContext(ctx, `SELECT game_id, launch_path FROM downloads WHERE platform_id = ?`, platformID)
+	if err != nil {
+		return err
+	}
+	type entry struct {
+		id     int
+		launch string
+	}
+	var all []entry
+	for rows.Next() {
+		var e entry
+		if err := rows.Scan(&e.id, &e.launch); err != nil {
+			rows.Close()
+			return err
+		}
+		all = append(all, e)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	for _, e := range all {
+		if _, err := l.Firmware.Host.Stat(e.launch); !errors.Is(err, fs.ErrNotExist) {
+			continue
+		}
+		if _, err := l.Store.DB.ExecContext(ctx, `DELETE FROM downloads WHERE game_id = ?`, e.id); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func readRomDir(log *slog.Logger, h host.Host, dir string, skipped *[]string) ([]fs.DirEntry, bool) {
@@ -162,41 +240,67 @@ func fileEntry(dir, name, rel string, e fs.DirEntry) (localFile, bool, error) {
 	}, true, nil
 }
 
-func (l *Library) platformIndex(ctx context.Context, tx *sql.Tx, platformID int) (map[string]int, map[string]int, error) {
-	m3u := map[string]int{}
-	rows, err := tx.QueryContext(ctx, `SELECT id, fs_name_no_ext FROM games WHERE platform_id = ? AND kind = 'multi' ORDER BY id DESC`, platformID)
+type matchIndex struct {
+	m3u     map[string]int
+	folders map[string]int
+	names   map[string]int
+}
+
+func (l *Library) platformIndex(ctx context.Context, tx *sql.Tx, platformID int) (matchIndex, error) {
+	idx := matchIndex{m3u: map[string]int{}, folders: map[string]int{}, names: map[string]int{}}
+	rows, err := tx.QueryContext(ctx, `SELECT id, fs_name, fs_name_no_ext FROM games WHERE platform_id = ? AND kind = 'multi' ORDER BY id DESC`, platformID)
 	if err != nil {
-		return nil, nil, err
+		return idx, err
 	}
 	for rows.Next() {
 		var id int
-		var name string
-		if err := rows.Scan(&id, &name); err != nil {
+		var fsName, name string
+		if err := rows.Scan(&id, &fsName, &name); err != nil {
 			rows.Close()
-			return nil, nil, err
+			return idx, err
 		}
-		m3u[strings.ToLower(name)] = id
+		idx.m3u[strings.ToLower(name)] = id
+		if fsName == "" {
+			fsName = name
+		}
+		if fsName != "" {
+			idx.folders[strings.ToLower(l.Firmware.MultiLayout(fsName, nil).Folder)] = id
+		}
 	}
 	rows.Close()
 	if err := rows.Err(); err != nil {
-		return nil, nil, err
+		return idx, err
 	}
-	names := map[string]int{}
 	rows, err = tx.QueryContext(ctx, `SELECT g.id, gf.file_name FROM game_files gf JOIN games g ON g.id = gf.game_id
-		WHERE g.platform_id = ? AND gf.playable = 1 ORDER BY g.id DESC`, platformID)
+		WHERE g.platform_id = ? AND g.kind != 'multi' AND gf.playable = 1 ORDER BY g.id DESC`, platformID)
 	if err != nil {
-		return nil, nil, err
+		return idx, err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var id int
 		var name string
 		if err := rows.Scan(&id, &name); err != nil {
-			return nil, nil, err
+			return idx, err
 		}
-		names[strings.ToLower(name)] = id
+		idx.names[strings.ToLower(name)] = id
 	}
-	return m3u, names, rows.Err()
+	return idx, rows.Err()
+}
+
+func (idx matchIndex) match(f localFile) int {
+	lower := strings.ToLower(f.basename)
+	if strings.HasSuffix(lower, ".m3u") {
+		if id := idx.m3u[strings.TrimSuffix(lower, ".m3u")]; id != 0 {
+			return id
+		}
+	}
+	if folder, _, ok := strings.Cut(f.rel, "/"); ok {
+		if id := idx.folders[strings.ToLower(folder)]; id != 0 {
+			return id
+		}
+	}
+	return idx.names[lower]
 }
 
 func (l *Library) replaceFiles(ctx context.Context, platformID int, files []localFile) (int, error) {
@@ -205,7 +309,7 @@ func (l *Library) replaceFiles(ctx context.Context, platformID int, files []loca
 		return 0, err
 	}
 	defer tx.Rollback()
-	m3u, names, err := l.platformIndex(ctx, tx, platformID)
+	idx, err := l.platformIndex(ctx, tx, platformID)
 	if err != nil {
 		return 0, err
 	}
@@ -220,14 +324,7 @@ func (l *Library) replaceFiles(ctx context.Context, platformID int, files []loca
 	defer stmt.Close()
 	matched := 0
 	for _, f := range files {
-		lower := strings.ToLower(f.basename)
-		id := 0
-		if strings.HasSuffix(lower, ".m3u") {
-			id = m3u[strings.TrimSuffix(lower, ".m3u")]
-		}
-		if id == 0 {
-			id = names[lower]
-		}
+		id := idx.match(f)
 		if id != 0 {
 			matched++
 		}

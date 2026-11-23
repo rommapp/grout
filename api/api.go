@@ -2,10 +2,12 @@ package api
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 
 	"github.com/rommapp/grout"
 	"github.com/rommapp/grout/core/auth"
+	"github.com/rommapp/grout/core/fetch"
 	"github.com/rommapp/grout/core/firmware"
 	"github.com/rommapp/grout/version"
 )
@@ -22,13 +24,19 @@ type ClientSpec struct {
 	Version string `json:"version"`
 }
 
+type ArtMaxSize struct {
+	Width  int `json:"width"`
+	Height int `json:"height"`
+}
+
 type OpenOptions struct {
-	DataDir  string            `json:"data_dir"`
-	Firmware FirmwareSpec      `json:"firmware"`
-	Client   ClientSpec        `json:"client,omitempty"`
-	Env      map[string]string `json:"env,omitempty"`
-	Logger   *slog.Logger      `json:"-"`
-	timing   auth.Timing
+	DataDir    string            `json:"data_dir"`
+	Firmware   FirmwareSpec      `json:"firmware"`
+	Client     ClientSpec        `json:"client,omitempty"`
+	ArtMaxSize ArtMaxSize        `json:"art_max_size,omitempty"`
+	Env        map[string]string `json:"env,omitempty"`
+	Logger     *slog.Logger      `json:"-"`
+	timing     auth.Timing
 }
 
 type VersionInfo struct {
@@ -42,6 +50,9 @@ type Server struct {
 }
 
 func Open(ctx context.Context, o OpenOptions) (*Server, error) {
+	if o.ArtMaxSize.Width < 0 || o.ArtMaxSize.Height < 0 {
+		return nil, badRequest(errors.New("art_max_size width and height must not be negative"))
+	}
 	opts := grout.Options{
 		DataDir:    o.DataDir,
 		FirmwareID: o.Firmware.ID,
@@ -49,6 +60,7 @@ func Open(ctx context.Context, o OpenOptions) (*Server, error) {
 		Logger:     o.Logger,
 		Client:     grout.Client{Name: o.Client.Name, Version: o.Client.Version},
 		Timing:     o.timing,
+		ArtMaxSize: fetch.Size{Width: o.ArtMaxSize.Width, Height: o.ArtMaxSize.Height},
 	}
 	if o.Firmware.Definition != "" {
 		opts.FirmwareDefinition = []byte(o.Firmware.Definition)

@@ -50,8 +50,17 @@ type Server struct {
 	Collections map[romm.CollectionKind][]Collection
 	Hidden      map[int]bool
 	OmitTotal   bool
-	calls       []Call
-	pageCounts  map[int]int
+
+	Content         map[int][]byte
+	FirmwareList    []romm.Firmware
+	FirmwareContent map[int][]byte
+	Details         map[int]romm.RomDetail
+	Assets          map[string][]byte
+	contentDelay    time.Duration
+	declaredLength  map[int]int
+
+	calls      []Call
+	pageCounts map[int]int
 
 	failAfter    map[int]int
 	failPaths    map[string]bool
@@ -116,6 +125,19 @@ func (f *Server) Mutate(fn func()) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	fn()
+}
+
+func (f *Server) SetContentDelay(d time.Duration) {
+	f.Mutate(func() { f.contentDelay = d })
+}
+
+func (f *Server) SetContentLength(romID, n int) {
+	f.Mutate(func() {
+		if f.declaredLength == nil {
+			f.declaredLength = map[int]int{}
+		}
+		f.declaredLength[romID] = n
+	})
 }
 
 func (f *Server) SetFailAfter(platformID, n int) {
@@ -275,7 +297,29 @@ func (f *Server) serve(w http.ResponseWriter, r *http.Request) {
 		f.serveDeviceUpdate(w, r, strings.TrimPrefix(r.URL.Path, "/api/devices/"))
 		return
 	}
+	f.mu.Lock()
+	asset, isAsset := f.Assets[r.URL.Path]
+	f.mu.Unlock()
+	if isAsset {
+		w.Header().Set("Content-Length", strconv.Itoa(len(asset)))
+		_, _ = w.Write(asset)
+		return
+	}
 	q := r.URL.Query()
+	if id, rest, ok := splitContentPath(r.URL.Path, "/api/roms/"); ok && rest != "" {
+		f.serveContent(w, r, id, rest, false)
+		return
+	}
+	if id, rest, ok := splitContentPath(r.URL.Path, "/api/firmware/"); ok && rest != "" {
+		f.serveContent(w, r, id, rest, true)
+		return
+	}
+	if rest, ok := strings.CutPrefix(r.URL.Path, "/api/roms/"); ok {
+		if id, err := strconv.Atoi(rest); err == nil {
+			f.serveDetail(w, r, id)
+			return
+		}
+	}
 	switch r.URL.Path {
 	case "/api/auth/device/init":
 		f.serveDeviceInit(w, r)
@@ -312,6 +356,17 @@ func (f *Server) serve(w http.ResponseWriter, r *http.Request) {
 		out := []int{}
 		for _, p := range f.Platforms {
 			out = append(out, p.ID)
+		}
+		f.mu.Unlock()
+		writeJSON(w, out)
+	case "/api/firmware":
+		platformID, _ := strconv.Atoi(q.Get("platform_id"))
+		f.mu.Lock()
+		out := []romm.Firmware{}
+		for _, fw := range f.FirmwareList {
+			if fw.PlatformID == platformID {
+				out = append(out, fw)
+			}
 		}
 		f.mu.Unlock()
 		writeJSON(w, out)
@@ -532,4 +587,68 @@ func (f *Server) serveDeviceUpdate(w http.ResponseWriter, r *http.Request, id st
 	f.deviceRequests = append(f.deviceRequests, DeviceRequest{Method: http.MethodPut, DeviceID: id, Body: body})
 	f.mu.Unlock()
 	writeJSON(w, map[string]any{"device_id": id})
+}
+
+func splitContentPath(path, prefix string) (int, string, bool) {
+	rest, ok := strings.CutPrefix(path, prefix)
+	if !ok {
+		return 0, "", false
+	}
+	idPart, tail, ok := strings.Cut(rest, "/content/")
+	if !ok {
+		return 0, "", false
+	}
+	id, err := strconv.Atoi(idPart)
+	if err != nil {
+		return 0, "", false
+	}
+	return id, tail, true
+}
+
+func (f *Server) serveContent(w http.ResponseWriter, r *http.Request, id int, name string, firmware bool) {
+	f.mu.Lock()
+	source := f.Content
+	if firmware {
+		source = f.FirmwareContent
+	}
+	data, found := source[id]
+	delay := f.contentDelay
+	declared, overridden := f.declaredLength[id]
+	f.mu.Unlock()
+	if firmware || !overridden {
+		declared = len(data)
+	}
+	if !found {
+		http.NotFound(w, r)
+		return
+	}
+	if delay > 0 {
+		select {
+		case <-time.After(delay):
+		case <-r.Context().Done():
+			return
+		}
+	}
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Content-Length", strconv.Itoa(declared))
+	_, _ = w.Write(data)
+}
+
+func (f *Server) serveDetail(w http.ResponseWriter, r *http.Request, id int) {
+	f.mu.Lock()
+	detail, found := f.Details[id]
+	if !found {
+		for _, rom := range f.Roms {
+			if rom.ID == id {
+				detail, found = romm.RomDetail{Rom: rom}, true
+				break
+			}
+		}
+	}
+	f.mu.Unlock()
+	if !found {
+		http.NotFound(w, r)
+		return
+	}
+	writeJSON(w, detail)
 }

@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -26,6 +27,9 @@ type Client struct {
 	baseURL    string
 	authHeader string
 	http       *http.Client
+
+	contentTimeout    time.Duration
+	hasContentTimeout bool
 }
 
 func New(o Options) *Client {
@@ -49,6 +53,10 @@ func (c *Client) do(ctx context.Context, method, path string, query url.Values, 
 	if len(query) > 0 {
 		target += "?" + query.Encode()
 	}
+	return c.doURL(ctx, method, target, body, contentType, withAuth)
+}
+
+func (c *Client) doURL(ctx context.Context, method, target string, body io.Reader, contentType string, withAuth bool) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, method, target, body)
 	if err != nil {
 		return nil, err
@@ -59,7 +67,25 @@ func (c *Client) do(ctx context.Context, method, path string, query url.Values, 
 	if contentType != "" {
 		req.Header.Set("Content-Type", contentType)
 	}
-	resp, err := c.http.Do(req)
+	hc := c.http
+	if withAuth && c.authHeader != "" {
+		cp := *c.http
+		prev := c.http.CheckRedirect
+		cp.CheckRedirect = func(r *http.Request, via []*http.Request) error {
+			if !c.sameOrigin(r.URL) {
+				r.Header.Del("Authorization")
+			}
+			if prev != nil {
+				return prev(r, via)
+			}
+			if len(via) >= 10 {
+				return errors.New("romm: stopped after 10 redirects")
+			}
+			return nil
+		}
+		hc = &cp
+	}
+	resp, err := hc.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -124,4 +150,12 @@ func (c *Client) sendJSON(ctx context.Context, method, path string, in, out any,
 		return fmt.Errorf("romm: decoding %s: %w", path, err)
 	}
 	return nil
+}
+
+func (c *Client) sameOrigin(u *url.URL) bool {
+	base, err := url.Parse(c.baseURL)
+	if err != nil {
+		return false
+	}
+	return strings.EqualFold(u.Scheme, base.Scheme) && strings.EqualFold(u.Host, base.Host)
 }

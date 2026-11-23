@@ -164,6 +164,9 @@ func (v *validator) enums() {
 	if isSet(d.RomFolders.Style) {
 		v.fact("rom_folders.style", d.RomFolders.Style, factSpec{enum: styleValues})
 	}
+	if d.RomFolders.MultiLayout != "" {
+		v.nameHook("rom_folders.multi_layout", d.RomFolders.MultiLayout, func(n string) bool { _, ok := v.reg.Layout[n]; return ok })
+	}
 	if isSet(d.Saves.Layout) {
 		v.fact("saves.layout", d.Saves.Layout, factSpec{enum: layoutValues})
 	}
@@ -200,14 +203,9 @@ func (v *validator) bios() {
 }
 
 func (v *validator) art() {
-	a := v.d.Art
-	kinds := []struct {
-		name string
-		f    *Fact
-	}{{"cover", a.Cover}, {"preview", a.Preview}, {"splash", a.Splash}, {"video", a.Video}, {"manual", a.Manual}, {"bezel", a.Bezel}}
-	for _, k := range kinds {
-		if k.f != nil {
-			v.fact("art."+k.name, *k.f, factSpec{vars: []string{"card", "roms", "rom_dir", "rom_folder", "system"}})
+	for _, k := range ArtKinds() {
+		if f := artFactOf(v.d, k); f != nil {
+			v.fact("art."+string(k), *f, factSpec{vars: []string{"card", "roms", "rom_dir", "rom_folder", "system"}})
 		}
 	}
 }

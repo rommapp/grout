@@ -216,7 +216,8 @@ type Definition struct {
 	} `toml:"paths"`
 
 	RomFolders struct {
-		Style Fact `toml:"style"`
+		Style       Fact   `toml:"style"`
+		MultiLayout string `toml:"multi_layout"`
 	} `toml:"rom_folders"`
 
 	Saves struct {
@@ -232,13 +233,17 @@ type Definition struct {
 	} `toml:"bios"`
 
 	Art struct {
-		Naming  string `toml:"naming"`
-		Cover   *Fact  `toml:"cover"`
-		Preview *Fact  `toml:"preview"`
-		Splash  *Fact  `toml:"splash"`
-		Video   *Fact  `toml:"video"`
-		Manual  *Fact  `toml:"manual"`
-		Bezel   *Fact  `toml:"bezel"`
+		Naming    string `toml:"naming"`
+		Cover     *Fact  `toml:"cover"`
+		Preview   *Fact  `toml:"preview"`
+		Splash    *Fact  `toml:"splash"`
+		Video     *Fact  `toml:"video"`
+		Manual    *Fact  `toml:"manual"`
+		Bezel     *Fact  `toml:"bezel"`
+		Marquee   *Fact  `toml:"marquee"`
+		Thumbnail *Fact  `toml:"thumbnail"`
+		Boxback   *Fact  `toml:"boxback"`
+		Fanart    *Fact  `toml:"fanart"`
 	} `toml:"art"`
 
 	Gamelist struct {

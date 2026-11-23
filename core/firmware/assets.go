@@ -15,7 +15,50 @@ const (
 	ArtVideo   ArtKind = "video"
 	ArtManual  ArtKind = "manual"
 	ArtBezel   ArtKind = "bezel"
+
+	ArtMarquee   ArtKind = "marquee"
+	ArtThumbnail ArtKind = "thumbnail"
+	ArtBoxback   ArtKind = "boxback"
+	ArtFanart    ArtKind = "fanart"
 )
+
+func ArtKinds() []ArtKind {
+	return []ArtKind{ArtCover, ArtPreview, ArtSplash, ArtVideo, ArtManual, ArtBezel, ArtMarquee, ArtThumbnail, ArtBoxback, ArtFanart}
+}
+
+var esSuffix = map[ArtKind]string{
+	ArtThumbnail: "-thumb",
+	ArtMarquee:   "-marquee",
+	ArtBoxback:   "-boxback",
+	ArtFanart:    "-fanart",
+}
+
+func (f *Firmware) ArtFileName(kind ArtKind, stem string) string {
+	switch kind {
+	case ArtVideo:
+		return stem + ".mp4"
+	case ArtManual:
+		return stem + ".pdf"
+	}
+	if f.Def.Art.Naming == "es-suffix" {
+		return stem + esSuffix[kind] + ".png"
+	}
+	return stem + ".png"
+}
+
+type MultiLayout struct {
+	Folder   string
+	Playlist []byte
+	Beside   bool
+}
+
+func (f *Firmware) MultiLayout(fsName string, m3u []byte) MultiLayout {
+	if hook := f.reg.Layout[f.Def.RomFolders.MultiLayout]; hook != nil {
+		folder, playlist, beside := hook(fsName, m3u)
+		return MultiLayout{Folder: folder, Playlist: playlist, Beside: beside}
+	}
+	return MultiLayout{Folder: fsName, Playlist: m3u}
+}
 
 const defaultBiosTemplate = "{bios}/{rel}"
 
@@ -87,19 +130,31 @@ func appendUnique(s []string, v string) []string {
 }
 
 func (f *Firmware) artFact(kind ArtKind) *Fact {
+	return artFactOf(f.Def, kind)
+}
+
+func artFactOf(d *Definition, kind ArtKind) *Fact {
 	switch kind {
 	case ArtCover:
-		return f.Def.Art.Cover
+		return d.Art.Cover
 	case ArtPreview:
-		return f.Def.Art.Preview
+		return d.Art.Preview
 	case ArtSplash:
-		return f.Def.Art.Splash
+		return d.Art.Splash
 	case ArtVideo:
-		return f.Def.Art.Video
+		return d.Art.Video
 	case ArtManual:
-		return f.Def.Art.Manual
+		return d.Art.Manual
 	case ArtBezel:
-		return f.Def.Art.Bezel
+		return d.Art.Bezel
+	case ArtMarquee:
+		return d.Art.Marquee
+	case ArtThumbnail:
+		return d.Art.Thumbnail
+	case ArtBoxback:
+		return d.Art.Boxback
+	case ArtFanart:
+		return d.Art.Fanart
 	}
 	return nil
 }

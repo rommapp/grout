@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"syscall"
 
 	"github.com/rommapp/grout/core/romm"
 	"modernc.org/sqlite"
@@ -30,6 +31,8 @@ const (
 	CodeInternal          Code = "internal"
 	CodeInvalidCode       Code = "invalid_code"
 	CodeRateLimited       Code = "rate_limited"
+	CodeBadArchive        Code = "bad_archive"
+	CodeMissingOnServer   Code = "missing_on_server"
 )
 
 type Error struct {
@@ -82,6 +85,8 @@ func codeFor(ctx context.Context, err error, fallback Code) Code {
 		return CodeUnauthorized
 	case romm.IsRateLimited(err):
 		return CodeRateLimited
+	case isWriteFailure(err):
+		return CodeStorage
 	case isTransport(err):
 		return CodeServerUnreachable
 	case isStorage(err):
@@ -100,11 +105,15 @@ func isTransport(err error) bool {
 		errors.As(err, &syntax) || errors.As(err, &typeErr)
 }
 
-func isStorage(err error) bool {
-	var dbErr *sqlite.Error
+func isWriteFailure(err error) bool {
 	var pathErr *fs.PathError
 	var linkErr *os.LinkError
+	return errors.As(err, &pathErr) || errors.As(err, &linkErr) || errors.Is(err, syscall.ENOSPC)
+}
+
+func isStorage(err error) bool {
+	var dbErr *sqlite.Error
 	var sysErr *os.SyscallError
-	return errors.As(err, &dbErr) || errors.As(err, &pathErr) || errors.As(err, &linkErr) || errors.As(err, &sysErr) ||
+	return errors.As(err, &dbErr) || isWriteFailure(err) || errors.As(err, &sysErr) ||
 		errors.Is(err, sql.ErrConnDone) || errors.Is(err, sql.ErrTxDone)
 }

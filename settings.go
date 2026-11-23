@@ -23,6 +23,55 @@ type SettingsPatch struct {
 	DownloadTimeout        *time.Duration
 	LogLevel               *config.LogLevel
 	PlatformOrder          *[]string
+
+	DownloadArt                  *bool
+	UnzipDownloads               *bool
+	ArtKind                      *config.ArtKind
+	DownloadArtScreenshotPreview *bool
+	DownloadSplashArt            *config.ArtKind
+	AdditionalDownloads          *AdditionalDownloadsPatch
+}
+
+type AdditionalDownloadsPatch struct {
+	Marquee   *config.ArtKind
+	Video     *bool
+	Thumbnail *config.ArtKind
+	Bezel     *bool
+	Manual    *bool
+	BoxBack   *bool
+	Fanart    *bool
+}
+
+func (p *AdditionalDownloadsPatch) validate() error {
+	if p == nil {
+		return nil
+	}
+	if p.Thumbnail != nil && !slices.Contains(config.SplashArtKinds(), *p.Thumbnail) {
+		return badSetting("unknown thumbnail art kind %q", *p.Thumbnail)
+	}
+	if p.Marquee != nil && !slices.Contains(config.MarqueeArtKinds(), *p.Marquee) {
+		return badSetting("unknown marquee art kind %q", *p.Marquee)
+	}
+	return nil
+}
+
+func (p *AdditionalDownloadsPatch) apply(a *config.AdditionalDownloads) {
+	if p == nil {
+		return
+	}
+	setIf(&a.Marquee, p.Marquee)
+	setIf(&a.Video, p.Video)
+	setIf(&a.Thumbnail, p.Thumbnail)
+	setIf(&a.Bezel, p.Bezel)
+	setIf(&a.Manual, p.Manual)
+	setIf(&a.BoxBack, p.BoxBack)
+	setIf(&a.Fanart, p.Fanart)
+}
+
+func setIf[T any](dst *T, v *T) {
+	if v != nil {
+		*dst = *v
+	}
 }
 
 func (p SettingsPatch) validate() error {
@@ -37,6 +86,15 @@ func (p SettingsPatch) validate() error {
 	}
 	if p.DownloadTimeout != nil && (*p.DownloadTimeout <= 0 || *p.DownloadTimeout > maxDownloadTimeout) {
 		return badSetting("download timeout %s must be above zero and at most %s", *p.DownloadTimeout, maxDownloadTimeout)
+	}
+	if p.ArtKind != nil && !slices.Contains(config.CoverArtKinds(), *p.ArtKind) {
+		return badSetting("unknown art kind %q", *p.ArtKind)
+	}
+	if p.DownloadSplashArt != nil && !slices.Contains(config.SplashArtKinds(), *p.DownloadSplashArt) {
+		return badSetting("unknown splash art kind %q", *p.DownloadSplashArt)
+	}
+	if err := p.AdditionalDownloads.validate(); err != nil {
+		return err
 	}
 	if p.PlatformOrder != nil {
 		seen := map[string]bool{}
@@ -79,6 +137,12 @@ func (p SettingsPatch) apply(c *config.Config) {
 	if p.PlatformOrder != nil {
 		c.PlatformOrder = slices.Clone(*p.PlatformOrder)
 	}
+	setIf(&c.DownloadArt, p.DownloadArt)
+	setIf(&c.UnzipDownloads, p.UnzipDownloads)
+	setIf(&c.ArtKind, p.ArtKind)
+	setIf(&c.DownloadArtScreenshotPreview, p.DownloadArtScreenshotPreview)
+	setIf(&c.DownloadSplashArt, p.DownloadSplashArt)
+	p.AdditionalDownloads.apply(&c.AdditionalDownloads)
 }
 
 func (g *Grout) UpdateSettings(p SettingsPatch) (config.Config, error) {

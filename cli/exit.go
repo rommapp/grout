@@ -23,7 +23,7 @@ func exitFor(c api.Code) ExitCode {
 		return ExitOK
 	case api.CodeBadRequest:
 		return ExitUsage
-	case api.CodeServerUnreachable, api.CodeStorage, api.CodeInternal:
+	case api.CodeServerUnreachable, api.CodeStorage, api.CodeInternal, api.CodeBadArchive, api.CodeMissingOnServer:
 		return ExitServer
 	case api.CodeServerTooOld:
 		return ExitTooOld

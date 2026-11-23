@@ -213,3 +213,14 @@ func TestStripRootCleansRoot(t *testing.T) {
 		t.Fatal(got)
 	}
 }
+
+func TestOSHostRealAppliesRoot(t *testing.T) {
+	h := OS(rooted("/tmp/x"))
+	got, err := h.Real("/mnt/a")
+	if err != nil || got != filepath.Join("/tmp/x", "mnt", "a") {
+		t.Fatalf("%q %v", got, err)
+	}
+	if _, err := h.Real("mnt/a"); err == nil {
+		t.Fatal("expected error")
+	}
+}

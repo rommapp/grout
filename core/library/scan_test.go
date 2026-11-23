@@ -94,16 +94,16 @@ func TestScanMatchesAlternateFolder(t *testing.T) {
 	}
 }
 
-func TestScanMultiNeedsM3U(t *testing.T) {
+func TestScanMultiM3UMatches(t *testing.T) {
 	g := fileGame(1, "Big Game", "Disc 1.chd")
 	g.HasMultipleFiles = true
-	files := fstest.MapFS{romRoot + "Game Boy Advance (GBA)/Disc 1.chd": {Data: []byte("x")}}
+	files := fstest.MapFS{romRoot + "Game Boy Advance (GBA)/Other.chd": {Data: []byte("x")}}
 	l, h := scanLibrary(t, files, g)
 	mustScan(t, l)
 	if got := gameState(t, l, 1); got != NotDownloaded {
 		t.Fatalf("state = %v", got)
 	}
-	h.Files[romRoot+"Game Boy Advance (GBA)/Big Game.m3u"] = &fstest.MapFile{Data: []byte("Disc 1.chd")}
+	h.Files[romRoot+"Game Boy Advance (GBA)/Big Game.m3u"] = &fstest.MapFile{Data: []byte("Other.chd")}
 	mustScan(t, l)
 	if got := gameState(t, l, 1); got != Downloaded {
 		t.Fatalf("state = %v", got)

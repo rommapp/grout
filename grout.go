@@ -14,6 +14,7 @@ import (
 
 	"github.com/rommapp/grout/core/auth"
 	"github.com/rommapp/grout/core/config"
+	"github.com/rommapp/grout/core/fetch"
 	"github.com/rommapp/grout/core/firmware"
 	"github.com/rommapp/grout/core/firmware/host"
 	"github.com/rommapp/grout/core/library"
@@ -37,6 +38,7 @@ type Options struct {
 	Logger             *slog.Logger
 	Client             Client
 	Timing             auth.Timing
+	ArtMaxSize         fetch.Size
 }
 
 type Grout struct {
@@ -47,6 +49,7 @@ type Grout struct {
 	level   *slog.LevelVar
 	client  Client
 	timing  auth.Timing
+	artMax  fetch.Size
 	fw      *firmware.Firmware
 	store   *store.Store
 
@@ -66,7 +69,9 @@ type Grout struct {
 	cfg   *config.Config
 	src   config.Source
 
-	writer sync.Mutex
+	writer   sync.RWMutex
+	fetchMu  sync.Mutex
+	fetching map[string]bool
 
 	pairMu  sync.Mutex
 	pending *pairing
@@ -89,7 +94,7 @@ func Open(ctx context.Context, o Options) (*Grout, error) {
 	if err != nil {
 		return nil, err
 	}
-	g := &Grout{dataDir: o.DataDir, lock: lock, client: clientIdentity(o.Client), timing: o.Timing}
+	g := &Grout{dataDir: o.DataDir, lock: lock, client: clientIdentity(o.Client), timing: o.Timing, artMax: o.ArtMaxSize, fetching: map[string]bool{}}
 	g.root, g.cancel = context.WithCancel(context.Background())
 	g.idle = sync.NewCond(&g.life)
 	g.released = make(chan struct{})

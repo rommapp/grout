@@ -52,6 +52,8 @@ func TestExitForEveryCode(t *testing.T) {
 		api.CodeInternal:          ExitServer,
 		api.CodeInvalidCode:       ExitUnauthorized,
 		api.CodeRateLimited:       ExitBusy,
+		api.CodeBadArchive:        ExitServer,
+		api.CodeMissingOnServer:   ExitServer,
 	}
 	for _, c := range api.Codes() {
 		w, ok := want[c]

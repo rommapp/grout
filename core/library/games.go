@@ -62,7 +62,7 @@ type Game struct {
 	ID         int
 	PlatformID int
 	Name       string
-	Kind       string
+	Kind       GameKind
 	State      DownloadState
 }
 

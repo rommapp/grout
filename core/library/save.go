@@ -58,14 +58,14 @@ func savePlatforms(tx *sql.Tx, ps []romm.Platform) error {
 	return nil
 }
 
-func gameKind(r romm.Rom) string {
+func gameKind(r romm.Rom) GameKind {
 	switch {
 	case r.HasMultipleFiles:
-		return "multi"
+		return KindMulti
 	case r.HasNestedSingleFile:
-		return "nested"
+		return KindNested
 	}
-	return "single"
+	return KindSingle
 }
 
 func boolInt(b bool) int {
@@ -149,7 +149,7 @@ func saveGames(tx *sql.Tx, rs []romm.Rom) error {
 			rating = *r.Metadatum.AverageRating
 		}
 		if _, err := upsert.Exec(r.ID, r.PlatformID, display, sortKey, search, r.Summary, r.FSName, r.FSNameNoExt,
-			r.FSExtension, r.FSSizeBytes, gameKind(r), boolInt(r.HasManual), boolInt(r.MissingFromFS),
+			r.FSExtension, r.FSSizeBytes, string(gameKind(r)), boolInt(r.HasManual), boolInt(r.MissingFromFS),
 			r.Metadatum.PlayerCount, releaseDate, rating, r.PathCoverSmall, r.PathCoverLarge, r.URLCover,
 			stamp(r.UpdatedAt)); err != nil {
 			return fmt.Errorf("saving game %d: %w", r.ID, err)

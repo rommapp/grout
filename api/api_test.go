@@ -98,7 +98,7 @@ func TestVersion(t *testing.T) {
 
 func TestCodesIncludesNewCodesLast(t *testing.T) {
 	got := Codes()
-	if len(got) != 13 || got[11] != "invalid_code" || got[12] != "rate_limited" {
+	if len(got) != 15 || got[11] != "invalid_code" || got[12] != "rate_limited" || got[13] != "bad_archive" || got[14] != "missing_on_server" {
 		t.Fatalf("codes = %v", got)
 	}
 }
@@ -115,7 +115,7 @@ func TestCodesListsEveryCode(t *testing.T) {
 		"not_configured", "bad_definition", "server_unreachable", "unauthorized", "server_too_old",
 		"busy", "data_dir_locked", "bad_request", "cancelled", "storage", "internal",
 	}
-	want = append(want, "invalid_code", "rate_limited")
+	want = append(want, "invalid_code", "rate_limited", "bad_archive", "missing_on_server")
 	if got := Codes(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("codes = %v", got)
 	}
@@ -222,4 +222,33 @@ func TestOpenErrorEnvelope(t *testing.T) {
 
 	r = decode(t, ErrorEnvelope(errors.New("plain")))
 	wantError(t, r, CodeInternal)
+}
+
+func TestOpenArtMaxSize(t *testing.T) {
+	o, err := DecodeOpenOptions([]byte(`{"data_dir":"/x","art_max_size":{"width":640,"height":480}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if o.ArtMaxSize.Width != 640 || o.ArtMaxSize.Height != 480 {
+		t.Fatalf("art max size = %+v", o.ArtMaxSize)
+	}
+	if _, err := DecodeOpenOptions([]byte(`{"art_max_size":{"width":1,"bogus":2}}`)); err == nil {
+		t.Fatal("unknown art_max_size field accepted")
+	}
+	for _, size := range []ArtMaxSize{{Width: -1}, {Height: -5}} {
+		o := testOpenOptions(t, t.TempDir())
+		o.ArtMaxSize = size
+		_, err := Open(context.Background(), o)
+		if err == nil {
+			t.Fatalf("open with %+v succeeded", size)
+		}
+		wantError(t, decode(t, ErrorEnvelope(err)), CodeBadRequest)
+	}
+	o = testOpenOptions(t, t.TempDir())
+	o.ArtMaxSize = ArtMaxSize{Width: 320, Height: 0}
+	s, err := Open(context.Background(), o)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Close()
 }

@@ -603,3 +603,22 @@ func TestValidateHostKeepsSrcRule(t *testing.T) {
 	d.Paths.Roms.Src = ""
 	wantErr(t, ValidateHost(d, knownForTest, Registry{}), "paths.roms", "src")
 }
+
+func TestMultiLayoutHookValidated(t *testing.T) {
+	d := valid(t)
+	d.RomFolders.MultiLayout = "fw_layout"
+	wantErr(t, check(d), "rom_folders.multi_layout", "fw_layout")
+	reg := Registry{Layout: map[string]LayoutHook{"fw_layout": nil}}
+	if errs := Validate(d, knownForTest, reg, fstest.MapFS{}); len(errs) != 0 {
+		t.Fatal(errs)
+	}
+}
+
+func TestValidateNewArtKinds(t *testing.T) {
+	d := valid(t)
+	d.Art.Thumbnail = &Fact{Value: "{rom_dir}/images"}
+	d.Art.Fanart = &Fact{Value: "{nope}/images", Src: "x"}
+	errs := check(d)
+	wantErr(t, errs, "art.thumbnail", "src is required")
+	wantErr(t, errs, "art.fanart", "{nope}")
+}

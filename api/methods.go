@@ -12,6 +12,7 @@ import (
 
 	"github.com/rommapp/grout"
 	"github.com/rommapp/grout/core/config"
+	"github.com/rommapp/grout/core/fetch"
 	"github.com/rommapp/grout/core/library"
 )
 
@@ -42,6 +43,11 @@ var methods = []method{
 	{"auth.logout", authLogout},
 	{"device.register", deviceRegister},
 	{"settings.update", settingsUpdate},
+	{"fetch.game", fetchGame},
+	{"fetch.art", fetchArt},
+	{"fetch.bios", fetchBios},
+	{"library.bios", libraryBios},
+	{"library.game_files", libraryGameFiles},
 }
 
 func Methods() []string {
@@ -116,8 +122,30 @@ func progress(emit func(Event)) func(library.Progress) {
 		return nil
 	}
 	return func(p library.Progress) {
-		emit(Event{Type: EventProgress, Stage: p.Stage, Done: p.Done, Total: p.Total})
+		e := Event{Type: EventProgress, Stage: p.Stage, Done: p.Done, Total: p.Total}
+		if carriesBytes(p) {
+			done, total := p.BytesDone, p.BytesTotal
+			e.BytesDone, e.BytesTotal = &done, &total
+		}
+		emit(e)
 	}
+}
+
+func carriesBytes(p library.Progress) bool {
+	switch p.Stage {
+	case library.StageDownload:
+		return true
+	case library.StageBios:
+		return p.BytesDone != 0 || p.BytesTotal != 0
+	}
+	return false
+}
+
+func positiveID(name string, id int) error {
+	if id <= 0 {
+		return badRequest(fmt.Errorf("%s must be a positive integer", name))
+	}
+	return nil
 }
 
 func status(ctx context.Context, s *Server, args []byte, _ func(Event)) (any, error) {
@@ -291,6 +319,101 @@ func libraryGameState(ctx context.Context, s *Server, args []byte, _ func(Event)
 	return GameStateResult{State: toGameState(st)}, nil
 }
 
+func fetchGame(ctx context.Context, s *Server, args []byte, emit func(Event)) (any, error) {
+	a, err := decodeArgs[FetchGameArgs](args)
+	if err != nil {
+		return nil, err
+	}
+	if err := positiveID("game_id", a.GameID); err != nil {
+		return nil, err
+	}
+	if a.FileID < 0 {
+		return nil, badRequest(errors.New("file_id must not be negative"))
+	}
+	res, err := s.g.FetchGame(ctx, a.GameID, a.FileID, progress(emit))
+	if err != nil {
+		return nil, err
+	}
+	return normalizeFetchGame(res), nil
+}
+
+func normalizeFetchGame(r grout.FetchGameResult) grout.FetchGameResult {
+	r.Placed = nonNil(r.Placed)
+	r.Art.Written = nonNil(r.Art.Written)
+	r.Art.Failed = nonNil(r.Art.Failed)
+	return r
+}
+
+func fetchArt(ctx context.Context, s *Server, args []byte, emit func(Event)) (any, error) {
+	a, err := decodeArgs[GameIDArgs](args)
+	if err != nil {
+		return nil, err
+	}
+	if err := positiveID("game_id", a.GameID); err != nil {
+		return nil, err
+	}
+	res, err := s.g.FetchArt(ctx, a.GameID, progress(emit))
+	if err != nil {
+		return nil, err
+	}
+	res.Written = nonNil(res.Written)
+	res.Failed = nonNil(res.Failed)
+	return res, nil
+}
+
+func fetchBios(ctx context.Context, s *Server, args []byte, emit func(Event)) (any, error) {
+	a, err := decodeArgs[PlatformIDArgs](args)
+	if err != nil {
+		return nil, err
+	}
+	if err := positiveID("platform_id", a.PlatformID); err != nil {
+		return nil, err
+	}
+	files, err := s.g.FetchBios(ctx, a.PlatformID, progress(emit))
+	if err != nil {
+		return nil, err
+	}
+	return FetchBiosResult{Files: nonNilBios(files)}, nil
+}
+
+func libraryBios(ctx context.Context, s *Server, args []byte, _ func(Event)) (any, error) {
+	a, err := decodeArgs[PlatformIDArgs](args)
+	if err != nil {
+		return nil, err
+	}
+	if err := positiveID("platform_id", a.PlatformID); err != nil {
+		return nil, err
+	}
+	files, err := s.g.LibraryBios(ctx, a.PlatformID)
+	if err != nil {
+		return nil, err
+	}
+	return nonNilBios(files), nil
+}
+
+func nonNilBios(files []fetch.BiosFile) []fetch.BiosFile {
+	files = nonNil(files)
+	for i := range files {
+		files[i].Paths = nonNil(files[i].Paths)
+	}
+	return files
+}
+
+func libraryGameFiles(ctx context.Context, s *Server, args []byte, _ func(Event)) (any, error) {
+	a, err := decodeArgs[GameIDArgs](args)
+	if err != nil {
+		return nil, err
+	}
+	if err := positiveID("game_id", a.GameID); err != nil {
+		return nil, err
+	}
+	files, err := s.g.GameFiles(ctx, a.GameID)
+	if err != nil {
+		return nil, err
+	}
+	return nonNil(files), nil
+}
+
 func authPairStart(ctx context.Context, s *Server, args []byte, _ func(Event)) (any, error) {
 	a, err := decodeArgs[PairStartArgs](args)
 	if err != nil {
@@ -377,6 +500,34 @@ func timeoutField(fields map[string]json.RawMessage, name string, dst **time.Dur
 	})
 }
 
+func decodeAdditionalDownloads(fields map[string]json.RawMessage) (*grout.AdditionalDownloadsPatch, error) {
+	a := &grout.AdditionalDownloadsPatch{}
+	steps := []func() error{
+		func() error {
+			return settingField(fields, "marquee", func(v config.ArtKind) error { a.Marquee = &v; return nil })
+		},
+		func() error { return settingField(fields, "video", func(v bool) error { a.Video = &v; return nil }) },
+		func() error {
+			return settingField(fields, "thumbnail", func(v config.ArtKind) error { a.Thumbnail = &v; return nil })
+		},
+		func() error { return settingField(fields, "bezel", func(v bool) error { a.Bezel = &v; return nil }) },
+		func() error { return settingField(fields, "manual", func(v bool) error { a.Manual = &v; return nil }) },
+		func() error {
+			return settingField(fields, "boxback", func(v bool) error { a.BoxBack = &v; return nil })
+		},
+		func() error { return settingField(fields, "fanart", func(v bool) error { a.Fanart = &v; return nil }) },
+	}
+	for _, step := range steps {
+		if err := step(); err != nil {
+			return nil, err
+		}
+	}
+	for name := range fields {
+		return nil, badRequest(fmt.Errorf("invalid additional_downloads: unknown field %q", name))
+	}
+	return a, nil
+}
+
 func decodeSettingsPatch(args []byte) (grout.SettingsPatch, error) {
 	var p grout.SettingsPatch
 	fields := map[string]json.RawMessage{}
@@ -412,6 +563,28 @@ func decodeSettingsPatch(args []byte) (grout.SettingsPatch, error) {
 			return settingField(fields, "log_level", func(v LogLevel) error {
 				l, err := v.level()
 				p.LogLevel = &l
+				return err
+			})
+		},
+		func() error {
+			return settingField(fields, "download_art", func(v bool) error { p.DownloadArt = &v; return nil })
+		},
+		func() error {
+			return settingField(fields, "unzip_downloads", func(v bool) error { p.UnzipDownloads = &v; return nil })
+		},
+		func() error {
+			return settingField(fields, "art_kind", func(v config.ArtKind) error { p.ArtKind = &v; return nil })
+		},
+		func() error {
+			return settingField(fields, "download_art_screenshot_preview", func(v bool) error { p.DownloadArtScreenshotPreview = &v; return nil })
+		},
+		func() error {
+			return settingField(fields, "download_splash_art", func(v config.ArtKind) error { p.DownloadSplashArt = &v; return nil })
+		},
+		func() error {
+			return settingField(fields, "additional_downloads", func(v map[string]json.RawMessage) error {
+				a, err := decodeAdditionalDownloads(v)
+				p.AdditionalDownloads = a
 				return err
 			})
 		},

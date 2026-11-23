@@ -71,6 +71,10 @@ func ResolveWith(d *Definition, h host.Host, ov Overrides, reg Registry) (*Firmw
 		return nil, fmt.Errorf("saves.label_hook: label hook %q is not registered", n)
 	}
 
+	if n := d.RomFolders.MultiLayout; n != "" && reg.Layout[n] == nil {
+		return nil, fmt.Errorf("rom_folders.multi_layout: layout hook %q is not registered", n)
+	}
+
 	if err := f.checkTemplateEnv(); err != nil {
 		return nil, err
 	}

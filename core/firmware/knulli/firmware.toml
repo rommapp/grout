@@ -27,6 +27,8 @@ naming = "es-suffix"
 cover = { value = "{rom_dir}/images", src = "package/emulationstation/knulli-es-system/roms/gba/gamelist.xml" }
 video = { value = "{rom_dir}/videos", src = "package/emulationstation/knulli-es-system/roms/gba/gamelist.xml" }
 manual = { value = "{rom_dir}/manuals", src = "board/fsoverlay/usr/share/emulationstation/hooks/preupdate-gamelists-scummvm.sh" }
+marquee = { value = "{rom_dir}/images", src = "package/emulationstation/knulli-es-system/roms/gba/gamelist.xml" }
+thumbnail = { value = "{rom_dir}/images", src = "board/fsoverlay/usr/share/knulli/datainit/roms/emulators/gamelist.xml" }
 
 [gamelist]
 format = "emulationstation"

@@ -46,9 +46,12 @@ The options for `grout_open`:
   "data_dir": "/data/user/0/dev.example/files/grout",
   "firmware": { "definition": "<the text of your firmware.toml>" },
   "env": { "CANNOLI_ROOT": "/storage/emulated/0/Cannoli" },
-  "client": { "name": "cannoli", "version": "2.3.0" }
+  "client": { "name": "cannoli", "version": "2.3.0" },
+  "art_max_size": { "width": 320, "height": 240 }
 }
 ```
+
+`art_max_size` is the largest size, in pixels, Grout scales downloaded art to, keeping its shape. Leave it out to keep art at full size. Grout's own UI passes half its screen size.
 
 `client` names your app to RomM: it is recorded on the device, so the user's device list shows the app they actually run. It defaults to Grout's own name and version.
 
@@ -56,7 +59,7 @@ The options for `grout_open`:
 
 ## Threading
 
-- `grout_call` blocks the calling thread until the method finishes. Calls from several threads run at the same time. Only one refresh or scan runs per handle; a second one returns `busy` immediately.
+- `grout_call` blocks the calling thread until the method finishes. Calls from several threads run at the same time. Downloads run alongside each other, but not alongside a refresh or scan: whichever starts second returns `busy` immediately, as does a second refresh or scan, or a second download of the same game or the same platform's BIOS.
 - The event callback can run on any thread. Today it runs on the thread that called `grout_call` for that call, but hosts must not rely on that. On Android the JNI shim attaches the thread when `GetEnv` reports it detached. In Rust the callback and its `userdata` must be safe to use from any thread.
 - The event string is only valid during the callback. Copy it if you need it later.
 - The callback may call any Grout function, including `grout_cancel` and `grout_close`, without deadlocking.
@@ -77,6 +80,17 @@ Set the server first with `settings.set_host` (`root_uri`, and `port` or `insecu
 - **A pairing code from RomM.** The user makes a code in RomM's web UI and types it on the device; call `auth.exchange_code` with it. Codes expire after a minute. If the result has an empty `device_id`, call `device.register` before using save sync.
 
 `auth.logout` forgets the token on this device. `settings.get` shows who is signed in (`username`), whether a token is stored and when it expires.
+
+## Downloading
+
+Grout downloads one item per call, and the host owns the queue: call `fetch.game` once per game, from as many threads as you want downloads running at once, and cancel any of them with `grout_cancel`. Keep your own list, ordering and notification; Grout keeps no queue.
+
+- `fetch.game` downloads a game, unpacks it if needed, places it where the firmware expects it, fetches its art and records it as downloaded, so `library.games` reports it at once without a scan. Show progress from the `download` events' `bytes_done` and `bytes_total`.
+- For a game with several versions, list them with `library.game_files` and pass the chosen `file_id`.
+- `fetch.art` fills in missing art for a game already on the card.
+- `library.bios` shows which of the BIOS files the user uploaded to RomM are on the card; `fetch.bios` downloads them all for a platform.
+- A refresh or scan cannot run while any download is running, and the reverse. Wait for downloads to finish, or cancel them, before refreshing.
+- A failed or cancelled download leaves nothing half-written. A download cancelled after the game reached the card keeps it and skips the art.
 
 ## Choosing the data directory
 

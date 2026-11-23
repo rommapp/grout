@@ -154,6 +154,12 @@ func sections() []section {
 		}},
 		{"ROM folders", []row{
 			{"style", factCell(func(d *firmware.Definition) *firmware.Fact { return &d.RomFolders.Style })},
+			{"multi layout", func(d *firmware.Definition) string {
+				if d.RomFolders.MultiLayout == "" {
+					return ""
+				}
+				return "hook: " + cellText(d.RomFolders.MultiLayout)
+			}},
 		}},
 		{"BIOS", []row{
 			{"default", factCell(func(d *firmware.Definition) *firmware.Fact { return &d.Bios.Default })},
@@ -166,6 +172,10 @@ func sections() []section {
 			{"video", factCell(func(d *firmware.Definition) *firmware.Fact { return d.Art.Video })},
 			{"manual", factCell(func(d *firmware.Definition) *firmware.Fact { return d.Art.Manual })},
 			{"bezel", factCell(func(d *firmware.Definition) *firmware.Fact { return d.Art.Bezel })},
+			{"marquee", factCell(func(d *firmware.Definition) *firmware.Fact { return d.Art.Marquee })},
+			{"thumbnail", factCell(func(d *firmware.Definition) *firmware.Fact { return d.Art.Thumbnail })},
+			{"boxback", factCell(func(d *firmware.Definition) *firmware.Fact { return d.Art.Boxback })},
+			{"fanart", factCell(func(d *firmware.Definition) *firmware.Fact { return d.Art.Fanart })},
 		}},
 		{"Gamelist", []row{
 			{"format", func(d *firmware.Definition) string { return cellText(d.Gamelist.Format) }},

@@ -20,12 +20,22 @@ const (
 	StageCollections Stage = "collections"
 	StagePurge       Stage = "purge"
 	StageScan        Stage = "scan"
+	StageDownload    Stage = "download"
+	StageExtract     Stage = "extract"
+	StageArt         Stage = "art"
+	StageBios        Stage = "bios"
 )
 
+func Stages() []Stage {
+	return []Stage{StagePlatforms, StageGames, StageCollections, StagePurge, StageScan, StageDownload, StageExtract, StageArt, StageBios}
+}
+
 type Progress struct {
-	Stage Stage
-	Done  int
-	Total int
+	Stage      Stage
+	Done       int
+	Total      int
+	BytesDone  int64
+	BytesTotal int64
 }
 
 type Library struct {

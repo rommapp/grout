@@ -130,8 +130,18 @@ roms = { value = "{card}/Roms" }
 bios = { value = "{card}/Bios" }
 saves = { value = "{card}/Saves" }
 
+[rom_folders]
+multi_layout = "muos_hidden_layout"
+
 [bios]
 default = { value = ["{bios}/{name}", "{bios}/x/{name}"], src = "bios/path" }
+
+[art]
+naming = "es-suffix"
+marquee = { value = "{rom_dir}/images", src = "art/marquee" }
+thumbnail = { value = "{rom_dir}/images", src = "art/thumb" }
+boxback = { value = "{rom_dir}/images", src = "art/boxback" }
+fanart = { value = "{rom_dir}/images", src = "art/fanart" }
 
 [retroarch]
 config = { value = "/opt/retroarch.cfg", src = "ra/cfg" }
@@ -186,6 +196,11 @@ func TestRenderEveryFact(t *testing.T) {
 		"[/opt/retroarch.cfg](https://github.com/example/muos/blob/v2/ra/cfg)",
 		"[/opt/overrides](https://github.com/example/muos/blob/v2/ra/ov)",
 		"[{bios}/{name}, {bios}/x/{name}](https://github.com/example/muos/blob/v2/bios/path)",
+		"| multi layout | hook: muos_hidden_layout |",
+		"| marquee | [{rom_dir}/images](https://github.com/example/muos/blob/v2/art/marquee) |",
+		"| thumbnail | [{rom_dir}/images](https://github.com/example/muos/blob/v2/art/thumb) |",
+		"| boxback | [{rom_dir}/images](https://github.com/example/muos/blob/v2/art/boxback) |",
+		"| fanart | [{rom_dir}/images](https://github.com/example/muos/blob/v2/art/fanart) |",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in:\n%s", want, out)

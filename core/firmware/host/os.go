@@ -15,7 +15,7 @@ type osHost struct {
 	roots  []string
 }
 
-func OS(getenv func(string) string) Host {
+func OS(getenv func(string) string) Writable {
 	h := &osHost{getenv: getenv, root: getenv("GROUT_ROOT")}
 	if h.root != "" {
 		if abs, err := filepath.Abs(h.root); err == nil {
@@ -87,4 +87,8 @@ func stripRoot(exe string, roots []string) string {
 		}
 	}
 	return exe
+}
+
+func (h *osHost) Real(p string) (string, error) {
+	return h.resolve(p)
 }

@@ -9,3 +9,8 @@ type Host interface {
 	ReadDir(string) ([]fs.DirEntry, error)
 	Executable() (string, error)
 }
+
+type Writable interface {
+	Host
+	Real(p string) (string, error)
+}

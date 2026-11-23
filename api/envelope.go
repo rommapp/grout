@@ -13,10 +13,12 @@ type EventType string
 const EventProgress EventType = "progress"
 
 type Event struct {
-	Type  EventType     `json:"type"`
-	Stage library.Stage `json:"stage,omitempty"`
-	Done  int           `json:"done"`
-	Total int           `json:"total"`
+	Type       EventType     `json:"type"`
+	Stage      library.Stage `json:"stage,omitempty"`
+	Done       int           `json:"done"`
+	Total      int           `json:"total"`
+	BytesDone  *int64        `json:"bytes_done,omitempty"`
+	BytesTotal *int64        `json:"bytes_total,omitempty"`
 }
 
 type Code = grout.Code
@@ -35,6 +37,8 @@ const (
 	CodeInternal          = grout.CodeInternal
 	CodeInvalidCode       = grout.CodeInvalidCode
 	CodeRateLimited       = grout.CodeRateLimited
+	CodeBadArchive        = grout.CodeBadArchive
+	CodeMissingOnServer   = grout.CodeMissingOnServer
 )
 
 func Codes() []Code {
@@ -52,6 +56,8 @@ func Codes() []Code {
 		CodeInternal,
 		CodeInvalidCode,
 		CodeRateLimited,
+		CodeBadArchive,
+		CodeMissingOnServer,
 	}
 }
 
