@@ -30,6 +30,10 @@ cover = { value = "{rom_dir}/images", src = "projects/ROCKNIX/packages/misc/modu
 format = "emulationstation"
 launcher_entry = { gamelist = "{roms}/ports/gamelist.xml", path = "./Grout.sh" }
 
+[[exit_actions]]
+when = "gamelist_changed"
+command = { value = ["killall", "emulationstation"], src = "projects/ROCKNIX/packages/emulators/standalone/vita3k-sa/scripts/start_vita3k.sh" }
+
 [retroarch]
 config = { value = "{card}/.config/retroarch/retroarch.cfg", src = "projects/ROCKNIX/packages/rocknix/sources/scripts/setsettings.sh" }
 overrides = { value = "{card}/.config/retroarch/config", src = "projects/ROCKNIX/packages/emulators/libretro/retroarch/sources/RK3566/retroarch.cfg" }

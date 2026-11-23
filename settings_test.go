@@ -248,3 +248,39 @@ func TestAdditionalDownloadsPatchIsPartial(t *testing.T) {
 		t.Fatalf("untouched additional = %+v, want %+v", got.AdditionalDownloads, want)
 	}
 }
+
+func TestUpdateSettingsGamelistOmitsRegion(t *testing.T) {
+	ctx := context.Background()
+	srv := fetchServer(t)
+	srv.Roms[0].Regions = []string{"USA"}
+	e := newFetchEnvWith(t, "knulli", srv, rootedHost(t))
+	if e.g.Settings().GamelistOmitsRegion {
+		t.Fatal("region omitted by default")
+	}
+	if _, err := e.g.FetchGame(ctx, 1, 0, nil); err != nil {
+		t.Fatal(err)
+	}
+	file := e.gamelistPath(t)
+	if body := string(e.read(t, file)); !strings.Contains(body, "<name>game 1 (USA)</name>") {
+		t.Fatalf("gamelist.xml = %s", body)
+	}
+	got, err := e.g.UpdateSettings(SettingsPatch{GamelistOmitsRegion: ptr(true)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got.GamelistOmitsRegion || !e.g.Settings().GamelistOmitsRegion {
+		t.Fatalf("settings = %+v", got)
+	}
+	if _, err := e.g.GamelistRefresh(ctx, 0); err != nil {
+		t.Fatal(err)
+	}
+	if body := string(e.read(t, file)); !strings.Contains(body, "<name>game 1</name>") {
+		t.Fatalf("gamelist.xml = %s", body)
+	}
+	if _, err := e.g.UpdateSettings(SettingsPatch{ShowSmartCollections: ptr(true)}); err != nil {
+		t.Fatal(err)
+	}
+	if !e.g.Settings().GamelistOmitsRegion {
+		t.Fatal("unrelated patch reset the setting")
+	}
+}

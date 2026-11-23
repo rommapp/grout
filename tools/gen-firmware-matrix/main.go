@@ -178,8 +178,12 @@ func sections() []section {
 			{"fanart", factCell(func(d *firmware.Definition) *firmware.Fact { return d.Art.Fanart })},
 		}},
 		{"Gamelist", []row{
-			{"format", func(d *firmware.Definition) string { return cellText(d.Gamelist.Format) }},
+			{"format", func(d *firmware.Definition) string { return cellText(string(d.Gamelist.Format)) }},
+			{"text", factCell(func(d *firmware.Definition) *firmware.Fact { return d.Gamelist.Text })},
 			{"launcher entry", launcherCell},
+		}},
+		{"Exit actions", []row{
+			{"actions", exitActionsCell},
 		}},
 		{"RetroArch", []row{
 			{"config", factCell(func(d *firmware.Definition) *firmware.Fact {
@@ -289,6 +293,37 @@ func launcherCell(d *firmware.Definition) string {
 		return ""
 	}
 	return cellText(fmt.Sprintf("%s in %s", le.Gamelist, le.Path))
+}
+
+func exitActionsCell(d *firmware.Definition) string {
+	lines := make([]string, 0, len(d.ExitActions))
+	for _, a := range d.ExitActions {
+		var v string
+		switch {
+		case a.Hook != "":
+			v = "hook: " + cellText(a.Hook)
+		case a.Command != nil:
+			v = commandCell(d, *a.Command)
+		}
+		lines = append(lines, cellText(string(a.When))+": "+v)
+	}
+	return strings.Join(lines, "<br>")
+}
+
+func commandCell(d *firmware.Definition, f firmware.Fact) string {
+	alts := f.Alts
+	if len(alts) == 0 {
+		alts = []firmware.Fact{f}
+	}
+	parts := make([]string, 0, len(alts))
+	for _, a := range alts {
+		text := cellText(strings.Join(a.Strings(), " "))
+		if a.Src != "" && d.Upstream.Repo != "" {
+			text = fmt.Sprintf("[%s](https://%s/blob/%s/%s)", text, d.Upstream.Repo, d.Upstream.Ref, escapePath(a.Src))
+		}
+		parts = append(parts, text+rangeSuffix(a.Since, a.Until))
+	}
+	return strings.Join(parts, ", ")
 }
 
 func rulesCell(d *firmware.Definition) string {

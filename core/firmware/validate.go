@@ -15,6 +15,7 @@ type factSpec struct {
 	hook     func(string) bool
 	noRange  bool
 	hasHooks bool
+	literal  bool
 }
 
 type validator struct {
@@ -33,7 +34,6 @@ var (
 	layoutValues = []string{"per-emulator", "beside-roms"}
 	namingValues = []string{"retroarch", "keep-rom-ext"}
 	artValues    = []string{"plain", "es-suffix"}
-	formatValues = []string{"none", "emulationstation", "miyoo", "muos-text"}
 	maintValues  = []string{"upstream", "community"}
 )
 
@@ -57,6 +57,7 @@ func validate(v *validator) []error {
 	v.bios()
 	v.art()
 	v.gamelist()
+	v.exitActions()
 	v.retroarch()
 	v.platformSources()
 	v.platforms()
@@ -176,8 +177,8 @@ func (v *validator) enums() {
 	if d.Art.Naming != "" && !slices.Contains(artValues, d.Art.Naming) {
 		v.errorf("art.naming: %q is not one of %s", d.Art.Naming, strings.Join(artValues, ", "))
 	}
-	if d.Gamelist.Format != "" && !slices.Contains(formatValues, d.Gamelist.Format) {
-		v.errorf("gamelist.format: %q is not one of %s", d.Gamelist.Format, strings.Join(formatValues, ", "))
+	if d.Gamelist.Format != "" && !slices.Contains(GamelistFormats(), d.Gamelist.Format) {
+		v.errorf("gamelist.format: %q is not one of %s", d.Gamelist.Format, joinEnum(GamelistFormats()))
 	}
 }
 
@@ -205,17 +206,51 @@ func (v *validator) bios() {
 func (v *validator) art() {
 	for _, k := range ArtKinds() {
 		if f := artFactOf(v.d, k); f != nil {
-			v.fact("art."+string(k), *f, factSpec{vars: []string{"card", "roms", "rom_dir", "rom_folder", "system"}})
+			v.fact("art."+string(k), *f, factSpec{vars: artVars})
 		}
 	}
 }
 
 func (v *validator) gamelist() {
-	le := v.d.Gamelist.LauncherEntry
-	if le == nil {
-		return
+	g := v.d.Gamelist
+	if g.Text != nil {
+		if g.Format != FormatMuOSText {
+			v.errorf("gamelist.text: only allowed when gamelist.format = %q", FormatMuOSText)
+		}
+		v.fact("gamelist.text", *g.Text, factSpec{vars: artVars})
 	}
-	v.template("gamelist.launcher_entry.gamelist", le.Gamelist, []string{"card", "roms"})
+	if le := g.LauncherEntry; le != nil {
+		v.template("gamelist.launcher_entry.gamelist", le.Gamelist, []string{"card", "roms"})
+	}
+}
+
+func (v *validator) exitActions() {
+	for i, a := range v.d.ExitActions {
+		path := fmt.Sprintf("exit_actions[%d]", i)
+		switch {
+		case a.When == "":
+			v.errorf("%s.when: required, one of %s", path, joinEnum(ExitConditions()))
+		case !slices.Contains(ExitConditions(), a.When):
+			v.errorf("%s.when: %q is not one of %s", path, a.When, joinEnum(ExitConditions()))
+		}
+		if (a.Command == nil) == (a.Hook == "") {
+			v.errorf("%s: exactly one of command and hook is required", path)
+			continue
+		}
+		if a.Hook != "" {
+			v.nameHook(path+".hook", a.Hook, func(n string) bool { _, ok := v.reg.Exit[n]; return ok })
+			continue
+		}
+		v.fact(path+".command", *a.Command, factSpec{array: true, literal: true})
+	}
+}
+
+func joinEnum[T ~string](values []T) string {
+	s := make([]string, len(values))
+	for i, x := range values {
+		s[i] = string(x)
+	}
+	return strings.Join(s, ", ")
 }
 
 func (v *validator) retroarch() {
@@ -426,6 +461,10 @@ func (v *validator) value(path string, f Fact, spec factSpec) {
 			v.errorf("%s: value must be a single string", path)
 			return
 		}
+		if len(x) == 0 && spec.literal {
+			v.errorf("%s: value is empty", path)
+			return
+		}
 		strs = x
 	default:
 		v.errorf("%s: value must be a string", path)
@@ -439,7 +478,12 @@ func (v *validator) value(path string, f Fact, spec factSpec) {
 		if spec.enum != nil && !slices.Contains(spec.enum, s) {
 			v.errorf("%s: %q is not one of %s", path, s, strings.Join(spec.enum, ", "))
 		}
-		if spec.enum == nil {
+		switch {
+		case spec.literal:
+			for _, name := range Variables(s) {
+				v.errorf("%s: template variable {%s} is not allowed here", path, name)
+			}
+		case spec.enum == nil:
 			v.template(path, s, spec.vars)
 		}
 	}

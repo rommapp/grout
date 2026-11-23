@@ -622,3 +622,99 @@ func TestValidateNewArtKinds(t *testing.T) {
 	wantErr(t, errs, "art.thumbnail", "src is required")
 	wantErr(t, errs, "art.fanart", "{nope}")
 }
+
+func TestValidateExitActionNeedsOneOfCommandOrHook(t *testing.T) {
+	reg := Registry{Exit: map[string]ExitHook{"rescan": nil}}
+	d := valid(t)
+	d.ExitActions = []ExitAction{{When: "games_changed"}}
+	wantErr(t, Validate(d, knownForTest, reg, fstest.MapFS{}), "exit_actions[0]", "exactly one of command and hook")
+
+	d = valid(t)
+	d.ExitActions = []ExitAction{{When: "games_changed", Hook: "rescan", Command: &Fact{Value: []string{"x"}, Src: "s"}}}
+	wantErr(t, Validate(d, knownForTest, reg, fstest.MapFS{}), "exit_actions[0]", "exactly one of command and hook")
+
+	d = valid(t)
+	d.ExitActions = []ExitAction{
+		{When: "games_changed", Hook: "rescan"},
+		{When: "gamelist_changed", Command: &Fact{Value: []string{"killall", "es"}, Src: "s"}},
+	}
+	if errs := Validate(d, knownForTest, reg, fstest.MapFS{}); len(errs) != 0 {
+		t.Fatal(errs)
+	}
+
+	d = valid(t)
+	d.ExitActions = []ExitAction{{When: "gamelist_changed", Command: &Fact{Value: []string{"killall", "{card}"}, Src: "s"}}}
+	wantErr(t, check(d), "exit_actions[0].command", "{card}")
+
+	d = valid(t)
+	d.ExitActions = []ExitAction{{When: "gamelist_changed", Command: &Fact{Value: []string{"run", "{env.HOME}"}, Src: "s"}}}
+	wantErr(t, check(d), "exit_actions[0].command", "{env.HOME}")
+
+	d = valid(t)
+	d.ExitActions = []ExitAction{{When: "gamelist_changed", Command: &Fact{Value: []string{}, Src: "s"}}}
+	wantErr(t, check(d), "exit_actions[0].command", "empty")
+}
+
+func TestValidateExitActionUnknownWhen(t *testing.T) {
+	d := valid(t)
+	d.ExitActions = []ExitAction{{When: "on_exit", Command: &Fact{Value: []string{"x"}, Src: "s"}}}
+	wantErr(t, check(d), "exit_actions[0].when", "on_exit")
+
+	d = valid(t)
+	d.ExitActions = []ExitAction{{Command: &Fact{Value: []string{"x"}, Src: "s"}}}
+	wantErr(t, check(d), "exit_actions[0].when")
+}
+
+func TestValidateExitActionUnknownHook(t *testing.T) {
+	d := valid(t)
+	d.ExitActions = []ExitAction{{When: "games_changed", Hook: "nope"}}
+	wantErr(t, check(d), "exit_actions[0].hook", "nope")
+}
+
+func TestValidateExitCommandNeedsSrcWhenUpstream(t *testing.T) {
+	d := valid(t)
+	d.ExitActions = []ExitAction{{When: "gamelist_changed", Command: &Fact{Value: []string{"killall", "es"}}}}
+	wantErr(t, check(d), "exit_actions[0].command", "src is required")
+}
+
+func TestValidateGamelistTextOnlyForMuOSText(t *testing.T) {
+	d := valid(t)
+	d.Gamelist.Format = FormatEmulationStation
+	d.Gamelist.Text = &Fact{Value: "{card}/info/{system}/text", Src: "s"}
+	wantErr(t, check(d), "gamelist.text", "muos-text")
+
+	d = valid(t)
+	d.Gamelist.Text = &Fact{Value: "{card}/info/{system}/text", Src: "s"}
+	wantErr(t, check(d), "gamelist.text", "muos-text")
+
+	d = valid(t)
+	d.Gamelist.Format = FormatMuOSText
+	d.Gamelist.Text = &Fact{Value: "{card}/info/{system}/text", Src: "s"}
+	if errs := check(d); len(errs) != 0 {
+		t.Fatal(errs)
+	}
+
+	d = valid(t)
+	d.Gamelist.Format = FormatMuOSText
+	d.Gamelist.Text = &Fact{Value: "{card}/{name}/text", Src: "s"}
+	wantErr(t, check(d), "gamelist.text", "name")
+}
+
+func TestParseExitActionsAndGamelistText(t *testing.T) {
+	d := parseValid(t, strings.Replace(validTOML, `format = "none"`, `format = "muos-text"
+text = { value = "{card}/info/{system}/text", src = "sys/t" }`, 1)+`
+[[exit_actions]]
+when = "gamelist_changed"
+command = { value = ["killall", "es"], src = "sys/k" }
+
+[[exit_actions]]
+when = "games_changed"
+hook = "rescan"
+`)
+	if d.Gamelist.Text == nil || d.Gamelist.Text.String() != "{card}/info/{system}/text" || d.Gamelist.Text.Src != "sys/t" {
+		t.Fatalf("gamelist.text = %+v", d.Gamelist.Text)
+	}
+	if len(d.ExitActions) != 2 || d.ExitActions[0].Command == nil || strings.Join(d.ExitActions[0].Command.Strings(), " ") != "killall es" || d.ExitActions[0].Command.Src != "sys/k" || d.ExitActions[1].Hook != "rescan" {
+		t.Fatalf("exit_actions = %+v", d.ExitActions)
+	}
+}

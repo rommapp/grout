@@ -34,6 +34,10 @@ thumbnail = { value = "{rom_dir}/images", src = "board/fsoverlay/usr/share/knull
 format = "emulationstation"
 launcher_entry = { gamelist = "{roms}/tools/gamelist.xml", path = "./Grout/Grout.sh" }
 
+[[exit_actions]]
+when = "gamelist_changed"
+command = { value = ["knulli-es-swissknife", "--restart"], src = "package/system/knulli-scripts/scripts/knulli-es-swissknife" }
+
 [retroarch]
 config = { value = "{card}/system/configs/retroarch/retroarchcustom.cfg", src = "package/system/knulli-configgen/configgen/configgen/generators/libretro/libretroPaths.py" }
 overrides = { value = "{card}/system/configs/retroarch", src = "package/system/knulli-configgen/configgen/configgen/generators/libretro/libretroGenerator.py" }

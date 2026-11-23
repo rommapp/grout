@@ -30,13 +30,14 @@ type ArtMaxSize struct {
 }
 
 type OpenOptions struct {
-	DataDir    string            `json:"data_dir"`
-	Firmware   FirmwareSpec      `json:"firmware"`
-	Client     ClientSpec        `json:"client,omitempty"`
-	ArtMaxSize ArtMaxSize        `json:"art_max_size,omitempty"`
-	Env        map[string]string `json:"env,omitempty"`
-	Logger     *slog.Logger      `json:"-"`
-	timing     auth.Timing
+	DataDir       string            `json:"data_dir"`
+	Firmware      FirmwareSpec      `json:"firmware"`
+	Client        ClientSpec        `json:"client,omitempty"`
+	ArtMaxSize    ArtMaxSize        `json:"art_max_size,omitempty"`
+	LauncherEntry bool              `json:"launcher_entry,omitempty"`
+	Env           map[string]string `json:"env,omitempty"`
+	Logger        *slog.Logger      `json:"-"`
+	timing        auth.Timing
 }
 
 type VersionInfo struct {
@@ -54,13 +55,14 @@ func Open(ctx context.Context, o OpenOptions) (*Server, error) {
 		return nil, badRequest(errors.New("art_max_size width and height must not be negative"))
 	}
 	opts := grout.Options{
-		DataDir:    o.DataDir,
-		FirmwareID: o.Firmware.ID,
-		Env:        o.Env,
-		Logger:     o.Logger,
-		Client:     grout.Client{Name: o.Client.Name, Version: o.Client.Version},
-		Timing:     o.timing,
-		ArtMaxSize: fetch.Size{Width: o.ArtMaxSize.Width, Height: o.ArtMaxSize.Height},
+		DataDir:       o.DataDir,
+		FirmwareID:    o.Firmware.ID,
+		Env:           o.Env,
+		Logger:        o.Logger,
+		Client:        grout.Client{Name: o.Client.Name, Version: o.Client.Version},
+		Timing:        o.timing,
+		ArtMaxSize:    fetch.Size{Width: o.ArtMaxSize.Width, Height: o.ArtMaxSize.Height},
+		LauncherEntry: o.LauncherEntry,
 	}
 	if o.Firmware.Definition != "" {
 		opts.FirmwareDefinition = []byte(o.Firmware.Definition)

@@ -47,11 +47,14 @@ The options for `grout_open`:
   "firmware": { "definition": "<the text of your firmware.toml>" },
   "env": { "CANNOLI_ROOT": "/storage/emulated/0/Cannoli" },
   "client": { "name": "cannoli", "version": "2.3.0" },
-  "art_max_size": { "width": 320, "height": 240 }
+  "art_max_size": { "width": 320, "height": 240 },
+  "launcher_entry": false
 }
 ```
 
 `art_max_size` is the largest size, in pixels, Grout scales downloaded art to, keeping its shape. Leave it out to keep art at full size. Grout's own UI passes half its screen size.
+
+`launcher_entry` asks Grout to add an entry for itself to the frontend's gamelist at open, on firmwares whose definition names one. Only Grout's own UI sets it.
 
 `client` names your app to RomM: it is recorded on the device, so the user's device list shows the app they actually run. It defaults to Grout's own name and version.
 
@@ -91,6 +94,21 @@ Grout downloads one item per call, and the host owns the queue: call `fetch.game
 - `library.bios` shows which of the BIOS files the user uploaded to RomM are on the card; `fetch.bios` downloads them all for a platform.
 - A refresh or scan cannot run while any download is running, and the reverse. Wait for downloads to finish, or cancel them, before refreshing.
 - A failed or cancelled download leaves nothing half-written. A download cancelled after the game reached the card keeps it and skips the art.
+
+## Gamelists and exit actions
+
+Grout writes each downloaded game's entry in the gamelist the firmware's frontend reads, so the game shows with RomM's name, description and art without a scraper: `gamelist.xml` on Knulli and ROCKNIX, `miyoogamelist.xml` on Onion, Spruce and Allium, and one text file per game on muOS. NextUI and Leaf have none.
+
+- `fetch.game` and `fetch.art` write the entry as part of the call and report it under `gamelist`. `gamelist.refresh` rewrites the entries of games already on the card.
+- Grout only sets the fields it writes. Everything else in a gamelist stays: other games, favourites, play counts and anything a scraper added. A gamelist Grout cannot parse is never written.
+- Names include the game's regions unless the `gamelist_omits_region` setting is on.
+
+Some frontends only notice changes after a restart or a library rescan. The firmware definition lists these as exit actions, each run when a condition fired: `gamelist_changed` when a gamelist file was written, `games_changed` when a game was placed on the card. Grout saves the conditions until they are cleared.
+
+- A host that wants Grout to run them calls `exit_actions.run` as it exits. Commands start detached, after a 3 second delay, so the frontend restarts after the host is gone. Grout's own UI does this.
+- A host that runs commands its own way calls `exit_actions.list` with `clear` true. Hook actions, such as Leaf's library rescan, stay pending until `exit_actions.run`, so such a host still calls `exit_actions.run` for them.
+- A host that does not run on the handheld's frontend, such as Cannoli on Android, can ignore exit actions.
+- The CLI runs them only when a command is given `--exit-actions`, because it may run over SSH or from a scheduled job while someone is playing, and restarting the frontend would end their game.
 
 ## Choosing the data directory
 

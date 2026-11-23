@@ -6,6 +6,7 @@ require (
 	github.com/BrandonKowalski/certifiable v1.3.0
 	github.com/BrandonKowalski/gabagool/v2 v2.26.6
 	github.com/BurntSushi/toml v1.6.0
+	github.com/beevik/etree v1.8.1
 	github.com/bodgit/sevenzip v1.6.5
 	github.com/holoplot/go-evdev v0.0.0-20260909133534-d873ed210bda
 	github.com/spf13/cobra v1.10.2

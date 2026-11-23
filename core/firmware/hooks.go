@@ -36,6 +36,7 @@ type Registry struct {
 	Label   map[string]LabelHook
 	Input   map[string]InputHook
 	Layout  map[string]LayoutHook
+	Exit    map[string]ExitHook
 }
 
 var hooks = Registry{
@@ -59,6 +60,9 @@ var hooks = Registry{
 	Layout: map[string]LayoutHook{
 		"muos_hidden_layout": muos.HiddenLayout,
 	},
+	Exit: map[string]ExitHook{
+		"leaf_rescan": leaf.Rescan,
+	},
 }
 
 func Hooks() Registry {
@@ -74,6 +78,7 @@ func MergeHooks(base, extra Registry) Registry {
 		Label:   mergeMap(base.Label, extra.Label),
 		Input:   mergeMap(base.Input, extra.Input),
 		Layout:  mergeMap(base.Layout, extra.Layout),
+		Exit:    mergeMap(base.Exit, extra.Exit),
 	}
 }
 

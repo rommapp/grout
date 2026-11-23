@@ -219,7 +219,7 @@ func TestFetchGameRecordsAndArt(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(artKinds(art), []firmware.ArtKind{firmware.ArtCover}) || art.Written[0].Path != cover {
+	if !reflect.DeepEqual(artKinds(art.ArtResult), []firmware.ArtKind{firmware.ArtCover}) || art.Written[0].Path != cover {
 		t.Fatalf("art after removal = %+v", art)
 	}
 	e.read(t, cover)

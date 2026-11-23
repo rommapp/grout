@@ -71,6 +71,10 @@ A failure replaces `result` with `error`, for example `{"ok": false, "error": {"
 
 `grout fetch game <game id> [--file <file id>]` downloads one game into the firmware's ROM folder, with its art, and prints the `fetch.game` envelope. `--file` picks one version of a game with several. `grout fetch art <game id>` fills in missing art for a game already on the card, and `grout fetch bios <platform id>` downloads the platform's BIOS files from RomM.
 
+`grout fetch games <game id>...` downloads several games in one run, at most `--jobs` at a time (default 2), and keeps going when one fails. It prints `{"games": [...]}` with each game's envelope and `game_id`, in argument order, and exits with the code of the first game that failed. `grout gamelist refresh [<platform id>]` rewrites the gamelist entries of games already on the card.
+
+`fetch game`, `fetch games`, `fetch art` and `gamelist refresh` take `--exit-actions`, which runs the firmware's pending exit actions (such as restarting EmulationStation) once the command is done. Without it they stay pending for a later command or the next time Grout's UI exits. A failed action is printed to stderr and does not change the exit code.
+
 `grout call <method> [json]` runs any contract method, for example `grout call library.games '{"search": "zelda", "limit": 10}'`. It is hidden from the help output and meant for testing.
 
 `grout firmware validate <file> --host` checks a host firmware definition against the host profile and prints `{"ok": true}` or a `bad_definition` error listing every problem.

@@ -33,6 +33,7 @@ splash = { value = "{card}/info/catalogue/{system}/splash", src = "script/system
 
 [gamelist]
 format = "muos-text"
+text = { value = "{card}/info/catalogue/{system}/text", src = "script/system/catalogue.sh" }
 
 [retroarch]
 config = { value = "/opt/muos/share/info/config/retroarch.cfg", src = "script/var/retro.sh" }

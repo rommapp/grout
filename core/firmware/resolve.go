@@ -105,6 +105,7 @@ func (f *Firmware) checkTemplateEnv() error {
 	}{{"cover", d.Art.Cover}, {"preview", d.Art.Preview}, {"splash", d.Art.Splash}, {"video", d.Art.Video}, {"manual", d.Art.Manual}, {"bezel", d.Art.Bezel}} {
 		addFact("art."+k.name, k.f)
 	}
+	addFact("gamelist.text", d.Gamelist.Text)
 	if le := d.Gamelist.LauncherEntry; le != nil {
 		entries = append(entries, entry{"gamelist.launcher_entry.gamelist", []string{le.Gamelist}})
 	}

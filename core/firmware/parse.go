@@ -13,7 +13,7 @@ var factPaths = map[string]bool{
 	"version.file": true, "paths.card": true, "paths.roms": true, "paths.bios": true, "paths.saves": true,
 	"rom_folders.style": true, "saves.layout": true, "saves.naming": true, "bios.default": true,
 	"art.cover": true, "art.preview": true, "art.splash": true, "art.video": true, "art.manual": true, "art.bezel": true,
-	"retroarch.config": true, "retroarch.overrides": true,
+	"retroarch.config": true, "retroarch.overrides": true, "gamelist.text": true, "exit_actions.command": true,
 }
 
 func Parse(data []byte) (*Definition, error) {

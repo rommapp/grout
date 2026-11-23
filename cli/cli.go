@@ -62,6 +62,7 @@ func newRoot(env Env) *cobra.Command {
 	root.AddCommand(newLibraryCmd(env))
 	root.AddCommand(newFirmwareCmd(env))
 	root.AddCommand(newFetchCmd(env))
+	root.AddCommand(newGamelistCmd(env))
 	root.AddCommand(newAuthCmds(env)...)
 	root.AddCommand(newCallCmd(env))
 	return root

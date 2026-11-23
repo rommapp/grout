@@ -72,6 +72,8 @@ Every `download` event carries `bytes_done` and `bytes_total`. `bios` events car
 | `art_kind` | `Default`, `Box2D`, `Box3D`, `Miximage`, `Miximage_v2` |
 | `download_splash_art`, `additional_downloads.thumbnail` | `""` (none), `Marquee`, `Title` |
 | `additional_downloads.marquee` | `""` (none), `Marquee`, `Logo` |
+| Exit action `when` | `gamelist_changed`, `games_changed` |
+| Firmware gamelist format | `none`, `emulationstation`, `miyoo`, `muos-text` |
 | Pairing `outcome` | `approved`, `denied`, `expired` (a pairing that fails returns the `server_unreachable` error instead) |
 
 ## Shared shapes
@@ -95,7 +97,8 @@ Every `download` event carries `bytes_done` and `bytes_total`. `bios` events car
   "art_kind": "Default",
   "download_art_screenshot_preview": false,
   "download_splash_art": "",
-  "additional_downloads": { "marquee": "", "video": false, "thumbnail": "", "bezel": false, "manual": false, "boxback": false, "fanart": false }
+  "additional_downloads": { "marquee": "", "video": false, "thumbnail": "", "bezel": false, "manual": false, "boxback": false, "fanart": false },
+  "gamelist_omits_region": false
 }
 ```
 
@@ -122,6 +125,22 @@ Timeouts are whole seconds. The token is never returned; `has_token` says whethe
 ```
 
 `failed` lists the art kinds the settings asked for that could not be fetched or written. Kinds the firmware has no folder for, or the game has no source for, appear in neither list.
+
+**GamelistResult**
+
+```json
+{ "written": ["/userdata/roms/gba/gamelist.xml"], "failed": [{ "game_id": 12, "path": "/userdata/roms/gba/gamelist.xml", "message": "gamelist cannot be parsed" }] }
+```
+
+`written` lists the gamelist or text files Grout changed. A file whose content would not change is not written and not listed. `failed` holds one entry per game whose entry could not be written, with `path` naming the game's launch file or the gamelist file, and `message` saying why. A gamelist Grout cannot parse is left exactly as it is. Both lists are empty, never `null`, on a firmware with no gamelist.
+
+**ExitAction**
+
+```json
+{ "when": "gamelist_changed", "command": ["knulli-es-swissknife", "--restart"] }
+```
+
+An action has either `command`, the program and its arguments, or `hook`, the name of an action Grout runs itself (for example `leaf_rescan`). Hooks can only be run through `exit_actions.run`.
 
 **GamesQuery**
 
@@ -293,7 +312,7 @@ Errors: `not_configured` (no host or no token), `bad_request` (empty name, or th
 
 ### `settings.update`
 
-Arguments: any of `{ "show_regular_collections", "show_smart_collections", "show_virtual_collections", "downloaded_games", "api_timeout", "download_timeout", "log_level", "platform_order", "download_art", "unzip_downloads", "art_kind", "download_art_screenshot_preview", "download_splash_art", "additional_downloads" }`. A field that is absent stays as it is. `additional_downloads` is an object holding any of `marquee`, `video`, `thumbnail`, `bezel`, `manual`, `boxback` and `fanart`; keys left out stay as they are. A field set to `null` is `bad_request`.
+Arguments: any of `{ "show_regular_collections", "show_smart_collections", "show_virtual_collections", "downloaded_games", "api_timeout", "download_timeout", "log_level", "platform_order", "download_art", "unzip_downloads", "art_kind", "download_art_screenshot_preview", "download_splash_art", "additional_downloads", "gamelist_omits_region" }`. A field that is absent stays as it is. `additional_downloads` is an object holding any of `marquee`, `video`, `thumbnail`, `bezel`, `manual`, `boxback` and `fanart`; keys left out stay as they are. A field set to `null` is `bad_request`.
 
 Limits: `api_timeout` 1 to 300 seconds; `download_timeout` 1 second to 24 hours; `platform_order` has no duplicates; `downloaded_games`, `log_level` and the art kind fields take the values listed under Value sets. A `log_level` change applies to the log file immediately.
 
@@ -317,7 +336,9 @@ Downloads the game into the platform's ROM folder: the folder from the user's di
 
 When `download_art` is on, the art the settings ask for follows. Art failures never fail the call. If the call is cancelled after the game is on the card, the game is kept and recorded, the call succeeds, and the art is skipped.
 
-Result: `{ "game_id", "file_id", "rom_dir", "launch_path", "placed": [string], "art": ArtResult }`. `launch_path` is the file to launch: the playlist for a multi-disc game when there is one, else the game's folder.
+After the art, Grout writes the game's entry in the firmware's gamelist (see "Gamelists and exit actions" in the library guide). A gamelist failure never fails the call.
+
+Result: `{ "game_id", "file_id", "rom_dir", "launch_path", "placed": [string], "art": ArtResult, "gamelist": GamelistResult }`. `launch_path` is the file to launch: the playlist for a multi-disc game when there is one, else the game's folder. A multi-disc game with no playlist gets no gamelist entry and is listed in `gamelist.failed`.
 
 Events: `progress` with stages `download`, `extract` and `art`.
 
@@ -325,9 +346,9 @@ Errors: `not_configured`, `bad_request` (unknown game, a platform with no ROM fo
 
 ### `fetch.art`
 
-Arguments: `{ "game_id" }`. Fetches the art missing for a game already on the card. Art that is already there is left alone and not reported.
+Arguments: `{ "game_id" }`. Fetches the art missing for a game already on the card. Art that is already there is left alone and not reported. The game's gamelist entry is then updated so new art shows.
 
-Result: ArtResult.
+Result: ArtResult with a `gamelist` field holding a GamelistResult: `{ "written", "failed", "gamelist" }`.
 
 Events: `progress` with stage `art`.
 
@@ -350,3 +371,27 @@ Arguments: `{ "platform_id" }`. Lists the BIOS files RomM has for the platform a
 Result: `[BiosFile]`, with `check` always `unchecked`.
 
 Errors: `not_configured`, `bad_request` (unknown platform), `server_unreachable`, `unauthorized`, `server_too_old`, `rate_limited`, `cancelled`.
+
+### `gamelist.refresh`
+
+Arguments: `{ "platform_id" }`, optional. Rewrites the gamelist entries of every game on the card, or of one platform's games. That covers games Grout downloaded and games a scan matched, so games put on the card by hand or by Grout v2 get entries too. Uses only the local library and the card; it needs no server or sign-in.
+
+Result: `{ "games", "written", "failed" }`: the number of games considered, then a GamelistResult.
+
+Errors: `bad_request` (a negative or unknown platform), `busy` (a refresh, scan or another `gamelist.refresh` is running), `cancelled`, `storage`.
+
+### `exit_actions.list`
+
+Arguments: `{ "clear" }`, optional. Lists the firmware's exit actions whose conditions have fired since they were last cleared, in the order the firmware definition lists them, without duplicates. Conditions are saved, so they survive a crash and carry from one handle to the next. With `clear` true the listed conditions are cleared, for a host that runs the commands itself, except a condition that triggered a `hook` action: it stays pending until `exit_actions.run`, since only Grout can run a hook. A condition that fires again after the list is kept.
+
+Result: `{ "actions": [ExitAction] }`.
+
+Errors: `cancelled`, `storage`.
+
+### `exit_actions.run`
+
+Arguments: none. Runs every pending exit action and clears the conditions it read. A call cancelled before it starts runs nothing and clears nothing. Each command starts detached from the host's process, after a 3 second delay, so a frontend restart happens after the host has exited. Hooks run before the call returns. Every action is attempted even when one fails.
+
+Result: `{ "ran": [ExitAction], "failed": [{ "action": ExitAction, "message" }] }`.
+
+Errors: `cancelled`, `storage`.

@@ -8,6 +8,7 @@ import (
 	"github.com/rommapp/grout/core/auth"
 	"github.com/rommapp/grout/core/config"
 	"github.com/rommapp/grout/core/fetch"
+	"github.com/rommapp/grout/core/firmware"
 	"github.com/rommapp/grout/core/library"
 	"github.com/rommapp/grout/core/romm"
 )
@@ -116,6 +117,7 @@ type Settings struct {
 	DownloadArtScreenshotPreview bool                `json:"download_art_screenshot_preview"`
 	DownloadSplashArt            config.ArtKind      `json:"download_splash_art"`
 	AdditionalDownloads          AdditionalDownloads `json:"additional_downloads"`
+	GamelistOmitsRegion          bool                `json:"gamelist_omits_region"`
 }
 
 type AdditionalDownloads struct {
@@ -135,6 +137,18 @@ type FetchGameArgs struct {
 
 type GameIDArgs struct {
 	GameID int `json:"game_id"`
+}
+
+type GamelistRefreshArgs struct {
+	PlatformID int `json:"platform_id,omitempty"`
+}
+
+type ExitListArgs struct {
+	Clear bool `json:"clear,omitempty"`
+}
+
+type ExitActionsResult struct {
+	Actions []firmware.PendingAction `json:"actions"`
 }
 
 type PlatformIDArgs struct {
@@ -330,6 +344,7 @@ func toSettings(c config.Config) Settings {
 		ArtKind:                      c.ArtKind,
 		DownloadArtScreenshotPreview: c.DownloadArtScreenshotPreview,
 		DownloadSplashArt:            c.DownloadSplashArt,
+		GamelistOmitsRegion:          c.GamelistOmitsRegion,
 		AdditionalDownloads: AdditionalDownloads{
 			Marquee:   c.AdditionalDownloads.Marquee,
 			Video:     c.AdditionalDownloads.Video,

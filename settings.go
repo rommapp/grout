@@ -30,6 +30,7 @@ type SettingsPatch struct {
 	DownloadArtScreenshotPreview *bool
 	DownloadSplashArt            *config.ArtKind
 	AdditionalDownloads          *AdditionalDownloadsPatch
+	GamelistOmitsRegion          *bool
 }
 
 type AdditionalDownloadsPatch struct {
@@ -143,6 +144,7 @@ func (p SettingsPatch) apply(c *config.Config) {
 	setIf(&c.DownloadArtScreenshotPreview, p.DownloadArtScreenshotPreview)
 	setIf(&c.DownloadSplashArt, p.DownloadSplashArt)
 	p.AdditionalDownloads.apply(&c.AdditionalDownloads)
+	setIf(&c.GamelistOmitsRegion, p.GamelistOmitsRegion)
 }
 
 func (g *Grout) UpdateSettings(p SettingsPatch) (config.Config, error) {

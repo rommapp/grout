@@ -18,7 +18,7 @@ func TestOpenCreatesLibraryTables(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	want := []string{"platforms", "games", "game_files", "game_meta", "collections", "collection_games", "cursors", "platform_sync", "local_files", "downloads"}
+	want := []string{"platforms", "games", "game_files", "game_meta", "collections", "collection_games", "cursors", "platform_sync", "local_files", "downloads", "exit_conditions"}
 	for _, name := range want {
 		var n int
 		if err := s.DB.QueryRow("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?", name).Scan(&n); err != nil {

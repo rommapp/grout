@@ -20,6 +20,7 @@ import (
 
 	"github.com/rommapp/grout/core/auth"
 	"github.com/rommapp/grout/core/config"
+	"github.com/rommapp/grout/core/firmware"
 	"github.com/rommapp/grout/core/library"
 	"github.com/rommapp/grout/core/romm"
 	"github.com/rommapp/grout/test/fakeromm"
@@ -50,6 +51,9 @@ var tableMethods = []string{
 	"fetch.bios",
 	"library.bios",
 	"library.game_files",
+	"gamelist.refresh",
+	"exit_actions.list",
+	"exit_actions.run",
 }
 
 var pairWaitKeys = []string{"outcome", "username", "device_id", "token_expires_at"}
@@ -199,7 +203,7 @@ func wantEachKeys(t *testing.T, what string, raw json.RawMessage, n int, want ..
 var settingsKeys = []string{
 	"hosts", "directory_mappings", "show_regular_collections", "show_smart_collections",
 	"show_virtual_collections", "downloaded_games", "api_timeout", "download_timeout", "log_level", "platform_order",
-	"download_art", "unzip_downloads", "art_kind", "download_art_screenshot_preview", "download_splash_art", "additional_downloads",
+	"download_art", "unzip_downloads", "art_kind", "download_art_screenshot_preview", "download_splash_art", "additional_downloads", "gamelist_omits_region",
 }
 
 var hostKeys = []string{"display_name", "root_uri", "port", "username", "has_token", "token_name", "token_expires_at", "device_id", "device_name", "insecure_skip_verify"}
@@ -327,13 +331,13 @@ func TestEveryMethodRoundTrip(t *testing.T) {
 		args  string
 		check func(t *testing.T, raw json.RawMessage)
 	}{`{"game_id":1}`, func(t *testing.T, raw json.RawMessage) {
-		wantKeys(t, "fetch.game", raw, "game_id", "file_id", "rom_dir", "launch_path", "placed", "art")
+		wantKeys(t, "fetch.game", raw, "game_id", "file_id", "rom_dir", "launch_path", "placed", "art", "gamelist")
 	}}
 	cases["fetch.art"] = struct {
 		args  string
 		check func(t *testing.T, raw json.RawMessage)
 	}{`{"game_id":1}`, func(t *testing.T, raw json.RawMessage) {
-		wantKeys(t, "fetch.art", raw, "written", "failed")
+		wantKeys(t, "fetch.art", raw, "written", "failed", "gamelist")
 	}}
 	cases["fetch.bios"] = struct {
 		args  string
@@ -352,6 +356,24 @@ func TestEveryMethodRoundTrip(t *testing.T) {
 		check func(t *testing.T, raw json.RawMessage)
 	}{`{"game_id":1}`, func(t *testing.T, raw json.RawMessage) {
 		wantEachKeys(t, "game file", raw, 1, "id", "file_name", "size_bytes", "category")
+	}}
+	cases["gamelist.refresh"] = struct {
+		args  string
+		check func(t *testing.T, raw json.RawMessage)
+	}{"", func(t *testing.T, raw json.RawMessage) {
+		wantKeys(t, "gamelist.refresh", raw, "games", "written", "failed")
+	}}
+	cases["exit_actions.list"] = struct {
+		args  string
+		check func(t *testing.T, raw json.RawMessage)
+	}{"", func(t *testing.T, raw json.RawMessage) {
+		wantKeys(t, "exit_actions.list", raw, "actions")
+	}}
+	cases["exit_actions.run"] = struct {
+		args  string
+		check func(t *testing.T, raw json.RawMessage)
+	}{"", func(t *testing.T, raw json.RawMessage) {
+		wantKeys(t, "exit_actions.run", raw, "ran", "failed")
 	}}
 	cases["auth.logout"] = struct {
 		args  string
@@ -694,7 +716,7 @@ func refreshed(t *testing.T, srv *fakeromm.Server) *Server {
 func TestFetchGameMethod(t *testing.T) {
 	s := refreshed(t, downloadServer(t))
 	raw := mustOK(t, s, "fetch.game", `{"game_id":1}`)
-	wantKeys(t, "fetch.game", raw, "game_id", "file_id", "rom_dir", "launch_path", "placed", "art")
+	wantKeys(t, "fetch.game", raw, "game_id", "file_id", "rom_dir", "launch_path", "placed", "art", "gamelist")
 	wantKeys(t, "art", field(t, raw, "art"), "written", "failed")
 	if string(field(t, raw, "game_id")) != "1" || string(field(t, raw, "file_id")) != "101" {
 		t.Fatalf("result = %s", raw)
@@ -834,7 +856,7 @@ func TestFetchArtMethod(t *testing.T) {
 	wantError(t, call(t, s, "fetch.art", `{"game_id":1}`), CodeBadRequest)
 	mustOK(t, s, "fetch.game", `{"game_id":1}`)
 	raw := mustOK(t, s, "fetch.art", `{"game_id":1}`)
-	wantKeys(t, "fetch.art", raw, "written", "failed")
+	wantKeys(t, "fetch.art", raw, "written", "failed", "gamelist")
 }
 
 func biosServer(t *testing.T) *fakeromm.Server {
@@ -951,4 +973,166 @@ func TestSettingsGetReportsArtFields(t *testing.T) {
 	raw := mustOK(t, s, "settings.get", "")
 	wantKeys(t, "settings", raw, settingsKeys...)
 	wantKeys(t, "additional_downloads", field(t, raw, "additional_downloads"), "marquee", "video", "thumbnail", "bezel", "manual", "boxback", "fanart")
+}
+
+func TestGamelistRefreshMethod(t *testing.T) {
+	s := refreshed(t, downloadServer(t))
+	for _, args := range []string{``, `{}`, `{"platform_id":0}`, `{"platform_id":1}`} {
+		raw := mustOK(t, s, "gamelist.refresh", args)
+		wantKeys(t, "gamelist.refresh", raw, "games", "written", "failed")
+		if string(field(t, raw, "games")) != "0" || string(field(t, raw, "written")) != "[]" || string(field(t, raw, "failed")) != "[]" {
+			t.Fatalf("args %q result = %s", args, raw)
+		}
+	}
+	mustOK(t, s, "fetch.game", `{"game_id":1}`)
+	raw := mustOK(t, s, "gamelist.refresh", `{"platform_id":1}`)
+	if string(field(t, raw, "games")) != "1" {
+		t.Fatalf("result = %s", raw)
+	}
+	wantError(t, call(t, s, "gamelist.refresh", `{"platform_id":99}`), CodeBadRequest)
+	wantError(t, call(t, s, "gamelist.refresh", `{"bogus":1}`), CodeBadRequest)
+}
+
+func TestGamelistRefreshNegativePlatform(t *testing.T) {
+	s := refreshed(t, downloadServer(t))
+	wantError(t, call(t, s, "gamelist.refresh", `{"platform_id":-1}`), CodeBadRequest)
+}
+
+const exitAPIDefinition = `
+id = "exitfw"
+name = "Exit firmware"
+maintained = "community"
+
+[paths]
+card = { value = "{env.ROOT}" }
+roms = { value = "{card}/Roms" }
+bios = { value = "{card}/Bios" }
+saves = { value = "{card}/Saves" }
+
+[[exit_actions]]
+when = "gamelist_changed"
+command = { value = ["true"] }
+`
+
+func exitServer(t *testing.T) (*Server, string) {
+	t.Helper()
+	dir := t.TempDir()
+	o := OpenOptions{
+		DataDir:  dir,
+		Firmware: FirmwareSpec{Definition: exitAPIDefinition},
+		Env:      map[string]string{"ROOT": t.TempDir()},
+	}
+	s, err := Open(context.Background(), o)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { s.Close() })
+	return s, dir
+}
+
+func fireGamelistChanged(t *testing.T, dir string) {
+	t.Helper()
+	st, err := library.Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st.Close()
+	l := library.New(st, nil, nil, nil)
+	if err := l.FireConditions(context.Background(), firmware.CondGamelistChanged); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestExitActionsListMethod(t *testing.T) {
+	s, dir := exitServer(t)
+	raw := mustOK(t, s, "exit_actions.list", "")
+	wantKeys(t, "exit_actions.list", raw, "actions")
+	if string(field(t, raw, "actions")) != "[]" {
+		t.Fatalf("result = %s", raw)
+	}
+	fireGamelistChanged(t, dir)
+	raw = mustOK(t, s, "exit_actions.list", `{}`)
+	list := items(t, field(t, raw, "actions"))
+	if len(list) != 1 {
+		t.Fatalf("result = %s", raw)
+	}
+	wantKeys(t, "action", list[0], "when", "command")
+	if string(field(t, list[0], "when")) != `"gamelist_changed"` || string(field(t, list[0], "command")) != `["true"]` {
+		t.Fatalf("action = %s", list[0])
+	}
+	wantError(t, call(t, s, "exit_actions.list", `{"bogus":true}`), CodeBadRequest)
+}
+
+func TestExitActionsListClear(t *testing.T) {
+	s, dir := exitServer(t)
+	fireGamelistChanged(t, dir)
+	if got := items(t, field(t, mustOK(t, s, "exit_actions.list", `{"clear":false}`), "actions")); len(got) != 1 {
+		t.Fatalf("actions = %v", got)
+	}
+	if got := items(t, field(t, mustOK(t, s, "exit_actions.list", `{"clear":true}`), "actions")); len(got) != 1 {
+		t.Fatalf("actions = %v", got)
+	}
+	raw := mustOK(t, s, "exit_actions.list", "")
+	if string(field(t, raw, "actions")) != "[]" {
+		t.Fatalf("after clear = %s", raw)
+	}
+}
+
+func TestExitActionsRunMethod(t *testing.T) {
+	s, dir := exitServer(t)
+	raw := mustOK(t, s, "exit_actions.run", "")
+	wantKeys(t, "exit_actions.run", raw, "ran", "failed")
+	if string(field(t, raw, "ran")) != "[]" || string(field(t, raw, "failed")) != "[]" {
+		t.Fatalf("empty result = %s", raw)
+	}
+	fireGamelistChanged(t, dir)
+	raw = mustOK(t, s, "exit_actions.run", "")
+	if len(items(t, field(t, raw, "ran"))) != 1 || string(field(t, raw, "failed")) != "[]" {
+		t.Fatalf("result = %s", raw)
+	}
+	if got := mustOK(t, s, "exit_actions.list", ""); string(field(t, got, "actions")) != "[]" {
+		t.Fatalf("after run = %s", got)
+	}
+	wantError(t, call(t, s, "exit_actions.run", `{"x":1}`), CodeBadRequest)
+}
+
+func TestFetchGameResultHasGamelist(t *testing.T) {
+	s := refreshed(t, downloadServer(t))
+	raw := mustOK(t, s, "fetch.game", `{"game_id":1}`)
+	gl := field(t, raw, "gamelist")
+	wantKeys(t, "gamelist", gl, "written", "failed")
+	if string(field(t, gl, "written")) != "[]" || string(field(t, gl, "failed")) != "[]" {
+		t.Fatalf("gamelist = %s", gl)
+	}
+}
+
+func TestFetchArtResultShape(t *testing.T) {
+	s := refreshed(t, downloadServer(t))
+	mustOK(t, s, "fetch.game", `{"game_id":1}`)
+	raw := mustOK(t, s, "fetch.art", `{"game_id":1}`)
+	wantKeys(t, "fetch.art", raw, "written", "failed", "gamelist")
+	if string(field(t, raw, "written")) != "[]" || string(field(t, raw, "failed")) != "[]" {
+		t.Fatalf("art fields = %s", raw)
+	}
+	gl := field(t, raw, "gamelist")
+	wantKeys(t, "gamelist", gl, "written", "failed")
+	if string(field(t, gl, "written")) != "[]" || string(field(t, gl, "failed")) != "[]" {
+		t.Fatalf("gamelist = %s", gl)
+	}
+}
+
+func TestSettingsUpdateGamelistOmitsRegion(t *testing.T) {
+	s := refreshed(t, downloadServer(t))
+	if got := mustOK(t, s, "settings.get", ""); string(field(t, got, "gamelist_omits_region")) != "false" {
+		t.Fatalf("default = %s", got)
+	}
+	got := mustOK(t, s, "settings.update", `{"gamelist_omits_region":true}`)
+	if string(field(t, got, "gamelist_omits_region")) != "true" {
+		t.Fatalf("update = %s", got)
+	}
+	if got := mustOK(t, s, "settings.get", ""); string(field(t, got, "gamelist_omits_region")) != "true" {
+		t.Fatalf("get = %s", got)
+	}
+	wantError(t, call(t, s, "settings.update", `{"gamelist_omits_region":null}`), CodeBadRequest)
+	wantError(t, call(t, s, "settings.update", `{"gamelist_omits_region":"yes"}`), CodeBadRequest)
 }

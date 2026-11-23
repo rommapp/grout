@@ -159,8 +159,13 @@ func artFactOf(d *Definition, kind ArtKind) *Fact {
 	return nil
 }
 
+var artVars = []string{"card", "roms", "rom_dir", "rom_folder", "system"}
+
 func (f *Firmware) ArtDir(kind ArtKind, slug, romDir, platformName string) (string, bool) {
-	fact := f.artFact(kind)
+	return f.expandArtFact(f.artFact(kind), slug, romDir, platformName)
+}
+
+func (f *Firmware) expandArtFact(fact *Fact, slug, romDir, platformName string) (string, bool) {
 	if fact == nil {
 		return "", false
 	}

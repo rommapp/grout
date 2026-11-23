@@ -26,6 +26,10 @@ cover = { value = "{card}/Images/{rom_folder}", src = "config/retroarch/mlp1/sys
 [gamelist]
 format = "none"
 
+[[exit_actions]]
+when = "games_changed"
+hook = "leaf_rescan"
+
 [platform_sources]
 roms = "config/retroarch/mlp1/systems.json"
 saves = "config/retroarch/mlp1/cores.json"

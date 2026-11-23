@@ -5,14 +5,28 @@ import (
 	"fmt"
 	"io/fs"
 	"path"
+	"slices"
 	"strings"
 	"testing/fstest"
+	"time"
 )
 
+type Started struct {
+	Argv  []string
+	Delay time.Duration
+}
+
 type Fake struct {
-	Files fstest.MapFS
-	Env   map[string]string
-	Exe   string
+	Files    fstest.MapFS
+	Env      map[string]string
+	Exe      string
+	Started  []Started
+	StartErr error
+}
+
+func (f *Fake) Start(argv []string, delay time.Duration) error {
+	f.Started = append(f.Started, Started{Argv: slices.Clone(argv), Delay: delay})
+	return f.StartErr
 }
 
 func (f *Fake) Getenv(k string) string {

@@ -5,8 +5,10 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 	"testing/fstest"
+	"time"
 )
 
 func rooted(root string) func(string) string {
@@ -222,5 +224,91 @@ func TestOSHostRealAppliesRoot(t *testing.T) {
 	}
 	if _, err := h.Real("mnt/a"); err == nil {
 		t.Fatal("expected error")
+	}
+}
+
+func TestOSHostStartDetached(t *testing.T) {
+	r, ok := OS(rooted("")).(Runner)
+	if !ok {
+		t.Skip("host cannot run commands on this platform")
+	}
+	file := filepath.Join(t.TempDir(), "out")
+	if err := r.Start([]string{"sh", "-c", "echo ok > '" + file + "'"}, 0); err != nil {
+		t.Fatal(err)
+	}
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		b, err := os.ReadFile(file)
+		if err == nil && string(b) == "ok\n" {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("command did not run: %q %v", b, err)
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+func TestOSHostStartEmptyCommand(t *testing.T) {
+	r, ok := OS(rooted("")).(Runner)
+	if !ok {
+		t.Skip("host cannot run commands on this platform")
+	}
+	if err := r.Start(nil, 0); err == nil {
+		t.Fatal("expected error")
+	}
+}
+
+func TestStartDelaySeconds(t *testing.T) {
+	for d, want := range map[time.Duration]string{
+		0:                       "0",
+		-time.Second:            "0",
+		time.Millisecond:        "1",
+		time.Second:             "1",
+		3 * time.Second:         "3",
+		3*time.Second + 1:       "4",
+		2500 * time.Millisecond: "3",
+	} {
+		if got := delaySeconds(d); got != want {
+			t.Errorf("%s: %q, want %q", d, got, want)
+		}
+	}
+}
+
+func TestFakeRecordsStarts(t *testing.T) {
+	f := &Fake{}
+	var r Runner = f
+	if err := r.Start([]string{"a", "b"}, 3*time.Second); err != nil {
+		t.Fatal(err)
+	}
+	f.StartErr = errors.New("no")
+	if err := r.Start([]string{"c"}, 0); err == nil {
+		t.Fatal("expected error")
+	}
+	want := []Started{{Argv: []string{"a", "b"}, Delay: 3 * time.Second}, {Argv: []string{"c"}}}
+	if !reflect.DeepEqual(f.Started, want) {
+		t.Fatalf("started = %+v", f.Started)
+	}
+}
+
+func TestOSHostStartIgnoresPath(t *testing.T) {
+	r, ok := OS(rooted("")).(Runner)
+	if !ok {
+		t.Skip("host cannot run commands on this platform")
+	}
+	t.Setenv("PATH", "")
+	file := filepath.Join(t.TempDir(), "out")
+	if err := r.Start([]string{"/bin/sh", "-c", "echo ok > '" + file + "'"}, 0); err != nil {
+		t.Fatal(err)
+	}
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		if b, err := os.ReadFile(file); err == nil && string(b) == "ok\n" {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("command did not run")
+		}
+		time.Sleep(10 * time.Millisecond)
 	}
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/rommapp/grout/core/fetch"
 	"github.com/rommapp/grout/core/firmware"
 	"github.com/rommapp/grout/core/firmware/host"
+	"github.com/rommapp/grout/core/gamelist"
 	"github.com/rommapp/grout/core/library"
 	"github.com/rommapp/grout/core/romm"
 	"github.com/rommapp/grout/core/store"
@@ -39,6 +40,7 @@ type Options struct {
 	Client             Client
 	Timing             auth.Timing
 	ArtMaxSize         fetch.Size
+	LauncherEntry      bool
 }
 
 type Grout struct {
@@ -52,6 +54,7 @@ type Grout struct {
 	artMax  fetch.Size
 	fw      *firmware.Firmware
 	store   *store.Store
+	lists   *gamelist.Writer
 
 	root       context.Context
 	cancel     context.CancelFunc
@@ -150,6 +153,12 @@ func (g *Grout) open(o Options) error {
 		return newError(CodeStorage, err)
 	}
 	g.store = s
+	if w, ok := fw.Host.(host.Writable); ok {
+		g.lists = gamelist.NewWriter(fw, w)
+	}
+	if o.LauncherEntry {
+		g.writeLauncher()
+	}
 	return nil
 }
 

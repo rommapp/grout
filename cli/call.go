@@ -27,14 +27,18 @@ func codeOfEnvelope(raw []byte) api.Code {
 	return ""
 }
 
-func print(env Env, raw []byte) ExitCode {
+func indented(raw []byte) []byte {
 	var buf bytes.Buffer
 	if err := json.Indent(&buf, raw, "", "  "); err != nil {
 		buf.Reset()
 		buf.Write(raw)
 	}
 	buf.WriteByte('\n')
-	env.Stdout.Write(buf.Bytes())
+	return buf.Bytes()
+}
+
+func print(env Env, raw []byte) ExitCode {
+	env.Stdout.Write(indented(raw))
 	return exitFor(codeOfEnvelope(raw))
 }
 
@@ -47,14 +51,40 @@ func openOptions(env Env) api.OpenOptions {
 	}
 }
 
-func invoke(ctx context.Context, env Env, method string, args []byte) ExitCode {
+func withServer(ctx context.Context, env Env, exitActions bool, fn func(s *api.Server) ExitCode) ExitCode {
 	s, err := api.Open(ctx, openOptions(env))
 	if err != nil {
 		return print(env, api.ErrorEnvelope(err))
 	}
-	raw := s.Call(ctx, method, args, nil)
-	s.Close()
-	return print(env, raw)
+	defer s.Close()
+	code := fn(s)
+	if exitActions {
+		runExitActions(ctx, env, s)
+	}
+	return code
+}
+
+func runExitActions(ctx context.Context, env Env, s *api.Server) {
+	raw := s.Call(ctx, "exit_actions.run", nil, nil)
+	var e struct {
+		OK     bool `json:"ok"`
+		Result struct {
+			Failed []json.RawMessage `json:"failed"`
+		} `json:"result"`
+	}
+	if err := json.Unmarshal(raw, &e); err != nil || !e.OK || len(e.Result.Failed) > 0 {
+		env.Stderr.Write(indented(raw))
+	}
+}
+
+func invoke(ctx context.Context, env Env, method string, args []byte) ExitCode {
+	return invokeWith(ctx, env, false, method, args)
+}
+
+func invokeWith(ctx context.Context, env Env, exitActions bool, method string, args []byte) ExitCode {
+	return withServer(ctx, env, exitActions, func(s *api.Server) ExitCode {
+		return print(env, s.Call(ctx, method, args, nil))
+	})
 }
 
 func finish(code ExitCode) error {

@@ -252,3 +252,24 @@ func TestOpenArtMaxSize(t *testing.T) {
 	}
 	s.Close()
 }
+
+func TestOpenLauncherEntryOption(t *testing.T) {
+	o, err := DecodeOpenOptions([]byte(`{"data_dir":"/x","launcher_entry":true}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !o.LauncherEntry {
+		t.Fatal("launcher_entry not decoded")
+	}
+	o, err = DecodeOpenOptions([]byte(`{"data_dir":"/x"}`))
+	if err != nil || o.LauncherEntry {
+		t.Fatalf("default = %+v, %v", o, err)
+	}
+	o = testOpenOptions(t, t.TempDir())
+	o.LauncherEntry = true
+	s, err := Open(context.Background(), o)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Close()
+}

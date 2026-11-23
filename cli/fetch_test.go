@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"image"
 	"image/png"
+	"os"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -249,5 +251,238 @@ func TestFetchGameFileFlagHelp(t *testing.T) {
 	want := "pick this version (file id) of a game with several"
 	if got := game.Flags().Lookup("file").Usage; got != want {
 		t.Fatalf("usage = %q, want %q", got, want)
+	}
+}
+
+func runFWFull(t *testing.T, dir, fw, root string, args ...string) (ExitCode, string, string) {
+	t.Helper()
+	var out, errb bytes.Buffer
+	code := Run(context.Background(), Env{
+		Dir:      dir,
+		Stdout:   &out,
+		Stderr:   &errb,
+		Firmware: fw,
+		Environ:  map[string]string{"GROUT_ROOT": root},
+	}, args)
+	return code, out.String(), errb.String()
+}
+
+type gamesOut struct {
+	Games []struct {
+		GameID int             `json:"game_id"`
+		OK     bool            `json:"ok"`
+		Result json.RawMessage `json:"result"`
+		Error  *api.ErrorBody  `json:"error"`
+	} `json:"games"`
+}
+
+func decodeGames(t *testing.T, raw string) gamesOut {
+	t.Helper()
+	var g gamesOut
+	if err := json.Unmarshal([]byte(raw), &g); err != nil {
+		t.Fatalf("stdout not games JSON: %q", raw)
+	}
+	return g
+}
+
+func threeGameServer(t *testing.T) *fakeromm.Server {
+	t.Helper()
+	srv := fetchServer(t)
+	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	srv.Platforms[0].RomCount = 3
+	srv.Roms = fakeromm.Roms(1, 1, 3, base)
+	srv.Content = map[int][]byte{}
+	for i := range srv.Roms {
+		r := &srv.Roms[i]
+		body := []byte(fmt.Sprintf("rom data %d", r.ID))
+		r.FSName = fmt.Sprintf("game%d.gba", r.ID)
+		r.FSNameNoExt = fmt.Sprintf("game%d", r.ID)
+		r.FSExtension = "gba"
+		r.HasSimpleSingleFile = true
+		r.Files = []romm.RomFile{{ID: 100 + r.ID, FileName: r.FSName, FileSizeBytes: int64(len(body))}}
+		srv.Content[r.ID] = body
+	}
+	return srv
+}
+
+func TestFetchGamesAllSucceed(t *testing.T) {
+	dir := fetchDir(t, fetchServer(t))
+	code, out, errs := runFWFull(t, dir, "testfw", t.TempDir(), "fetch", "games", "2", "1")
+	if code != ExitOK {
+		t.Fatalf("code=%d out=%s err=%s", code, out, errs)
+	}
+	g := decodeGames(t, out)
+	if len(g.Games) != 2 || g.Games[0].GameID != 2 || g.Games[1].GameID != 1 {
+		t.Fatalf("games = %s", out)
+	}
+	for _, e := range g.Games {
+		if !e.OK || e.Error != nil || intField(t, e.Result, "game_id") != e.GameID {
+			t.Fatalf("entry = %+v", e)
+		}
+	}
+}
+
+func TestFetchGamesFirstFailureExitCode(t *testing.T) {
+	srv := threeGameServer(t)
+	delete(srv.Content, 3)
+	dir := fetchDir(t, srv)
+	code, out, errs := runFWFull(t, dir, "testfw", t.TempDir(), "fetch", "games", "1", "99", "3", "2")
+	g := decodeGames(t, out)
+	if len(g.Games) != 4 {
+		t.Fatalf("games = %s err=%s", out, errs)
+	}
+	if !g.Games[0].OK || !g.Games[3].OK {
+		t.Fatalf("games = %s", out)
+	}
+	if g.Games[1].OK || g.Games[1].Error == nil || g.Games[1].Error.Code != api.CodeBadRequest {
+		t.Fatalf("second = %+v", g.Games[1])
+	}
+	if g.Games[2].OK || g.Games[2].Error == nil || g.Games[2].Error.Code != api.CodeMissingOnServer {
+		t.Fatalf("third = %+v", g.Games[2])
+	}
+	if code != ExitUsage {
+		t.Fatalf("code = %d, want %d", code, ExitUsage)
+	}
+}
+
+func TestFetchGamesJobsBound(t *testing.T) {
+	srv := threeGameServer(t)
+	var cur, peak atomic.Int32
+	for i := 1; i <= 3; i++ {
+		srv.SetPathHook(fmt.Sprintf("/api/roms/%d/content/game%d.gba", i, i), func() {
+			n := cur.Add(1)
+			for {
+				p := peak.Load()
+				if n <= p || peak.CompareAndSwap(p, n) {
+					break
+				}
+			}
+			time.Sleep(150 * time.Millisecond)
+			cur.Add(-1)
+		})
+	}
+	dir := fetchDir(t, srv)
+	code, out, errs := runFWFull(t, dir, "testfw", t.TempDir(), "fetch", "games", "--jobs", "2", "1", "2", "3")
+	if code != ExitOK {
+		t.Fatalf("code=%d out=%s err=%s", code, out, errs)
+	}
+	if peak.Load() != 2 {
+		t.Fatalf("peak in flight = %d, want 2", peak.Load())
+	}
+}
+
+func TestFetchGamesBadID(t *testing.T) {
+	for _, args := range [][]string{
+		{"fetch", "games"},
+		{"fetch", "games", "1", "abc"},
+		{"fetch", "games", "0"},
+	} {
+		if code := runPlain(t, t.TempDir(), args...); code != ExitUsage {
+			t.Errorf("%v exit = %d, want %d", args, code, ExitUsage)
+		}
+	}
+}
+
+func TestFetchGamesJobsZeroIsUsage(t *testing.T) {
+	for _, j := range []string{"0", "-1"} {
+		if code := runPlain(t, t.TempDir(), "fetch", "games", "--jobs", j, "1"); code != ExitUsage {
+			t.Errorf("--jobs %s exit = %d, want %d", j, code, ExitUsage)
+		}
+	}
+}
+
+func fakeSwissknife(t *testing.T) string {
+	t.Helper()
+	bin := t.TempDir()
+	marker := t.TempDir() + "/ran"
+	script := "#!/bin/sh\necho run >> " + marker + "\n"
+	if err := os.WriteFile(bin+"/knulli-es-swissknife", []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+":"+os.Getenv("PATH"))
+	return marker
+}
+
+func markerRuns(marker string) int {
+	b, err := os.ReadFile(marker)
+	if err != nil {
+		return 0
+	}
+	return strings.Count(string(b), "run\n")
+}
+
+func pendingActions(t *testing.T, dir string) int {
+	t.Helper()
+	code, e, raw := runFW(t, dir, "knulli", "call", "exit_actions.list", `{}`)
+	if code != ExitOK {
+		t.Fatalf("code=%d env=%s", code, raw)
+	}
+	var res struct {
+		Actions []json.RawMessage `json:"actions"`
+	}
+	if err := json.Unmarshal(e.Result, &res); err != nil {
+		t.Fatal(err)
+	}
+	return len(res.Actions)
+}
+
+func TestExitActionsFlagRuns(t *testing.T) {
+	marker := fakeSwissknife(t)
+	dir := fetchDirFW(t, fetchServer(t), "knulli")
+	root := t.TempDir()
+	code, out, errs := runFWFull(t, dir, "knulli", root, "fetch", "games", "--exit-actions", "1", "2")
+	if code != ExitOK || errs != "" {
+		t.Fatalf("code=%d out=%s err=%s", code, out, errs)
+	}
+	deadline := time.Now().Add(8 * time.Second)
+	for markerRuns(marker) == 0 && time.Now().Before(deadline) {
+		time.Sleep(100 * time.Millisecond)
+	}
+	time.Sleep(500 * time.Millisecond)
+	if n := markerRuns(marker); n != 1 {
+		t.Fatalf("command ran %d times, want 1", n)
+	}
+	if n := pendingActions(t, dir); n != 0 {
+		t.Fatalf("pending after run = %d", n)
+	}
+}
+
+func TestNoExitActionsWithoutFlag(t *testing.T) {
+	marker := fakeSwissknife(t)
+	dir := fetchDirFW(t, fetchServer(t), "knulli")
+	root := t.TempDir()
+	code, out, errs := runFWFull(t, dir, "knulli", root, "fetch", "games", "1", "2")
+	if code != ExitOK || errs != "" {
+		t.Fatalf("code=%d out=%s err=%s", code, out, errs)
+	}
+	if n := pendingActions(t, dir); n != 1 {
+		t.Fatalf("pending = %d, want 1", n)
+	}
+	time.Sleep(4 * time.Second)
+	if n := markerRuns(marker); n != 0 {
+		t.Fatalf("command ran %d times without the flag", n)
+	}
+}
+
+func TestExitActionsFailureGoesToStderr(t *testing.T) {
+	dir := fetchDirFW(t, fetchServer(t), "leaf")
+	root := t.TempDir()
+	code, out, errs := runFWFull(t, dir, "leaf", root, "fetch", "game", "1", "--exit-actions")
+	if code != ExitOK {
+		t.Fatalf("code=%d out=%s err=%s", code, out, errs)
+	}
+	var e envelope
+	if err := json.Unmarshal([]byte(out), &e); err != nil || !e.OK || intField(t, e.Result, "game_id") != 1 {
+		t.Fatalf("stdout = %q", out)
+	}
+	var se envelope
+	if err := json.Unmarshal([]byte(errs), &se); err != nil || !se.OK {
+		t.Fatalf("stderr = %q", errs)
+	}
+	var res struct {
+		Failed []json.RawMessage `json:"failed"`
+	}
+	if err := json.Unmarshal(se.Result, &res); err != nil || len(res.Failed) != 1 {
+		t.Fatalf("stderr result = %s", se.Result)
 	}
 }

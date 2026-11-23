@@ -12,14 +12,22 @@ import (
 
 	"github.com/rommapp/grout/core/config"
 	"github.com/rommapp/grout/core/fetch"
+	"github.com/rommapp/grout/core/firmware"
 	"github.com/rommapp/grout/core/firmware/host"
+	"github.com/rommapp/grout/core/gamelist"
 	"github.com/rommapp/grout/core/library"
 	"github.com/rommapp/grout/core/romm"
 )
 
 type FetchGameResult struct {
 	fetch.GameResult
-	Art fetch.ArtResult `json:"art"`
+	Art      fetch.ArtResult `json:"art"`
+	Gamelist gamelist.Result `json:"gamelist"`
+}
+
+type FetchArtResult struct {
+	fetch.ArtResult
+	Gamelist gamelist.Result `json:"gamelist"`
 }
 
 var errReadOnly = errors.New("host is read-only")
@@ -108,49 +116,54 @@ func (g *Grout) FetchGame(ctx context.Context, gameID, fileID int, progress func
 		Placed:     res.Placed,
 	})
 	if err != nil {
+		out.Gamelist = emptyGamelist()
 		return out, classify(ctx, err, CodeStorage)
 	}
+	g.fire(ctx, s.lib, firmware.CondGamesChanged)
+	folder := !slices.Contains(res.Placed, res.LaunchPath)
 	if ctx.Err() != nil {
 		out.Art = g.skippedArt(s, info.Platform, res.RomDir)
+		out.Gamelist = emptyGamelist()
 		return out, nil
 	}
-	stem := artStem(res.LaunchPath, !slices.Contains(res.Placed, res.LaunchPath))
-	out.Art = g.art(ctx, s, info.Platform, gameID, res.RomDir, stem, false, report)
-	g.log.Info("game fetched", "game", gameID, "launch", res.LaunchPath, "art", len(out.Art.Written), "art_failed", len(out.Art.Failed))
+	out.Art = g.art(ctx, s, info.Platform, gameID, res.RomDir, artStem(res.LaunchPath, folder), false, report)
+	out.Gamelist = g.writeEntry(ctx, s.lib, info.Platform, gameID, res.RomDir, res.LaunchPath, folder)
+	g.log.Info("game fetched", "game", gameID, "launch", res.LaunchPath, "art", len(out.Art.Written), "art_failed", len(out.Art.Failed), "gamelist", len(out.Gamelist.Written), "gamelist_failed", len(out.Gamelist.Failed))
 	return out, nil
 }
 
-func (g *Grout) FetchArt(ctx context.Context, gameID int, progress func(library.Progress)) (fetch.ArtResult, error) {
+func (g *Grout) FetchArt(ctx context.Context, gameID int, progress func(library.Progress)) (FetchArtResult, error) {
 	ctx, end, err := g.beginFetch(ctx, gameKey(gameID))
 	if err != nil {
-		return fetch.ArtResult{}, err
+		return FetchArtResult{}, err
 	}
 	defer end()
 	s, err := g.prepareFetch(ctx)
 	if err != nil {
-		return fetch.ArtResult{}, err
+		return FetchArtResult{}, err
 	}
 	launch, ok, err := s.lib.LaunchFile(ctx, gameID)
 	if err != nil {
-		return fetch.ArtResult{}, libraryError(ctx, err)
+		return FetchArtResult{}, libraryError(ctx, err)
 	}
 	if !ok {
-		return fetch.ArtResult{}, newError(CodeBadRequest, fmt.Errorf("game %d is not on the card", gameID))
+		return FetchArtResult{}, newError(CodeBadRequest, fmt.Errorf("game %d is not on the card", gameID))
 	}
 	stat, err := s.w.Stat(launch)
 	if errors.Is(err, fs.ErrNotExist) {
-		return fetch.ArtResult{}, newError(CodeBadRequest, fmt.Errorf("game %d is not on the card", gameID))
+		return FetchArtResult{}, newError(CodeBadRequest, fmt.Errorf("game %d is not on the card", gameID))
 	}
 	if err != nil {
-		return fetch.ArtResult{}, classify(ctx, err, CodeStorage)
+		return FetchArtResult{}, classify(ctx, err, CodeStorage)
 	}
 	info, err := s.lib.FetchInfo(ctx, gameID)
 	if err != nil {
-		return fetch.ArtResult{}, libraryError(ctx, err)
+		return FetchArtResult{}, libraryError(ctx, err)
 	}
 	dir, stem := artTarget(info.Platform.RomDirs, launch, stat.IsDir())
-	res := g.art(ctx, s, info.Platform, gameID, dir, stem, true, g.progress(progress))
-	return res, finish(ctx, nil)
+	out := FetchArtResult{ArtResult: g.art(ctx, s, info.Platform, gameID, dir, stem, true, g.progress(progress))}
+	out.Gamelist = g.writeEntry(ctx, s.lib, info.Platform, gameID, dir, launch, stat.IsDir())
+	return out, finish(ctx, nil)
 }
 
 func (g *Grout) skippedArt(s fetchSession, p library.Platform, romDir string) fetch.ArtResult {

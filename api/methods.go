@@ -48,6 +48,9 @@ var methods = []method{
 	{"fetch.bios", fetchBios},
 	{"library.bios", libraryBios},
 	{"library.game_files", libraryGameFiles},
+	{"gamelist.refresh", gamelistRefresh},
+	{"exit_actions.list", exitActionsList},
+	{"exit_actions.run", exitActionsRun},
 }
 
 func Methods() []string {
@@ -341,6 +344,8 @@ func normalizeFetchGame(r grout.FetchGameResult) grout.FetchGameResult {
 	r.Placed = nonNil(r.Placed)
 	r.Art.Written = nonNil(r.Art.Written)
 	r.Art.Failed = nonNil(r.Art.Failed)
+	r.Gamelist.Written = nonNil(r.Gamelist.Written)
+	r.Gamelist.Failed = nonNil(r.Gamelist.Failed)
 	return r
 }
 
@@ -358,7 +363,48 @@ func fetchArt(ctx context.Context, s *Server, args []byte, emit func(Event)) (an
 	}
 	res.Written = nonNil(res.Written)
 	res.Failed = nonNil(res.Failed)
+	res.Gamelist.Written = nonNil(res.Gamelist.Written)
+	res.Gamelist.Failed = nonNil(res.Gamelist.Failed)
 	return res, nil
+}
+
+func gamelistRefresh(ctx context.Context, s *Server, args []byte, _ func(Event)) (any, error) {
+	a, err := decodeArgs[GamelistRefreshArgs](args)
+	if err != nil {
+		return nil, err
+	}
+	if a.PlatformID < 0 {
+		return nil, badRequest(errors.New("platform_id must not be negative"))
+	}
+	res, err := s.g.GamelistRefresh(ctx, a.PlatformID)
+	if err != nil {
+		return nil, err
+	}
+	res.Written = nonNil(res.Written)
+	res.Failed = nonNil(res.Failed)
+	return res, nil
+}
+
+func exitActionsList(ctx context.Context, s *Server, args []byte, _ func(Event)) (any, error) {
+	a, err := decodeArgs[ExitListArgs](args)
+	if err != nil {
+		return nil, err
+	}
+	actions, err := s.g.ExitActions(ctx, a.Clear)
+	if err != nil {
+		return nil, err
+	}
+	return ExitActionsResult{Actions: nonNil(actions)}, nil
+}
+
+func exitActionsRun(ctx context.Context, s *Server, args []byte, _ func(Event)) (any, error) {
+	if err := noArgs(args); err != nil {
+		return nil, err
+	}
+	res, err := s.g.RunExitActions(ctx)
+	res.Ran = nonNil(res.Ran)
+	res.Failed = nonNil(res.Failed)
+	return res, err
 }
 
 func fetchBios(ctx context.Context, s *Server, args []byte, emit func(Event)) (any, error) {
@@ -587,6 +633,9 @@ func decodeSettingsPatch(args []byte) (grout.SettingsPatch, error) {
 				p.AdditionalDownloads = a
 				return err
 			})
+		},
+		func() error {
+			return settingField(fields, "gamelist_omits_region", func(v bool) error { p.GamelistOmitsRegion = &v; return nil })
 		},
 		func() error {
 			return settingField(fields, "platform_order", func(v []string) error { p.PlatformOrder = &v; return nil })

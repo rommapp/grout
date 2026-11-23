@@ -247,12 +247,15 @@ type Definition struct {
 	} `toml:"art"`
 
 	Gamelist struct {
-		Format        string `toml:"format"`
+		Format        GamelistFormat `toml:"format"`
+		Text          *Fact          `toml:"text"`
 		LauncherEntry *struct {
 			Gamelist string `toml:"gamelist"`
 			Path     string `toml:"path"`
 		} `toml:"launcher_entry"`
 	} `toml:"gamelist"`
+
+	ExitActions []ExitAction `toml:"exit_actions"`
 
 	RetroArch *struct {
 		Config    *Fact `toml:"config"`

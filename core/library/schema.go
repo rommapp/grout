@@ -121,5 +121,12 @@ func Tables() []store.Table {
 				fetched_at TEXT NOT NULL
 			)`,
 		}},
+		{Name: "exit_conditions", DDL: []string{
+			`CREATE TABLE exit_conditions (
+				seq INTEGER PRIMARY KEY AUTOINCREMENT,
+				condition TEXT NOT NULL,
+				fired_at TEXT NOT NULL
+			)`,
+		}},
 	}
 }
