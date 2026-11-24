@@ -21,6 +21,7 @@ tasks:
       - docker create --name {{.CONTAINER_NAME}}-libgrout-{{.DIR}} --platform={{.PLATFORM}} libgrout-{{.DIR}} >/dev/null
       - docker cp {{.CONTAINER_NAME}}-libgrout-{{.DIR}}:/out/libgrout.so {{.LIBGROUT_OUT}}/{{.DIR}}/libgrout.so
       - docker cp {{.CONTAINER_NAME}}-libgrout-{{.DIR}}:/out/libgrout.h {{.LIBGROUT_OUT}}/{{.DIR}}/libgrout.h
+      - cp third_party/argosy-sigil/LICENSE {{.LIBGROUT_OUT}}/{{.DIR}}/LICENSE-argosy-sigil
       - docker rm {{.CONTAINER_NAME}}-libgrout-{{.DIR}} >/dev/null
       - echo "Built libgrout {{.DIR}}"
 
@@ -47,6 +48,7 @@ tasks:
       - docker rm {{.CONTAINER_NAME}}-libgrout-android >/dev/null 2>&1 || true
       - docker create --name {{.CONTAINER_NAME}}-libgrout-android --platform=linux/amd64 libgrout-android >/dev/null
       - docker cp {{.CONTAINER_NAME}}-libgrout-android:/out/. {{.LIBGROUT_OUT}}/android
+      - cp third_party/argosy-sigil/LICENSE {{.LIBGROUT_OUT}}/android/LICENSE-argosy-sigil
       - docker rm {{.CONTAINER_NAME}}-libgrout-android >/dev/null
       - echo "Built libgrout android"
 

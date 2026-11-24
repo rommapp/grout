@@ -133,7 +133,6 @@ WORKDIR /grout
 
 ARG USE_LOCAL_GABAGOOL=false
 
-COPY go*.mod go*.sum* go*.work* ./
 COPY . .
 
 # Handle workspace builds
@@ -160,6 +159,8 @@ RUN if [ "$USE_LOCAL_GABAGOOL" = "true" ]; then \
         rm -f go.work go.work.sum; \
         GOWORK=off go mod download; \
     fi
+
+RUN scripts/build-sigil.sh
 
 ARG GITHUB_ACTIONS=false
 ARG GROUT_VERSION=""

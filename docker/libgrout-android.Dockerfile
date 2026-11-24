@@ -5,7 +5,7 @@ ARG NDK_VERSION=r27d
 ARG GROUT_VERSION=dev
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates curl git unzip && \
+    apt-get install -y --no-install-recommends ca-certificates curl git unzip cmake make && \
     rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" | tar -C /usr/local -xz
@@ -22,19 +22,22 @@ ENV GOTOOLCHAIN=local
 
 WORKDIR /build
 
-COPY go.mod go.sum ./
+COPY . .
+
 RUN go mod download
 
-COPY . .
+RUN scripts/build-sigil.sh -DCMAKE_TOOLCHAIN_FILE=/opt/ndk/build/cmake/android.toolchain.cmake -DANDROID_PLATFORM=android-28 -DANDROID_ABI=arm64-v8a
 
 RUN CGO_ENABLED=1 GOOS=android GOARCH=arm64 CC=aarch64-linux-android28-clang \
     go build -buildmode=c-shared -trimpath \
-        -ldflags "-s -w -X 'github.com/rommapp/grout/version.Version=${GROUT_VERSION}' -extldflags=-Wl,-z,max-page-size=16384" \
+        -ldflags "-s -w -X 'github.com/rommapp/grout/version.Version=${GROUT_VERSION}' -extldflags '-Wl,-z,max-page-size=16384 -Wl,--exclude-libs,ALL'" \
         -o /out/arm64-v8a/libgrout.so ./capi
+
+RUN scripts/build-sigil.sh -DCMAKE_TOOLCHAIN_FILE=/opt/ndk/build/cmake/android.toolchain.cmake -DANDROID_PLATFORM=android-28 -DANDROID_ABI=armeabi-v7a
 
 RUN CGO_ENABLED=1 GOOS=android GOARCH=arm GOARM=7 CC=armv7a-linux-androideabi28-clang \
     go build -buildmode=c-shared -trimpath \
-        -ldflags "-s -w -X 'github.com/rommapp/grout/version.Version=${GROUT_VERSION}' -extldflags=-Wl,-z,max-page-size=16384" \
+        -ldflags "-s -w -X 'github.com/rommapp/grout/version.Version=${GROUT_VERSION}' -extldflags '-Wl,-z,max-page-size=16384 -Wl,--exclude-libs,ALL'" \
         -o /out/armeabi-v7a/libgrout.so ./capi
 
 RUN llvm-readelf -lW /out/arm64-v8a/libgrout.so | \

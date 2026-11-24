@@ -10,7 +10,7 @@ RUN printf '%s\n' \
         > /etc/apt/sources.list && \
     rm -f /etc/apt/sources.list.d/* && \
     apt-get -o Acquire::Check-Valid-Until=false update && \
-    apt-get install -y --no-install-recommends gcc libc6-dev ca-certificates curl git && \
+    apt-get install -y --no-install-recommends gcc libc6-dev cmake make ca-certificates curl git && \
     rm -rf /var/lib/apt/lists/*
 
 RUN case "$TARGETARCH" in \
@@ -25,12 +25,13 @@ ENV GOTOOLCHAIN=local
 
 WORKDIR /build
 
-COPY go.mod go.sum ./
+COPY . .
+
 RUN go mod download
 
-COPY . .
+RUN scripts/build-sigil.sh
 
 RUN if [ "$TARGETARCH" = "arm" ]; then export GOARM=7; fi && \
     CGO_ENABLED=1 go build -buildmode=c-shared -trimpath \
-        -ldflags "-s -w -X 'github.com/rommapp/grout/version.Version=${GROUT_VERSION}'" \
+        -ldflags "-s -w -X 'github.com/rommapp/grout/version.Version=${GROUT_VERSION}' -extldflags=-Wl,--exclude-libs,ALL" \
         -o /out/libgrout.so ./capi

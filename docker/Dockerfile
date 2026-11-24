@@ -1,20 +1,20 @@
 FROM ghcr.io/brandonkowalski/quasimodo:latest
 
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends cmake make && \
+    rm -rf /var/lib/apt/lists/*
+
 WORKDIR /build
 
 ARG USE_LOCAL_GABAGOOL=false
 
-# Copy dependency files first for layer caching
-COPY go*.mod go*.sum* go*.work* ./
+COPY . .
 
 # For non-workspace builds, download dependencies as a separate cached layer
 RUN if [ "$USE_LOCAL_GABAGOOL" != "true" ]; then \
         rm -f go.work go.work.sum; \
         GOWORK=off go mod download; \
     fi
-
-# Copy source code (changes here don't invalidate the module download layer)
-COPY . .
 
 # Move files to correct location if we're in a grout subdirectory from parent context
 RUN if [ -d "grout" ] && [ "$USE_LOCAL_GABAGOOL" = "true" ]; then \
@@ -39,6 +39,8 @@ RUN if [ "$USE_LOCAL_GABAGOOL" = "true" ]; then \
         cat go.work; \
         go work sync; \
     fi
+
+RUN scripts/build-sigil.sh
 
 ARG GITHUB_ACTIONS=false
 ARG GROUT_VERSION=""
