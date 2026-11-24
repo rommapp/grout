@@ -14,9 +14,6 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Build sigil
-        run: scripts/build-sigil.sh
-
       - name: Start RomM
         run: docker compose -f test/e2e/compose.yml up -d --wait db romm
 

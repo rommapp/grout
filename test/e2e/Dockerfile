@@ -5,6 +5,7 @@
 FROM golang:1.26-bookworm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+      cmake make gcc \
       libsdl2-dev libsdl2-ttf-dev libsdl2-image-dev libsdl2-gfx-dev \
       xvfb x11-utils xdotool imagemagick openbox \
       python3 python3-requests python3-socketio python3-websocket \
@@ -12,6 +13,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /src
 COPY . .
+
+RUN scripts/build-sigil.sh
 
 # The workspace points at a sibling gabagool checkout that is not in the build
 # context, so build against the published module.

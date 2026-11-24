@@ -144,6 +144,9 @@ jobs:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Build sigil
+        run: scripts/build-sigil.sh
+
       - name: Smoke test
         run: scripts/libgrout-smoke.sh
 
