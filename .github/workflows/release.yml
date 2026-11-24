@@ -200,7 +200,7 @@ jobs:
           mkdir -p dist/libgrout
           for target in linux-arm64 linux-arm android/arm64-v8a android/armeabi-v7a; do
             name="libgrout-$(echo "$target" | tr '/' '-')"
-            tar -czf "dist/libgrout/$name.tar.gz" -C "build/libgrout/$target" libgrout.so libgrout.h
+            tar -czf "dist/libgrout/$name.tar.gz" -C "build/libgrout/$target" libgrout.so libgrout.h LICENSE-argosy-sigil
           done
 
       - name: Upload artifacts

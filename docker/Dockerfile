@@ -10,7 +10,7 @@ ARG USE_LOCAL_GABAGOOL=false
 
 COPY . .
 
-# For non-workspace builds, download dependencies as a separate cached layer
+# For non-workspace builds, download dependencies
 RUN if [ "$USE_LOCAL_GABAGOOL" != "true" ]; then \
         rm -f go.work go.work.sum; \
         GOWORK=off go mod download; \

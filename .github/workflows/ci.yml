@@ -168,7 +168,7 @@ jobs:
       - name: Check outputs
         run: |
           for dir in linux-arm64 linux-arm android/arm64-v8a android/armeabi-v7a; do
-            for f in libgrout.so libgrout.h; do
+            for f in libgrout.so libgrout.h LICENSE-argosy-sigil; do
               if [ ! -s "build/libgrout/$dir/$f" ]; then
                 echo "missing build/libgrout/$dir/$f"
                 exit 1

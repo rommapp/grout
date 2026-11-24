@@ -48,7 +48,8 @@ tasks:
       - docker rm {{.CONTAINER_NAME}}-libgrout-android >/dev/null 2>&1 || true
       - docker create --name {{.CONTAINER_NAME}}-libgrout-android --platform=linux/amd64 libgrout-android >/dev/null
       - docker cp {{.CONTAINER_NAME}}-libgrout-android:/out/. {{.LIBGROUT_OUT}}/android
-      - cp third_party/argosy-sigil/LICENSE {{.LIBGROUT_OUT}}/android/LICENSE-argosy-sigil
+      - cp third_party/argosy-sigil/LICENSE {{.LIBGROUT_OUT}}/android/arm64-v8a/LICENSE-argosy-sigil
+      - cp third_party/argosy-sigil/LICENSE {{.LIBGROUT_OUT}}/android/armeabi-v7a/LICENSE-argosy-sigil
       - docker rm {{.CONTAINER_NAME}}-libgrout-android >/dev/null
       - echo "Built libgrout android"
 
