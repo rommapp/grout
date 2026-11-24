@@ -32,7 +32,7 @@ brew install cmake sdl2 sdl2_image sdl2_ttf sdl2_gfx
    after cloning and again after the submodule moves (`task sigil --force`).
 3. Run `task code:hooks-setup` to install git hooks.
 4. Make a copy of `.env-dev` and save it as `.env` in the root of the cloned repository.
-4. Fill out the `.env` file. Here are descriptions of the various values you can set.
+5. Fill out the `.env` file. Here are descriptions of the various values you can set.
     - `ENVIRONMENT=DEV` (mandatory), this will disable some Gabagool features behind the scenes
     - `WINDOW_WIDTH` (optional)
     - `WINDOW_HEIGHT` (optional)
@@ -41,7 +41,7 @@ brew install cmake sdl2 sdl2_image sdl2_ttf sdl2_gfx
       (mandatory), this controls how Grout interacts with and places files
     - `GROUT_ROOT` (mandatory), the directory that stands in for `/`, like the root of a handheld. Build one with
       `go run ./tools/mkroot --firmware <id> [--device <device>] <dir>`, which prints the lines to put in `.env`.
-5. Run / Debug `app/grout.go`, making sure to reference the `.env` file in your run configuration.
+6. Run / Debug `app/grout.go`, making sure to reference the `.env` file in your run configuration.
 
 ### Exercising the library without a UI
 
