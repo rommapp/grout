@@ -33,6 +33,13 @@ tasks:
       - docker image prune --filter "label={{.LABEL}}" -f >/dev/null 2>&1 || true
     silent: true
 
+  sigil:
+    desc: Build argosy-sigil's static libraries
+    cmds:
+      - scripts/build-sigil.sh
+    status:
+      - test -f third_party/argosy-sigil/build/libsigil.a
+
   docs:
     desc: Serve the docs locally with live reload
     cmds:

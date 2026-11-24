@@ -9,6 +9,7 @@ require (
 	github.com/beevik/etree v1.8.1
 	github.com/bodgit/sevenzip v1.6.5
 	github.com/holoplot/go-evdev v0.0.0-20260909133534-d873ed210bda
+	github.com/rommforge/argosy-sigil/bindings/go v1.0.0
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/image v0.47.0
 	golang.org/x/text v0.43.0
@@ -42,3 +43,5 @@ require (
 )
 
 tool github.com/nicksnyder/go-i18n/v2/goi18n
+
+replace github.com/rommforge/argosy-sigil/bindings/go => ./third_party/argosy-sigil/bindings/go
