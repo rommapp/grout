@@ -12,10 +12,11 @@ We hang out over in the [Grout Development Channel](https://discord.com/channels
 
 - [Go](https://go.dev) v1.25.6+
 - [Task](https://taskfile.dev) (for running the handy build scripts)
+- [CMake](https://cmake.org) and a C compiler (for building [argosy-sigil](https://github.com/rommapp/argosy-sigil))
 - SDL2 Shared Libraries (can be installed via [Homebrew](https://brew.sh))
 
 ```shell
-brew install sdl2 sdl2_image sdl2_ttf sdl2_gfx
+brew install cmake sdl2 sdl2_image sdl2_ttf sdl2_gfx
 ```
 
 ### Local Builds / Packaging
@@ -25,9 +26,12 @@ brew install sdl2 sdl2_image sdl2_ttf sdl2_gfx
 
 ## Getting Started
 
-1. Clone the [Grout](https://github.com/rommapp/grout) repository.
-2. Run `task code:hooks-setup` to install git hooks.
-3. Make a copy of `.env-dev` and save it as `.env` in the root of the cloned repository.
+1. Clone the [Grout](https://github.com/rommapp/grout) repository, then run
+   `git submodule update --init --recursive` to fetch argosy-sigil.
+2. Run `task sigil` to build argosy-sigil's static libraries. `go build` and `go test` link them, so run it once
+   after cloning and again after the submodule moves (`task sigil --force`).
+3. Run `task code:hooks-setup` to install git hooks.
+4. Make a copy of `.env-dev` and save it as `.env` in the root of the cloned repository.
 4. Fill out the `.env` file. Here are descriptions of the various values you can set.
     - `ENVIRONMENT=DEV` (mandatory), this will disable some Gabagool features behind the scenes
     - `WINDOW_WIDTH` (optional)
