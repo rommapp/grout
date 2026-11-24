@@ -70,15 +70,17 @@ func (l *Library) Scan(ctx context.Context, progress func(Progress)) (ScanResult
 			continue
 		}
 		var files []localFile
+		var readDirs []string
 		for _, dir := range p.RomDirs {
 			if w, ok := l.Firmware.Host.(host.Writable); ok {
 				sweepStaging(l.log(), w, dir)
 			}
-			found, skipped, err := walkRomDir(l.log(), l.Firmware.Host, dir)
+			found, skipped, read, err := walkRomDir(l.log(), l.Firmware.Host, dir)
 			if err != nil {
 				return res, err
 			}
 			files = append(files, found...)
+			readDirs = append(readDirs, read...)
 			res.SkippedFolders = append(res.SkippedFolders, skipped...)
 		}
 		matched, err := l.replaceFiles(ctx, p.ID, files)
@@ -86,6 +88,9 @@ func (l *Library) Scan(ctx context.Context, progress func(Progress)) (ScanResult
 			return res, err
 		}
 		if err := l.pruneDownloads(ctx, p.ID); err != nil {
+			return res, err
+		}
+		if err := l.pruneIdentities(ctx, readDirs, files); err != nil {
 			return res, err
 		}
 		res.Files += len(files)
@@ -166,6 +171,40 @@ func (l *Library) pruneDownloads(ctx context.Context, platformID int) error {
 	return nil
 }
 
+func (l *Library) pruneIdentities(ctx context.Context, readDirs []string, files []localFile) error {
+	found := make(map[string]bool, len(files))
+	for _, f := range files {
+		found[f.path] = true
+	}
+	for _, dir := range readDirs {
+		rows, err := l.Store.DB.QueryContext(ctx, `SELECT path FROM identities WHERE path > ? AND path < ?`, dir+"/", dir+"0")
+		if err != nil {
+			return err
+		}
+		var gone []string
+		for rows.Next() {
+			var p string
+			if err := rows.Scan(&p); err != nil {
+				rows.Close()
+				return err
+			}
+			if path.Dir(p) == dir && !found[p] {
+				gone = append(gone, p)
+			}
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			return err
+		}
+		for _, p := range gone {
+			if _, err := l.Store.DB.ExecContext(ctx, `DELETE FROM identities WHERE path = ?`, p); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func readRomDir(log *slog.Logger, h host.Host, dir string, skipped *[]string) ([]fs.DirEntry, bool) {
 	entries, err := h.ReadDir(dir)
 	if err == nil {
@@ -178,12 +217,13 @@ func readRomDir(log *slog.Logger, h host.Host, dir string, skipped *[]string) ([
 	return nil, false
 }
 
-func walkRomDir(log *slog.Logger, h host.Host, dir string) ([]localFile, []string, error) {
-	var skipped []string
+func walkRomDir(log *slog.Logger, h host.Host, dir string) ([]localFile, []string, []string, error) {
+	var skipped, read []string
 	entries, ok := readRomDir(log, h, dir, &skipped)
 	if !ok {
-		return nil, skipped, nil
+		return nil, skipped, nil, nil
 	}
+	read = append(read, dir)
 	var out []localFile
 	for _, e := range entries {
 		if strings.HasPrefix(e.Name(), ".") {
@@ -192,7 +232,7 @@ func walkRomDir(log *slog.Logger, h host.Host, dir string) ([]localFile, []strin
 		if !e.IsDir() {
 			f, ok, err := fileEntry(dir, e.Name(), e.Name(), e)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
 			if ok {
 				out = append(out, f)
@@ -204,20 +244,21 @@ func walkRomDir(log *slog.Logger, h host.Host, dir string) ([]localFile, []strin
 		if !ok {
 			continue
 		}
+		read = append(read, sub)
 		for _, c := range children {
 			if c.IsDir() || strings.HasPrefix(c.Name(), ".") {
 				continue
 			}
 			f, ok, err := fileEntry(sub, c.Name(), e.Name()+"/"+c.Name(), c)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
 			if ok {
 				out = append(out, f)
 			}
 		}
 	}
-	return out, skipped, nil
+	return out, skipped, read, nil
 }
 
 func fileEntry(dir, name, rel string, e fs.DirEntry) (localFile, bool, error) {

@@ -315,3 +315,91 @@ func TestScanLogsUnreadableFolderToLibraryLogger(t *testing.T) {
 		t.Fatalf("log = %q", buf.String())
 	}
 }
+
+func insertIdentity(t *testing.T, l *Library, p string) {
+	t.Helper()
+	_, err := l.Store.DB.Exec(`INSERT INTO identities (path, size_bytes, mod_time, sigil_version, status, identified_at)
+		VALUES (?, 1, 1, '1.0.0', 'ok', '2026-01-01T00:00:00Z')`, p)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func identityPaths(t *testing.T, l *Library) []string {
+	t.Helper()
+	rows, err := l.Store.DB.Query(`SELECT path FROM identities ORDER BY path`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var p string
+		if err := rows.Scan(&p); err != nil {
+			t.Fatal(err)
+		}
+		out = append(out, p)
+	}
+	return out
+}
+
+func TestScanPrunesIdentityOfARemovedFile(t *testing.T) {
+	l, _ := scanLibrary(t, fstest.MapFS{
+		romRoot + "Game Boy Advance (GBA)/a.gba": {Data: []byte("x")},
+	})
+	insertIdentity(t, l, gbaDir+"/a.gba")
+	insertIdentity(t, l, gbaDir+"/b.gba")
+	mustScan(t, l)
+	if got := identityPaths(t, l); !reflect.DeepEqual(got, []string{gbaDir + "/a.gba"}) {
+		t.Fatalf("paths = %v", got)
+	}
+}
+
+func TestScanKeepsIdentitiesUnderAnUnreadableSubfolder(t *testing.T) {
+	h := &brokenHost{
+		Fake: &host.Fake{Files: fstest.MapFS{
+			romRoot + "Game Boy Advance (GBA)/a.gba":       {Data: []byte("x")},
+			romRoot + "Game Boy Advance (GBA)/Multi/x.gba": {Data: []byte("x")},
+		}},
+		broken: map[string]bool{gbaDir + "/Multi": true},
+	}
+	def, err := firmware.Load("nextui")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fw, err := firmware.Resolve(def, h, firmware.Overrides{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	l := newPlatformsLibrary(t, &config.Config{DirectoryMappings: mappings("gba")}, fw,
+		romm.Platform{ID: 1, Slug: "gba", FSSlug: "gba", Name: "GBA", RomCount: 1})
+	insertIdentity(t, l, gbaDir+"/Multi/x.gba")
+	insertIdentity(t, l, gbaDir+"/gone.gba")
+	insertIdentity(t, l, gbaDir+"/Multi/deep/y.gba")
+	mustScan(t, l)
+	want := []string{gbaDir + "/Multi/deep/y.gba", gbaDir + "/Multi/x.gba"}
+	if got := identityPaths(t, l); !reflect.DeepEqual(got, want) {
+		t.Fatalf("paths = %v", got)
+	}
+}
+
+func TestScanKeepsIdentitiesWhenTheRomFolderIsMissing(t *testing.T) {
+	l, _ := scanLibrary(t, fstest.MapFS{romRoot + "other/x.gb": {Data: []byte("x")}})
+	insertIdentity(t, l, gbaDir+"/a.gba")
+	mustScan(t, l)
+	if got := identityPaths(t, l); !reflect.DeepEqual(got, []string{gbaDir + "/a.gba"}) {
+		t.Fatalf("paths = %v", got)
+	}
+}
+
+func TestScanKeepsIdentitiesOfADisabledPlatform(t *testing.T) {
+	l, _ := scanLibrary(t, fstest.MapFS{
+		romRoot + "Game Boy Advance (GBA)/a.gba": {Data: []byte("x")},
+	})
+	insertIdentity(t, l, gbaDir+"/gone.gba")
+	l.Config.DirectoryMappings = mappings()
+	mustScan(t, l)
+	if got := identityPaths(t, l); !reflect.DeepEqual(got, []string{gbaDir + "/gone.gba"}) {
+		t.Fatalf("paths = %v", got)
+	}
+}
