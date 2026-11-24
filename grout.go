@@ -18,6 +18,8 @@ import (
 	"github.com/rommapp/grout/core/firmware"
 	"github.com/rommapp/grout/core/firmware/host"
 	"github.com/rommapp/grout/core/gamelist"
+	"github.com/rommapp/grout/core/ident"
+	"github.com/rommapp/grout/core/ident/sigil"
 	"github.com/rommapp/grout/core/library"
 	"github.com/rommapp/grout/core/romm"
 	"github.com/rommapp/grout/core/store"
@@ -53,6 +55,7 @@ type Grout struct {
 	timing  auth.Timing
 	artMax  fetch.Size
 	fw      *firmware.Firmware
+	ident   ident.Extractor
 	store   *store.Store
 	lists   *gamelist.Writer
 
@@ -147,6 +150,7 @@ func (g *Grout) open(o Options) error {
 		return newError(CodeBadDefinition, fmt.Errorf("firmware %q: %w", def.ID, err))
 	}
 	g.fw = fw
+	g.ident = sigil.Sigil{}
 
 	s, err := library.Open(g.dataDir)
 	if err != nil {
@@ -359,6 +363,7 @@ func newClient(cfg *config.Config) *romm.Client {
 func (g *Grout) library(cfg *config.Config, client *romm.Client) *library.Library {
 	l := library.New(g.store, client, cfg, g.fw)
 	l.Log = g.log
+	l.Ident = g.ident
 	return l
 }
 

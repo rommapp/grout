@@ -126,9 +126,13 @@ func (g *Grout) FetchGame(ctx context.Context, gameID, fileID int, progress func
 		out.Gamelist = emptyGamelist()
 		return out, nil
 	}
+	identified, idErr := s.lib.Identities(ctx, gameID)
+	if idErr != nil {
+		g.log.Warn("identify failed", "game", gameID, "err", idErr)
+	}
 	out.Art = g.art(ctx, s, info.Platform, gameID, res.RomDir, artStem(res.LaunchPath, folder), false, report)
 	out.Gamelist = g.writeEntry(ctx, s.lib, info.Platform, gameID, res.RomDir, res.LaunchPath, folder)
-	g.log.Info("game fetched", "game", gameID, "launch", res.LaunchPath, "art", len(out.Art.Written), "art_failed", len(out.Art.Failed), "gamelist", len(out.Gamelist.Written), "gamelist_failed", len(out.Gamelist.Failed))
+	g.log.Info("game fetched", "game", gameID, "launch", res.LaunchPath, "art", len(out.Art.Written), "art_failed", len(out.Art.Failed), "gamelist", len(out.Gamelist.Written), "gamelist_failed", len(out.Gamelist.Failed), "identified", len(identified))
 	return out, nil
 }
 

@@ -829,3 +829,102 @@ func TestFetchGameSkippedArtOnlyKindsWithDir(t *testing.T) {
 		t.Fatalf("art = %+v", res.Art)
 	}
 }
+
+func pspServer(t *testing.T, name string, body []byte) *fakeromm.Server {
+	t.Helper()
+	srv := fetchServer(t)
+	srv.Platforms = []romm.Platform{{ID: 1, Slug: "psp", FSSlug: "psp", Name: "PlayStation Portable", RomCount: 2, UpdatedAt: srv.Platforms[0].UpdatedAt}}
+	for i := range srv.Roms {
+		r := &srv.Roms[i]
+		r.FSName = name
+		r.FSNameNoExt = strings.TrimSuffix(name, ".iso")
+		r.FSExtension = "iso"
+		r.Files = []romm.RomFile{{ID: 100 + r.ID, FileName: name, FileSizeBytes: int64(len(body))}}
+		srv.Content[r.ID] = body
+	}
+	return srv
+}
+
+type identityRow struct {
+	status  string
+	titleID string
+}
+
+func identityRows(t *testing.T, e *fetchEnv) map[string]identityRow {
+	t.Helper()
+	rows, err := e.g.store.DB.Query(`SELECT path, status, title_id FROM identities`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	out := map[string]identityRow{}
+	for rows.Next() {
+		var p string
+		var r identityRow
+		if err := rows.Scan(&p, &r.status, &r.titleID); err != nil {
+			t.Fatal(err)
+		}
+		out[p] = r
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
+func newPspEnv(t *testing.T, name string) *fetchEnv {
+	t.Helper()
+	srv := pspServer(t, name, make([]byte, 64*1024))
+	dataDir := t.TempDir()
+	h := rootedHost(t)
+	g := connectedWith(t, srv, Options{DataDir: dataDir, FirmwareID: "knulli", Host: h})
+	if err := g.SetDirectoryMapping("psp", &config.DirectoryMapping{RomMSlug: "psp"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := g.Refresh(context.Background(), RefreshOptions{}, nil); err != nil {
+		t.Fatal(err)
+	}
+	w, _ := h.(host.Writable)
+	return &fetchEnv{g: g, srv: srv, w: w, dataDir: dataDir}
+}
+
+func TestFetchGameIdentifiesTheDownload(t *testing.T) {
+	e := newPspEnv(t, "Game [ULUS10565].iso")
+	res, err := e.g.FetchGame(context.Background(), 1, 0, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	row, ok := identityRows(t, e)[res.LaunchPath]
+	if !ok || row.titleID != "ULUS10565" {
+		t.Fatalf("identities = %+v, launch = %q", identityRows(t, e), res.LaunchPath)
+	}
+}
+
+func TestFetchGameIgnoresIdentificationFailure(t *testing.T) {
+	e := newPspEnv(t, "Game.iso")
+	res, err := e.g.FetchGame(context.Background(), 1, 0, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	launch := path.Join(e.g.fw.RomDirs("psp")[0], "Game.iso")
+	if res.LaunchPath != launch || res.GameID != 1 {
+		t.Fatalf("result = %+v", res.GameResult)
+	}
+	if len(res.Art.Failed) != 0 || len(res.Gamelist.Failed) != 0 {
+		t.Fatalf("art = %+v gamelist = %+v", res.Art, res.Gamelist)
+	}
+	row, ok := identityRows(t, e)[launch]
+	if !ok || row.status == "ok" {
+		t.Fatalf("identities = %+v", identityRows(t, e))
+	}
+}
+
+func TestFetchGameOnUnmappedPlatformStoresNoIdentity(t *testing.T) {
+	e := newFetchEnv(t, "knulli")
+	if _, err := e.g.FetchGame(context.Background(), 1, 0, nil); err != nil {
+		t.Fatal(err)
+	}
+	if rows := identityRows(t, e); len(rows) != 0 {
+		t.Fatalf("identities = %+v", rows)
+	}
+}
