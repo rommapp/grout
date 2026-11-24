@@ -26,6 +26,7 @@ import (
 	"github.com/rommapp/grout/core/fetch"
 	"github.com/rommapp/grout/core/firmware"
 	"github.com/rommapp/grout/core/firmware/host"
+	"github.com/rommapp/grout/core/ident"
 	"github.com/rommapp/grout/core/library"
 	"github.com/rommapp/grout/core/romm"
 	"github.com/rommapp/grout/test/fakeromm"
@@ -926,5 +927,45 @@ func TestFetchGameOnUnmappedPlatformStoresNoIdentity(t *testing.T) {
 	}
 	if rows := identityRows(t, e); len(rows) != 0 {
 		t.Fatalf("identities = %+v", rows)
+	}
+}
+
+type cancelOnExtract struct {
+	ident.Extractor
+	cancel context.CancelFunc
+}
+
+func (c cancelOnExtract) Extract(p, platform string) ident.Result {
+	c.cancel()
+	return c.Extractor.Extract(p, platform)
+}
+
+func TestFetchGameCancelledDuringIdentifyMatchesCancelledFetch(t *testing.T) {
+	e := newPspEnv(t, "Game [ULUS10565].iso")
+	if _, err := e.g.UpdateSettings(SettingsPatch{LogLevel: ptr(config.LogLevelDebug)}); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	e.g.ident = cancelOnExtract{Extractor: e.g.ident, cancel: cancel}
+	res, err := e.g.FetchGame(ctx, 1, 0, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ctx.Err() == nil {
+		t.Fatal("context was not cancelled during identification")
+	}
+	if len(res.Art.Written) != 0 {
+		t.Fatalf("art = %+v", res.Art)
+	}
+	if !reflect.DeepEqual(res.Gamelist, emptyGamelist()) {
+		t.Fatalf("gamelist = %+v", res.Gamelist)
+	}
+	logged, err := os.ReadFile(filepath.Join(e.dataDir, "logs", "grout.log"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(logged), "identify failed") || strings.Contains(string(logged), "game fetched") {
+		t.Fatalf("warning logged after cancel:\n%s", logged)
 	}
 }

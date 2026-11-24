@@ -121,14 +121,18 @@ func (g *Grout) FetchGame(ctx context.Context, gameID, fileID int, progress func
 	}
 	g.fire(ctx, s.lib, firmware.CondGamesChanged)
 	folder := !slices.Contains(res.Placed, res.LaunchPath)
+	var identified []library.Identity
+	if ctx.Err() == nil {
+		var idErr error
+		identified, idErr = s.lib.Identities(ctx, gameID)
+		if idErr != nil && ctx.Err() == nil {
+			g.log.Warn("identify failed", "game", gameID, "err", idErr)
+		}
+	}
 	if ctx.Err() != nil {
 		out.Art = g.skippedArt(s, info.Platform, res.RomDir)
 		out.Gamelist = emptyGamelist()
 		return out, nil
-	}
-	identified, idErr := s.lib.Identities(ctx, gameID)
-	if idErr != nil {
-		g.log.Warn("identify failed", "game", gameID, "err", idErr)
 	}
 	out.Art = g.art(ctx, s, info.Platform, gameID, res.RomDir, artStem(res.LaunchPath, folder), false, report)
 	out.Gamelist = g.writeEntry(ctx, s.lib, info.Platform, gameID, res.RomDir, res.LaunchPath, folder)
