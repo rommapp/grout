@@ -112,6 +112,27 @@ func Tables() []store.Table {
 			`CREATE INDEX idx_local_files_platform_basename ON local_files(platform_id, basename COLLATE NOCASE)`,
 			`CREATE INDEX idx_local_files_game ON local_files(game_id)`,
 		}},
+		{Name: "identities", DDL: []string{
+			`CREATE TABLE identities (
+				path TEXT PRIMARY KEY,
+				size_bytes INTEGER NOT NULL,
+				mod_time INTEGER NOT NULL,
+				sigil_version TEXT NOT NULL,
+				status TEXT NOT NULL CHECK (status IN ('ok', 'not_found', 'needs_key', 'unsupported', 'io', 'failed')),
+				title_id TEXT NOT NULL DEFAULT '',
+				save_id TEXT NOT NULL DEFAULT '',
+				raw_serial TEXT NOT NULL DEFAULT '',
+				platform TEXT NOT NULL DEFAULT '',
+				source TEXT NOT NULL DEFAULT '' CHECK (source IN ('', 'binary', 'filename')),
+				usage TEXT NOT NULL DEFAULT '' CHECK (usage IN ('', 'folder-exact', 'folder-prefix', 'file-exact', 'file-prefix', 'folder-split')),
+				features INTEGER NOT NULL DEFAULT 0,
+				experimental INTEGER NOT NULL DEFAULT 0,
+				n64_header TEXT NOT NULL DEFAULT '',
+				n64_md5 TEXT NOT NULL DEFAULT '',
+				n64_md5_n64 TEXT NOT NULL DEFAULT '',
+				identified_at TEXT NOT NULL
+			)`,
+		}},
 		{Name: "downloads", DDL: []string{
 			`CREATE TABLE downloads (
 				game_id INTEGER PRIMARY KEY,

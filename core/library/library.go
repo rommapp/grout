@@ -8,6 +8,7 @@ import (
 
 	"github.com/rommapp/grout/core/config"
 	"github.com/rommapp/grout/core/firmware"
+	"github.com/rommapp/grout/core/ident"
 	"github.com/rommapp/grout/core/romm"
 	"github.com/rommapp/grout/core/store"
 )
@@ -43,6 +44,7 @@ type Library struct {
 	Client   *romm.Client
 	Config   *config.Config
 	Firmware *firmware.Firmware
+	Ident    ident.Extractor
 	Log      *slog.Logger
 }
 
