@@ -30,6 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: recursive
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set version
@@ -83,6 +84,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: recursive
           ref: ${{ github.ref }}
 
       - name: Install Task
@@ -130,6 +132,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: recursive
           ref: ${{ github.ref }}
 
       - name: Install Task
@@ -172,6 +175,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: recursive
           ref: ${{ github.ref }}
 
       - name: Install Task
@@ -212,6 +216,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: recursive
           ref: ${{ github.ref }}
 
       - name: Install Task
@@ -284,6 +289,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: recursive
           ref: main
           token: ${{ secrets.RELEASE_PAT }}
 

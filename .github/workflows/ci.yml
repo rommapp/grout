@@ -28,6 +28,8 @@ jobs:
       CGO_ENABLED: "0"
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - uses: actions/setup-go@v5
         with:
@@ -56,6 +58,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - uses: actions/setup-go@v5
         with:
@@ -69,6 +73,9 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             libsdl2-dev libsdl2-ttf-dev libsdl2-gfx-dev libsdl2-image-dev
 
+      - name: Build sigil
+        run: scripts/build-sigil.sh
+
       - name: Build
         run: go build ./...
 
@@ -81,23 +88,30 @@ jobs:
   # A refactor that compiles on amd64 can still break a device target, and
   # every device grout runs on is arm.
   #
-  # Only packages that build without cgo can be checked here; anything reaching
-  # the UI toolkit needs SDL headers for the target architecture, which is what
-  # the Docker build is for.
+  # Anything reaching the UI toolkit needs SDL headers for the target
+  # architecture, which is what the Docker build is for.
   cross-compile:
     name: Cross-compile (arm64)
     runs-on: ubuntu-latest
     env:
-      CGO_ENABLED: "0"
+      CGO_ENABLED: "1"
+      CC: aarch64-linux-gnu-gcc
       GOOS: linux
       GOARCH: arm64
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           cache: true
+
+      - name: Install arm64 cross compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gcc-aarch64-linux-gnu
 
       - name: Vet arm64 packages
         run: |
@@ -116,6 +130,8 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - uses: actions/setup-go@v5
         with:
