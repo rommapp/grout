@@ -29,7 +29,9 @@ func zipOf(t *testing.T, path string, names ...string) {
 
 	w := zip.NewWriter(file)
 	for _, name := range names {
-		entry, err := w.Create(name)
+		// Stored, not deflated: tests that corrupt an entry look for its raw
+		// bytes, and deflate output changes between Go releases.
+		entry, err := w.CreateHeader(&zip.FileHeader{Name: name, Method: zip.Store})
 		if err != nil {
 			t.Fatal(err)
 		}
