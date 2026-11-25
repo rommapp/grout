@@ -58,6 +58,9 @@
   "fds": [
     "fceumm_libretro"
   ],
+  "galaksija": [
+    "galaksija_libretro"
+  ],
   "gamegear": [
     "genesis_plus_gx_libretro",
     "genesis_plus_gx_wide_libretro",
@@ -128,6 +131,9 @@
     "melonds_libretro",
     "melondsds_libretro"
   ],
+  "neo-geo-cd": [
+    "neocd_libretro"
+  ],
   "neogeo": [
     "fbneo_libretro",
     "fbneo_neogeo_libretro"
@@ -145,12 +151,21 @@
   "odyssey2": [
     "o2em_libretro"
   ],
+  "pc-8000": [
+    "quasi88_libretro"
+  ],
+  "pc-9800-series": [
+    "np2kai_libretro"
+  ],
   "pce": [
     "mednafen_pce_fast_libretro",
     "mednafen_pce_libretro"
   ],
   "pcfx": [
     "mednafen_pcfx_libretro"
+  ],
+  "philips-cd-i": [
+    "same_cdi_libretro"
   ],
   "ps": [
     "duckstation_libretro",
@@ -176,6 +191,9 @@
     "yabasanshiro_libretro",
     "yabause_libretro"
   ],
+  "scummvm": [
+    "scummvm_libretro"
+  ],
   "sega32": [
     "picodrive_libretro"
   ],
@@ -200,6 +218,9 @@
   "sgfx": [
     "mednafen_pce_fast_libretro"
   ],
+  "sharp-x68000": [
+    "px68k_libretro"
+  ],
   "sms": [
     "genesis_plus_gx_libretro",
     "genesis_plus_gx_wide_libretro",
@@ -220,6 +241,9 @@
   ],
   "wii": [
     "dolphin_libretro"
+  ],
+  "x1": [
+    "x1_libretro"
   ],
   "zxspectrum": [
     "fuse_libretro"
