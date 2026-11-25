@@ -36,6 +36,8 @@ func TestMatch_SubdirectoryBIOSLandsInCoreFolder(t *testing.T) {
 		{"x1", "IPLROM.X1", "xmil/IPLROM.X1"},
 		{"philips-cd-i", "cdimono1.zip", "same_cdi/bios/cdimono1.zip"},
 		{"galaksija", "CHRGEN.BIN", "galaksija/CHRGEN.BIN"},
+		{"scummvm", "scummmodern.zip", "scummvm/theme/scummmodern.zip"},
+		{"scummvm", "encoding.dat", "scummvm/extra/encoding.dat"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.platform+"/"+tc.file, func(t *testing.T) {
