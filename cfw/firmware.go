@@ -95,6 +95,9 @@ type Firmware struct {
 	// organizeExtracted rearranges a multi-file game after it is unpacked, for
 	// firmwares that want a layout the archive does not already have.
 	organizeExtracted func(extractDir, romDir, baseName string) error
+	// extractedDirName is the folder a multi-file game ends up in once
+	// organizeExtracted is done with it. Nil means the game's own name.
+	extractedDirName func(baseName string) string
 	// keepsRomExtInSaves names saves after the whole rom file rather than
 	// stripping the extension as RetroArch does. Fallback only, when the
 	// convention cannot be read off saves already on the device (issue #245).
@@ -149,6 +152,15 @@ func (f *Firmware) RescanLibrary() error {
 		return nil
 	}
 	return f.rescanLibrary()
+}
+
+// ExtractedDirName is the folder, inside the rom directory, holding a
+// multi-file game's files once it is unpacked and arranged.
+func (f *Firmware) ExtractedDirName(baseName string) string {
+	if f == nil || f.extractedDirName == nil {
+		return baseName
+	}
+	return f.extractedDirName(baseName)
 }
 
 // DisplayQuirks describes handling a particular device needs. Rotation is in
@@ -276,6 +288,7 @@ var firmwares = map[CFW]*Firmware{
 		id:                MuOS,
 		romDirectory:      muos.GetRomDirectory,
 		organizeExtracted: muos.OrganizeMultiFileRom,
+		extractedDirName:  muos.ExtractedDirName,
 		biosDirectory:     muos.GetBIOSDirectory,
 		baseSavePath:      muos.GetBaseSavePath,
 		coverDirectory:    inCatalogue(muos.GetArtDirectory),

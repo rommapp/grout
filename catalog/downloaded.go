@@ -29,14 +29,26 @@ func RomDirectory(config settings.Config, game romm.Rom) string {
 // romm.Rom so the API client stays free of the filesystem.
 func romLayout(game romm.Rom) cfw.RomLayout {
 	names := make([]string, 0, len(game.Files))
+	var members map[string][]string
 	for _, file := range game.Files {
 		names = append(names, file.FileName)
+		if inside := file.ArchiveMemberNames(); len(inside) > 0 {
+			if members == nil {
+				members = make(map[string][]string)
+			}
+			members[file.FileName] = inside
+		}
 	}
-	return cfw.RomLayout{
-		BaseName:  game.FsNameNoExt,
-		MultiDisc: game.HasMultipleFiles,
-		FileNames: names,
+	layout := cfw.RomLayout{
+		BaseName:       game.FsNameNoExt,
+		MultiDisc:      game.HasMultipleFiles,
+		FileNames:      names,
+		ArchiveMembers: members,
 	}
+	if game.HasMultipleFiles {
+		layout.ExtractedDir = cfw.ActiveFirmware().ExtractedDirName(game.FsNameNoExt)
+	}
+	return layout
 }
 
 // IsDownloaded reports whether a game is already on the device.
@@ -61,7 +73,17 @@ func IsFileDownloaded(config settings.Config, game romm.Rom, fileName string) bo
 	if game.PlatformFSSlug == "" {
 		return false
 	}
-	return cfw.IsFileDownloaded(RomDirectory(config, game), fileName)
+	return cfw.IsFileDownloaded(RomDirectory(config, game), fileName, archiveMembersOf(game, fileName))
+}
+
+// archiveMembersOf lists what RomM found inside one of a game's files.
+func archiveMembersOf(game romm.Rom, fileName string) []string {
+	for _, file := range game.Files {
+		if file.FileName == fileName {
+			return file.ArchiveMemberNames()
+		}
+	}
+	return nil
 }
 
 // DownloadStateOf reports how much of a game is on the device.

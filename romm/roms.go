@@ -115,6 +115,17 @@ type RomFile struct {
 	Sha1Hash      string    `json:"sha1_hash,omitempty"`
 	RAHash        string    `json:"ra_hash,omitempty"`
 	Category      any       `json:"category,omitempty"`
+	// ArchiveMembers is what RomM found inside the file when it is an archive.
+	// It is empty when the server skips hashing, predates RomM 5.0, or has not
+	// rescanned the archive since.
+	ArchiveMembers []RomArchiveMember `json:"archive_members,omitempty"`
+}
+
+// RomArchiveMember is one file inside an archive. RomM also sends three hashes
+// per member; they are left undecoded, since an arcade set lists dozens of
+// members and these devices have little memory to spare.
+type RomArchiveMember struct {
+	Name string `json:"name"`
 }
 
 type GetRomsQuery struct {

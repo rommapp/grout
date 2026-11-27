@@ -8,6 +8,12 @@ import (
 	"strings"
 )
 
+// ExtractedDirName is where OrganizeMultiFileRom leaves a game's files. The
+// underscore keeps muOS from listing the folder as a game of its own.
+func ExtractedDirName(gameName string) string {
+	return "_" + gameName
+}
+
 // OrganizeMultiFileRom handles multi-file ROM extraction and M3U file organization for muOS.
 // It renames the extract directory to have an underscore prefix and updates M3U paths accordingly.
 func OrganizeMultiFileRom(extractDir, romDirectory, gameName string) error {
@@ -27,7 +33,7 @@ func OrganizeMultiFileRom(extractDir, romDirectory, gameName string) error {
 	}
 
 	if m3uFile == "" {
-		underscoreDir := filepath.Join(romDirectory, "_"+gameName)
+		underscoreDir := filepath.Join(romDirectory, ExtractedDirName(gameName))
 		if err := os.Rename(extractDir, underscoreDir); err != nil {
 			return fmt.Errorf("failed to rename directory to %s: %w", underscoreDir, err)
 		}
@@ -46,7 +52,7 @@ func OrganizeMultiFileRom(extractDir, romDirectory, gameName string) error {
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
-		lines[i] = filepath.Join("_"+gameName, line)
+		lines[i] = filepath.Join(ExtractedDirName(gameName), line)
 	}
 	updatedM3U := strings.Join(lines, "\n")
 
@@ -60,7 +66,7 @@ func OrganizeMultiFileRom(extractDir, romDirectory, gameName string) error {
 		logger.Warn("Failed to remove original .m3u file", "path", m3uFile, "error", err)
 	}
 
-	underscoreDir := filepath.Join(romDirectory, "_"+gameName)
+	underscoreDir := filepath.Join(romDirectory, ExtractedDirName(gameName))
 	if err := os.Rename(extractDir, underscoreDir); err != nil {
 		return fmt.Errorf("failed to rename directory to %s: %w", underscoreDir, err)
 	}

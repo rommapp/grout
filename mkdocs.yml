@@ -106,6 +106,7 @@ nav:
       - Development Guide: contributing/development.md
       - Unverified Platform Mappings: platforms/unverified.md
       - State Machine Reference: contributing/state-machine.md
+      - "ADR 0001: Detect Extracted ROMs": contributing/adr/0001-detect-extracted-roms.md
       - Kudos: contributing/kudos.md
   - FAQ: usage/faq.md
 

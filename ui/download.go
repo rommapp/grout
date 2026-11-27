@@ -10,6 +10,7 @@ import (
 	_ "image/gif"
 	_ "image/jpeg"
 
+	"grout/archive"
 	"grout/cfw"
 	"grout/download"
 	"grout/files"
@@ -187,7 +188,7 @@ func (s *DownloadScreen) unpack(input DownloadInput, plan download.Plan, downloa
 			}
 			plan.SetGamePath(game.EntryFileName(), path)
 
-		case input.Config.UnzipDownloads && download.IsArchive(location):
+		case input.Config.UnzipDownloads && archive.IsArchive(location):
 			path, err := s.extracting(game.Name, func(progress *atomic.Float64) (string, error) {
 				return download.ExtractArchive(location, filepath.Dir(location), progress)
 			})
